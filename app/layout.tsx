@@ -42,8 +42,9 @@ export const metadata: Metadata = {
     images: ["/images/mleko-i-mleko-og.jpg"],
   },
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
+    icon: [{ url: "/images/mleko-i-mleko-logo.png", type: "image/png" }],
+    shortcut: "/images/mleko-i-mleko-logo.png",
+    apple: "/images/mleko-i-mleko-logo.png",
   },
 };
 

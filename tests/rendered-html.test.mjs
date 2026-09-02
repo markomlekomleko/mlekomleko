@@ -176,6 +176,7 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
   assert.match(html, /Proverite sledeću dostavu/);
   assert.match(html, /href="\/prodavnica"/);
   assert.match(html, /href="\/nalog"/);
+  assert.match(html, /src="\/images\/mleko-i-mleko-logo\.png"/);
   assert.match(html, /class="skip-link"[^>]*href="#glavni-sadrzaj"/);
   assert.match(html, /<main id="glavni-sadrzaj">/);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site|SkeletonPreview/);

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element -- The official local raster logo is served directly in this vinext runtime. */
 
 import Link from "next/link";
 import { useCart } from "./cart-provider";
@@ -28,8 +29,14 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
       <header className="site-header">
         <div className="nav-shell">
           <Link className="brand" href="/" aria-label={`${settings.storeName} - početna`}>
-            <span className="brand-mark" aria-hidden="true">M</span>
-            <span>{settings.storeName}</span>
+            <img
+              className="brand-logo brand-logo-header"
+              src="/images/mleko-i-mleko-logo.png"
+              alt=""
+              width="4167"
+              height="4167"
+            />
+            <span className="brand-name">{settings.storeName}</span>
             {settings.storeDemoMode ? <small>DEMO</small> : null}
           </Link>
           <nav className="main-nav" aria-label="Glavna navigacija">
@@ -62,7 +69,16 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
     <footer className="site-footer">
       <div className="page-shell footer-grid">
         <div>
-          <p className="brand">{storeName}</p>
+          <Link className="brand footer-brand" href="/" aria-label={`${storeName} - početna`}>
+            <img
+              className="brand-logo brand-logo-footer"
+              src="/images/mleko-i-mleko-logo.png"
+              alt=""
+              width="4167"
+              height="4167"
+            />
+            <span>{storeName}</span>
+          </Link>
           <p className="muted small-text">
             Domaće kravlje i kozje mleko u povratnim staklenim flašama.
           </p>

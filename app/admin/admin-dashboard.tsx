@@ -134,7 +134,7 @@ export function AdminDashboard() {
   return (
     <div className="admin-app">
       <aside className="admin-sidebar">
-        <a className="admin-brand" href="/admin"><span>M</span><strong>Mleko Admin</strong></a>
+        <a className="admin-brand" href="/admin"><img src="/images/mleko-i-mleko-logo.png" alt="" width="4167" height="4167" /><strong>Mleko Admin</strong></a>
         <nav aria-label="Administracija">{nav.map((item) => <button key={item.id} type="button" className={activeTab === item.id ? "active" : ""} onClick={() => { setActiveTab(item.id); setEditingProduct(undefined); }}><span aria-hidden="true">{item.icon}</span>{item.label}</button>)}</nav>
         <a className="admin-store-link" href="/" target="_blank" rel="noreferrer">Otvori prodavnicu ↗</a>
       </aside>
