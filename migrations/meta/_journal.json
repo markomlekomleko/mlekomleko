@@ -29,6 +29,20 @@
       "when": 1788378899397,
       "tag": "0003_reflective_kulan_gath",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1788381906424,
+      "tag": "0004_volatile_galactus",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1788382719305,
+      "tag": "0005_cuddly_longshot",
+      "breakpoints": true
     }
   ]
 }

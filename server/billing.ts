@@ -81,7 +81,9 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
     const hash = await stableJsonHash({ month, subscriptionId: subscription.id });
     const orderId = `ord_${hash.slice(0, 32)}`;
     const orderNumber = `MM-${month.replace("-", "")}-${hash.slice(0, 8).toUpperCase()}`;
-    const payment = subscription.payment_method === "card" && !subscription.payment_provider_ref
+    const payment = totalMinor === 0
+      ? { status: "paid" as const, providerReference: "credit_balance" }
+      : subscription.payment_method === "card" && !subscription.payment_provider_ref
       ? { status: "failed" as const, providerReference: "missing_payment_method" }
       : await localPaymentGateway.authorize({ idempotencyKey: orderKey, orderId, amountMinor: totalMinor, currency: "RSD", method: subscription.payment_method, paymentToken: subscription.payment_provider_ref ?? undefined });
     const now = new Date().toISOString();

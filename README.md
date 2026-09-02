@@ -4,10 +4,11 @@ Lokalni full-stack MVP za katalog, mešovitu korpu, jednokratne porudžbine, mes
 pretplate po stavci, korisnički magic-link nalog, rok za izmene, admin i pripremu
 dostave. Frontend je namerno osnovan; backend i poslovna pravila su glavni fokus.
 
-Spoljne integracije još nisu aktivne: kartice i fiskalizacija rade kroz lokalne
-adaptere/mock modove. OTP i RaiAccept su pripremljeni kao alternativni provider izbori,
-ali production adapter se ne sme napraviti bez dokumentacije i test parametara izabrane
-banke.
+Spoljne integracije podrazumevano nisu aktivne: kartice koriste lokalni adapter,
+fiskalizacija Badi mock, a email console režim. Badi HTTP i Resend adapteri su
+implementirani, ali ostaju isključeni dok se ne unesu kredencijali, SKU mapa i ne prođe
+sandbox provera. OTP i RaiAccept su pripremljeni kao alternativni config izbori; konkretan
+bankarski adapter se povezuje tek uz dokumentaciju i test parametre izabrane banke.
 
 ## Lokalni start
 
@@ -53,14 +54,16 @@ node --test tests/integrations.test.mjs
 - korpa u kojoj svaki proizvod zasebno bira jednokratno, weekly ili biweekly;
 - checkout sa server-side ponovnim obračunom, idempotency key-em i odbijanjem raw
   kartičnih polja;
-- customers, orders, subscription items, skip/pause/resume/cancel, next-only dodatak i
-  kreditni ledger;
+- customers, orders, subscription items, idempotent skip/pause/resume/cancel, zasebno
+  naplaćen next-only dodatak i kreditni ledger sa automatskim prenosom;
 - kalendarski obračun broja isporuka i cutoff u `Europe/Belgrade`;
 - jednokratni email magic link i lokalna session razmena;
 - admin proizvodi/kupci/porudžbine/pretplate/isporuke/podešavanja;
-- idempotent delivery projekcija, zbir za pripremu i CSV izvoz;
-- audit, webhook inbox i outbox granice;
-- mock payment/email/fiscal adapteri bez produkcionih poziva;
+- idempotent delivery projekcija, dnevni zbir za pripremu i Spoke CSV/XLSX izvoz;
+- audit, webhook inbox i izvršivi outbox sa backoff-om, greškama i ručnim retry-em;
+- trajna evidencija fiskalnih računa, Badi mock/HTTP i Resend/console adapteri;
+- automatske potvrde posle checkout-a/uplate, podsetnici i scheduled worker za dnevne
+  projekcije, mesečni obračun i retry;
 - config ugovori za OTP ili RaiAccept, Badi, email, WhatsApp-ready queue i analytics;
 - consent-gated GA4/GTM/Meta helper i first/last-touch UTM allowlist;
 - sitemap/robots i osnovni mobile-first frontend.
@@ -101,6 +104,8 @@ API je pod `/api`:
 - `/api/admin/*` sa `x-admin-secret` u trenutnom lokalnom MVP-u;
 - `POST /api/jobs/deliveries` za projekciju/zaključavanje i
   `POST /api/jobs/billing` za lokalni mesečni obračun;
+- `GET|POST /api/admin/integrations` za status računa/outbox-a, obradu, retry i
+  podsetnike;
 - `POST /api/webhooks/payments` za lokalni mock callback.
 
 API greške imaju `{ "error": { "code", "message", "details" } }` i `no-store` response.

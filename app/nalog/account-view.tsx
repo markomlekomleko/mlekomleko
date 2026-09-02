@@ -121,7 +121,7 @@ export function AccountView() {
     try {
       await fetchJson(`/api/account/subscriptions/${encodeURIComponent(subscriptionId)}`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${sessionToken}` },
+        headers: { Authorization: `Bearer ${sessionToken}`, "Idempotency-Key": window.crypto.randomUUID() },
         body: JSON.stringify({ action, ...details }),
       });
       setNotice("Izmena je sačuvana. Sledeća dostava je ažurirana ako rok nije istekao.");
@@ -287,7 +287,7 @@ export function AccountView() {
                           })}
                         </ul>
                       ) : null}
-                      {unwrapList(subscription, ["nextOnlyAddons", "next_only_addons"]).length ? <div className="next-addon-summary"><strong>Dodato samo sledećoj dostavi</strong>{unwrapList(subscription, ["nextOnlyAddons", "next_only_addons"]).map(row).map((addon, index) => <span key={string(addon.id, String(index))}>{number(addon.quantity)}× {string(addon.product_name ?? addon.productName)} · {formatMoney(number(addon.unit_price_minor ?? addon.unitPriceMinor, 0) * number(addon.quantity) / 100)}</span>)}</div> : null}
+                      {unwrapList(subscription, ["nextOnlyAddons", "next_only_addons"]).length ? <div className="next-addon-summary"><strong>Dodato samo sledećoj dostavi</strong>{unwrapList(subscription, ["nextOnlyAddons", "next_only_addons"]).map(row).map((addon, index) => <span key={string(addon.id, String(index))}>{number(addon.quantity)}× {string(addon.product_name ?? addon.productName)} · {formatMoney(number(addon.unit_price_minor ?? addon.unitPriceMinor, 0) * number(addon.quantity) / 100)} · {statusLabel(string(addon.payment_status, "pending"))}</span>)}</div> : null}
                       {status === "active" && addonProducts.length ? <section className="next-addon-picker" aria-label="Dodajte sledećoj dostavi"><div><p className="eyebrow">Bez nove dostave</p><h3>Dodajte samo sledećoj dostavi</h3></div><div>{addonProducts.slice(0, 3).map((product) => <button type="button" disabled={disabled} key={product.id} onClick={() => void mutate(subscriptionId, "add_next_only", { productId: product.id, quantity: 1 })}><span><strong>{product.name}</strong><small>{product.unit}</small></span><b>＋ {formatMoney(product.priceRsd)}</b></button>)}</div></section> : null}
                       <div className="inline-controls">
                         <button className="button secondary small" type="button" disabled={disabled} onClick={() => mutate(subscriptionId, "skip_next")}>Preskoči sledeću</button>

@@ -191,6 +191,7 @@ export function readIntegrationConfig(env = process.env) {
         mode: badiMode,
         baseUrl: badiBaseUrl,
         receiptPath: "/fiscalization/receipts",
+        clientId: value(env, "BADI_CLIENT_ID") || null,
       }),
       email: Object.freeze({
         mode: emailMode,
@@ -224,7 +225,7 @@ export function publicIntegrationStatus(config) {
     fiscalization: {
       provider: "badi",
       mode: config.integrations.fiscalization.mode,
-      configured: Boolean(config.integrations.fiscalization.baseUrl),
+      configured: config.integrations.fiscalization.mode === "mock" || Boolean(config.integrations.fiscalization.baseUrl),
     },
     email: {
       mode: config.integrations.email.mode,

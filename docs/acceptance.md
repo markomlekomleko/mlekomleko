@@ -20,13 +20,14 @@ ponovljiv ručni scenario; samo postojanje UI elementa nije dovoljno.
 - [ ] Izmena već plaćenog meseca stvara append-only kredit/zaduženje, ne prepisuje račun.
 - [ ] Delivery generator je idempotentan i regeneriše otvorenu projekciju iz aktuelnih
   podataka; zaključana projekcija se ne menja bez admin override-a.
-- [ ] Dnevni zbir i lista kupaca potiču iz iste finalne delivery projekcije.
-- [ ] Spoke CSV sadrži sve minimalne kolone, UTF-8 je, escape-uje navodnike/nove redove i
+- [x] Dnevni zbir i lista kupaca potiču iz iste finalne delivery projekcije.
+- [x] Spoke CSV sadrži sve minimalne kolone, UTF-8 je, escape-uje navodnike/nove redove i
   neutralizuje formule.
+- [x] Excel izvoz ima zasebne listove za Spoke dostave i zbirnu pripremu robe.
 - [ ] Admin može CRUD proizvode i vidi kupce, pretplate, porudžbine, isporuke, zbir i CSV.
 - [ ] Admin write akcije imaju autentikaciju, validaciju, audit i structured error.
-- [ ] Outbox zapis nastaje u istoj transakciji kao poslovna promena i retry ne duplira
-  efekat.
+- [x] Outbox zapis nastaje u istoj transakciji kao poslovna promena i aplikacioni
+  idempotency ključ ne duplira efekat.
 
 ## P0 - integracione granice
 
@@ -54,8 +55,9 @@ ponovljiv ručni scenario; samo postojanje UI elementa nije dovoljno.
 
 ## P1 - obaveštenja i analitika
 
-- [ ] Email outbox događaji postoje za svaki lifecycle događaj iz brifa.
-- [ ] Reminder se računa iz realnog delivery/cutoff vremena, ne iz hardkodovanog teksta.
+- [x] Email outbox događaji postoje za porudžbinu, obračun, uplatu, pretplatničke izmene,
+  magic link i podsetnik.
+- [x] Reminder se računa iz stvarne delivery projekcije za izabrani datum.
 - [ ] Template prikazuje sledeći datum, poslednji rok i self-service link.
 - [ ] `purchase` se emituje jednom tek po server-confirmed uspehu.
 - [ ] `view_item`, `add_to_cart`, `begin_checkout`, `purchase`, subscription activation,

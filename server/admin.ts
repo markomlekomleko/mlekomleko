@@ -96,11 +96,11 @@ export async function listSubscriptions() {
 export async function listOrders(date?: string | null) {
   return date
     ? all<Record<string, unknown>>(
-        "SELECT o.*, c.full_name, c.email, c.phone FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.delivery_date = ? ORDER BY o.created_at",
+        "SELECT o.*, c.full_name, c.email, c.phone, fr.status AS fiscal_status, fr.invoice_number FROM orders o JOIN customers c ON c.id = o.customer_id LEFT JOIN fiscal_receipts fr ON fr.order_id = o.id AND fr.operation_key = 'receipt:' || o.id || ':sale' WHERE o.delivery_date = ? ORDER BY o.created_at",
         date,
       )
     : all<Record<string, unknown>>(
-        "SELECT o.*, c.full_name, c.email, c.phone FROM orders o JOIN customers c ON c.id = o.customer_id ORDER BY o.created_at DESC LIMIT 500",
+        "SELECT o.*, c.full_name, c.email, c.phone, fr.status AS fiscal_status, fr.invoice_number FROM orders o JOIN customers c ON c.id = o.customer_id LEFT JOIN fiscal_receipts fr ON fr.order_id = o.id AND fr.operation_key = 'receipt:' || o.id || ':sale' ORDER BY o.created_at DESC LIMIT 500",
       );
 }
 

@@ -90,12 +90,12 @@ CREATE TABLE `__new_products` (
 	`is_active` integer DEFAULT true NOT NULL,
 	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	`updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL,
-	CONSTRAINT "products_price_nonnegative" CHECK("__new_products"."price_minor" >= 0),
-	CONSTRAINT "products_cost_nonnegative" CHECK("__new_products"."cost_minor" >= 0),
-	CONSTRAINT "products_packaging_cost_nonnegative" CHECK("__new_products"."packaging_cost_minor" >= 0),
-	CONSTRAINT "products_subscription_price_nonnegative" CHECK("__new_products"."subscription_price_minor" IS NULL OR "__new_products"."subscription_price_minor" >= 0),
-	CONSTRAINT "products_compare_price_nonnegative" CHECK("__new_products"."compare_at_price_minor" IS NULL OR "__new_products"."compare_at_price_minor" >= 0),
-	CONSTRAINT "products_currency_rsd" CHECK("__new_products"."currency" = 'RSD')
+	CONSTRAINT "products_price_nonnegative" CHECK("price_minor" >= 0),
+	CONSTRAINT "products_cost_nonnegative" CHECK("cost_minor" >= 0),
+	CONSTRAINT "products_packaging_cost_nonnegative" CHECK("packaging_cost_minor" >= 0),
+	CONSTRAINT "products_subscription_price_nonnegative" CHECK("subscription_price_minor" IS NULL OR "subscription_price_minor" >= 0),
+	CONSTRAINT "products_compare_price_nonnegative" CHECK("compare_at_price_minor" IS NULL OR "compare_at_price_minor" >= 0),
+	CONSTRAINT "products_currency_rsd" CHECK("currency" = 'RSD')
 );
 --> statement-breakpoint
 INSERT INTO `__new_products`("id", "slug", "name", "short_description", "description", "category", "unit_label", "price_minor", "cost_minor", "packaging_cost_minor", "subscription_price_minor", "compare_at_price_minor", "currency", "image_url", "image_alt", "badge", "origin", "is_featured", "allow_subscription", "is_demo", "sort_order", "seo_title", "seo_description", "is_active", "created_at", "updated_at") SELECT "id", "slug", "name", "short_description", "description", "category", "unit_label", "price_minor", 0, 0, "subscription_price_minor", "compare_at_price_minor", "currency", "image_url", "image_alt", "badge", "origin", "is_featured", "allow_subscription", "is_demo", "sort_order", "seo_title", "seo_description", "is_active", "created_at", "updated_at" FROM `products`;--> statement-breakpoint

@@ -359,15 +359,36 @@ test("admin delivery export returns a complete formula-safe UTF-8 Spoke CSV", as
   const csv = new TextDecoder().decode(bytes);
   assert.match(
     csv,
-    /^"Name","Address","Phone","Email","Products","Quantities","Note","Order ID"\r\n/,
+    /^"Address Line 1","Address Line 2","City","Postal Code","Customer name","Phone","Email","Notes","Order ID","Products"\r\n/,
   );
   assert.match(csv, /Željko Petrović/);
-  assert.match(csv, /Kravlje mleko \(L\)/);
+  assert.match(csv, /3 x Kravlje mleko \(L\)/);
   assert.match(
     csv,
-    /"'[ ]{3}=HYPERLINK\(""https:\/\/attacker\.invalid""\)"/,
+    /"'=HYPERLINK\(""https:\/\/attacker\.invalid""\)"/,
   );
   assert.match(csv, /"order_1"/);
+});
+
+test("admin delivery Excel contains route and preparation sheets", async () => {
+  queries.length = 0;
+  const response = await request(
+    "/api/admin/deliveries/export?date=2026-09-04&format=xlsx",
+    { headers: { "x-admin-secret": "test-admin-secret" } },
+    "https://shop.example.test",
+  );
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /spreadsheetml/);
+  assert.match(response.headers.get("content-disposition") ?? "", /dostave-2026-09-04\.xlsx/);
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  assert.deepEqual([...bytes.slice(0, 4)], [0x50, 0x4b, 0x03, 0x04]);
+  const packageText = new TextDecoder().decode(bytes);
+  assert.match(packageText, /xl\/worksheets\/sheet1\.xml/);
+  assert.match(packageText, /xl\/worksheets\/sheet2\.xml/);
+  assert.match(packageText, /Customer name/);
+  assert.match(packageText, /Ukupna količina/);
+  assert.match(packageText, /Željko Petrović/);
+  assert.match(packageText, /Kravlje mleko/);
 });
 
 test("admin and payment webhook routes deny invalid credentials before DB access", async () => {

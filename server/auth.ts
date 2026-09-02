@@ -3,6 +3,7 @@ import { constantTimeEqual, randomToken, sha256 } from "./crypto";
 import { DomainError, assertDomain, emailAddress } from "./domain";
 import { batch, first, run } from "./sql";
 import { enqueue } from "./outbox";
+import { processOutboxFor } from "./integration-jobs";
 
 interface AuthRow extends Record<string, unknown> {
   id: string;
@@ -28,16 +29,17 @@ export async function issueMagicLink(rawEmail: unknown, request: Request): Promi
   const tokenHash = await sha256(token);
   const customer = await first<CustomerRow>("SELECT id, email FROM customers WHERE email = ?", email);
   const expiresAt = new Date(Date.now() + 15 * 60_000).toISOString();
+  const origin = runtimeEnv().APP_ORIGIN ?? new URL(request.url).origin;
+  const url = `${origin}/prijava/potvrda?token=${encodeURIComponent(token)}`;
   await batch([
     {
       sql: "INSERT INTO auth_tokens (id, customer_id, email, token_hash, kind, expires_at) VALUES (?, ?, ?, ?, 'magic_link', ?)",
       bindings: [crypto.randomUUID(), customer?.id ?? null, email, tokenHash, expiresAt],
     },
-    enqueue("auth.magic_link.requested", "customer", customer?.id ?? email, { email, expiresAt }),
+    enqueue("auth.magic_link.requested", "customer", customer?.id ?? email, { email, expiresAt, url }),
   ]);
+  await processOutboxFor("customer", customer?.id ?? email);
 
-  const origin = runtimeEnv().APP_ORIGIN ?? new URL(request.url).origin;
-  const url = `${origin}/prijava/potvrda?token=${encodeURIComponent(token)}`;
   // The raw token is exposed only on localhost (or when explicitly opted into local mode).
   const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(new URL(request.url).hostname) || runtimeEnv().LOCAL_AUTH_EXPOSE_TOKEN === "true";
   return local ? { accepted: true, magicLink: url, localDevelopment: { url, token } } : { accepted: true };

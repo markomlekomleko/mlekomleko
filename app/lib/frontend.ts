@@ -12,6 +12,7 @@ export type Product = {
   priceRsd: number;
   costRsd?: number;
   packagingCostRsd?: number;
+  badiSku?: number | null;
   subscriptionPriceRsd: number;
   compareAtPriceRsd: number | null;
   imageUrl: string;
@@ -198,6 +199,7 @@ export function normalizeProduct(value: unknown): Product {
     priceRsd,
     costRsd: costMinor / 100,
     packagingCostRsd: packagingCostMinor / 100,
+    badiSku: numberValue(item.badiSku, item.badi_sku) || null,
     subscriptionPriceRsd:
       directSubscriptionPrice || minorSubscriptionPrice / 100 || priceRsd,
     compareAtPriceRsd: compareAtMinor > 0 ? compareAtMinor / 100 : null,

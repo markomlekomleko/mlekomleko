@@ -61,7 +61,8 @@ Aktivira se jedna po jedna. Nikad payment i Badi u istom prvom pokušaju.
 ### Badi
 
 1. Postaviti `BADI_MODE=sandbox` i sandbox tajne/client ID.
-2. Mapirati lokalni product/SKU na Badi poreske oznake.
+2. Uneti `badiSku` za svaki proizvod; ako se naplaćuju dostava ili korekcija, uneti i
+   `BADI_DELIVERY_SKU` odnosno `BADI_ADJUSTMENT_SKU`.
 3. Testirati karticu, gotovinu, advance/final i refund prema odobrenom toku.
 4. Proveriti email/PDF račun, duplicate retry i reconciliation izveštaj.
 
@@ -74,11 +75,14 @@ Za dan isporuke operater bira datum i proverava tri pogleda izvedena iz iste pro
 
 1. zbir potrebne robe;
 2. listu kupaca i njihovih stavki;
-3. Spoke CSV.
+3. Spoke CSV ili Excel sa listovima `Dostave` i `Priprema`.
 
-Pre izvoza proveriti da je cutoff prošao ili svesno označiti preview. Finalni export ima
-audit zapis: datum isporuke, vreme, admin, broj stopova i hash fajla. Ako se posle
-exporta desi odobren admin override, sistem označava prethodni export zastarelim.
+Otvorenu listu treba ponovo generisati pre izvoza; tada sadrži sve dozvoljene izmene do
+cutoff-a. Posle zaključavanja projekcija ostaje nepromenljiva.
+
+Worker ima `scheduled` handler za dnevnu projekciju, podsetnik za sutrašnju dostavu,
+obračun prvog dana u mesecu i outbox retry. Pri hostingu treba povezati jedan dnevni
+Cloudflare Cron trigger; do tada su iste operacije dostupne ručno u adminu.
 
 ## Monitoring i alarmi
 
@@ -119,8 +123,9 @@ ručne intervencije.
 
 ### Badi nedostupan
 
-Ne duplirati receipt. Označiti pending/retry, alarmirati operatera i pratiti zakonski
-rok sa knjigovođom. Plaćanje ostaje evidentirano.
+Ne duplirati receipt. Pošto Badi dokumentacija ne definiše provider idempotency ključ,
+neuspešan ili nejasan poziv ide u `failed` i zahteva reconciliation pre ručnog retry-a.
+Plaćanje ostaje evidentirano; zakonski rok pratiti sa knjigovođom.
 
 ### Pogrešan Spoke export
 

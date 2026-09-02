@@ -4,6 +4,8 @@ import { audit, enqueue } from "./outbox";
 import { all, batch, first, type SqlValue } from "./sql";
 import { addLocalDays, assertLocalDate, cutoffForDelivery, isCadenceDue } from "./time";
 import { getBusinessSettings } from "./settings";
+import { buildXlsx } from "./xlsx";
+import { buildSpokeCsv } from "../integrations/spoke-csv.mjs";
 
 interface DeliveryRow extends Record<string, unknown> {
   id: string; delivery_date: string; cutoff_at: string; status: "open" | "locked" | "completed";
@@ -57,7 +59,7 @@ export async function generateDelivery(rawDate: unknown, rawKey: string | null) 
   const cutoffAt = delivery?.cutoff_at ?? cutoffForDelivery(date, settings.cutoffHours, settings.deliveryLocalTime);
 
   const oneTimeSources = await all<CustomerSnapshotRow & { source_order_id: string }>(
-    "SELECT o.id AS source_order_id, o.customer_id, c.full_name, c.email, c.phone, c.address_line_1, c.address_line_2, c.city, c.postal_code, COALESCE(o.customer_note, c.delivery_note) AS delivery_note FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.delivery_date = ? AND o.fulfillment_status = 'planned' AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id AND oi.purchase_type = 'one_time')",
+    "SELECT o.id AS source_order_id, o.customer_id, c.full_name, c.email, c.phone, c.address_line_1, c.address_line_2, c.city, c.postal_code, COALESCE(o.customer_note, c.delivery_note) AS delivery_note FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.delivery_date = ? AND o.kind = 'one_time' AND o.fulfillment_status = 'planned' AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id AND oi.purchase_type = 'one_time')",
     date,
   );
   const subscriptionSources = await all<CustomerSnapshotRow & { subscription_id: string }>(
@@ -66,7 +68,7 @@ export async function generateDelivery(rawDate: unknown, rawKey: string | null) 
   );
   const orderItems = oneTimeSources.length ? await all<ItemSnapshotRow>(`SELECT oi.order_id AS source_id, oi.product_id, oi.product_name, oi.unit_label, oi.quantity, oi.unit_price_minor, 'order' AS source_type FROM order_items oi WHERE oi.purchase_type = 'one_time' AND oi.order_id IN (${oneTimeSources.map(() => "?").join(",")})`, ...oneTimeSources.map((source) => source.source_order_id)) : [];
   const subscriptionItems = subscriptionSources.length ? await all<(ItemSnapshotRow & { cadence: "weekly" | "biweekly"; cadence_anchor_date: string })>(`SELECT si.subscription_id AS source_id, si.product_id, p.name AS product_name, p.unit_label, si.quantity, COALESCE(p.subscription_price_minor, p.price_minor) AS unit_price_minor, 'subscription' AS source_type, si.cadence, si.cadence_anchor_date FROM subscription_items si JOIN products p ON p.id = si.product_id WHERE si.status = 'active' AND si.subscription_id IN (${subscriptionSources.map(() => "?").join(",")})`, ...subscriptionSources.map((source) => source.subscription_id)) : [];
-  const addons = subscriptionSources.length ? await all<ItemSnapshotRow>(`SELECT a.subscription_id AS source_id, a.product_id, p.name AS product_name, p.unit_label, a.quantity, a.unit_price_minor, 'next_only' AS source_type FROM next_delivery_addons a JOIN products p ON p.id = a.product_id WHERE a.delivery_date = ? AND a.consumed_at IS NULL AND a.subscription_id IN (${subscriptionSources.map(() => "?").join(",")})`, date, ...subscriptionSources.map((source) => source.subscription_id)) : [];
+  const addons = subscriptionSources.length ? await all<ItemSnapshotRow>(`SELECT a.subscription_id AS source_id, a.product_id, p.name AS product_name, p.unit_label, a.quantity, a.unit_price_minor, 'next_only' AS source_type FROM next_delivery_addons a JOIN products p ON p.id = a.product_id WHERE a.delivery_date = ? AND a.consumed_at IS NULL AND a.cancelled_at IS NULL AND a.subscription_id IN (${subscriptionSources.map(() => "?").join(",")})`, date, ...subscriptionSources.map((source) => source.subscription_id)) : [];
 
   const statements: Array<{ sql: string; bindings?: SqlValue[] }> = [];
   if (delivery) {
@@ -122,7 +124,7 @@ export async function lockDelivery(rawDate: unknown, idempotencyKey: string | nu
     { sql: "UPDATE deliveries SET status = 'locked', locked_at = ? WHERE id = ? AND status = 'open'", bindings: [new Date().toISOString(), delivery.id] },
     { sql: "UPDATE delivery_orders SET status = 'locked' WHERE delivery_id = ? AND status = 'planned'", bindings: [delivery.id] },
     { sql: "UPDATE orders SET fulfillment_status = 'locked', updated_at = ? WHERE id IN (SELECT source_order_id FROM delivery_orders WHERE delivery_id = ? AND source_order_id IS NOT NULL)", bindings: [new Date().toISOString(), delivery.id] },
-    { sql: "UPDATE next_delivery_addons SET consumed_at = ? WHERE delivery_date = ? AND subscription_id IN (SELECT subscription_id FROM delivery_orders WHERE delivery_id = ?)", bindings: [new Date().toISOString(), date, delivery.id] },
+    { sql: "UPDATE next_delivery_addons SET consumed_at = ? WHERE delivery_date = ? AND cancelled_at IS NULL AND subscription_id IN (SELECT subscription_id FROM delivery_orders WHERE delivery_id = ?)", bindings: [new Date().toISOString(), date, delivery.id] },
     ...advanceStatements,
     audit("admin", "local-admin", "delivery.locked", "delivery", delivery.id, delivery, response),
     enqueue("delivery.locked", "delivery", delivery.id, response),
@@ -130,28 +132,43 @@ export async function lockDelivery(rawDate: unknown, idempotencyKey: string | nu
   return deliveryPayload(date);
 }
 
-function neutralizeCsv(value: unknown): string {
-  let text = value == null ? "" : String(value);
-  if (/^[\t\r ]*[=+\-@]/.test(text)) text = `'${text}`;
-  return `"${text.replaceAll('"', '""')}"`;
+function exportRows(payload: Awaited<ReturnType<typeof deliveryPayload>>) {
+  return payload.orders.map((order) => {
+    const snapshot = order.customer_snapshot as Record<string, unknown>;
+    const items = order.items as Array<Record<string, unknown>>;
+    return {
+      deliveryAddress: { line1: snapshot.addressLine1, line2: snapshot.addressLine2, city: snapshot.city, postalCode: snapshot.postalCode },
+      customer: { fullName: snapshot.fullName, phone: snapshot.phone, email: snapshot.email },
+      note: order.note,
+      orderId: order.source_order_id ?? order.subscription_id ?? order.id,
+      items: items.map((item) => ({ name: item.product_name, unit: item.unit_label, quantity: Number(item.quantity) })),
+    };
+  });
 }
 
 export async function spokeCsv(rawDate: unknown): Promise<string> {
   const payload = await deliveryPayload(assertLocalDate(rawDate));
-  const header = ["Name", "Address", "Phone", "Email", "Products", "Quantities", "Note", "Order ID"];
-  const rows = payload.orders.map((order) => {
-    const snapshot = order.customer_snapshot as Record<string, unknown>;
-    const items = order.items as Array<Record<string, unknown>>;
-    return [
-      snapshot.fullName,
-      [snapshot.addressLine1, snapshot.addressLine2, snapshot.postalCode, snapshot.city].filter(Boolean).join(", "),
-      snapshot.phone,
-      snapshot.email,
-      items.map((item) => `${item.product_name} (${item.unit_label})`).join(" | "),
-      items.map((item) => item.quantity).join(" | "),
-      order.note,
-      order.source_order_id ?? order.subscription_id ?? order.id,
-    ];
-  });
-  return `\uFEFF${[header, ...rows].map((row) => row.map(neutralizeCsv).join(",")).join("\r\n")}\r\n`;
+  return buildSpokeCsv(exportRows(payload));
+}
+
+export async function deliveryXlsx(rawDate: unknown): Promise<Uint8Array> {
+  const date = assertLocalDate(rawDate);
+  const payload = await deliveryPayload(date);
+  const deliveries = exportRows(payload);
+  return buildXlsx([
+    {
+      name: "Dostave",
+      rows: [
+        ["Address Line 1", "Address Line 2", "City", "Postal Code", "Customer name", "Phone", "Email", "Notes", "Order ID", "Products"],
+        ...deliveries.map((order) => [order.deliveryAddress.line1 as string, order.deliveryAddress.line2 as string, order.deliveryAddress.city as string, order.deliveryAddress.postalCode as string, order.customer.fullName as string, order.customer.phone as string, order.customer.email as string, order.note, order.orderId as string, order.items.map((item) => `${item.quantity} x ${String(item.name)}${item.unit ? ` (${String(item.unit)})` : ""}`).join("; ")]),
+      ],
+    },
+    {
+      name: "Priprema",
+      rows: [
+        ["Datum dostave", "Proizvod", "Jedinica", "Ukupna količina"],
+        ...payload.preparation.map((item) => [date, item.product_name as string, item.unit_label as string, Number(item.total_quantity)]),
+      ],
+    },
+  ]);
 }

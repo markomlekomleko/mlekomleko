@@ -338,9 +338,9 @@ export async function getAccount(customerId: string) {
   const orders = await all<Record<string, unknown> & { id: string }>("SELECT id, order_number, kind, payment_status, fulfillment_status, delivery_date, total_minor, currency, created_at FROM orders WHERE customer_id = ? ORDER BY created_at DESC LIMIT 50", customerId);
   const credits = await all<Record<string, unknown>>("SELECT id, subscription_id, order_id, amount_minor, reason, status, created_at FROM credits_ledger WHERE customer_id = ? ORDER BY created_at DESC", customerId);
   const addons = subscriptions.length ? await all<Record<string, unknown>>(
-    `SELECT nda.id, nda.subscription_id, nda.product_id, nda.delivery_date, nda.quantity, nda.unit_price_minor, nda.consumed_at, p.name AS product_name, p.unit_label
-     FROM next_delivery_addons nda JOIN products p ON p.id = nda.product_id
-     WHERE nda.subscription_id IN (${sqlPlaceholders(subscriptions.length)}) AND nda.consumed_at IS NULL ORDER BY nda.created_at`,
+    `SELECT nda.id, nda.subscription_id, nda.product_id, nda.delivery_date, nda.quantity, nda.unit_price_minor, nda.order_id, nda.consumed_at, nda.cancelled_at, p.name AS product_name, p.unit_label, o.order_number, o.payment_status
+     FROM next_delivery_addons nda JOIN products p ON p.id = nda.product_id LEFT JOIN orders o ON o.id = nda.order_id
+     WHERE nda.subscription_id IN (${sqlPlaceholders(subscriptions.length)}) AND nda.consumed_at IS NULL AND nda.cancelled_at IS NULL ORDER BY nda.created_at`,
     ...subscriptions.map((subscription) => subscription.id),
   ) : [];
   const addonProducts = (await all<ProductRow>("SELECT * FROM products WHERE is_active = 1 ORDER BY (price_minor - cost_minor - packaging_cost_minor) DESC, sort_order LIMIT 8")).map((product) => publicProduct(product));
@@ -361,10 +361,19 @@ async function assertSubscriptionMutable(subscription: SubscriptionRow): Promise
 }
 
 async function paidThisMonth(subscriptionId: string, date: string): Promise<boolean> {
-  return Boolean(await first<Record<string, unknown>>("SELECT id FROM orders WHERE subscription_id = ? AND payment_status = 'paid' AND substr(delivery_date, 1, 7) = ? LIMIT 1", subscriptionId, date.slice(0, 7)));
+  return Boolean(await first<Record<string, unknown>>("SELECT id FROM orders WHERE subscription_id = ? AND kind = 'subscription_invoice' AND payment_status = 'paid' AND substr(delivery_date, 1, 7) = ? LIMIT 1", subscriptionId, date.slice(0, 7)));
 }
 
-export async function mutateSubscription(customerId: string, subscriptionId: string, input: Record<string, unknown>) {
+export async function mutateSubscription(customerId: string, subscriptionId: string, input: Record<string, unknown>, rawKey: string | null) {
+  const mutationKey = requiredString(rawKey ?? input.idempotencyKey, "Idempotency-Key", 200);
+  assertDomain(mutationKey.length >= 8, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key must contain at least 8 characters.", 422);
+  const requestHash = await stableJsonHash({ customerId, subscriptionId, input });
+  const replay = await first<{ request_hash: string; response_json: string | null } & Record<string, unknown>>("SELECT request_hash, response_json FROM idempotency_keys WHERE namespace = 'subscription-mutation' AND key = ?", mutationKey);
+  if (replay) {
+    assertDomain(replay.request_hash === requestHash, "IDEMPOTENCY_CONFLICT", "Ovaj Idempotency-Key je već iskorišćen za drugu izmenu.", 409);
+    const saved = replay.response_json ? JSON.parse(replay.response_json) as Record<string, unknown> : { subscriptionId, status: "processing" };
+    return { ...saved, account: await getAccount(customerId) };
+  }
   const subscription = await first<SubscriptionRow>("SELECT * FROM subscriptions WHERE id = ? AND customer_id = ?", subscriptionId, customerId);
   if (!subscription) throw new DomainError("SUBSCRIPTION_NOT_FOUND", "Subscription was not found.", 404);
   const action = enumValue(input.action, "action", ["update_item", "remove_item", "add_next_only", "skip_next", "slow_down", "pause", "resume", "cancel"] as const);
@@ -379,7 +388,9 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
   const statements: Array<{ sql: string; bindings?: SqlValue[] }> = [];
   let resultingNextDeliveryDate = subscription.next_delivery_date;
   let adjustmentMinor = 0;
+  let addonOrder: Record<string, unknown> | null = null;
   const activeItems = await all<SubscriptionItemRow & { price_minor: number }>("SELECT si.*, COALESCE(p.subscription_price_minor, p.price_minor) AS price_minor FROM subscription_items si JOIN products p ON p.id = si.product_id WHERE si.subscription_id = ? AND si.status = 'active'", subscriptionId);
+  const pendingAddons = await all<{ id: string; order_id: string | null; payment_status: string | null; total_minor: number | null } & Record<string, unknown>>("SELECT nda.id, nda.order_id, o.payment_status, o.total_minor FROM next_delivery_addons nda LEFT JOIN orders o ON o.id = nda.order_id WHERE nda.subscription_id = ? AND nda.consumed_at IS NULL AND nda.cancelled_at IS NULL", subscriptionId);
   const paid = await paidThisMonth(subscriptionId, subscription.next_delivery_date);
   const deliveryValue = activeItems.filter((item) => isCadenceDue(item.cadence_anchor_date, subscription.next_delivery_date, item.cadence)).reduce((sum, item) => sum + item.price_minor * item.quantity, 0);
   const dueCount = (item: Pick<SubscriptionItemRow, "cadence_anchor_date" | "cadence">, cadence = item.cadence) => {
@@ -413,12 +424,28 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
     const quantity = positiveInt(input.quantity, "quantity", 100);
     const product = await first<ProductRow>("SELECT * FROM products WHERE id = ? AND is_active = 1", productId);
     assertDomain(product, "PRODUCT_UNAVAILABLE", "Product is unavailable.", 409);
-    statements.push({ sql: "INSERT INTO next_delivery_addons (id, subscription_id, product_id, delivery_date, quantity, unit_price_minor) VALUES (?, ?, ?, ?, ?, ?)", bindings: [crypto.randomUUID(), subscriptionId, productId, subscription.next_delivery_date, quantity, product.price_minor] });
-    if (paid) adjustmentMinor = -(product.price_minor * quantity);
+    const totalMinor = product.price_minor * quantity;
+    const addonHash = await stableJsonHash({ namespace: "next-delivery-addon", mutationKey });
+    const addonOrderId = `ord_${addonHash.slice(0, 32)}`;
+    const addonOrderKey = `addon:${mutationKey}`;
+    assertDomain(subscription.payment_method !== "card" || subscription.payment_provider_ref, "PAYMENT_METHOD_REQUIRED", "Sačuvani način kartičnog plaćanja nije dostupan; izaberite gotovinu ili ažurirajte karticu.", 409);
+    const payment = await localPaymentGateway.authorize({ idempotencyKey: addonOrderKey, orderId: addonOrderId, amountMinor: totalMinor, currency: "RSD", method: subscription.payment_method, paymentToken: subscription.payment_provider_ref ?? undefined });
+    assertDomain(payment.status !== "failed", "PAYMENT_FAILED", "Naplata dodatka nije uspela.", 402);
+    const addonOrderNumber = orderNumber(addonHash);
+    statements.push({ sql: "INSERT INTO orders (id, order_number, customer_id, subscription_id, kind, payment_method, payment_provider_ref, payment_status, fulfillment_status, delivery_date, subtotal_minor, discount_minor, delivery_fee_minor, payment_fee_minor, estimated_delivery_cost_minor, credit_applied_minor, total_minor, currency, customer_note, source_json, idempotency_key, created_at, updated_at) VALUES (?, ?, ?, ?, 'adjustment', ?, ?, ?, 'planned', ?, ?, 0, 0, 0, 0, 0, ?, 'RSD', ?, ?, ?, ?, ?)", bindings: [addonOrderId, addonOrderNumber, customerId, subscriptionId, subscription.payment_method, payment.providerReference, payment.status, subscription.next_delivery_date, totalMinor, totalMinor, `Dodatak uz dostavu ${subscription.next_delivery_date}`, JSON.stringify({ type: "next_delivery_addon", subscriptionId }), addonOrderKey, now, now] });
+    statements.push({ sql: "INSERT INTO order_items (id, order_id, product_id, product_name, unit_label, quantity, unit_price_minor, unit_cost_minor, unit_packaging_cost_minor, total_cost_minor, line_total_minor, purchase_type, cadence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'one_time', NULL)", bindings: [crypto.randomUUID(), addonOrderId, product.id, product.name, product.unit_label, quantity, product.price_minor, product.cost_minor, product.packaging_cost_minor, (product.cost_minor + product.packaging_cost_minor) * quantity, totalMinor] });
+    statements.push({ sql: "INSERT INTO next_delivery_addons (id, subscription_id, product_id, delivery_date, quantity, unit_price_minor, order_id) VALUES (?, ?, ?, ?, ?, ?, ?)", bindings: [crypto.randomUUID(), subscriptionId, productId, subscription.next_delivery_date, quantity, product.price_minor, addonOrderId] });
+    addonOrder = { id: addonOrderId, orderNumber: addonOrderNumber, totalMinor, paymentStatus: payment.status, paymentMethod: subscription.payment_method, deliveryDate: subscription.next_delivery_date };
+    statements.push(enqueue("order.created", "order", addonOrderId, { order: addonOrder, source: "next_delivery_addon" }));
+    statements.push(enqueue("email.order_confirmation.requested", "order", addonOrderId, { order: addonOrder, source: "next_delivery_addon" }));
+    statements.push(enqueue(payment.status === "paid" ? "payment.captured" : "payment.cash_due", "order", addonOrderId, addonOrder));
+    if (payment.status === "paid") statements.push(enqueue("fiscal.receipt.requested", "order", addonOrderId, addonOrder));
   } else if (action === "skip_next") {
+    let nextDueDate = addLocalDays(subscription.next_delivery_date, 7);
+    for (let attempts = 0; attempts < 8 && activeItems.length && !activeItems.some((item) => isCadenceDue(item.cadence_anchor_date, nextDueDate, item.cadence)); attempts += 1) nextDueDate = addLocalDays(nextDueDate, 7);
     statements.push({ sql: "INSERT INTO subscription_skips (id, subscription_id, delivery_date) VALUES (?, ?, ?) ON CONFLICT(subscription_id, delivery_date) DO NOTHING", bindings: [crypto.randomUUID(), subscriptionId, subscription.next_delivery_date] });
-    statements.push({ sql: "UPDATE subscriptions SET next_delivery_date = ?, updated_at = ? WHERE id = ?", bindings: [addLocalDays(subscription.next_delivery_date, 7), now, subscriptionId] });
-    resultingNextDeliveryDate = addLocalDays(subscription.next_delivery_date, 7);
+    statements.push({ sql: "UPDATE subscriptions SET next_delivery_date = ?, updated_at = ? WHERE id = ?", bindings: [nextDueDate, now, subscriptionId] });
+    resultingNextDeliveryDate = nextDueDate;
     if (paid) adjustmentMinor = deliveryValue;
   } else if (action === "slow_down") {
     statements.push({ sql: "UPDATE subscription_items SET cadence = 'biweekly', updated_at = ? WHERE subscription_id = ? AND status = 'active'", bindings: [now, subscriptionId] });
@@ -428,6 +455,7 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
     assertDomain(pauseUntil > subscription.next_delivery_date, "VALIDATION_ERROR", "pauseUntil must be after the next delivery.", 422);
     let resumeDate = subscription.next_delivery_date;
     while (resumeDate < pauseUntil) resumeDate = addLocalDays(resumeDate, 7);
+    for (let attempts = 0; attempts < 8 && activeItems.length && !activeItems.some((item) => isCadenceDue(item.cadence_anchor_date, resumeDate, item.cadence)); attempts += 1) resumeDate = addLocalDays(resumeDate, 7);
     resultingNextDeliveryDate = resumeDate;
     statements.push({ sql: "UPDATE subscriptions SET status = 'paused', pause_until = ?, next_delivery_date = ?, updated_at = ? WHERE id = ?", bindings: [pauseUntil, resumeDate, now, subscriptionId] });
     if (paid) {
@@ -450,16 +478,32 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
     const reason = optionalString(input.reason, "reason", 240) ?? "not_provided";
     statements.push({ sql: "UPDATE subscriptions SET status = 'cancelled', cancelled_at = ?, cancellation_reason = ?, updated_at = ? WHERE id = ?", bindings: [now, reason, now, subscriptionId] });
     if (paid) adjustmentMinor = activeItems.reduce((sum, item) => sum + item.price_minor * item.quantity * dueCount(item), 0);
+    const paidAddonCredit = pendingAddons.filter((addon) => addon.payment_status === "paid").reduce((sum, addon) => sum + Number(addon.total_minor ?? 0), 0);
+    adjustmentMinor += paidAddonCredit;
+    statements.push({ sql: "UPDATE next_delivery_addons SET cancelled_at = ? WHERE subscription_id = ? AND consumed_at IS NULL AND cancelled_at IS NULL", bindings: [now, subscriptionId] });
+    statements.push({ sql: "UPDATE orders SET fulfillment_status = 'cancelled', updated_at = ? WHERE id IN (SELECT order_id FROM next_delivery_addons WHERE subscription_id = ? AND cancelled_at = ? AND order_id IS NOT NULL)", bindings: [now, subscriptionId, now] });
+  }
+  if (resultingNextDeliveryDate !== subscription.next_delivery_date && action !== "cancel") {
+    statements.push({ sql: "UPDATE next_delivery_addons SET delivery_date = ? WHERE subscription_id = ? AND delivery_date = ? AND consumed_at IS NULL AND cancelled_at IS NULL", bindings: [resultingNextDeliveryDate, subscriptionId, subscription.next_delivery_date] });
+    statements.push({ sql: "UPDATE orders SET delivery_date = ?, updated_at = ? WHERE id IN (SELECT order_id FROM next_delivery_addons WHERE subscription_id = ? AND delivery_date = ? AND consumed_at IS NULL AND cancelled_at IS NULL AND order_id IS NOT NULL)", bindings: [resultingNextDeliveryDate, now, subscriptionId, resultingNextDeliveryDate] });
   }
   if (adjustmentMinor !== 0) statements.push({ sql: "INSERT INTO credits_ledger (id, customer_id, subscription_id, amount_minor, reason, status) VALUES (?, ?, ?, ?, ?, 'open')", bindings: [crypto.randomUUID(), customerId, subscriptionId, adjustmentMinor, `paid_month_${action}`] });
+  const response = { subscriptionId, action, adjustmentMinor, currency: "RSD", addonOrder };
+  statements.push({ sql: "INSERT INTO idempotency_keys (id, namespace, key, request_hash, response_json, status_code, expires_at) VALUES (?, 'subscription-mutation', ?, ?, ?, 200, ?)", bindings: [crypto.randomUUID(), mutationKey, requestHash, JSON.stringify(response), new Date(Date.now() + 400 * 86_400_000).toISOString()] });
   statements.push(audit("customer", customerId, `subscription.${action}`, "subscription", subscriptionId, subscription, { ...input, adjustmentMinor }));
-  statements.push(enqueue(`subscription.${action}`, "subscription", subscriptionId, { customerId, nextDeliveryDate: subscription.next_delivery_date, adjustmentMinor }));
-  await batch(statements);
+  statements.push(enqueue(`subscription.${action}`, "subscription", subscriptionId, { customerId, nextDeliveryDate: resultingNextDeliveryDate, adjustmentMinor, addonOrder }));
+  try {
+    await batch(statements);
+  } catch (error) {
+    const raced = await first<{ request_hash: string; response_json: string | null } & Record<string, unknown>>("SELECT request_hash, response_json FROM idempotency_keys WHERE namespace = 'subscription-mutation' AND key = ?", mutationKey);
+    if (raced?.request_hash === requestHash && raced.response_json) return { ...JSON.parse(raced.response_json), account: await getAccount(customerId) };
+    throw error;
+  }
   // Open projections are operational read models, so refresh them immediately after an accepted pre-cutoff mutation.
   // Locked snapshots are never regenerated. A distinct key makes each accepted mutation a new idempotent generation run.
   for (const date of new Set([subscription.next_delivery_date, resultingNextDeliveryDate])) {
     const openDelivery = await first<Record<string, unknown>>("SELECT id FROM deliveries WHERE delivery_date = ? AND status = 'open'", date);
     if (openDelivery) await generateDelivery(date, `account-refresh:${subscriptionId}:${date}:${now}`);
   }
-  return { subscriptionId, action, adjustmentMinor, currency: "RSD", account: await getAccount(customerId) };
+  return { ...response, account: await getAccount(customerId) };
 }

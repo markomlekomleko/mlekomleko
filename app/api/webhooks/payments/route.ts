@@ -3,6 +3,7 @@ import { constantTimeEqual } from "../../../../server/crypto";
 import { assertDomain, enumValue, jsonResponse, readJson, requiredString, withRoute } from "../../../../server/domain";
 import { audit, enqueue } from "../../../../server/outbox";
 import { batch, first } from "../../../../server/sql";
+import { processOutboxFor } from "../../../../server/integration-jobs";
 
 export function POST(request: Request) {
   return withRoute(async () => {
@@ -31,6 +32,7 @@ export function POST(request: Request) {
       statements.push(enqueue("email.receipt.requested", "order", orderId, { orderId }));
     }
     await batch(statements);
+    await processOutboxFor("order", orderId);
     return jsonResponse({ received: true, duplicate: false });
   });
 }

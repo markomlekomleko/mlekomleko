@@ -96,10 +96,11 @@ tajne, webhook potpisi, statusi i endpointi se nikada ne mešaju.
 
 ### Fiskalizacija
 
-Fiskalni račun nastaje iz zaključanog snapshot-a naplate/isporuke. Svaki pokušaj ima
-idempotency key, broj pokušaja i sačuvan odgovor bez tajni. Ne izdavati duplikat pri
-retry-ju. Badi neuspeh ide u retry/DLQ i vidljiv je adminu; plaćanje se ne proglašava
-neuspešnim samo zato što naknadna fiskalizacija privremeno ne radi.
+Fiskalni račun nastaje tek kada je naplata označena kao uspešna. Svaki pokušaj ima
+operation key, broj pokušaja, status i eksterni broj bez tajni. Pošto Badi ne dokumentuje
+provider idempotency ključ, nejasan neuspeh se ne ponavlja automatski: vidljiv je adminu
+i traži reconciliation pre ručnog retry-a. Plaćanje se ne proglašava neuspešnim samo zato
+što naknadna fiskalizacija privremeno ne radi.
 
 Tačan trenutak fiskalizacije kartice, gotovine, avansa, konačnog računa i refundacije
 mora potvrditi knjigovođa/poreski savetnik pre produkcije.
@@ -111,7 +112,7 @@ poruka: `eventType`, `aggregateId`, `idempotencyKey`, payload, `attempts`,
 `nextAttemptAt`, `processedAt`, `lastErrorCode`. Worker uzima poruku, poziva adapter i
 beleži rezultat.
 
-Retry koristi exponential backoff sa jitter-om i konačnim dead-letter stanjem.
+Email retry koristi exponential backoff i konačno `failed` stanje.
 Poruka je obrađena samo kada provajder potvrdi prihvat. Tajne i kompletan odgovor
 provajdera ne ulaze u aplikacione logove.
 

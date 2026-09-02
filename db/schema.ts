@@ -32,6 +32,7 @@ export const products = sqliteTable(
     sortOrder: integer("sort_order").notNull().default(0),
     seoTitle: text("seo_title"),
     seoDescription: text("seo_description"),
+    badiSku: integer("badi_sku"),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
     ...timestamps,
   },
@@ -121,7 +122,9 @@ export const nextDeliveryAddons = sqliteTable(
     deliveryDate: text("delivery_date").notNull(),
     quantity: integer("quantity").notNull(),
     unitPriceMinor: integer("unit_price_minor").notNull(),
+    orderId: text("order_id").references(() => orders.id),
     consumedAt: text("consumed_at"),
+    cancelledAt: text("cancelled_at"),
     createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [
@@ -405,6 +408,32 @@ export const webhookEvents = sqliteTable(
   (table) => [uniqueIndex("webhook_events_provider_id_unique").on(table.provider, table.providerEventId)],
 );
 
+export const fiscalReceipts = sqliteTable(
+  "fiscal_receipts",
+  {
+    id: text("id").primaryKey(),
+    orderId: text("order_id").notNull().references(() => orders.id),
+    operationKey: text("operation_key").notNull(),
+    kind: text("kind", { enum: ["normal", "advance", "final", "refund"] }).notNull().default("normal"),
+    status: text("status", { enum: ["pending", "issued", "failed", "skipped"] }).notNull().default("pending"),
+    provider: text("provider").notNull().default("badi"),
+    providerReference: text("provider_reference"),
+    invoiceNumber: text("invoice_number"),
+    pdfUrl: text("pdf_url"),
+    attempts: integer("attempts").notNull().default(0),
+    lastErrorCode: text("last_error_code"),
+    lastErrorMessage: text("last_error_message"),
+    requestedAt: text("requested_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+    issuedAt: text("issued_at"),
+    updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("fiscal_receipts_operation_unique").on(table.operationKey),
+    index("fiscal_receipts_order_idx").on(table.orderId),
+    index("fiscal_receipts_status_idx").on(table.status, table.updatedAt),
+  ],
+);
+
 // Append-only by application contract. No update/delete service is exposed.
 export const auditLog = sqliteTable(
   "audit_log",
@@ -431,11 +460,15 @@ export const outbox = sqliteTable(
     aggregateType: text("aggregate_type").notNull(),
     aggregateId: text("aggregate_id").notNull(),
     payloadJson: text("payload_json").notNull(),
+    idempotencyKey: text("idempotency_key"),
     status: text("status", { enum: ["pending", "sent", "failed"] }).notNull().default("pending"),
     attempts: integer("attempts").notNull().default(0),
     availableAt: text("available_at").notNull(),
+    externalId: text("external_id"),
+    lastErrorCode: text("last_error_code"),
+    lastErrorMessage: text("last_error_message"),
     createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
     sentAt: text("sent_at"),
   },
-  (table) => [index("outbox_pending_idx").on(table.status, table.availableAt)],
+  (table) => [index("outbox_pending_idx").on(table.status, table.availableAt), uniqueIndex("outbox_idempotency_unique").on(table.idempotencyKey)],
 );
