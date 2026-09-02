@@ -66,6 +66,7 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
       const occurrences = effectiveDates.filter((date) => isCadenceDue(item.cadence_anchor_date, date, item.cadence)).length;
       return { item, occurrences, lineTotalMinor: item.price_minor * item.quantity * occurrences };
     }).filter((line) => line.occurrences > 0);
+    const billedDeliveryDates = effectiveDates.filter((date) => items.some((item) => isCadenceDue(item.cadence_anchor_date, date, item.cadence)));
     const productsSubtotalMinor = lines.reduce((sum, line) => sum + line.lineTotalMinor, 0);
     const credits = await all<CreditRow>("SELECT id, amount_minor FROM credits_ledger WHERE customer_id = ? AND status = 'open' AND (subscription_id = ? OR subscription_id IS NULL) ORDER BY created_at, id", subscription.customer_id, subscription.id);
     const creditNet = credits.reduce((sum, credit) => sum + credit.amount_minor, 0);
@@ -75,8 +76,11 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
     }
     const debitAdjustmentMinor = Math.max(0, -creditNet);
     const subtotalMinor = productsSubtotalMinor + debitAdjustmentMinor;
-    const creditAppliedMinor = Math.min(subtotalMinor, Math.max(0, creditNet));
-    const totalMinor = subtotalMinor - creditAppliedMinor;
+    const deliveryFeeMinor = settings.deliveryFeeMinor > 0 && !(settings.freeDeliveryThresholdMinor > 0 && productsSubtotalMinor >= settings.freeDeliveryThresholdMinor)
+      ? settings.deliveryFeeMinor * billedDeliveryDates.length
+      : 0;
+    const creditAppliedMinor = Math.min(subtotalMinor + deliveryFeeMinor, Math.max(0, creditNet));
+    const totalMinor = subtotalMinor + deliveryFeeMinor - creditAppliedMinor;
     const creditRemainderMinor = Math.max(0, creditNet - creditAppliedMinor);
     const hash = await stableJsonHash({ month, subscriptionId: subscription.id });
     const orderId = `ord_${hash.slice(0, 32)}`;
@@ -87,16 +91,16 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
       ? { status: "failed" as const, providerReference: "missing_payment_method" }
       : await localPaymentGateway.authorize({ idempotencyKey: orderKey, orderId, amountMinor: totalMinor, currency: "RSD", method: subscription.payment_method, paymentToken: subscription.payment_provider_ref ?? undefined });
     const now = new Date().toISOString();
-    const deliveryDate = effectiveDates[0] ?? `${month}-01`;
+    const deliveryDate = billedDeliveryDates[0] ?? `${month}-01`;
     const paymentFeeMinor = subscription.payment_method === "card" ? Math.round(totalMinor * settings.paymentFeeBps / 10_000) : 0;
-    const estimatedDeliveryCostMinor = settings.estimatedDeliveryCostMinor * Math.max(1, effectiveDates.length);
+    const estimatedDeliveryCostMinor = settings.estimatedDeliveryCostMinor * Math.max(1, billedDeliveryDates.length);
     const statements: Array<{ sql: string; bindings?: SqlValue[] }> = [
-      { sql: "INSERT INTO orders (id, order_number, customer_id, subscription_id, kind, payment_method, payment_provider_ref, payment_status, fulfillment_status, delivery_date, subtotal_minor, payment_fee_minor, estimated_delivery_cost_minor, credit_applied_minor, total_minor, currency, source_json, idempotency_key, created_at, updated_at) VALUES (?, ?, ?, ?, 'subscription_invoice', ?, ?, ?, 'planned', ?, ?, ?, ?, ?, ?, 'RSD', '{}', ?, ?, ?)", bindings: [orderId, orderNumber, subscription.customer_id, subscription.id, subscription.payment_method, payment.providerReference, payment.status, deliveryDate, subtotalMinor, paymentFeeMinor, estimatedDeliveryCostMinor, creditAppliedMinor, totalMinor, orderKey, now, now] },
+      { sql: "INSERT INTO orders (id, order_number, customer_id, subscription_id, kind, payment_method, payment_provider_ref, payment_status, fulfillment_status, delivery_date, subtotal_minor, delivery_fee_minor, payment_fee_minor, estimated_delivery_cost_minor, credit_applied_minor, total_minor, currency, source_json, idempotency_key, created_at, updated_at) VALUES (?, ?, ?, ?, 'subscription_invoice', ?, ?, ?, 'planned', ?, ?, ?, ?, ?, ?, ?, 'RSD', '{}', ?, ?, ?)", bindings: [orderId, orderNumber, subscription.customer_id, subscription.id, subscription.payment_method, payment.providerReference, payment.status, deliveryDate, subtotalMinor, deliveryFeeMinor, paymentFeeMinor, estimatedDeliveryCostMinor, creditAppliedMinor, totalMinor, orderKey, now, now] },
     ];
     for (const line of lines) statements.push({ sql: "INSERT INTO order_items (id, order_id, product_id, product_name, unit_label, quantity, unit_price_minor, unit_cost_minor, unit_packaging_cost_minor, total_cost_minor, line_total_minor, purchase_type, cadence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'subscription', ?)", bindings: [crypto.randomUUID(), orderId, line.item.product_id, line.item.product_name, line.item.unit_label, line.item.quantity, line.item.price_minor, line.item.cost_minor, line.item.packaging_cost_minor, (line.item.cost_minor + line.item.packaging_cost_minor) * line.item.quantity * line.occurrences, line.lineTotalMinor, line.item.cadence] });
     for (const credit of credits) statements.push({ sql: "UPDATE credits_ledger SET status = 'applied', order_id = ?, applied_at = ? WHERE id = ? AND status = 'open'", bindings: [orderId, now, credit.id] });
     if (creditRemainderMinor > 0) statements.push({ sql: "INSERT INTO credits_ledger (id, customer_id, subscription_id, order_id, amount_minor, reason, status) VALUES (?, ?, ?, ?, ?, 'credit_carry_forward', 'open')", bindings: [crypto.randomUUID(), subscription.customer_id, subscription.id, orderId, creditRemainderMinor] });
-    const summary = { orderId, orderNumber, subscriptionId: subscription.id, productsSubtotalMinor, debitAdjustmentMinor, creditAppliedMinor, creditRemainderMinor, totalMinor, currency: "RSD", paymentStatus: payment.status, providerReference: payment.providerReference };
+    const summary = { orderId, orderNumber, subscriptionId: subscription.id, productsSubtotalMinor, deliveryFeeMinor, deliveryOccurrences: billedDeliveryDates.length, debitAdjustmentMinor, creditAppliedMinor, creditRemainderMinor, totalMinor, currency: "RSD", paymentStatus: payment.status, providerReference: payment.providerReference };
     statements.push(audit("system", "monthly-billing-job", "billing.invoice_created", "order", orderId, null, summary));
     statements.push(enqueue("billing.invoice_created", "order", orderId, summary));
     statements.push(enqueue(payment.status === "paid" ? "payment.captured" : payment.status === "pending" ? "payment.cash_due" : "payment.method_required", "order", orderId, summary));

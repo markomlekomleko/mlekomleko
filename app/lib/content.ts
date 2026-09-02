@@ -4,8 +4,16 @@ export const frequentlyAskedQuestions = [
     answer: "Ne. Svaki proizvod možete uzeti samo uz sledeću dostavu ili ga uključiti u redovan nedeljni ili dvonedeljni ritam.",
   },
   {
-    question: "Mogu li proizvodi imati različit ritam?",
-    answer: "Da. U istoj korpi mleko može stizati svake nedelje, jogurt svake dve nedelje, a sir samo jednom.",
+    question: "Koliko mleka mogu da poručim?",
+    answer: "Brzo birate 2, 4 ili 8 litara po dostavi, što uz četiri nedeljne dostave odgovara paketima od 8, 16 ili 32 litra mesečno. Možete uneti i drugu količinu.",
+  },
+  {
+    question: "Kada su dostave?",
+    answer: "Postojeća ponuda navodi isporuke za Beograd utorkom i petkom, a za Novi Sad petkom. Tačan sledeći termin vidite pre potvrde porudžbine.",
+  },
+  {
+    question: "Kako funkcionišu povratne flaše?",
+    answer: "Mleko stiže u staklenim flašama. Od druge dostave vraćate čiste korišćene flaše, a preuzimate nove pune flaše.",
   },
   {
     question: "Do kada mogu da izmenim dostavu?",
@@ -17,7 +25,11 @@ export const frequentlyAskedQuestions = [
   },
   {
     question: "Kako se plaća?",
-    answer: "Jednokratna porudžbina se plaća karticom ili gotovinom. Redovna dostava se mesečno obračunava prema planiranim terminima.",
+    answer: "Jednokratna porudžbina se plaća karticom ili gotovinom. Kod gotovinske pretplate ceo mesečni iznos plaća se pri prvoj dostavi u mesecu.",
+  },
+  {
+    question: "Koliko košta dostava?",
+    answer: "Dostava je 350 RSD po terminu. Četiri nedeljne dostave u mesecu ukupno koštaju 1.400 RSD.",
   },
   {
     question: "Šta ako proizvod stigne oštećen?",

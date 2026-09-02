@@ -120,7 +120,7 @@ code { border-radius: 6px; background: var(--cream); color: var(--forest-dark); 
 .product-badges { position: absolute; inset: .8rem .8rem auto .8rem; display: flex; justify-content: space-between; gap: .5rem; pointer-events: none; }
 .product-badges strong, .product-badges small { padding: .34rem .5rem; border-radius: 7px; background: rgba(255,255,255,.92); color: var(--forest-dark); box-shadow: 0 4px 14px rgba(0,0,0,.08); font-size: .68rem; font-weight: 850; }
 .product-badges small { margin-left: auto; color: var(--orange-dark); letter-spacing: .07em; }
-.product-card-body { display: flex; min-height: 255px; flex-direction: column; padding: 1.1rem; }
+.product-card-body { display: flex; min-height: 390px; flex-direction: column; padding: 1.1rem; }
 .product-title { margin: .7rem 0 .4rem; font-size: 1.3rem; }
 .product-title a { text-decoration: none; }
 .product-description { min-height: 3em; font-size: .9rem; }
@@ -132,6 +132,15 @@ code { border-radius: 6px; background: var(--cream); color: var(--forest-dark); 
 .price-stack small { flex-basis: 100%; color: var(--success); font-size: .77rem; font-weight: 700; }
 .product-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
 .subscription-first-actions .product-rhythm-link { grid-column: 1 / -1; padding-top: .2rem; font-size: .76rem; text-align: center; }
+.card-quantity { display: grid; gap: .45rem; padding: .75rem 0; border-top: 1px solid var(--line); }
+.card-quantity-heading { display: flex; align-items: center; justify-content: space-between; gap: .75rem; color: var(--muted); font-size: .76rem; }
+.card-quantity-heading strong { color: var(--forest-dark); font-size: .95rem; }
+.card-quantity > small { color: var(--muted); font-size: .7rem; }
+.quantity-presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .35rem; }
+.quantity-presets button { min-height: 34px; padding: .3rem .45rem; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--forest-dark); font-size: .75rem; font-weight: 750; }
+.quantity-presets button[aria-pressed="true"] { border-color: var(--orange); background: var(--orange); color: white; }
+.card-quantity-control { grid-template-columns: 38px minmax(54px, 1fr) 38px; }
+.card-quantity-control button, .card-quantity-control input { min-height: 38px; }
 .tag-row { display: flex; flex-wrap: wrap; gap: .45rem; }
 .tag { display: inline-flex; padding: .25rem .5rem; border-radius: 999px; background: var(--leaf); color: var(--forest-dark); font-size: .72rem; font-weight: 750; }
 
@@ -315,6 +324,7 @@ td select { min-width: 125px; min-height: 38px; padding-block: .4rem; }
 .purchase-controls .field { flex: 1; }
 .purchase-controls .quantity-control { grid-template-columns: 40px 58px 40px; }
 .purchase-controls .quantity-control input, .purchase-controls .quantity-control button { min-height: 42px; }
+.milk-quantity-field { display: grid; gap: .4rem; }
 .upsell-switch { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: .8rem; padding: .65rem .75rem; border: 1px solid #b7d8be; border-radius: 10px; background: #eff8f0; color: var(--success); text-align: left; }
 .upsell-switch span { font-size: .74rem; }
 .subscription-value { display: flex; flex-wrap: wrap; gap: .3rem 1rem; color: var(--success); font-size: .74rem; font-weight: 700; }

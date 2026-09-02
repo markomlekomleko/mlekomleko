@@ -99,6 +99,8 @@ export type CartQuote = {
   subtotalMinor: number;
   discountMinor: number;
   deliveryFeeMinor: number;
+  deliveryFeePerOccurrenceMinor?: number;
+  deliveryOccurrences?: number;
   totalMinor: number;
   promoCode: string | null;
   currency: "RSD";

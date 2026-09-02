@@ -48,7 +48,7 @@ export function DeliveryChecker({ title, note, delivery }: { title: string; note
           <p className={`check-result ${result.available ? "success" : "error"}`} role="status">
             {result.available
               ? `Dostavljamo na ${result.postalCode}. Možete da sastavite korpu.`
-              : `Zona ${result.postalCode} još nije na demo ruti. Javite nam da vas dodamo na listu.`}
+              : `Poštanski broj ${result.postalCode} trenutno nije u zoni dostave za Beograd i Novi Sad.`}
           </p>
         ) : null}
         {error ? <p className="check-result error" role="alert">{error}</p> : null}

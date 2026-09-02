@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <div className="page-shell narrow">
-      <header className="page-heading"><p className="eyebrow">O nama</p><h1>Domaći proizvodi, bliže svakom domu.</h1></header>
-      <section className="section" style={{ borderTop: 0, paddingTop: 0 }}><p className="lead">Mleko i Mleko nastaje sa jednostavnom idejom: kvalitetni, sveži proizvodi treba da stignu do kupca bez komplikovanog poručivanja.</p><p>Gradimo uslugu u kojoj se jednokratne potrebe i redovna porodična nabavka mogu spojiti u jednoj porudžbini. Poreklo, partneri i dodatne informacije biće objavljeni nakon potvrde podataka sa farmi.</p></section>
+      <header className="page-heading"><p className="eyebrow">O nama</p><h1>Pravo mleko više nije daleko.</h1></header>
+      <section className="section" style={{ borderTop: 0, paddingTop: 0 }}><p className="lead">Mleko i Mleko donosi punomasno sirovo kravlje i kozje mleko sa domaćih farmi direktno na kućnu adresu.</p><p>Mleko je redovno laboratorijski kontrolisano, bez hormona, antibiotika i aditiva. Dostavljamo ga u povratnim staklenim flašama kako bismo čuvali ukus i zajedno smanjili nepotreban otpad.</p></section>
       <a className="button" href="/farme">Naše farme</a>
     </div>
   );

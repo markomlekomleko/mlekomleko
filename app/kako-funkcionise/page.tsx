@@ -10,13 +10,14 @@ export default function HowItWorksPage() {
     <div className="page-shell narrow">
       <header className="page-heading">
         <p className="eyebrow">Kako funkcioniše</p>
-        <h1>Vi birate šta i koliko često.</h1>
-        <p className="lead">Svaki proizvod u istoj korpi može imati drugačiji ritam.</p>
+        <h1>Vi birate mleko, litre i ritam.</h1>
+        <p className="lead">Paketi od 8, 16 i 32 L mesečno odgovaraju količinama od 2, 4 i 8 L nedeljno.</p>
       </header>
       <div className="form-stack">
-        <section className="card"><h2>1. Sastavite korpu</h2><p>Za svaki proizvod odaberite jednokratnu kupovinu ili mesečnu pretplatu. Kod pretplate birate dostavu svake nedelje ili svake dve nedelje.</p></section>
-        <section className="card"><h2>2. Potvrdite dostavu</h2><p>Unesite adresu i izaberite kartično ili gotovinsko plaćanje. Za mesečnu pretplatu obračun prati planirane isporuke tog meseca.</p></section>
-        <section className="card"><h2>3. Menjajte na vreme</h2><p>Pre roka prikazanog na nalogu možete promeniti količinu, ukloniti ili dodati proizvod, preskočiti sledeću dostavu, pauzirati ili trajno otkazati pretplatu.</p></section>
+        <section className="card"><h2>1. Izaberite mleko i litre</h2><p>Odaberite kravlje ili kozje mleko, zatim 2, 4 ili 8 litara po dostavi. Količinu možete dodatno podesiti dugmadima − i +.</p></section>
+        <section className="card"><h2>2. Izaberite ritam</h2><p>Redovna dostava može biti svake nedelje ili svake dve nedelje. Beogradske rute su utorkom i petkom, a novosadska petkom.</p></section>
+        <section className="card"><h2>3. Vratite flaše i zadržite kontrolu</h2><p>Od druge isporuke vratite čiste korišćene flaše. Pre roka možete promeniti količinu, preskočiti dostavu, pauzirati ili otkazati pretplatu.</p></section>
+        <section className="card"><h2>Cena dostave</h2><p>Dostava je 350 RSD po terminu, odnosno 1.400 RSD za četiri nedeljne isporuke u mesecu.</p></section>
       </div>
       <div className="button-row"><a className="button" href="/prodavnica">Počni kupovinu</a><a className="button secondary" href="/faq">Česta pitanja</a></div>
     </div>

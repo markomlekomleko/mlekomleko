@@ -50,12 +50,12 @@ export function StoreView() {
     <div className="page-shell">
       <header className="page-heading">
         <p className="eyebrow">Prodavnica</p>
-        <h1>Sastavite dostavu koja prati vaš ritam.</h1>
+        <h1>Izaberite mleko i količinu.</h1>
         <p className="lead">
-          Za svaki proizvod posebno birate jednokratnu kupovinu ili redovnu
-          nedeljnu i dvonedeljnu dostavu. Nema unapred zadatog paketa.
+          Kravlje ili kozje mleko, od 2 litra po dostavi. Izaberite 2, 4 ili 8 L
+          jednim dodirom, ili podesite tačnu količinu koja vam odgovara.
         </p>
-        <div className="micro-proof"><span>✓ Bez ugovorne obaveze</span><span>✓ Mešajte ritmove u istoj korpi</span><span>✓ Izmena pre roka dostave</span></div>
+        <div className="micro-proof"><span>✓ 250 RSD/L kravlje</span><span>✓ 300 RSD/L kozje</span><span>✓ Povratne staklene flaše</span></div>
       </header>
 
       {loading ? (

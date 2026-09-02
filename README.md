@@ -26,8 +26,9 @@ Otvorite [http://localhost:3000](http://localhost:3000). Lokalni admin je na
 `.env.example` je `local-dev-change-me`. Taj fallback je samo za loopback razvoj i ne
 sme se koristiti u produkciji.
 
-Prva migracija ubacuje četiri jasno označena demo proizvoda i podrazumevanu petak/08:00
-dostavu sa rokom od 24 sata, pa prodavnica odmah ima lokalne test podatke.
+Početne migracije ubacuju razvojne podatke, a `0006_take_catalog.sql` ih zamenjuje
+stvarnim kravljim i kozjim mlekom, cenama i sadržajem iz postojeće Mleko i Mleko
+prodavnice. Kupac bira litre po dostavi direktno na proizvodu.
 
 Migracije su idempotentne; `npm run db:migrate:local` pokrenite nakon novih migration
 fajlova. Nemojte pokretati drugi dev server ako jedan već radi.
@@ -50,7 +51,7 @@ node --test tests/integrations.test.mjs
 
 ## Šta je implementirano
 
-- katalog proizvoda sa RSD cenama, dostupnošću i SEO poljima;
+- stvarni katalog kravljeg i kozjeg mleka sa izborom 2/4/8 L ili proizvoljne količine;
 - korpa u kojoj svaki proizvod zasebno bira jednokratno, weekly ili biweekly;
 - checkout sa server-side ponovnim obračunom, idempotency key-em i odbijanjem raw
   kartičnih polja;

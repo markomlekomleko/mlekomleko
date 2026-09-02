@@ -104,5 +104,6 @@ export async function getNextDeliveryWindow(now = new Date()) {
 
 export function isServiceablePostalCode(settings: BusinessSettings, postalCode: string) {
   if (settings.servicePostalCodes.length === 0) return true;
-  return settings.servicePostalCodes.includes(postalCode.trim());
+  const normalized = postalCode.trim();
+  return settings.servicePostalCodes.some((entry) => normalized.startsWith(entry.replace(/\*$/, "")));
 }

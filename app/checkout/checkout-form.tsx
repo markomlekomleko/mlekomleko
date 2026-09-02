@@ -264,7 +264,7 @@ export function CheckoutForm() {
                 <input name="postalCode" inputMode="numeric" autoComplete="postal-code" value={postalCode} onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 5))} pattern="\d{5}" required />
               </label>
             </div>
-            {postalCode.length === 5 && quote ? <p className={`check-result ${quote.serviceable === false ? "error" : "success"}`}>{quote.serviceable === false ? "Ovaj poštanski broj još nije u zoni dostave." : "Adresa je u zoni demo dostave."}</p> : null}
+            {postalCode.length === 5 && quote ? <p className={`check-result ${quote.serviceable === false ? "error" : "success"}`}>{quote.serviceable === false ? "Ovaj poštanski broj još nije u zoni dostave." : "Adresa je u zoni dostave."}</p> : null}
             <label className="field">
               <span>Napomena za dostavu (opciono)</span>
               <textarea name="note" />
@@ -322,7 +322,7 @@ export function CheckoutForm() {
               <strong>{formatMoney(line.lineTotalMinor / 100)}</strong>
             </div>
           ))}
-          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Danas plaćate za tekući mesec" : "Danas plaćate"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Izmene do {formatDate(quote.cutoffAt)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
+          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Danas plaćate za tekući mesec" : "Danas plaćate"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Izmene do {formatDate(quote.cutoffAt)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
           <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Plaćate samo isporuke planirane za tekući mesec.</p>
           <button className="button" type="submit" disabled={submitting || !quote || quote.serviceable === false}>
             {submitting ? "Čuvamo porudžbinu…" : paymentMethod === "card" ? "Nastavi na karticu" : "Potvrdi porudžbinu"}

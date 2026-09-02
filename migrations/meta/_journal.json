@@ -43,6 +43,13 @@
       "when": 1788382719305,
       "tag": "0005_cuddly_longshot",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1788384157532,
+      "tag": "0006_take_catalog",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,13 @@ export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
   const { track } = useAnalytics();
   const [added, setAdded] = useState<"once" | "regular" | "">("");
+  const [quantity, setQuantity] = useState(2);
+  const quantityLabelId = `kolicina-${product.id}`;
+
+  function chooseQuantity(value: number) {
+    setQuantity(Math.min(99, Math.max(1, Math.round(value) || 1)));
+    setAdded("");
+  }
 
   function addOnce() {
     addItem({
@@ -20,9 +27,9 @@ export function ProductCard({ product }: { product: Product }) {
       unit: product.unit,
       unitPriceRsd: product.priceRsd,
       purchaseType: "one_time",
-      quantity: 1,
+      quantity,
     });
-    track("add_to_cart", { productId: product.id, purchaseType: "one_time", quantity: 1, valueRsd: product.priceRsd });
+    track("add_to_cart", { productId: product.id, purchaseType: "one_time", quantity, valueRsd: product.priceRsd * quantity });
     setAdded("once");
   }
 
@@ -35,9 +42,9 @@ export function ProductCard({ product }: { product: Product }) {
       unitPriceRsd: product.subscriptionPriceRsd,
       purchaseType: "subscription",
       cadence: "weekly",
-      quantity: 1,
+      quantity,
     });
-    track("add_to_cart", { productId: product.id, purchaseType: "subscription", cadence: "weekly", quantity: 1, valueRsd: product.subscriptionPriceRsd });
+    track("add_to_cart", { productId: product.id, purchaseType: "subscription", cadence: "weekly", quantity, valueRsd: product.subscriptionPriceRsd * quantity });
     track("subscription_selected", { productId: product.id, source: "product_card" });
     setAdded("regular");
   }
@@ -67,9 +74,21 @@ export function ProductCard({ product }: { product: Product }) {
             {product.compareAtPriceRsd && product.compareAtPriceRsd > product.priceRsd ? <s>{formatMoney(product.compareAtPriceRsd)}</s> : null}
             {product.allowSubscription && product.subscriptionPriceRsd < product.priceRsd ? <small>Redovna dostava od {formatMoney(product.subscriptionPriceRsd)}</small> : null}
           </div>
+          <div className="card-quantity">
+            <div className="card-quantity-heading"><span id={quantityLabelId}>Litara po dostavi</span><strong>{quantity} L</strong></div>
+            <div className="quantity-presets" aria-labelledby={quantityLabelId}>
+              {[2, 4, 8].map((value) => <button key={value} type="button" aria-pressed={quantity === value} onClick={() => chooseQuantity(value)}>{value} L</button>)}
+            </div>
+            <div className="quantity-control card-quantity-control" aria-labelledby={quantityLabelId}>
+              <button type="button" aria-label={`Smanji količinu za ${product.name}`} onClick={() => chooseQuantity(quantity - 1)}>−</button>
+              <input aria-label={`Količina za ${product.name} u litrima`} type="number" min="1" max="99" value={quantity} onChange={(event) => chooseQuantity(Number(event.target.value))} />
+              <button type="button" aria-label={`Povećaj količinu za ${product.name}`} onClick={() => chooseQuantity(quantity + 1)}>+</button>
+            </div>
+            <small>{quantity * 4} L mesečno uz nedeljnu dostavu</small>
+          </div>
           <div className="product-actions subscription-first-actions">
-            {product.allowSubscription ? <button className="button small" type="button" disabled={!product.available} onClick={addRegular}>{product.available ? (added === "regular" ? "Redovno dodato ✓" : `Redovno · ${formatMoney(product.subscriptionPriceRsd)}`) : "Nije dostupno"}</button> : null}
-            <button className="button secondary small" type="button" disabled={!product.available} onClick={addOnce}>{added === "once" ? "Dodato jednom ✓" : `Jednom · ${formatMoney(product.priceRsd)}`}</button>
+            {product.allowSubscription ? <button className="button small" type="button" disabled={!product.available} onClick={addRegular}>{product.available ? (added === "regular" ? "Redovno dodato ✓" : `Redovno · ${formatMoney(product.subscriptionPriceRsd * quantity)}`) : "Nije dostupno"}</button> : null}
+            <button className="button secondary small" type="button" disabled={!product.available} onClick={addOnce}>{added === "once" ? "Dodato jednom ✓" : `Jednom · ${formatMoney(product.priceRsd * quantity)}`}</button>
             <a className="text-link product-rhythm-link" href={`/proizvodi/${encodeURIComponent(product.slug)}`}>Promeni ritam ili količinu →</a>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-/* eslint-disable @next/next/no-img-element -- Hero is a locally optimized image in the vinext runtime. */
+/* eslint-disable @next/next/no-img-element -- Official product imagery is sourced from the existing Mleko i Mleko store. */
 import { DeliveryChecker } from "./components/delivery-checker";
 import { BundleOffers } from "./components/bundle-offers";
 import { ProductCard } from "./components/product-card";
@@ -8,9 +8,9 @@ import { normalizeProduct } from "./lib/frontend";
 import { getStorefront } from "../server/storefront";
 
 export const metadata: Metadata = {
-  title: "Sveže mleko na vašoj adresi",
+  title: "Domaće kravlje i kozje mleko na vašoj adresi",
   description:
-    "Jednokratna kupovina ili redovna nedeljna i dvonedeljna dostava svežih mlečnih proizvoda.",
+    "Punomasno sirovo kravlje i kozje mleko u povratnim staklenim flašama, sa dostavom u Beogradu i Novom Sadu.",
 };
 
 export const dynamic = "force-dynamic";
@@ -33,8 +33,8 @@ export default async function HomePage() {
             </div>
           </div>
           <figure className="hero-media">
-            <img src="/images/hero-dairy-demo.jpg" alt="Demo prikaz mlečnih proizvoda na porodičnom stolu" />
-            <figcaption>Demo vizual · zamenljiv stvarnim fotografijama</figcaption>
+            <img src="https://storage.googleapis.com/takeapp/media/clvwgn1at00130cl451x24roh.png" alt="Mleko i Mleko domaće mleko u staklenim flašama" />
+            <figcaption>Domaće mleko u povratnim staklenim flašama</figcaption>
           </figure>
         </div>
       </section>
@@ -49,7 +49,7 @@ export default async function HomePage() {
         {featured.length ? (
           <section className="section" aria-labelledby="izdvojeno-title">
             <div className="section-heading split-heading">
-              <div><p className="eyebrow">Za početak</p><h2 id="izdvojeno-title">Sastavite dostavu po svom ukusu.</h2></div>
+              <div><p className="eyebrow">Izaberite svoje mleko</p><h2 id="izdvojeno-title">Koliko litara vam stiže po dostavi?</h2></div>
               <a className="text-link" href="/prodavnica">Pogledaj celu ponudu →</a>
             </div>
             <div className="product-grid featured-grid">
@@ -63,30 +63,30 @@ export default async function HomePage() {
         <section className="section" aria-labelledby="koraci-title">
           <div className="section-heading">
             <p className="eyebrow">Jednostavno kao navika</p>
-            <h2 id="koraci-title">Vi birate proizvode i ritam. Mi donosimo.</h2>
+            <h2 id="koraci-title">Vi birate mleko, litre i ritam. Mi donosimo.</h2>
           </div>
           <div className="grid-3 steps-grid">
-            <article className="card number-card"><strong>01</strong><h3>Izaberite proizvode</h3><p className="muted">Svaku stavku možete uzeti samo jednom ili uključiti u redovnu dostavu.</p></article>
-            <article className="card number-card"><strong>02</strong><h3>Podesite svoj ritam</h3><p className="muted">Nedeljno i dvonedeljno mogu zajedno u istoj korpi, bez komplikованog paketa.</p></article>
-            <article className="card number-card"><strong>03</strong><h3>Zadržite kontrolu</h3><p className="muted">Promenite količinu, preskočite, pauzirajte ili otkažite pre roka za dostavu.</p></article>
+            <article className="card number-card"><strong>01</strong><h3>Izaberite mleko</h3><p className="muted">Kravlje ili kozje, jednokratno ili kao redovnu dostavu.</p></article>
+            <article className="card number-card"><strong>02</strong><h3>Odredite litre i ritam</h3><p className="muted">Izaberite jednokratnu, nedeljnu ili dvonedeljnu isporuku, bez komplikovanih paketa.</p></article>
+            <article className="card number-card"><strong>03</strong><h3>Vratite čiste flaše</h3><p className="muted">Od druge dostave preuzimamo korišćene, čiste flaše i donosimo pune.</p></article>
           </div>
         </section>
 
         <section className="section farm-story" aria-labelledby="farme-title">
           <figure className="farm-media">
-            <img src="/images/farma-demo.jpg" alt="Demo prikaz male porodične mlečne farme u jutarnjem svetlu" loading="lazy" />
-            <figcaption>Demo vizual · stvarne farme i podaci dodaju se nakon potvrde proizvođača</figcaption>
+            <img src="https://storage.googleapis.com/takeapp/media/cm52rz909000003mhagpjf52k.png" alt="Domaće kravlje mleko Mleko i Mleko" loading="lazy" />
+            <figcaption>Tradicionalan uzgoj i savremena dostava</figcaption>
           </figure>
           <div className="farm-copy">
             <p className="eyebrow">Odakle dolazi</p>
-            <h2 id="farme-title">Nećemo vam prodavati priču bez porekla.</h2>
-            <p className="lead">Stranica svake buduće partnerske farme imaće jasne podatke o proizvođaču, mestu, proizvodima i putu do isporuke. Do potvrde stvarnih partnera, sadržaj ostaje jasno označen kao demo.</p>
+            <h2 id="farme-title">Direktno sa domaćih farmi.</h2>
+            <p className="lead">Punomasno sirovo mleko od krava i koza iz tradicionalnog uzgoja, sa prirodnom ishranom i redovnom laboratorijskom kontrolom.</p>
             <div className="farm-facts">
-              <article><strong>01</strong><span>Ko proizvodi</span><p>Ime gazdinstva i ljudi iza proizvoda.</p></article>
-              <article><strong>02</strong><span>Šta stiže</span><p>Povezani proizvodi, pakovanja i dostupnost.</p></article>
-              <article><strong>03</strong><span>Kako putuje</span><p>Termin pripreme i organizacija poslednje milje.</p></article>
+              <article><strong>01</strong><span>Prirodan ukus</span><p>Punoća od koje možete napraviti pravi domaći kajmak.</p></article>
+              <article><strong>02</strong><span>Bez dodataka</span><p>Bez hormona, antibiotika i aditiva.</p></article>
+              <article><strong>03</strong><span>Manje otpada</span><p>Povratne staklene flaše umesto jednokratne plastike.</p></article>
             </div>
-            <a className="button secondary" href="/farme">Upoznaj koncept farmi →</a>
+            <a className="button secondary" href="/farme">Saznaj put našeg mleka →</a>
           </div>
         </section>
 

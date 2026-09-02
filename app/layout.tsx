@@ -12,13 +12,13 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("http://localhost:3000"),
+  metadataBase: new URL("https://mleko-i-mleko.ivosevicluka2000.chatgpt.site"),
   title: {
-    default: "Mleko i Mleko | Domaći mlečni proizvodi",
+    default: "Mleko i Mleko | Domaće kravlje i kozje mleko",
     template: "%s | Mleko i Mleko",
   },
   description:
-    "Poručite sveže mleko i domaće mlečne proizvode jednokratno ili uz redovnu dostavu na kućnu adresu.",
+    "Poručite domaće kravlje i kozje mleko u povratnim staklenim flašama, sa dostavom u Beogradu i Novom Sadu.",
   keywords: [
     "sveže mleko",
     "domaće mleko",
@@ -31,14 +31,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "sr_RS",
     siteName: "Mleko i Mleko",
-    title: "Mleko i Mleko | Dostava mlečnih proizvoda",
-    description: "Sastavite jednokratnu ili redovnu dostavu mlečnih proizvoda i menjajte je kada vam odgovara.",
-    images: [{ url: "/images/mleko-i-mleko-og.jpg", width: 1200, height: 630, alt: "Mleko i Mleko — demo mlečni proizvodi" }],
+    title: "Mleko i Mleko | Domaće mleko na kućnu adresu",
+    description: "Izaberite kravlje ili kozje mleko, količinu i ritam dostave.",
+    images: [{ url: "/images/mleko-i-mleko-og.jpg", width: 1200, height: 630, alt: "Mleko i Mleko — domaće mleko" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mleko i Mleko | Dostava mlečnih proizvoda",
-    description: "Sastavite jednokratnu ili redovnu dostavu i menjajte je kada vam odgovara.",
+    title: "Mleko i Mleko | Domaće mleko na kućnu adresu",
+    description: "Izaberite kravlje ili kozje mleko, količinu i ritam dostave.",
     images: ["/images/mleko-i-mleko-og.jpg"],
   },
   icons: {

@@ -129,8 +129,9 @@ export async function quoteCart(input: Record<string, unknown>) {
   });
   const subtotalMinor = lines.reduce((sum, line) => sum + line.lineTotalMinor, 0);
   const { code: promoCode, discountMinor } = await resolvePromo(input.promoCode, subtotalMinor);
+  const deliveryOccurrences = Math.max(...lines.map((line) => line.occurrences), 1);
   const deliveryFeeMinor = settings.deliveryFeeMinor > 0 && !(settings.freeDeliveryThresholdMinor > 0 && subtotalMinor >= settings.freeDeliveryThresholdMinor)
-    ? settings.deliveryFeeMinor
+    ? settings.deliveryFeeMinor * deliveryOccurrences
     : 0;
   const postalCode = optionalString(input.postalCode, "postalCode", 20);
   const serviceable = postalCode ? isServiceablePostalCode(settings, postalCode) : undefined;
@@ -143,6 +144,8 @@ export async function quoteCart(input: Record<string, unknown>) {
     subtotalMinor,
     discountMinor,
     deliveryFeeMinor,
+    deliveryFeePerOccurrenceMinor: settings.deliveryFeeMinor,
+    deliveryOccurrences,
     totalMinor: subtotalMinor - discountMinor + deliveryFeeMinor,
     promoCode,
     currency: "RSD",
@@ -213,8 +216,9 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   }, 0);
   assertDomain(Number.isSafeInteger(subtotalMinor), "AMOUNT_OVERFLOW", "Order total is too large.", 422);
   const { promo, code: promoCode, discountMinor } = await resolvePromo(input.promoCode, subtotalMinor);
+  const deliveryOccurrences = Math.max(...items.map((item) => item.purchaseType === "subscription" ? remainingOccurrencesInMonth(deliveryDate, item.cadence!) : 1), 1);
   const deliveryFeeMinor = settings.deliveryFeeMinor > 0 && !(settings.freeDeliveryThresholdMinor > 0 && subtotalMinor >= settings.freeDeliveryThresholdMinor)
-    ? settings.deliveryFeeMinor
+    ? settings.deliveryFeeMinor * deliveryOccurrences
     : 0;
   const totalMinor = subtotalMinor - discountMinor + deliveryFeeMinor;
   const hash = await stableJsonHash({ namespace: "checkout", idempotencyKey });

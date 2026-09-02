@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { register } from "node:module";
 import test from "node:test";
 
@@ -11,6 +12,8 @@ const productFixture = {
   price_minor: 25000,
   currency: "RSD",
   image_url: null,
+  subscription_price_minor: 25000,
+  allow_subscription: 1,
   seo_title: "Kravlje mleko",
   seo_description: "Sveže kravlje mleko sa dostavom.",
   is_active: 1,
@@ -56,6 +59,7 @@ const deliveryItemFixture = {
 };
 
 const queries = [];
+let settingsFixture = [];
 
 class FakeD1Statement {
   constructor(sql) {
@@ -70,6 +74,9 @@ class FakeD1Statement {
 
   async all() {
     queries.push({ method: "all", sql: this.sql, bindings: this.bindings });
+    if (/\bFROM settings\b/i.test(this.sql)) {
+      return { success: true, results: settingsFixture };
+    }
     if (/\bFROM products\b/i.test(this.sql)) {
       return { success: true, results: [productFixture] };
     }
@@ -162,7 +169,7 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
   assert.match(html, /<html lang="sr-Latn">/);
   assert.match(
     html,
-    /<title>Sveže mleko na vašoj adresi \| Mleko i Mleko<\/title>/,
+    /<title>Domaće kravlje i kozje mleko na vašoj adresi \| Mleko i Mleko<\/title>/,
   );
   assert.match(html, /<h1[^>]*>Pravo mleko\. Bez odlaska u nabavku\.<\/h1>/);
   assert.match(html, /Jednom izaberite proizvode i ritam/);
@@ -335,6 +342,43 @@ test("checkout prices products server-side and stores only allowlisted attributi
     JSON.stringify(attribution),
     /private@example\.com|unexpected|secret/,
   );
+});
+
+test("weekly milk quote charges 350 RSD for each planned delivery", async () => {
+  settingsFixture = [
+    { key: "deliveryFeeMinor", value_json: "35000" },
+    { key: "servicePostalCodes", value_json: '["11","21"]' },
+  ];
+  try {
+    const response = await request("/api/cart", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        deliveryDate: "2026-09-04",
+        postalCode: "11000",
+        items: [{ productId: productFixture.id, quantity: 2, purchaseType: "subscription", cadence: "weekly" }],
+      }),
+    });
+    assert.equal(response.status, 200);
+    const quote = await response.json();
+    assert.equal(quote.lines[0].occurrences, 4);
+    assert.equal(quote.subtotalMinor, 200000);
+    assert.equal(quote.deliveryFeePerOccurrenceMinor, 35000);
+    assert.equal(quote.deliveryOccurrences, 4);
+    assert.equal(quote.deliveryFeeMinor, 140000);
+    assert.equal(quote.totalMinor, 340000);
+    assert.equal(quote.serviceable, true);
+  } finally {
+    settingsFixture = [];
+  }
+});
+
+test("milk product cards expose litre presets and a custom quantity control", () => {
+  const source = readFileSync(new URL("../app/components/product-card.tsx", import.meta.url), "utf8");
+  assert.match(source, /Litara po dostavi/);
+  assert.match(source, /\[2, 4, 8\]/);
+  assert.match(source, /quantity,/);
+  assert.match(source, /type="number"/);
 });
 
 test("admin delivery export returns a complete formula-safe UTF-8 Spoke CSV", async () => {

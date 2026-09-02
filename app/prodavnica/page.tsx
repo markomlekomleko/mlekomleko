@@ -4,7 +4,7 @@ import { StoreView } from "./store-view";
 export const metadata: Metadata = {
   title: "Prodavnica",
   description:
-    "Sveže mleko, jogurt, sirevi i drugi domaći proizvodi za jednokratnu ili redovnu dostavu.",
+    "Domaće kravlje i kozje mleko po litru, sa izborom količine i ritma dostave.",
 };
 
 export default function StorePage() {

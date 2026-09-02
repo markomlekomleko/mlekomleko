@@ -23,7 +23,7 @@ export function ProductDetail({ slug }: { slug: string }) {
   const [product, setProduct] = useState<Product | null>(null);
   const [purchaseType, setPurchaseType] = useState<PurchaseType>("subscription");
   const [cadence, setCadence] = useState<DeliveryCadence>("weekly");
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(2);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [added, setAdded] = useState(false);
@@ -90,6 +90,11 @@ export function ProductDetail({ slug }: { slug: string }) {
     setPurchaseType(value);
     setAdded(false);
     if (product) track(value === "subscription" ? "subscription_selected" : "select_item", { productId: product.id, purchaseType: value });
+  }
+
+  function chooseQuantity(value: number) {
+    setQuantity(Math.min(99, Math.max(1, Math.round(value) || 1)));
+    setAdded(false);
   }
 
   if (loading) {
@@ -196,13 +201,16 @@ export function ProductDetail({ slug }: { slug: string }) {
                 </select>
               </label>
             ) : null}
-            <div className="field">
-              <span id="quantity-label">Količina</span>
+            <div className="field milk-quantity-field">
+              <span id="quantity-label">Litara po dostavi</span>
+              <div className="quantity-presets" aria-labelledby="quantity-label">
+                {[2, 4, 8].map((value) => <button key={value} type="button" aria-pressed={quantity === value} onClick={() => chooseQuantity(value)}>{value} L</button>)}
+              </div>
               <div className="quantity-control" aria-labelledby="quantity-label">
               <button
                 type="button"
                 aria-label="Smanji količinu"
-                onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+                onClick={() => chooseQuantity(quantity - 1)}
               >
                 −
               </button>
@@ -212,16 +220,17 @@ export function ProductDetail({ slug }: { slug: string }) {
                 min="1"
                 max="99"
                 value={quantity}
-                onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))}
+                onChange={(event) => chooseQuantity(Number(event.target.value))}
               />
               <button
                 type="button"
                 aria-label="Povećaj količinu"
-                onClick={() => setQuantity((value) => Math.min(99, value + 1))}
+                onClick={() => chooseQuantity(quantity + 1)}
               >
                 +
               </button>
               </div>
+              <small className="muted">{purchaseType === "subscription" ? `${quantity * (cadence === "biweekly" ? 2 : 4)} L mesečno u izabranom ritmu` : `${quantity} L uz sledeću dostavu`}</small>
             </div>
           </div>
 

@@ -64,8 +64,9 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
         <div>
           <p className="brand">{storeName}</p>
           <p className="muted small-text">
-            Sveži mlečni proizvodi, jednostavno poručivanje i redovna dostava.
+            Domaće kravlje i kozje mleko u povratnim staklenim flašama.
           </p>
+          <p className="small-text"><a href="tel:+381605022323">060 502 23 23</a> · <a href="https://instagram.com/mleko_i_mleko" target="_blank" rel="noreferrer">Instagram ↗</a></p>
         </div>
         <div className="footer-links" aria-label="Dodatne stranice">
           <a href="/gde-kupiti">Gde kupiti</a>
