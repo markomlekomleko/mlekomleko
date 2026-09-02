@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { canonicalUrl } from "../lib/seo";
 
 export const metadata: Metadata = {
   title: "O nama",
   description: "Mleko i Mleko povezuje domaće proizvođače i kupce kroz jednostavnu dostavu.",
+  alternates: { canonical: canonicalUrl("/o-nama") },
 };
 
 export default function AboutPage() {

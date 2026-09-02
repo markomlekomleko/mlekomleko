@@ -2,14 +2,12 @@
 /* eslint-disable @next/next/no-img-element -- Product images are admin-managed URLs and next/image is unavailable in vinext. */
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCart } from "../../components/cart-provider";
 import { useAnalytics } from "../../components/analytics-provider";
 import { ProductCard } from "../../components/product-card";
 import {
-  fetchJson,
   formatMoney,
-  normalizeProduct,
   formatDate,
   type DeliveryWindow,
   type DeliveryCadence,
@@ -17,48 +15,24 @@ import {
   type PurchaseType,
 } from "../../lib/frontend";
 
-export function ProductDetail({ slug }: { slug: string }) {
+export function ProductDetail({
+  product,
+  delivery,
+  recommendations,
+}: {
+  product: Product;
+  delivery: DeliveryWindow;
+  recommendations: Product[];
+}) {
   const { addItem } = useCart();
   const { track } = useAnalytics();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [purchaseType, setPurchaseType] = useState<PurchaseType>("subscription");
+  const [purchaseType, setPurchaseType] = useState<PurchaseType>(
+    product.allowSubscription ? "subscription" : "one_time",
+  );
   const [cadence, setCadence] = useState<DeliveryCadence>("weekly");
   const [quantity, setQuantity] = useState(2);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [added, setAdded] = useState(false);
-  const [delivery, setDelivery] = useState<DeliveryWindow | null>(null);
-  const [recommendations, setRecommendations] = useState<Product[]>([]);
   const trackedProduct = useRef("");
-
-  const loadProduct = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const [payload, storefront] = await Promise.all([
-        fetchJson<unknown>(`/api/products/${encodeURIComponent(slug)}`),
-        fetchJson<{ delivery: DeliveryWindow; products: unknown[] }>("/api/storefront"),
-      ]);
-      const wrapper = payload && typeof payload === "object" ? payload as Record<string, unknown> : {};
-      const normalized = normalizeProduct(wrapper.product ?? wrapper.data ?? payload);
-      setProduct(normalized);
-      setPurchaseType(normalized.allowSubscription ? "subscription" : "one_time");
-      setDelivery(storefront.delivery);
-      setRecommendations(storefront.products.map(normalizeProduct).filter((candidate) => candidate.id !== normalized.id).slice(0, 3));
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Proizvod trenutno ne može da se učita.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [slug]);
-
-  useEffect(() => {
-    queueMicrotask(() => void loadProduct());
-  }, [loadProduct]);
 
   useEffect(() => {
     if (product && trackedProduct.current !== product.id) {
@@ -97,35 +71,6 @@ export function ProductDetail({ slug }: { slug: string }) {
     setAdded(false);
   }
 
-  if (loading) {
-    return (
-      <div className="page-shell">
-        <p className="loading-state" role="status">
-          Učitavamo proizvod…
-        </p>
-      </div>
-    );
-  }
-
-  if (error || !product) {
-    return (
-      <div className="page-shell narrow">
-        <div className="notice error" role="alert">
-          <h1>Proizvod nije dostupan</h1>
-          <p>{error || "Traženi proizvod ne postoji."}</p>
-          <div className="button-row">
-            <button className="button secondary" type="button" onClick={loadProduct}>
-              Pokušaj ponovo
-            </button>
-            <a className="button" href="/prodavnica">
-              Nazad u prodavnicu
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const unitPrice =
     purchaseType === "subscription"
       ? product.subscriptionPriceRsd
@@ -140,7 +85,15 @@ export function ProductDetail({ slug }: { slug: string }) {
       <div className="product-detail">
         <div className="product-visual-column">
           <div className="product-detail-media">
-            {product.imageUrl ? <img src={product.imageUrl} alt={product.imageAlt} /> : <div className="product-placeholder">Fotografija uskoro</div>}
+            {product.imageUrl ? (
+              <img
+                src={product.imageUrl}
+                alt={product.imageAlt}
+                width="1080"
+                height="1080"
+                fetchPriority="high"
+              />
+            ) : <div className="product-placeholder">Fotografija uskoro</div>}
             <div className="product-badges">
               {product.badge ? <strong>{product.badge}</strong> : null}
               {product.isDemo ? <small>DEMO PROIZVOD</small> : null}

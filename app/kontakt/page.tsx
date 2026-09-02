@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { canonicalUrl } from "../lib/seo";
 
 export const metadata: Metadata = {
   title: "Kontakt",
   description: "Kontaktirajte Mleko i Mleko u vezi sa proizvodima, porudžbinama ili dostavom.",
+  alternates: { canonical: canonicalUrl("/kontakt") },
 };
 
 export default function ContactPage() {

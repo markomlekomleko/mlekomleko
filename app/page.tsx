@@ -5,12 +5,14 @@ import { BundleOffers } from "./components/bundle-offers";
 import { ProductCard } from "./components/product-card";
 import { frequentlyAskedQuestions } from "./lib/content";
 import { normalizeProduct } from "./lib/frontend";
+import { canonicalUrl, serializeJsonLd } from "./lib/seo";
 import { getStorefront } from "../server/storefront";
 
 export const metadata: Metadata = {
   title: "Domaće kravlje i kozje mleko na vašoj adresi",
   description:
     "Punomasno sirovo kravlje i kozje mleko u povratnim staklenim flašama, sa dostavom u Beogradu i Novom Sadu.",
+  alternates: { canonical: canonicalUrl("/") },
 };
 
 export const dynamic = "force-dynamic";
@@ -33,7 +35,13 @@ export default async function HomePage() {
             </div>
           </div>
           <figure className="hero-media">
-            <img src="https://storage.googleapis.com/takeapp/media/clvwgn1at00130cl451x24roh.png" alt="Mleko i Mleko domaće mleko u staklenim flašama" />
+            <img
+              src="https://storage.googleapis.com/takeapp/media/clvwgn1at00130cl451x24roh.png"
+              alt="Mleko i Mleko domaće mleko u staklenim flašama"
+              width="940"
+              height="788"
+              fetchPriority="high"
+            />
             <figcaption>Domaće mleko u povratnim staklenim flašama</figcaption>
           </figure>
         </div>
@@ -74,7 +82,13 @@ export default async function HomePage() {
 
         <section className="section farm-story" aria-labelledby="farme-title">
           <figure className="farm-media">
-            <img src="https://storage.googleapis.com/takeapp/media/cm52rz909000003mhagpjf52k.png" alt="Domaće kravlje mleko Mleko i Mleko" loading="lazy" />
+            <img
+              src="https://storage.googleapis.com/takeapp/media/cm52rz909000003mhagpjf52k.png"
+              alt="Domaće kravlje mleko Mleko i Mleko"
+              width="1080"
+              height="1080"
+              loading="lazy"
+            />
             <figcaption>Tradicionalan uzgoj i savremena dostava</figcaption>
           </figure>
           <div className="farm-copy">
@@ -119,7 +133,7 @@ export default async function HomePage() {
           </div>
         </section>
       </div>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd({
         "@context": "https://schema.org",
         "@type": "FAQPage",
         mainEntity: frequentlyAskedQuestions.map(({ question, answer }) => ({

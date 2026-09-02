@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { frequentlyAskedQuestions } from "../lib/content";
+import { canonicalUrl } from "../lib/seo";
 
 export const metadata: Metadata = {
   title: "Česta pitanja",
   description: "Odgovori o pretplati, dostavi, izmenama i plaćanju.",
+  alternates: { canonical: canonicalUrl("/faq") },
 };
 
 export default function FaqPage() {

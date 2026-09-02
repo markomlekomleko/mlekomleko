@@ -1,40 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ProductCard } from "../components/product-card";
-import {
-  fetchJson,
-  normalizeProduct,
-  unwrapList,
-  type Product,
-} from "../lib/frontend";
+import { type Product } from "../lib/frontend";
 
-export function StoreView() {
-  const [products, setProducts] = useState<Product[]>([]);
+export function StoreView({ initialProducts }: { initialProducts: Product[] }) {
+  const products = initialProducts;
   const [category, setCategory] = useState("Sve");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const loadProducts = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const payload = await fetchJson<unknown>("/api/products");
-      setProducts(unwrapList(payload, ["products", "items"]).map(normalizeProduct));
-    } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Proizvodi trenutno ne mogu da se učitaju.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    queueMicrotask(() => void loadProducts());
-  }, [loadProducts]);
 
   const categories = useMemo(
     () => ["Sve", ...Array.from(new Set(products.map((product) => product.category)))],
@@ -58,18 +30,7 @@ export function StoreView() {
         <div className="micro-proof"><span>✓ 250 RSD/L kravlje</span><span>✓ 300 RSD/L kozje</span><span>✓ Povratne staklene flaše</span></div>
       </header>
 
-      {loading ? (
-        <p className="loading-state" role="status">
-          Učitavamo proizvode…
-        </p>
-      ) : error ? (
-        <div className="notice error" role="alert">
-          <p>{error}</p>
-          <button className="button secondary small" type="button" onClick={loadProducts}>
-            Pokušaj ponovo
-          </button>
-        </div>
-      ) : products.length === 0 ? (
+      {products.length === 0 ? (
         <div className="empty-state">
           <h2>Ponuda je trenutno prazna</h2>
           <p className="muted">

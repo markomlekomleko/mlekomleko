@@ -52,7 +52,15 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <article className="card product-card">
       <a className="product-image" href={`/proizvodi/${encodeURIComponent(product.slug)}`} aria-label={`Pogledaj ${product.name}`}>
-        {product.imageUrl ? <img src={product.imageUrl} alt={product.imageAlt} loading="lazy" /> : <span>Fotografija uskoro</span>}
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.imageAlt}
+            width="1080"
+            height="1080"
+            loading="lazy"
+          />
+        ) : <span>Fotografija uskoro</span>}
         <span className="product-badges">
           {product.badge ? <strong>{product.badge}</strong> : null}
           {product.isDemo ? <small>DEMO</small> : null}

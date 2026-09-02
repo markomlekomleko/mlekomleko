@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { canonicalUrl } from "../lib/seo";
 
 export const metadata: Metadata = {
   title: "Kako funkcioniše",
   description: "Saznajte kako rade jednokratne porudžbine i redovna dostava.",
+  alternates: { canonical: canonicalUrl("/kako-funkcionise") },
 };
 
 export default function HowItWorksPage() {

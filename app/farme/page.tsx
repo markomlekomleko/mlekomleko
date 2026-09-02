@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { canonicalUrl } from "../lib/seo";
 /* eslint-disable @next/next/no-img-element -- Official product image is sourced from the existing Mleko i Mleko store. */
 
 export const metadata: Metadata = {
   title: "Naše farme",
   description: "Put domaćeg kravljeg i kozjeg mleka od farme do vaše adrese.",
+  alternates: { canonical: canonicalUrl("/farme") },
 };
 
 export default function FarmsPage() {
@@ -16,7 +18,16 @@ export default function FarmsPage() {
           <p className="lead">Krave i koze odgajaju se tradicionalno, u skladu sa prirodom i uz prirodnu ishranu. Mleko stiže bez hormona, antibiotika i aditiva.</p>
           <div className="button-row"><a className="button" href="/prodavnica">Izaberi mleko →</a><a className="button secondary" href="/kontakt">Kontakt</a></div>
         </div>
-        <figure className="farm-media"><img src="https://storage.googleapis.com/takeapp/media/cm52vt3e6000a03jq3nsw8bzc.png" alt="Domaće kozje mleko Mleko i Mleko" /><figcaption>Domaće mleko u povratnoj staklenoj ambalaži</figcaption></figure>
+        <figure className="farm-media">
+          <img
+            src="https://storage.googleapis.com/takeapp/media/cm52vt3e6000a03jq3nsw8bzc.png"
+            alt="Domaće kozje mleko Mleko i Mleko"
+            width="1080"
+            height="1080"
+            fetchPriority="high"
+          />
+          <figcaption>Domaće mleko u povratnoj staklenoj ambalaži</figcaption>
+        </figure>
       </header>
 
       <section className="section" aria-labelledby="profil-title">

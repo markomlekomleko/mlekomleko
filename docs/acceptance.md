@@ -44,14 +44,14 @@ ponovljiv ručni scenario; samo postojanje UI elementa nije dovoljno.
 
 ## P1 - javni frontend i SEO
 
-- [ ] Home, prodavnica, proizvod, korpa, checkout, prijava/nalog i admin rute imaju
+- [x] Home, prodavnica, proizvod, korpa, checkout, prijava/nalog i admin rute imaju
   funkcionalne basic prikaze i jasna prazna/error/loading stanja.
 - [ ] Mobile širina nema horizontalni overflow; controls imaju dostupne labele i fokus.
-- [ ] Svaka indeksabilna stranica ima jedinstven title, description i jedan H1.
-- [ ] Admin, nalog, checkout i korpa su `noindex` gde je prikladno.
-- [ ] `sitemap.xml` i `robots.txt` postoje; production base URL dolazi iz env-a.
-- [ ] Slike imaju dimenzije, lazy loading gde je prikladno i smislen alt.
-- [ ] 404 i provider/API failure ne prikazuju stack/tajnu.
+- [x] Svaka indeksabilna stranica ima jedinstven title, description i jedan H1.
+- [x] Admin, nalog, checkout i korpa su `noindex` gde je prikladno.
+- [x] `sitemap.xml` i `robots.txt` postoje; production base URL dolazi iz env-a.
+- [x] Slike imaju dimenzije, lazy loading gde je prikladno i smislen alt.
+- [x] 404 i provider/API failure ne prikazuju stack/tajnu.
 
 ## P1 - obaveštenja i analitika
 

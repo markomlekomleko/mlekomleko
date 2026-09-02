@@ -11,7 +11,8 @@ const productFixture = {
   unit_label: "L",
   price_minor: 25000,
   currency: "RSD",
-  image_url: null,
+  image_url: "/images/demo/kravlje-mleko.jpg",
+  image_alt: "Domaće kravlje mleko u staklenoj flaši",
   subscription_price_minor: 25000,
   allow_subscription: 1,
   seo_title: "Kravlje mleko",
@@ -105,7 +106,10 @@ class FakeD1Statement {
   async first() {
     queries.push({ method: "first", sql: this.sql, bindings: this.bindings });
     if (/\bFROM deliveries\b/i.test(this.sql)) return deliveryFixture;
-    return /\bFROM products\b/i.test(this.sql) ? productFixture : null;
+    if (/\bFROM products\b/i.test(this.sql)) {
+      return this.bindings[0] === "nema-proizvoda" ? null : productFixture;
+    }
+    return null;
   }
 
   async run() {
@@ -179,7 +183,45 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
   assert.match(html, /src="\/images\/mleko-i-mleko-logo\.png"/);
   assert.match(html, /class="skip-link"[^>]*href="#glavni-sadrzaj"/);
   assert.match(html, /<main id="glavni-sadrzaj">/);
+  assert.match(html, /<link rel="canonical" href="http:\/\/localhost:3000"/);
+  assert.match(html, /"@type":"OnlineStore"/);
   assert.doesNotMatch(html, /Your site is taking shape|Building your site|SkeletonPreview/);
+});
+
+test("public catalog and product content are present in server-rendered HTML", async () => {
+  const [storeResponse, productResponse] = await Promise.all([
+    request("/prodavnica", { headers: { accept: "text/html" } }),
+    request("/proizvodi/kravlje-mleko", { headers: { accept: "text/html" } }),
+  ]);
+
+  assert.equal(storeResponse.status, 200);
+  const storeHtml = await storeResponse.text();
+  assert.match(storeHtml, /<h1[^>]*>Izaberite mleko i količinu\.<\/h1>/);
+  assert.match(storeHtml, /href="\/proizvodi\/kravlje-mleko"/);
+  assert.match(storeHtml, /Kravlje mleko/);
+  assert.doesNotMatch(storeHtml, /Učitavamo proizvode/);
+
+  assert.equal(productResponse.status, 200);
+  const productHtml = await productResponse.text();
+  assert.match(productHtml, /<h1[^>]*>Kravlje mleko<\/h1>/);
+  assert.match(productHtml, /Sveže kravlje mleko\./);
+  assert.match(productHtml, /"@type":"Product"/);
+  assert.match(productHtml, /"priceCurrency":"RSD"/);
+  assert.match(productHtml, /"price":"250\.00"/);
+  assert.match(productHtml, /"@type":"BreadcrumbList"/);
+  assert.match(productHtml, /width="1080" height="1080"/);
+  assert.doesNotMatch(productHtml, /Učitavamo proizvod/);
+});
+
+test("missing product returns a real, noindex 404 page", async () => {
+  const response = await request("/proizvodi/nema-proizvoda", {
+    headers: { accept: "text/html" },
+  });
+  assert.equal(response.status, 404);
+  const html = await response.text();
+  assert.match(html, /Ova stranica ne postoji/);
+  assert.match(html, /<meta name="robots" content="[^"]*noindex/i);
+  assert.doesNotMatch(html, /PRODUCT_NOT_FOUND|stack|D1 binding/i);
 });
 
 test("core customer and admin pages render without a running dev server", async () => {
@@ -206,7 +248,42 @@ test("core customer and admin pages render without a running dev server", async 
   }
 });
 
-test("robots and sitemap expose public pages while blocking private flows", async () => {
+test("indexable pages have a self-canonical, one H1 and unique titles", async () => {
+  const paths = [
+    "/",
+    "/prodavnica",
+    "/proizvodi/kravlje-mleko",
+    "/dostava-mleka/beograd",
+    "/dostava-mleka/novi-sad",
+    "/kako-funkcionise",
+    "/gde-kupiti",
+    "/o-nama",
+    "/farme",
+    "/faq",
+    "/kontakt",
+  ];
+  const titles = new Set();
+  for (const path of paths) {
+    const response = await request(path, { headers: { accept: "text/html" } });
+    assert.equal(response.status, 200, `${path} should render`);
+    const html = await response.text();
+    const title = html.match(/<title>([^<]+)<\/title>/)?.[1];
+    assert.ok(title, `${path} should have a title`);
+    assert.equal(titles.has(title), false, `${path} should have a unique title`);
+    titles.add(title);
+    assert.equal((html.match(/<h1(?:\s|>)/g) ?? []).length, 1, `${path} should have one H1`);
+    const canonicalHref = path === "/"
+      ? "http://localhost:3000"
+      : `http://localhost:3000${path}`;
+    assert.match(
+      html,
+      new RegExp(`<link rel="canonical" href="${canonicalHref}"`),
+    );
+    assert.doesNotMatch(html, /<meta name="robots" content="[^"]*noindex/i);
+  }
+});
+
+test("robots, noindex metadata and sitemap expose only canonical public pages", async () => {
   const [robotsResponse, sitemapResponse] = await Promise.all([
     request("/robots.txt"),
     request("/sitemap.xml"),
@@ -214,16 +291,27 @@ test("robots and sitemap expose public pages while blocking private flows", asyn
   assert.equal(robotsResponse.status, 200);
   const robots = await robotsResponse.text();
   assert.match(robots, /Disallow: \/admin/);
-  assert.match(robots, /Disallow: \/nalog/);
-  assert.match(robots, /Disallow: \/checkout/);
+  assert.match(robots, /Disallow: \/api\//);
   assert.match(robots, /Sitemap: http:\/\/localhost:3000\/sitemap\.xml/);
 
   assert.equal(sitemapResponse.status, 200);
   assert.match(sitemapResponse.headers.get("content-type") ?? "", /xml/i);
   const sitemap = await sitemapResponse.text();
-  assert.match(sitemap, /<loc>http:\/\/localhost:3000<\/loc>/);
+  assert.match(sitemap, /<loc>http:\/\/localhost:3000\/<\/loc>/);
   assert.match(sitemap, /<loc>http:\/\/localhost:3000\/prodavnica<\/loc>/);
+  assert.match(sitemap, /<loc>http:\/\/localhost:3000\/dostava-mleka\/beograd<\/loc>/);
+  assert.match(sitemap, /<loc>http:\/\/localhost:3000\/dostava-mleka\/novi-sad<\/loc>/);
+  assert.match(sitemap, /<loc>http:\/\/localhost:3000\/proizvodi\/kravlje-mleko<\/loc>/);
   assert.doesNotMatch(sitemap, /<loc>[^<]*\/(?:admin|nalog|checkout)<\/loc>/);
+
+  const privatePaths = ["/korpa", "/checkout", "/prijava", "/nalog", "/admin"];
+  const privateResponses = await Promise.all(
+    privatePaths.map((path) => request(path, { headers: { accept: "text/html" } })),
+  );
+  for (const [index, response] of privateResponses.entries()) {
+    assert.equal(response.status, 200, `${privatePaths[index]} should render`);
+    assert.match(await response.text(), /<meta name="robots" content="[^"]*noindex/i);
+  }
 });
 
 test("products API maps D1 rows into the public contract", async () => {
@@ -248,8 +336,8 @@ test("products API maps D1 rows into the public contract", async () => {
         subscriptionPriceMinor: 25000,
         compareAtPriceMinor: null,
         currency: "RSD",
-        imageUrl: null,
-        imageAlt: "",
+        imageUrl: "/images/demo/kravlje-mleko.jpg",
+        imageAlt: "Domaće kravlje mleko u staklenoj flaši",
         badge: null,
         origin: "",
         isFeatured: false,

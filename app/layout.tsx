@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import { CartProvider } from "./components/cart-provider";
 import { AnalyticsProvider } from "./components/analytics-provider";
 import { SiteFooter, SiteHeader } from "./components/site-shell";
+import { absoluteUrl, canonicalUrl, getSiteUrl, serializeJsonLd } from "./lib/seo";
 import { getStorefront } from "../server/storefront";
 import "./globals.css";
 
@@ -12,7 +13,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://mleko-i-mleko.ivosevicluka2000.chatgpt.site"),
+  metadataBase: getSiteUrl(),
   title: {
     default: "Mleko i Mleko | Domaće kravlje i kozje mleko",
     template: "%s | Mleko i Mleko",
@@ -55,9 +56,30 @@ export default async function RootLayout({
 }>) {
   const storefront = await getStorefront();
   const { settings } = storefront;
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "OnlineStore",
+    "@id": `${canonicalUrl("/")}#organization`,
+    name: settings.storeName,
+    url: canonicalUrl("/"),
+    logo: absoluteUrl("/images/mleko-i-mleko-logo.png"),
+    image: absoluteUrl("/images/mleko-i-mleko-og.jpg"),
+    description:
+      "Domaće kravlje i kozje mleko u povratnim staklenim flašama, sa dostavom u Beogradu i Novom Sadu.",
+    telephone: "+381605022323",
+    areaServed: ["Beograd", "Novi Sad"],
+    sameAs: [
+      "https://instagram.com/mleko_i_mleko",
+      "https://www.tiktok.com/@mleko_i_mleko",
+    ],
+  };
   return (
     <html lang="sr-Latn">
       <body className={geist.variable}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
+        />
         <AnalyticsProvider>
           <CartProvider>
             <a className="skip-link" href="#glavni-sadrzaj">

@@ -90,6 +90,7 @@ code { border-radius: 6px; background: var(--cream); color: var(--forest-dark); 
 .hero-media img { width: 100%; aspect-ratio: 4 / 3; border-radius: 44% 56% 48% 52% / 45% 42% 58% 55%; box-shadow: var(--shadow); object-fit: cover; }
 .hero-media figcaption { margin-top: .7rem; color: var(--muted); font-size: .76rem; text-align: center; }
 .home-content { padding-top: 0; }
+.city-delivery-page .delivery-checker { margin-top: 0; }
 
 .delivery-checker { position: relative; z-index: 4; display: grid; gap: 1.5rem; margin-top: -2.25rem; padding: 1.6rem; border: 1px solid var(--line); border-radius: var(--radius); background: white; box-shadow: var(--shadow); }
 .delivery-checker h2 { max-width: 20ch; font-size: 1.55rem; }

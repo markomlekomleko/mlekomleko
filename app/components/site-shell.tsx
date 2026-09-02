@@ -86,6 +86,8 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
         </div>
         <div className="footer-links" aria-label="Dodatne stranice">
           <a href="/gde-kupiti">Gde kupiti</a>
+          <a href="/dostava-mleka/beograd">Dostava Beograd</a>
+          <a href="/dostava-mleka/novi-sad">Dostava Novi Sad</a>
           <a href="/farme">Naše farme</a>
           <a href="/faq">Česta pitanja</a>
           <a href="/kontakt">Kontakt</a>
