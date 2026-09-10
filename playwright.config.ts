@@ -32,7 +32,7 @@ export default defineConfig({
       APP_ENV: "local",
       APP_ORIGIN: "http://localhost:4173",
       NEXT_PUBLIC_SITE_URL: "http://localhost:4173",
-      ADMIN_USERNAME: "e2e-admin",
+      ADMIN_EMAIL: "admin@example.test",
       ADMIN_PASSWORD: "e2e-admin-password",
       PAYMENT_WEBHOOK_SECRET: "e2e-webhook-secret",
       PAYMENT_PROVIDER: "disabled",

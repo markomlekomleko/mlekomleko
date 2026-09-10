@@ -7,7 +7,7 @@ import Link from "next/link";
 import { BundleAdmin, ProfitDashboard } from "./revenue-panels";
 
 const ADMIN_KEY = "mleko-i-mleko-admin-secret";
-type Access = { authenticated: boolean; configured: boolean; mode: "local" | "password"; sessionToken?: string };
+type Access = { authenticated: boolean; configured: boolean; sessionToken?: string };
 type Connection = "checking" | "required" | "ready" | "unconfigured" | "error";
 type Row = Record<string, unknown>;
 type Tab = "pregled" | "zarada" | "porudzbine" | "proizvodi" | "paketi" | "kupci" | "pretplate" | "dostave" | "popusti" | "sadrzaj" | "podesavanja";
@@ -37,11 +37,10 @@ const nav: Array<{ id: Tab; label: string; icon: string }> = [
 ];
 
 export function AdminDashboard() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [sessionToken, setSessionToken] = useState("");
   const [connection, setConnection] = useState<Connection>("checking");
-  const [accessMode, setAccessMode] = useState<Access["mode"]>("password");
   const loadVersion = useRef(0);
   const [activeTab, setActiveTab] = useState<Tab>("pregled");
   const [data, setData] = useState<AdminData>(emptyData);
@@ -53,12 +52,11 @@ export function AdminDashboard() {
   const [billingMonth, setBillingMonth] = useState(() => businessDate().slice(0, 7));
   const [editingProduct, setEditingProduct] = useState<Product | null | undefined>(undefined);
 
-  const checkAccess = useCallback(async (credentials?: { username: string; password: string }, signal?: AbortSignal) => {
+  const checkAccess = useCallback(async (credentials?: { email: string; password: string }, signal?: AbortSignal) => {
     setConnection("checking"); setError("");
     try {
       const access = await fetchJson<Access>("/api/admin/access", credentials ? { signal, method: "POST", body: JSON.stringify(credentials) } : { signal });
       if (signal?.aborted) return;
-      setAccessMode(access.mode);
       setSessionToken(access.sessionToken ?? "");
       setConnection(access.authenticated ? "ready" : access.configured ? "required" : "unconfigured");
       setPassword("");
@@ -131,12 +129,12 @@ export function AdminDashboard() {
     setError(requestError instanceof Error ? requestError.message : fallback);
   }
   async function refresh(message: string) { setNotice(message); await loadAdmin(); }
-  function signIn(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void checkAccess({ username, password }); }
+  function signIn(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void checkAccess({ email, password }); }
   async function disconnect() {
     start();
     try {
       await adminFetch("/api/admin/access", { method: "DELETE" });
-      loadVersion.current += 1; setSessionToken(""); setPassword(""); setUsername(""); setData(emptyData); setNotice(""); setConnection("required");
+      loadVersion.current += 1; setSessionToken(""); setPassword(""); setEmail(""); setData(emptyData); setNotice(""); setConnection("required");
     } catch (e) { fail(e, "Odjava nije uspela. Pokušajte ponovo."); } finally { setBusy(false); }
   }
 
@@ -218,9 +216,9 @@ export function AdminDashboard() {
         <Link className="admin-brand" href="/"><img src="/images/mleko-i-mleko-logo.png" alt="" width="80" height="80" /><strong>Mleko Admin</strong></Link>
         <h1 id="admin-access-title">{connection === "checking" ? "Proveravamo pristup…" : connection === "unconfigured" ? "Pristup još nije podešen" : "Prijava u administraciju"}</h1>
         {connection === "checking" ? <p role="status">Sačekajte trenutak.</p> : null}
-        {connection === "unconfigured" ? <p>Postavite korisničko ime i lozinku u podešavanjima servera i ponovo objavite aplikaciju.</p> : null}
+        {connection === "unconfigured" ? <p>Postavite email adresu i lozinku u podešavanjima servera i ponovo objavite aplikaciju.</p> : null}
         {error ? <p className="notice error" role="alert">{error}</p> : null}
-        {connection === "required" ? <form className="admin-form" onSubmit={signIn}><label className="field"><span>Korisničko ime</span><input name="username" autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} required /></label><label className="field"><span>Lozinka</span><input name="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label><button className="button" type="submit">Prijavi se</button></form> : null}
+        {connection === "required" ? <form className="admin-form" onSubmit={signIn}><label className="field"><span>Email</span><input name="email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required /></label><label className="field"><span>Lozinka</span><input name="password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required /></label><button className="button" type="submit">Prijavi se</button></form> : null}
         {connection === "error" || connection === "unconfigured" ? <button className="button secondary" type="button" onClick={() => void checkAccess()}>Pokušaj ponovo</button> : null}
         <Link className="text-link" href="/">Nazad u prodavnicu</Link>
       </section>
@@ -235,7 +233,7 @@ export function AdminDashboard() {
         <a className="admin-store-link" href="/" target="_blank" rel="noreferrer">Otvori prodavnicu ↗</a>
       </aside>
       <section className="admin-main">
-        <header className="admin-topbar"><div><p className="eyebrow">{accessMode === "local" ? "Lokalna administracija" : "Administracija"}</p><h1>{nav.find((item) => item.id === activeTab)?.label}</h1></div><div className="admin-top-actions"><span className="status-dot" role="status">{loading ? "Učitavanje…" : error ? "Potrebna provera" : "● Povezano"}</span><button className="button secondary small" type="button" disabled={loading} onClick={loadAdmin}>Osveži</button>{accessMode === "password" ? <button className="text-button" type="button" disabled={busy} onClick={() => void disconnect()}>Odjavi se</button> : null}</div></header>
+        <header className="admin-topbar"><div><p className="eyebrow">Administracija</p><h1>{nav.find((item) => item.id === activeTab)?.label}</h1></div><div className="admin-top-actions"><span className="status-dot" role="status">{loading ? "Učitavanje…" : error ? "Potrebna provera" : "● Povezano"}</span><button className="button secondary small" type="button" disabled={loading} onClick={loadAdmin}>Osveži</button><button className="text-button" type="button" disabled={busy} onClick={() => void disconnect()}>Odjavi se</button></div></header>
         {notice ? <p className="notice success" role="status">{notice}</p> : null}{error ? <p className="notice error" role="alert">{error}</p> : null}
         {loading ? <p className="loading-state">Učitavamo administraciju…</p> : <section className="admin-content">
           {activeTab === "pregled" ? <><div className="dashboard-grid"><Stat label="Prihod" value={formatMoney(number(revenue.paid_revenue_minor) / 100)} /><Stat label="Porudžbine" value={number(counts.orders)} /><Stat label="Aktivne pretplate" value={number(counts.active_subscriptions)} /><Stat label="Kupci" value={number(counts.customers)} /></div><div className="admin-grid-2"><section className="admin-panel"><div className="panel-heading"><h2>Brze akcije</h2></div><div className="quick-actions"><button type="button" onClick={() => { setActiveTab("proizvodi"); setEditingProduct(null); }}>＋ Dodaj proizvod</button><button type="button" onClick={() => setActiveTab("porudzbine")}>▤ Obradi porudžbine</button><button type="button" onClick={() => setActiveTab("sadrzaj")}>✎ Izmeni početnu</button><button type="button" onClick={() => setActiveTab("dostave")}>→ Pripremi dostavu</button></div></section><section className="admin-panel"><div className="panel-heading"><h2>Sledeće za pripremu</h2></div>{preparation.length ? <ul className="list-clean">{preparation.slice(0, 8).map((item, index) => <li className="summary-row" key={index}><span>{string(item.product_name)} <small>{string(item.unit_label, "")}</small></span><strong>{number(item.total_quantity)}</strong></li>)}</ul> : <p className="admin-empty">Nema zaključanih količina za pripremu.</p>}</section></div></> : null}

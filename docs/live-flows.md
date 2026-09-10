@@ -56,7 +56,7 @@ Stvarno slanje emaila i naplata kartice nisu izvršeni.
 
 ## Admin prijava i izvoz
 
-Vercel koristi serverske `ADMIN_USERNAME` / `ADMIN_PASSWORD` (12+ znakova),
+Vercel koristi serverske `ADMIN_EMAIL` / `ADMIN_PASSWORD` (10+ znakova),
 uz tačan `APP_ORIGIN` i migraciju 0011. Posle upisa varijabli potreban je redeploy.
 Lozinka se ne čuva u browser storage; sesija je samo u memoriji stranice (8 sati),
 pa osvežavanje ili novo otvaranje traži novu prijavu. Odjava opoziva sesiju u bazi.

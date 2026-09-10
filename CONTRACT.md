@@ -12,17 +12,16 @@ npm run db:migrate:local
 
 The migration seeds four clearly marked demo products and the business defaults (Friday delivery at 08:00 Europe/Belgrade, 24-hour cutoff). Replace product data through the admin API.
 
-Production admin login uses server-only `ADMIN_USERNAME` and `ADMIN_PASSWORD`
-(minimum 12 characters). `POST /api/admin/access` accepts `{username, password}`
+Production admin login uses server-only `ADMIN_EMAIL` and `ADMIN_PASSWORD`
+(minimum 10 characters). `POST /api/admin/access` accepts `{email, password}`
 from `APP_ORIGIN` and returns an opaque bearer session. Only token hashes are stored
 in `admin_sessions`; sessions expire after eight hours, revoke on logout, and are
 invalidated by a credential change. The UI keeps its token only in page memory,
 so reload/new entry requires login. There are ten login attempts per IP per 15 minutes.
-Direct loopback development without configured credentials retains local access;
-production and Vercel always require credentials. `X-Admin-Secret` is supported only
+Local development, Preview and Production always require credentials. `X-Admin-Secret` is supported only
 for explicitly opted-in isolated legacy worker fixtures, never on Vercel.
 
-Useful local environment variables are `APP_ENV=local`, `APP_ORIGIN`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`,
+Useful local environment variables are `APP_ENV=local`, `APP_ORIGIN`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`,
 `PAYMENT_WEBHOOK_SECRET`, and `LOCAL_AUTH_EXPOSE_TOKEN=true`. The last setting exposes a
 raw magic-link token only outside `APP_ENV=production` and must only be used for local
 development.
@@ -113,8 +112,7 @@ Locked/cutoff delivery snapshots cannot be changed. Every accepted pre-cutoff mu
 
 ## Admin
 
-Every admin data route requires `Authorization: Bearer <sessionToken>`, except direct
-loopback development as described above. `GET /api/admin/access` probes access;
+Every admin data route requires `Authorization: Bearer <sessionToken>` (the explicitly opted-in legacy worker fixture path is test-only). `GET /api/admin/access` probes access;
 `POST` signs in, and `DELETE` revokes the supplied bearer session. The UI validates
 access before loading business data and never persists credentials or session tokens.
 

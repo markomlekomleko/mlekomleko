@@ -114,7 +114,7 @@ release-candidate verziji:
 - [ ] **Sadržaj P06:** vlasnik dostavlja finalne fotografije/cene/pravila i dokumentaciju
   za svaku tvrdnju o kvalitetu. Nedokazane tvrdnje ostaju neobjavljene.
 - [ ] **Admin P07 (izmenjen zahtev vlasnika):** implementirana prijava preko
-  `ADMIN_USERNAME` i `ADMIN_PASSWORD`, obavezna pri svakom otvaranju/refresh-u,
+  `ADMIN_EMAIL` i `ADMIN_PASSWORD`, obavezna pri svakom otvaranju/refresh-u,
   opoziv sesije i ograničenje pokušaja. Pre launch-a postaviti vrednosti u Vercel
   environment i proveriti na javnom domenu. MFA/uloge nisu deo ovog dogovorenog toka.
 - [ ] **Operacije P08:** enkriptovan backup i restore proba, payment↔order↔fiscal

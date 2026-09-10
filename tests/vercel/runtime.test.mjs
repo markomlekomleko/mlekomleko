@@ -20,7 +20,7 @@ let migratedTableNames;
 const postgresTestUrl = process.env.TEST_POSTGRES_URL;
 let serverOutput = '';
 const adminSecret = randomUUID();
-const adminUsername = "runtime-admin";
+const adminUsername = "runtime-admin@example.test";
 let adminSession;
 const cronSecret = randomUUID();
 
@@ -37,7 +37,7 @@ before(async () => {
     APP_ORIGIN: origin, NEXT_PUBLIC_SITE_URL: origin,
     TURSO_DATABASE_URL: url, TURSO_AUTH_TOKEN: '', DATABASE_URL: url,
     POSTGRES_URL: '', POSTGRES_PRISMA_URL: '', POSTGRES_URL_NON_POOLING: '', POSTGRES_SCHEMA: '',
-    ADMIN_USERNAME: adminUsername, ADMIN_PASSWORD: adminSecret, ADMIN_SECRET: "ignored-legacy-key", ADMIN_LEGACY_ACCESS: "false", CRON_SECRET: cronSecret,
+    ADMIN_EMAIL: adminUsername, ADMIN_PASSWORD: adminSecret, ADMIN_SECRET: "ignored-legacy-key", ADMIN_LEGACY_ACCESS: "false", CRON_SECRET: cronSecret,
     PAYMENT_WEBHOOK_SECRET: randomUUID(), PAYMENT_PROVIDER: 'disabled', PAYMENT_MODE: 'disabled',
     BADI_MODE: 'mock', EMAIL_MODE: 'console', WHATSAPP_MODE: 'queue',
     ALLOW_PRODUCTION_INTEGRATIONS: 'false',

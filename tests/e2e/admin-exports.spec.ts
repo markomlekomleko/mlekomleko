@@ -2,7 +2,7 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
 async function signIn(page: Page) {
-  await page.getByLabel("Korisničko ime").fill("e2e-admin");
+  await page.getByLabel("Email", { exact: true }).fill("admin@example.test");
   await page.getByLabel("Lozinka", { exact: true }).fill("e2e-admin-password");
   await page.getByRole("button", { name: "Prijavi se", exact: true }).click();
   await expect(page.locator(".status-dot")).toHaveText("● Povezano");
@@ -36,10 +36,10 @@ test("admin requires fresh login on reload and downloads both delivery and indiv
   const consent = page.getByRole("button", { name: "Samo neophodno" });
   if (await consent.isVisible()) await consent.click();
 
-  await page.getByLabel("Korisničko ime").fill("e2e-admin");
+  await page.getByLabel("Email", { exact: true }).fill("admin@example.test");
   await page.getByLabel("Lozinka", { exact: true }).fill("wrong-password");
   await page.getByRole("button", { name: "Prijavi se", exact: true }).click();
-  await expect(page.locator(".admin-access .notice.error")).toContainText("Korisničko ime ili lozinka nisu ispravni");
+  await expect(page.locator(".admin-access .notice.error")).toContainText("Email ili lozinka nisu ispravni");
   await signIn(page);
   await page.reload();
   await expect(page.getByRole("heading", { name: "Prijava u administraciju" })).toBeVisible();

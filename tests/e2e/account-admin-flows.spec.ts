@@ -4,7 +4,7 @@ async function openAdmin(page: Page) {
   await page.goto("/admin");
   const consent = page.getByRole("button", { name: "Samo neophodno" });
   if (await consent.isVisible()) await consent.click();
-  await page.getByLabel("Korisničko ime").fill("e2e-admin");
+  await page.getByLabel("Email", { exact: true }).fill("admin@example.test");
   await page.getByLabel("Lozinka", { exact: true }).fill("e2e-admin-password");
   await page.getByRole("button", { name: "Prijavi se", exact: true }).click();
   await expect(page.locator(".status-dot")).toHaveText("● Povezano");

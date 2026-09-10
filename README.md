@@ -25,11 +25,9 @@ npm run dev
 ```
 
 Otvorite [http://localhost:3000](http://localhost:3000). Lokalni admin je na
-[http://localhost:3000/admin](http://localhost:3000/admin). U razvojnom serveru pristup
-sa istog računara je automatski; admin ključ nije potreban. To važi samo za loopback,
-zahteve sa istog porekla i razvojni build, kada `APP_ENV` nije `production`.
-Objavljeni/produkcioni build zahteva `ADMIN_USERNAME` i `ADMIN_PASSWORD` (najmanje
-12 znakova). Kada su podešeni, prijava važi i lokalno. Admin prvo proverava pristup,
+[http://localhost:3000/admin](http://localhost:3000/admin). Admin zahteva prijavu email adresom i lozinkom i u lokalnom razvoju.
+Objavljeni/produkcioni build zahteva `ADMIN_EMAIL` i `ADMIN_PASSWORD` (najmanje
+10 znakova). Prijava je obavezna i lokalno. Admin prvo proverava pristup,
 a tek zatim učitava podatke. Lozinka se šalje samo pri prijavi; nasumična sesija živi
 isključivo u memoriji stranice, do 8 sati. Novo otvaranje/refresh traži novu prijavu.
 Odjava opoziva sesiju u bazi; promena kredencijala i redeploy opozivaju stare sesije.
@@ -112,7 +110,7 @@ node --test tests/integrations.test.mjs
 
 ```dotenv
 APP_ENV=local
-ADMIN_USERNAME=
+ADMIN_EMAIL=
 ADMIN_PASSWORD=
 PAYMENT_WEBHOOK_SECRET=unesite-sopstveni-dug-slucajni-kljuc
 PAYMENT_PROVIDER=disabled

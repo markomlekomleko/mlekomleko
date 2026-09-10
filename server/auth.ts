@@ -108,14 +108,16 @@ export async function authenticateCustomer(request: Request): Promise<{ customer
 }
 
 function adminCredentials() {
-  const { ADMIN_USERNAME: username, ADMIN_PASSWORD: password } = runtimeEnv();
-  return username && password && password.length >= 12 ? { username, password } : null;
+  const runtime = runtimeEnv();
+  const username = (runtime.ADMIN_EMAIL ?? runtime.ADMIN_USERNAME)?.trim().toLowerCase();
+  const password = runtime.ADMIN_PASSWORD;
+  return username && password && password.length >= 10 ? { username, password } : null;
 }
 
 // Compatibility for isolated legacy worker fixtures only. Never enabled on Vercel.
 function legacyAdminAccess(): boolean {
   return runtimeEnv().ADMIN_LEGACY_ACCESS === "true" && runtimeEnv().APP_ENV !== "production"
-    && !process.env.VERCEL && !runtimeEnv().ADMIN_USERNAME && !runtimeEnv().ADMIN_PASSWORD;
+    && !process.env.VERCEL && !runtimeEnv().ADMIN_EMAIL && !runtimeEnv().ADMIN_USERNAME && !runtimeEnv().ADMIN_PASSWORD;
 }
 
 function adminToken(request: Request): string {
@@ -129,14 +131,15 @@ async function credentialFingerprint(credentials: { username: string; password: 
 export async function loginAdmin(request: Request, input: Record<string, unknown>) {
   assertSameOrigin(request);
   const credentials = adminCredentials();
-  if (!credentials) throw new DomainError("ADMIN_NOT_CONFIGURED", "Postavite ADMIN_USERNAME i ADMIN_PASSWORD (najmanje 12 znakova) na serveru.", 503);
+  if (!credentials) throw new DomainError("ADMIN_NOT_CONFIGURED", "Postavite ADMIN_EMAIL i ADMIN_PASSWORD (najmanje 10 znakova) na serveru.", 503);
   await enforceRateLimit(request, "admin-login", 10, 15 * 60);
-  const username = typeof input.username === "string" ? input.username : "";
+  const identity = input.email ?? input.username;
+  const username = typeof identity === "string" ? identity.trim().toLowerCase() : "";
   const password = typeof input.password === "string" ? input.password : "";
   const [nameMatches, passwordMatches] = await Promise.all([
     constantTimeEqual(username, credentials.username), constantTimeEqual(password, credentials.password),
   ]);
-  assertDomain(nameMatches && passwordMatches, "ADMIN_FORBIDDEN", "Korisničko ime ili lozinka nisu ispravni.", 403);
+  assertDomain(nameMatches && passwordMatches, "ADMIN_FORBIDDEN", "Email ili lozinka nisu ispravni.", 403);
   const sessionToken = randomToken();
   const expiresAt = new Date(Date.now() + 8 * 60 * 60_000).toISOString();
   await batch([
@@ -153,7 +156,6 @@ export async function logoutAdmin(request: Request) {
 }
 
 export async function requireAdmin(request: Request): Promise<void> {
-  if (isLocalAdminRequest(request)) return;
   if (legacyAdminAccess()) {
     const configured = runtimeEnv().ADMIN_SECRET;
     if (!configured) throw new DomainError("ADMIN_NOT_CONFIGURED", "Admin pristup nije podešen.", 503);
@@ -161,39 +163,17 @@ export async function requireAdmin(request: Request): Promise<void> {
     return;
   }
   const credentials = adminCredentials();
-  if (!credentials) throw new DomainError("ADMIN_NOT_CONFIGURED", "Postavite ADMIN_USERNAME i ADMIN_PASSWORD (najmanje 12 znakova) na serveru.", 503);
+  if (!credentials) throw new DomainError("ADMIN_NOT_CONFIGURED", "Postavite ADMIN_EMAIL i ADMIN_PASSWORD (najmanje 10 znakova) na serveru.", 503);
   const token = adminToken(request);
-  assertDomain(token, "ADMIN_FORBIDDEN", "Prijavite se korisničkim imenom i lozinkom.", 403);
+  assertDomain(token, "ADMIN_FORBIDDEN", "Prijavite se email adresom i lozinkom.", 403);
   const session = await first<Record<string, unknown>>("SELECT credential_hash, expires_at, revoked_at FROM admin_sessions WHERE token_hash = ?", await sha256(token));
   assertDomain(session && !session.revoked_at && Date.parse(String(session.expires_at)) > Date.now()
     && session.credential_hash === await credentialFingerprint(credentials), "ADMIN_FORBIDDEN", "Prijava je istekla. Prijavite se ponovo.", 403);
 }
 
-// Production builds disable this branch. A hostname or runtime
-// environment variable alone must never enable unauthenticated admin access.
-export function isLocalAdminRequest(request: Request): boolean {
-  if (runtimeEnv().ADMIN_USERNAME || runtimeEnv().ADMIN_PASSWORD) return false;
-  if (process.env.NODE_ENV !== "development" || process.env.VERCEL || runtimeEnv().APP_ENV === "production") return false;
-  const url = new URL(request.url);
-  if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) return false;
-  if (request.headers.has("forwarded")) return false;
-  const loopback = ["127.0.0.1", "::1", "::ffff:127.0.0.1"];
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor && !forwardedFor.split(",").every((ip) => loopback.includes(ip.trim()))) return false;
-  // Next.js and Miniflare add forwarding headers even for direct local requests.
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  const clientIp = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-real-ip");
-  if (forwardedHost && forwardedHost !== url.host) return false;
-  if (clientIp && !loopback.includes(clientIp)) return false;
-  const origin = request.headers.get("origin");
-  const fetchSite = request.headers.get("sec-fetch-site");
-  return (!origin || origin === url.origin) && (!fetchSite || fetchSite === "same-origin" || fetchSite === "none");
-}
-
 export async function adminAccess(request: Request) {
   const configured = legacyAdminAccess() ? Boolean(runtimeEnv().ADMIN_SECRET) : Boolean(adminCredentials());
   const mode = legacyAdminAccess() ? "key" as const : "password" as const;
-  if (isLocalAdminRequest(request)) return { authenticated: true, configured, mode: "local" as const };
   if (!request.headers.has("authorization") && !request.headers.has("x-admin-secret")) return { authenticated: false, configured, mode };
   await requireAdmin(request);
   return { authenticated: true, configured, mode };
