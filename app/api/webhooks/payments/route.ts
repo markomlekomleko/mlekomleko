@@ -1,18 +1,19 @@
-import { env } from "cloudflare:workers";
+import { env } from "@/server/runtime";
 import { constantTimeEqual } from "../../../../server/crypto";
 import { assertDomain, enumValue, jsonResponse, readJson, requiredString, withRoute } from "../../../../server/domain";
 import { audit, enqueue } from "../../../../server/outbox";
 import { batch, first } from "../../../../server/sql";
 import { processOutboxFor } from "../../../../server/integration-jobs";
+import { enforceRateLimit } from "../../../../server/rate-limit";
+import { purchaseAnalyticsEvent } from "../../../../server/analytics";
 
 export function POST(request: Request) {
   return withRoute(async () => {
-    const hostname = new URL(request.url).hostname;
-    const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(hostname);
     const configured = (env as unknown as { PAYMENT_WEBHOOK_SECRET?: string }).PAYMENT_WEBHOOK_SECRET;
-    assertDomain(configured || local, "WEBHOOK_NOT_CONFIGURED", "PAYMENT_WEBHOOK_SECRET is required outside local development.", 503);
+    assertDomain(configured, "WEBHOOK_NOT_CONFIGURED", "PAYMENT_WEBHOOK_SECRET is required.", 503);
     const supplied = request.headers.get("x-webhook-secret") ?? "";
-    assertDomain(await constantTimeEqual(supplied, configured ?? "local-webhook-change-me"), "INVALID_WEBHOOK_SIGNATURE", "Webhook signature is invalid.", 401);
+    assertDomain(await constantTimeEqual(supplied, configured), "INVALID_WEBHOOK_SIGNATURE", "Webhook signature is invalid.", 401);
+    await enforceRateLimit(request, "payment-webhook", 120, 60);
     const body = await readJson(request);
     const eventId = requiredString(body.eventId, "eventId", 200);
     const orderId = requiredString(body.orderId, "orderId", 100);
@@ -30,6 +31,7 @@ export function POST(request: Request) {
     if (status === "paid" && order.payment_status !== "paid") {
       statements.push(enqueue("fiscal.receipt.requested", "order", orderId, { orderId, eventId }));
       statements.push(enqueue("email.receipt.requested", "order", orderId, { orderId }));
+      statements.push(purchaseAnalyticsEvent(orderId, String(order.order_number ?? orderId), `webhook:${eventId}`));
     }
     await batch(statements);
     await processOutboxFor("order", orderId);

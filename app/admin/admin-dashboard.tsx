@@ -1,16 +1,18 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- Local optimized demo assets; next/image is not part of this vinext runtime. */
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
-import { fetchJson, formatDate, formatMoney, normalizeProduct, statusLabel, unwrapList, type Product } from "../lib/frontend";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { ApiError, fetchJson, formatDate, formatMoney, normalizeProduct, statusLabel, unwrapList, type Product } from "../lib/frontend";
+import Link from "next/link";
 import { BundleAdmin, ProfitDashboard } from "./revenue-panels";
 
 const ADMIN_KEY = "mleko-i-mleko-admin-secret";
-const DEFAULT_SECRET = "local-dev-change-me";
+type Access = { authenticated: boolean; configured: boolean; mode: "local" | "key" };
+type Connection = "checking" | "required" | "ready" | "unconfigured" | "error";
 type Row = Record<string, unknown>;
 type Tab = "pregled" | "zarada" | "porudzbine" | "proizvodi" | "paketi" | "kupci" | "pretplate" | "dostave" | "popusti" | "sadrzaj" | "podesavanja";
-type AdminData = { dashboard: Row; products: Product[]; bundles: Row[]; orders: Row[]; customers: Row[]; subscriptions: Row[]; deliveries: Row[]; delivery: Row; deliveryPreparation: Row[]; promos: Row[]; settings: Row; integrations: Row };
-const emptyData: AdminData = { dashboard: {}, products: [], bundles: [], orders: [], customers: [], subscriptions: [], deliveries: [], delivery: {}, deliveryPreparation: [], promos: [], settings: {}, integrations: {} };
+type AdminData = { dashboard: Row; products: Product[]; bundles: Row[]; orders: Row[]; customers: Row[]; subscriptions: Row[]; deliveries: Row[]; delivery: Row; deliveryPreparation: Row[]; deliveryCanGenerate: boolean; promos: Row[]; settings: Row; integrations: Row };
+const emptyData: AdminData = { dashboard: {}, products: [], bundles: [], orders: [], customers: [], subscriptions: [], deliveries: [], delivery: {}, deliveryPreparation: [], deliveryCanGenerate: false, promos: [], settings: {}, integrations: {} };
 
 function row(value: unknown): Row { return value && typeof value === "object" ? value as Row : {}; }
 function string(value: unknown, fallback = "-") { return typeof value === "string" && value ? value : fallback; }
@@ -18,6 +20,7 @@ function number(value: unknown, fallback = 0) { const parsed = Number(value); re
 function bool(value: unknown, fallback = false) { return value === true || value === 1 || value === "1" ? true : value === false || value === 0 || value === "0" ? false : fallback; }
 function idOf(value: Row) { return string(value.id ?? value.customerId ?? value.customer_id ?? value.subscriptionId ?? value.subscription_id ?? value.orderId ?? value.order_id); }
 function extractObject(payload: unknown, keys: string[]): Row { const wrapper = row(payload); for (const key of keys) if (wrapper[key] && typeof wrapper[key] === "object" && !Array.isArray(wrapper[key])) return row(wrapper[key]); return wrapper.data && typeof wrapper.data === "object" && !Array.isArray(wrapper.data) ? row(wrapper.data) : wrapper; }
+function businessDate() { return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Belgrade", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
 
 const nav: Array<{ id: Tab; label: string; icon: string }> = [
   { id: "pregled", label: "Pregled", icon: "⌂" },
@@ -34,21 +37,50 @@ const nav: Array<{ id: Tab; label: string; icon: string }> = [
 ];
 
 export function AdminDashboard() {
-  const [secret, setSecret] = useState(DEFAULT_SECRET);
+  const [secret, setSecret] = useState("");
+  const [activeSecret, setActiveSecret] = useState("");
+  const [connection, setConnection] = useState<Connection>("checking");
+  const [accessMode, setAccessMode] = useState<Access["mode"]>("key");
+  const loadVersion = useRef(0);
   const [activeTab, setActiveTab] = useState<Tab>("pregled");
   const [data, setData] = useState<AdminData>(emptyData);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [deliveryDate, setDeliveryDate] = useState(new Date().toISOString().slice(0, 10));
-  const [billingMonth, setBillingMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [deliveryDate, setDeliveryDate] = useState(businessDate);
+  const [billingMonth, setBillingMonth] = useState(() => businessDate().slice(0, 7));
   const [editingProduct, setEditingProduct] = useState<Product | null | undefined>(undefined);
 
-  useEffect(() => { queueMicrotask(() => setSecret(window.localStorage.getItem(ADMIN_KEY) ?? DEFAULT_SECRET)); }, []);
-  const adminFetch = useCallback(<T,>(url: string, init?: RequestInit) => fetchJson<T>(url, { ...init, headers: { "x-admin-secret": secret, ...init?.headers } }), [secret]);
+  const checkAccess = useCallback(async (key = "", signal?: AbortSignal) => {
+    setConnection("checking"); setError("");
+    try {
+      const access = await fetchJson<Access>("/api/admin/access", { signal, headers: key ? { "x-admin-secret": key } : {} });
+      if (signal?.aborted) return;
+      setAccessMode(access.mode);
+      setActiveSecret(access.authenticated && access.mode === "key" ? key : "");
+      setConnection(access.authenticated ? "ready" : access.configured ? "required" : "unconfigured");
+      if (access.authenticated) setSecret("");
+    } catch (requestError) {
+      if (signal?.aborted) return;
+      setActiveSecret("");
+      setConnection(requestError instanceof ApiError && requestError.code === "ADMIN_FORBIDDEN" ? "required" : requestError instanceof ApiError && requestError.code === "ADMIN_NOT_CONFIGURED" ? "unconfigured" : "error");
+      setError(requestError instanceof Error ? requestError.message : "Provera pristupa nije uspela.");
+    }
+  }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    // Remove the old permanent browser credential. Credentials now live only in
+    // memory for this page; typing a key never starts data requests.
+    try { window.localStorage.removeItem(ADMIN_KEY); } catch { /* Storage may be disabled. */ }
+    queueMicrotask(() => { if (!controller.signal.aborted) void checkAccess("", controller.signal); });
+    return () => { controller.abort(); loadVersion.current += 1; };
+  }, [checkAccess]);
+  const adminFetch = useCallback(<T,>(url: string, init?: RequestInit) => fetchJson<T>(url, { ...init, headers: { ...(activeSecret ? { "x-admin-secret": activeSecret } : {}), ...init?.headers } }), [activeSecret]);
 
   const loadAdmin = useCallback(async () => {
+    if (connection !== "ready") return;
+    const version = ++loadVersion.current;
     setLoading(true); setError("");
     const endpoints = [
       ["dashboard", "/api/admin/dashboard"], ["products", "/api/admin/products"], ["orders", "/api/admin/orders"],
@@ -56,6 +88,13 @@ export function AdminDashboard() {
       ["deliveries", `/api/admin/deliveries?date=${encodeURIComponent(deliveryDate)}`], ["promos", "/api/admin/promos"], ["bundles", "/api/admin/bundles"], ["settings", "/api/admin/settings"], ["integrations", "/api/admin/integrations"],
     ] as const;
     const results = await Promise.allSettled(endpoints.map(([, endpoint]) => adminFetch<unknown>(endpoint)));
+    if (version !== loadVersion.current) return;
+    const accessFailure = results.find((result) => result.status === "rejected" && result.reason instanceof ApiError && ["ADMIN_FORBIDDEN", "ADMIN_NOT_CONFIGURED"].includes(result.reason.code ?? ""));
+    if (accessFailure?.status === "rejected") {
+      setData(emptyData); setActiveSecret(""); setLoading(false);
+      setConnection(accessFailure.reason.code === "ADMIN_NOT_CONFIGURED" ? "unconfigured" : "required");
+      setError(accessFailure.reason.message); return;
+    }
     const next: AdminData = { ...emptyData }; const failed: string[] = [];
     results.forEach((result, index) => {
       const name = endpoints[index][0]; if (result.status === "rejected") { failed.push(name); return; }
@@ -67,17 +106,27 @@ export function AdminDashboard() {
         next.deliveries = unwrapList(result.value, ["orders", "deliveries", "items"]).map(row);
         next.delivery = extractObject(result.value, ["delivery"]);
         next.deliveryPreparation = unwrapList(result.value, ["preparation"]).map(row);
+        next.deliveryCanGenerate = row(result.value).canGenerate === true;
       }
       else next[name] = unwrapList(result.value, [name, "items"]).map(row) as never;
     });
-    setData(next); if (failed.length) setError(`Nisu učitane sekcije: ${failed.join(", ")}. Proverite admin ključ.`); setLoading(false);
-  }, [adminFetch, deliveryDate]);
-  useEffect(() => { queueMicrotask(() => void loadAdmin()); }, [loadAdmin]);
+    const labels: Record<string, string> = { dashboard: "pregled", products: "proizvodi", orders: "porudžbine", customers: "kupci", subscriptions: "pretplate", deliveries: "dostave", promos: "popusti", bundles: "paketi", settings: "podešavanja", integrations: "integracije" };
+    const databaseFailure = results.some((result) => result.status === "rejected" && result.reason instanceof ApiError && result.reason.code === "DATABASE_NOT_READY");
+    setData(next);
+    if (failed.length) setError(databaseFailure ? "Baza podataka nije spremna. Primenite migracije i osvežite stranicu." : `Nije uspelo učitavanje: ${failed.map((name) => labels[name]).join(", ")}. Pokušajte ponovo pomoću dugmeta Osveži.`);
+    setLoading(false);
+  }, [adminFetch, connection, deliveryDate]);
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => { if (!cancelled) void loadAdmin(); });
+    return () => { cancelled = true; loadVersion.current += 1; };
+  }, [loadAdmin]);
 
   function start(message = "") { setBusy(true); setError(""); setNotice(message); }
   function fail(requestError: unknown, fallback: string) { setError(requestError instanceof Error ? requestError.message : fallback); }
   async function refresh(message: string) { setNotice(message); await loadAdmin(); }
-  function saveSecret(event: FormEvent<HTMLFormElement>) { event.preventDefault(); window.localStorage.setItem(ADMIN_KEY, secret); void refresh("Admin pristup je sačuvan samo na ovom uređaju."); }
+  function saveSecret(event: FormEvent<HTMLFormElement>) { event.preventDefault(); void checkAccess(secret); }
+  function disconnect() { loadVersion.current += 1; setActiveSecret(""); setSecret(""); setData(emptyData); setNotice(""); setError(""); setConnection("required"); }
 
   async function saveProduct(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = event.currentTarget; const values = new FormData(form); start();
@@ -125,11 +174,26 @@ export function AdminDashboard() {
   async function queueReminders() { start(); try { const result = await adminFetch<{ queued?: number }>("/api/admin/integrations", { method: "POST", body: JSON.stringify({ action: "delivery_reminders", date: deliveryDate }) }); await adminFetch("/api/admin/integrations", { method: "POST", body: JSON.stringify({ action: "process", limit: 100 }) }); await refresh(`Zakazano je ${number(result.queued)} podsetnika za dostavu.`); } catch (e) { fail(e, "Podsetnici nisu zakazani."); } finally { setBusy(false); } }
   async function runBilling() { start(); try { const result = await adminFetch<{ processed?: number }>("/api/jobs/billing", { method: "POST", headers: { "Idempotency-Key": window.crypto.randomUUID() }, body: JSON.stringify({ month: billingMonth }) }); await refresh(`Mesečni obračun je završen: ${number(result.processed)} pretplata.`); } catch (e) { fail(e, "Mesečni obračun nije uspeo."); } finally { setBusy(false); } }
   async function runIntegrationAction(action: "process" | "retry_failed") { start(); try { const result = await adminFetch<Row>("/api/admin/integrations", { method: "POST", body: JSON.stringify({ action, limit: 100 }) }); await refresh(action === "process" ? `Obrađeno događaja: ${number(result.attempted)}.` : `Vraćeno u red: ${number(result.requeued)}.`); } catch (e) { fail(e, "Integracioni red nije obrađen."); } finally { setBusy(false); } }
-  async function downloadDeliveryExport(format: "csv" | "xlsx") { start(); try { const response = await fetch(`/api/admin/deliveries/export?date=${encodeURIComponent(deliveryDate)}&format=${format}`, { headers: { "x-admin-secret": secret } }); if (!response.ok) throw new Error(`${format.toUpperCase()} nije generisan.`); const url = URL.createObjectURL(await response.blob()); const anchor = document.createElement("a"); anchor.href = url; anchor.download = `mleko-dostave-${deliveryDate}.${format}`; anchor.click(); URL.revokeObjectURL(url); setNotice(format === "csv" ? "CSV za Spoke je preuzet." : "Excel sa dostavama i zbirnom pripremom je preuzet."); } catch (e) { fail(e, "Izvoz nije generisan."); } finally { setBusy(false); } }
+  async function downloadDeliveryExport(format: "csv" | "xlsx") { start(); try { const response = await fetch(`/api/admin/deliveries/export?date=${encodeURIComponent(deliveryDate)}&format=${format}`, { headers: activeSecret ? { "x-admin-secret": activeSecret } : {} }); if (!response.ok) throw new Error(`${format.toUpperCase()} nije generisan.`); const url = URL.createObjectURL(await response.blob()); const anchor = document.createElement("a"); anchor.href = url; anchor.download = `mleko-dostave-${deliveryDate}.${format}`; anchor.click(); URL.revokeObjectURL(url); setNotice(format === "csv" ? "CSV za Spoke je preuzet." : "Excel sa dostavama i zbirnom pripremom je preuzet."); } catch (e) { fail(e, "Izvoz nije generisan."); } finally { setBusy(false); } }
 
   const preparation = useMemo(() => unwrapList(data.dashboard, ["preparation"]).map(row), [data.dashboard]);
   const counts = row(data.dashboard.counts); const revenue = row(data.dashboard.revenue);
   const s = data.settings;
+
+  if (connection !== "ready") return (
+    <div className="admin-access">
+      <section className="admin-access-card" aria-labelledby="admin-access-title">
+        <Link className="admin-brand" href="/"><img src="/images/mleko-i-mleko-logo.png" alt="" width="80" height="80" /><strong>Mleko Admin</strong></Link>
+        <h1 id="admin-access-title">{connection === "checking" ? "Proveravamo pristup…" : connection === "unconfigured" ? "Pristup još nije podešen" : "Prijava u administraciju"}</h1>
+        {connection === "checking" ? <p role="status">Sačekajte trenutak.</p> : null}
+        {connection === "unconfigured" ? <p>Postavite admin ključ u podešavanjima servera i ponovo pokrenite aplikaciju.</p> : null}
+        {error ? <p className="notice error" role="alert">{error}</p> : null}
+        {connection === "required" ? <form className="admin-form" onSubmit={saveSecret}><label className="field"><span>Admin ključ</span><input type="password" autoComplete="current-password" value={secret} onChange={(event) => setSecret(event.target.value)} required /></label><button className="button" type="submit">Prijavi se</button></form> : null}
+        {connection === "error" || connection === "unconfigured" ? <button className="button secondary" type="button" onClick={() => void checkAccess()}>Pokušaj ponovo</button> : null}
+        <Link className="text-link" href="/">Nazad u prodavnicu</Link>
+      </section>
+    </div>
+  );
 
   return (
     <div className="admin-app">
@@ -139,8 +203,7 @@ export function AdminDashboard() {
         <a className="admin-store-link" href="/" target="_blank" rel="noreferrer">Otvori prodavnicu ↗</a>
       </aside>
       <section className="admin-main">
-        <header className="admin-topbar"><div><p className="eyebrow">Lokalna administracija</p><h1>{nav.find((item) => item.id === activeTab)?.label}</h1></div><div className="admin-top-actions"><span className="status-dot">● Sistem radi</span><button className="button secondary small" type="button" onClick={loadAdmin}>Osveži</button></div></header>
-        <form className="admin-keybar" onSubmit={saveSecret}><label><span>Admin ključ</span><input type="password" value={secret} onChange={(event) => setSecret(event.target.value)} /></label><button className="button small" type="submit">Poveži</button><small>Demo: <code>{DEFAULT_SECRET}</code></small></form>
+        <header className="admin-topbar"><div><p className="eyebrow">{accessMode === "local" ? "Lokalna administracija" : "Administracija"}</p><h1>{nav.find((item) => item.id === activeTab)?.label}</h1></div><div className="admin-top-actions"><span className="status-dot" role="status">{loading ? "Učitavanje…" : error ? "Potrebna provera" : "● Povezano"}</span><button className="button secondary small" type="button" disabled={loading} onClick={loadAdmin}>Osveži</button>{accessMode === "key" ? <button className="text-button" type="button" onClick={disconnect}>Odjavi se</button> : null}</div></header>
         {notice ? <p className="notice success" role="status">{notice}</p> : null}{error ? <p className="notice error" role="alert">{error}</p> : null}
         {loading ? <p className="loading-state">Učitavamo administraciju…</p> : <section className="admin-content">
           {activeTab === "pregled" ? <><div className="dashboard-grid"><Stat label="Prihod" value={formatMoney(number(revenue.paid_revenue_minor) / 100)} /><Stat label="Porudžbine" value={number(counts.orders)} /><Stat label="Aktivne pretplate" value={number(counts.active_subscriptions)} /><Stat label="Kupci" value={number(counts.customers)} /></div><div className="admin-grid-2"><section className="admin-panel"><div className="panel-heading"><h2>Brze akcije</h2></div><div className="quick-actions"><button type="button" onClick={() => { setActiveTab("proizvodi"); setEditingProduct(null); }}>＋ Dodaj proizvod</button><button type="button" onClick={() => setActiveTab("porudzbine")}>▤ Obradi porudžbine</button><button type="button" onClick={() => setActiveTab("sadrzaj")}>✎ Izmeni početnu</button><button type="button" onClick={() => setActiveTab("dostave")}>→ Pripremi dostavu</button></div></section><section className="admin-panel"><div className="panel-heading"><h2>Sledeće za pripremu</h2></div>{preparation.length ? <ul className="list-clean">{preparation.slice(0, 8).map((item, index) => <li className="summary-row" key={index}><span>{string(item.product_name)} <small>{string(item.unit_label, "")}</small></span><strong>{number(item.total_quantity)}</strong></li>)}</ul> : <p className="admin-empty">Nema zaključanih količina za pripremu.</p>}</section></div></> : null}
@@ -154,7 +217,7 @@ export function AdminDashboard() {
           {activeTab === "kupci" ? <DataTable headers={["Kupac", "Kontakt", "Adresa", "Porudžbine", "LTV"]} empty="Još nema kupaca.">{data.customers.map((customer) => <tr key={idOf(customer)}><td><strong>{string(customer.full_name)}</strong></td><td>{string(customer.email)}<br />{string(customer.phone)}</td><td>{[customer.address_line_1, customer.postal_code, customer.city].filter(Boolean).join(", ")}</td><td>{number(customer.order_count)}</td><td>{formatMoney(number(customer.lifetime_value_minor) / 100)}</td></tr>)}</DataTable> : null}
           {activeTab === "pretplate" ? <DataTable headers={["Kupac", "Status", "Plaćanje", "Stavke", "Sledeća dostava"]} empty="Još nema pretplata.">{data.subscriptions.map((subscription) => <tr key={idOf(subscription)}><td><strong>{string(subscription.full_name)}</strong><br />{string(subscription.email)}</td><td><span className="status-pill active">{statusLabel(string(subscription.status))}</span></td><td>{string(subscription.payment_method)}</td><td>{number(subscription.item_count)}</td><td>{formatDate(string(subscription.next_delivery_date, ""))}</td></tr>)}</DataTable> : null}
 
-          {activeTab === "dostave" ? <div className="admin-stack"><section className="admin-panel"><div className="panel-heading"><div><h2>Plan rute</h2><p>Generišite, zaključajte i izvezite podatke koji su važeći za izabrani dan.</p></div><span className={`status-pill ${string(data.delivery.status) === "locked" ? "active" : ""}`}>{string(data.delivery.status, "nije generisana")}</span></div><div className="inline-controls"><label className="field"><span>Datum</span><input type="date" value={deliveryDate} onChange={(event) => setDeliveryDate(event.target.value)} /></label><button className="button secondary small" type="button" onClick={loadAdmin}>Učitaj</button><button className="button secondary small" type="button" disabled={busy} onClick={() => void runDeliveryAction("generate")}>Generiši / osveži</button><button className="button danger small" type="button" disabled={busy} onClick={() => window.confirm("Zaključati dostavu? Posle zaključavanja izmene više ne ulaze u listu.") && void runDeliveryAction("lock")}>Zaključaj</button><button className="button small" type="button" disabled={busy} onClick={() => void downloadDeliveryExport("csv")}>CSV za Spoke</button><button className="button secondary small" type="button" disabled={busy} onClick={() => void downloadDeliveryExport("xlsx")}>Excel + priprema</button><button className="button secondary small" type="button" disabled={busy} onClick={() => void queueReminders()}>Pošalji podsetnike</button></div></section><div className="admin-grid-2"><section className="admin-panel"><div className="panel-heading"><div><h2>Zbir za pripremu</h2><p>{formatDate(deliveryDate)} · {data.deliveries.length} adresa</p></div></div>{data.deliveryPreparation.length ? <ul className="list-clean">{data.deliveryPreparation.map((item, index) => <li className="summary-row" key={`${string(item.product_id)}-${index}`}><span>{string(item.product_name)} <small>{string(item.unit_label, "")}</small></span><strong>{number(item.total_quantity)}</strong></li>)}</ul> : <p className="admin-empty">Nema robe za pripremu za izabrani datum.</p>}</section><section className="admin-panel"><div className="panel-heading"><div><h2>Kontrola liste</h2><p>Otvorena lista se ponovo obračunava iz aktuelnih porudžbina i izmena pretplata.</p></div></div><ul className="list-clean"><li className="summary-row"><span>Porudžbina za dostavu</span><strong>{data.deliveries.length}</strong></li><li className="summary-row"><span>Različitih proizvoda</span><strong>{data.deliveryPreparation.length}</strong></li><li className="summary-row"><span>Rok za izmenu</span><strong>{formatDate(string(data.delivery.cutoff_at, ""))}</strong></li></ul></section></div><DataTable headers={["ID", "Kupac", "Adresa", "Kontakt", "Proizvodi", "Napomena"]} empty="Nema dostava za izabrani datum.">{data.deliveries.map((delivery) => { const snapshot = row(delivery.customer_snapshot ?? delivery.customerSnapshot); return <tr key={idOf(delivery)}><td>{idOf(delivery)}</td><td>{string(delivery.customer_name ?? snapshot.fullName)}</td><td>{[snapshot.addressLine1, snapshot.addressLine2, snapshot.postalCode, snapshot.city].filter(Boolean).join(", ")}</td><td>{string(delivery.phone ?? snapshot.phone)}<br /><small>{string(delivery.email ?? snapshot.email)}</small></td><td>{unwrapList(delivery, ["items"]).map(row).map((item) => `${number(item.quantity)}× ${string(item.product_name ?? item.name)} ${string(item.unit_label ?? item.unit, "")}`).join(", ") || "-"}</td><td>{string(delivery.note)}</td></tr>; })}</DataTable></div> : null}
+          {activeTab === "dostave" ? <div className="admin-stack"><section className="admin-panel"><div className="panel-heading"><div><h2>Dostave za petak</h2><p>Generišite, zaključajte i izvezite istu operativnu projekciju za izabrani dan.</p></div><span className={`status-pill ${string(data.delivery.status) === "locked" ? "active" : ""}`}>{string(data.delivery.status, "nije generisana")}</span></div>{data.deliveryCanGenerate ? <p className="notice" role="status">Za ovaj datum još nema liste. Izaberite „Generiši” da napravite praznu ili popunjenu projekciju.</p> : null}<div className="inline-controls"><label className="field"><span>Datum</span><input type="date" value={deliveryDate} onChange={(event) => setDeliveryDate(event.target.value)} /></label><button className="button secondary small" type="button" onClick={loadAdmin}>Učitaj</button><button className="button secondary small" type="button" disabled={busy} onClick={() => void runDeliveryAction("generate")}>{data.deliveryCanGenerate ? "Generiši" : "Osveži"}</button><button className="button danger small" type="button" disabled={busy || data.deliveryCanGenerate} onClick={() => window.confirm("Zaključati dostavu? Posle zaključavanja izmene više ne ulaze u listu.") && void runDeliveryAction("lock")}>Zaključaj</button><button className="button small" type="button" disabled={busy || data.deliveryCanGenerate} onClick={() => void downloadDeliveryExport("csv")}>CSV za Spoke</button><button className="button secondary small" type="button" disabled={busy || data.deliveryCanGenerate} onClick={() => void downloadDeliveryExport("xlsx")}>Excel + priprema</button><button className="button secondary small" type="button" disabled={busy || data.deliveryCanGenerate} onClick={() => void queueReminders()}>Pošalji podsetnike</button></div></section><div className="admin-grid-2"><section className="admin-panel"><div className="panel-heading"><div><h2>Zbir za pripremu</h2><p>{formatDate(deliveryDate)} · {data.deliveries.length} adresa</p></div></div>{data.deliveryPreparation.length ? <ul className="list-clean">{data.deliveryPreparation.map((item, index) => <li className="summary-row" key={`${string(item.product_id)}-${index}`}><span>{string(item.product_name)} <small>{string(item.unit_label, "")}</small></span><strong>{number(item.total_quantity)}</strong></li>)}</ul> : <p className="admin-empty">Nema robe za pripremu za izabrani datum.</p>}</section><section className="admin-panel"><div className="panel-heading"><div><h2>Kontrola liste</h2><p>Otvorena lista se ponovo obračunava iz aktuelnih porudžbina i izmena pretplata.</p></div></div><ul className="list-clean"><li className="summary-row"><span>Porudžbina za dostavu</span><strong>{data.deliveries.length}</strong></li><li className="summary-row"><span>Različitih proizvoda</span><strong>{data.deliveryPreparation.length}</strong></li><li className="summary-row"><span>Rok za izmenu</span><strong>{data.deliveryCanGenerate ? "—" : formatDate(string(data.delivery.cutoff_at, ""))}</strong></li></ul></section></div><DataTable headers={["ID", "Kupac", "Adresa", "Kontakt", "Proizvodi", "Napomena"]} empty="Nema dostava za izabrani datum.">{data.deliveries.map((delivery) => { const snapshot = row(delivery.customer_snapshot ?? delivery.customerSnapshot); return <tr key={idOf(delivery)}><td>{idOf(delivery)}</td><td>{string(delivery.customer_name ?? snapshot.fullName)}</td><td>{[snapshot.addressLine1, snapshot.addressLine2, snapshot.postalCode, snapshot.city].filter(Boolean).join(", ")}</td><td>{string(delivery.phone ?? snapshot.phone)}<br /><small>{string(delivery.email ?? snapshot.email)}</small></td><td>{unwrapList(delivery, ["items"]).map(row).map((item) => `${number(item.quantity)}× ${string(item.product_name ?? item.name)} ${string(item.unit_label ?? item.unit, "")}`).join(", ") || "-"}</td><td>{string(delivery.note)}</td></tr>; })}</DataTable></div> : null}
 
           {activeTab === "popusti" ? <div className="admin-grid-2"><form className="admin-panel admin-form" onSubmit={createPromo}><div className="panel-heading"><div><h2>Novi promo kod</h2><p>Popust se proverava u korpi i checkout-u.</p></div></div><label className="field"><span>Kod</span><input name="code" placeholder="DOBRODOSLI10" pattern="[A-Za-z0-9_-]+" required /></label><label className="field"><span>Interni opis</span><input name="description" /></label><div className="form-grid"><label className="field"><span>Vrsta</span><select name="discountType"><option value="percent">Procenat</option><option value="fixed">Fiksni RSD</option></select></label><label className="field"><span>Vrednost</span><input name="discountValue" type="number" min="1" required /></label><label className="field"><span>Minimalna porudžbina (RSD)</span><input name="minimumOrderRsd" type="number" min="0" defaultValue="0" /></label><label className="field"><span>Limit korišćenja</span><input name="usageLimit" type="number" min="1" /></label></div><button className="button" type="submit" disabled={busy}>Dodaj kod</button></form><section className="admin-panel"><div className="panel-heading"><h2>Aktivni kodovi</h2></div><div className="promo-list">{data.promos.map((promo) => <article key={idOf(promo)}><div><code>{string(promo.code)}</code><p>{string(promo.description, "Bez opisa")}</p></div><strong>{string(promo.discount_type) === "percent" ? `${number(promo.discount_value)}%` : formatMoney(number(promo.discount_value) / 100)}</strong><span>{number(promo.times_used)} korišćenja</span><div className="row-actions"><button type="button" onClick={() => void togglePromo(promo)}>{bool(promo.is_active) ? "Pauziraj" : "Aktiviraj"}</button><button className="danger-text" type="button" onClick={() => void deletePromo(promo)}>Obriši</button></div></article>)}{!data.promos.length ? <p className="admin-empty">Nema promo kodova.</p> : null}</div></section></div> : null}
 

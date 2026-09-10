@@ -1,20 +1,29 @@
-# Mleko i Mleko - local backend contract
+# Mleko i Mleko - backend contract
 
 This is the backend contract for the local MVP. All amounts are integer minor units (RSD para): `22000` means RSD 220.00. Floating-point money is never accepted or stored. UTC timestamps are ISO-8601 strings; `deliveryDate`, `pauseUntil`, and billing cadence dates are `YYYY-MM-DD` calendar dates interpreted in `Europe/Belgrade`.
 
-## Local database and local-only secrets
+## Lokalna baza i tajne
 
-Initialize or update the same persisted local D1 used by Vite:
+Initialize or update the persisted SQLite database used by Next.js:
 
 ```sh
-npx wrangler d1 migrations apply DB --local --persist-to .wrangler/state --config server/wrangler.local.jsonc
+npm run db:migrate:local
 ```
 
 The migration seeds four clearly marked demo products and the business defaults (Friday delivery at 08:00 Europe/Belgrade, 24-hour cutoff). Replace product data through the admin API.
 
-Admin requests use `X-Admin-Secret`. On `localhost`, `127.0.0.1`, or `::1` only, the fallback is `local-dev-change-me`. Set `ADMIN_SECRET` anywhere else. This fallback is not production authentication or a production RBAC system. Payment webhooks similarly use `X-Webhook-Secret`; the localhost-only fallback is `local-webhook-change-me`, otherwise set `PAYMENT_WEBHOOK_SECRET`.
+Production admin requests use `X-Admin-Secret` and fail closed unless `ADMIN_SECRET`
+is configured. Only a development build on direct loopback permits local admin access
+without a key. Cross-origin requests and remote forwarded clients cannot use this mode.
+There is no default shared secret. This shared-secret route is suitable
+for local/staging operations only; production launch requires an identity provider,
+server-side role/allowlist checks and MFA. Payment webhooks similarly require an
+explicit `PAYMENT_WEBHOOK_SECRET`.
 
-Useful local environment variables are `APP_ORIGIN`, `ADMIN_SECRET`, `PAYMENT_WEBHOOK_SECRET`, and `LOCAL_AUTH_EXPOSE_TOKEN=true`. The last setting exposes a raw magic-link token and must only be used for local development.
+Useful local environment variables are `APP_ENV=local`, `APP_ORIGIN`, `ADMIN_SECRET`,
+`PAYMENT_WEBHOOK_SECRET`, and `LOCAL_AUTH_EXPOSE_TOKEN=true`. The last setting exposes a
+raw magic-link token only outside `APP_ENV=production` and must only be used for local
+development.
 
 ## Public catalog and cart
 
@@ -57,8 +66,12 @@ An item is:
   ],
   "paymentMethod": "card",
   "paymentToken": "opaque-provider-token",
-  "deliveryDate": "2026-09-04",
-  "attribution": { "query": "?utm_source=instagram&utm_campaign=launch", "referrer": "https://instagram.com/..." }
+  "deliveryDate": "2027-09-03",
+  "attribution": {
+    "firstTouch": { "landingPath": "/prodavnica", "parameters": { "utm_source": "instagram" } },
+    "lastTouch": { "landingPath": "/checkout", "parameters": { "utm_source": "newsletter" } }
+  },
+  "analyticsConsent": true
 }
 ```
 
@@ -68,28 +81,40 @@ Subscription lines are charged for their actual remaining weekly/biweekly occurr
 
 ## Passwordless customer account
 
-- `POST /api/auth/magic-link` with `{ "email": "..." }` always returns `202 { accepted: true }`. On local development it also returns top-level `magicLink` and `localDevelopment: { url, token }`. The URL is `/prijava/potvrda?token=...`.
-- `GET /api/account?token=<one-time-magic-token>` consumes the 15-minute, SHA-256-hashed, one-time token and returns the account plus `session: { token, expiresAt }`.
-- Later account reads use `Authorization: Bearer <session-token>`; long-lived sessions are never accepted in URLs.
-- `PATCH /api/account/subscriptions/:id` requires the bearer session.
+- `POST /api/auth/magic-link` with `{ "email": "..." }` always returns
+  `202 { accepted: true }`. Outside production, a loopback request may also receive a
+  local test URL/token.
+- `POST /api/auth/magic-link/exchange` with `{ "token": "..." }` consumes the
+  15-minute, SHA-256-hashed, one-time token and sets a 30-day `HttpOnly`, `SameSite=Lax`
+  session cookie (`Secure` and `__Host-` on HTTPS). The raw session token is never in
+  JSON, browser storage or a URL.
+- `POST /api/auth/logout` revokes the current session and expires both possible cookie
+  names.
+- `GET /api/account` and `PATCH /api/account/subscriptions/:id` use the session cookie.
+  Cookie-authenticated write requests require an exact `Origin` match.
 
-Subscription mutation bodies use one of these actions:
+Every subscription mutation requires the current positive integer `expectedVersion`.
+Accepted responses return the incremented `version`; stale/concurrent writes return
+`409 SUBSCRIPTION_VERSION_CONFLICT` with expected/current details.
 
 ```json
-{ "action": "update_item", "itemId": "...", "quantity": 2, "cadence": "biweekly" }
-{ "action": "remove_item", "itemId": "..." }
-{ "action": "add_next_only", "productId": "...", "quantity": 1 }
-{ "action": "skip_next" }
-{ "action": "pause", "pauseUntil": "2026-10-02" }
-{ "action": "resume" }
-{ "action": "cancel" }
+{ "action": "update_item", "expectedVersion": 3, "itemId": "...", "quantity": 2, "cadence": "biweekly" }
+{ "action": "remove_item", "expectedVersion": 3, "itemId": "..." }
+{ "action": "add_next_only", "expectedVersion": 3, "productId": "...", "quantity": 1 }
+{ "action": "skip_next", "expectedVersion": 3 }
+{ "action": "pause", "expectedVersion": 3, "pauseUntil": "2027-10-01" }
+{ "action": "resume", "expectedVersion": 3 }
+{ "action": "cancel", "expectedVersion": 3 }
 ```
 
 Locked/cutoff delivery snapshots cannot be changed. Every accepted pre-cutoff mutation automatically rebuilds any affected open delivery projection, so admin preparation totals and Spoke CSV stay current without a manual refresh. Cancel is terminal; resume is valid only for paused subscriptions and is moved to the next mutable configured delivery day without changing an already locked snapshot. Changes to an already paid month create signed credit/adjustment ledger entries. Positive balances carry into the next invoice.
 
 ## Admin
 
-Every admin route requires `X-Admin-Secret`.
+Every admin data route requires `X-Admin-Secret`, except direct loopback development
+as described above. `GET /api/admin/access` returns only authentication/configuration
+status; it does not read business data. The UI validates access before loading data
+and never sends requests while a key is being typed.
 
 - `GET /api/admin/dashboard` - counts, paid revenue in minor RSD, upcoming delivery summary.
 - `GET|POST /api/admin/products`; `PATCH /api/admin/products/:id` - catalog and price operations.
@@ -98,6 +123,8 @@ Every admin route requires `X-Admin-Secret`.
 - `GET /api/admin/orders?date=YYYY-MM-DD`; `PATCH /api/admin/orders` - list and update payment/fulfillment state or note. PATCH body includes `id` and changed fields.
 - `GET /api/admin/settings`; `PATCH /api/admin/settings` - `cutoffHours`, `deliveryWeekday`, `deliveryLocalTime`, `storeName`.
 - `GET /api/admin/deliveries` or `?date=YYYY-MM-DD` - delivery list or a full customer/item snapshot plus aggregate preparation quantities.
+- If the selected date has not been generated, `GET /api/admin/deliveries?date=...`
+  returns `200 { "delivery": null, "preparation": [], "orders": [], "canGenerate": true }`.
 - `POST /api/admin/deliveries` - `{ "action": "generate|lock", "date": "YYYY-MM-DD", "force": false }`, with `Idempotency-Key`. `force=true` is an explicit admin override for pre-cutoff locking.
 - `GET /api/admin/deliveries/export?date=YYYY-MM-DD` - UTF-8 BOM CSV shaped for Spoke (name, address, phone, email, products, quantities, note, order ID). Every CSV cell is formula-injection neutralized.
 
@@ -111,4 +138,12 @@ An open delivery can be regenerated with a new idempotency key so pre-cutoff cus
 
 ## Errors and invariants
 
-Errors have `{ "error": { "code", "message", "details?" } }` and meaningful 4xx/5xx status codes. Request JSON is size-limited and domain fields are bounded. Each D1 `prepare()` contains exactly one SQL statement. Checkout, webhook, delivery and billing job boundaries use idempotency records or unique event keys. Business mutations append audit records and integration requests to the outbox in the same D1 batch. `audit_log` cannot be updated or deleted; outbox events cannot be deleted.
+Errors have `{ "error": { "code", "message", "details?" }, "requestId": "UUID" }`,
+an `X-Request-Id` header and meaningful 4xx/5xx status codes. Request JSON is
+size-limited and domain fields are bounded. Login, checkout and webhook routes are rate
+limited. Each `prepare()` contains exactly one SQL statement. Checkout, webhook,
+delivery and billing job boundaries use idempotency records or unique event keys.
+Business mutations append audit records and integration requests to the outbox in the
+same atomic libSQL batch (D1 in legacy tests). `purchase` is created only by a server-side, consent-gated outbox job
+after confirmed payment; `/api/events` rejects revenue events. `audit_log` cannot be
+updated or deleted; outbox events cannot be deleted.

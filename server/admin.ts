@@ -2,6 +2,7 @@ import { DomainError, assertDomain, enumValue, nonNegativeInt, optionalString, r
 import { audit, enqueue } from "./outbox";
 import { all, batch, first, type SqlValue } from "./sql";
 import { getBusinessSettings } from "./settings";
+import { purchaseAnalyticsEvent } from "./analytics";
 
 export async function dashboard() {
   const [counts, revenue, nextDeliveries, preparation, funnel, topProducts, orderStates, profitBase, retention, postalProfit, channelProfit] = await Promise.all([
@@ -129,6 +130,7 @@ export async function updateOrder(input: Record<string, unknown>) {
   if (paymentStatus === "paid" && before.payment_status !== "paid") {
     statements.push(enqueue("fiscal.receipt.requested", "order", id, { orderId: id, source: "admin-payment-confirmation" }));
     statements.push(enqueue("email.receipt.requested", "order", id, { orderId: id }));
+    statements.push(purchaseAnalyticsEvent(id, String(before.order_number ?? id), "admin-payment-confirmation"));
   }
   await batch(statements);
   return first<Record<string, unknown>>("SELECT * FROM orders WHERE id = ?", id);

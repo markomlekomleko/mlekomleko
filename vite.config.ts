@@ -1,36 +1,25 @@
 import vinext from "vinext";
 import { defineConfig } from "vite";
-import hostingConfig from "./.openai/hosting.json";
-import { sites } from "./build/sites-vite-plugin";
+import { fileURLToPath } from "node:url";
 
-const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
+const LOCAL_DATABASE_ID =
   "00000000-0000-4000-8000-000000000000";
-
-const { d1, r2 } = hostingConfig;
 
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
+const persistStatePath = process.env.D1_PERSIST_PATH ?? ".wrangler/state";
 
 const localBindingConfig = {
   main: "./worker/index.ts",
   compatibility_flags: ["nodejs_compat"],
-  d1_databases: d1
-    ? [
-        {
-          binding: d1,
-          database_name: "site-creator-d1",
-          database_id: SITE_CREATOR_PLACEHOLDER_DATABASE_ID,
-        },
-      ]
-    : [],
-  r2_buckets: r2
-    ? [
-        {
-          binding: r2,
-          bucket_name: "site-creator-r2",
-        },
-      ]
-    : [],
+  d1_databases: [
+    {
+      binding: "DB",
+      // Preserve the existing local database and migration history.
+      database_name: "site-creator-d1",
+      database_id: LOCAL_DATABASE_ID,
+    },
+  ],
 };
 
 export default defineConfig(async () => {
@@ -48,11 +37,20 @@ export default defineConfig(async () => {
       ? { watch: { useFsEvents: false, usePolling: true } }
       : undefined,
     plugins: [
+      {
+        name: "worker-test-runtime",
+        enforce: "pre",
+        transform(_code: string, id: string) {
+          if (id.split("?")[0] === fileURLToPath(new URL("./server/runtime.ts", import.meta.url))) {
+            return 'export { env, getDatabase } from "./runtime.worker";';
+          }
+        },
+      },
       vinext(),
-      sites(),
       cloudflare({
         viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
         config: localBindingConfig,
+        persistState: { path: persistStatePath },
       }),
     ],
   };

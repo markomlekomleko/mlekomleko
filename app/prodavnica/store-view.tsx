@@ -24,10 +24,9 @@ export function StoreView({ initialProducts }: { initialProducts: Product[] }) {
         <p className="eyebrow">Prodavnica</p>
         <h1>Izaberite mleko i količinu.</h1>
         <p className="lead">
-          Kravlje ili kozje mleko, od 2 litra po dostavi. Izaberite 2, 4 ili 8 L
-          jednim dodirom, ili podesite tačnu količinu koja vam odgovara.
+          Prvo pronađite svoj ukus. Količinu i ritam birate u sledećem koraku.
         </p>
-        <div className="micro-proof"><span>✓ 250 RSD/L kravlje</span><span>✓ 300 RSD/L kozje</span><span>✓ Povratne staklene flaše</span></div>
+        <div className="micro-proof"><span>Povratne staklene flaše</span><span>Jednokratna ili redovna dostava</span></div>
       </header>
 
       {products.length === 0 ? (

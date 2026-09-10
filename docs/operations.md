@@ -27,10 +27,16 @@ Verifikacija pre handoff-a:
 ```bash
 npm run lint
 npm test
+npm run test:vercel
+npm run test:e2e
 ```
 
-`npm test` prvo pravi production-like build, zatim pokreće Node acceptance i
-integration testove. Testovi ne zahtevaju spoljne naloge niti mrežu.
+`npm test` pravi legacy Worker build za postojeće Node acceptance i integration
+testove. `npm run test:vercel` proverava produkcioni Next.js runtime kroz HTTP i libSQL.
+Playwright zatim za svaki test run pravi novu izolovanu SQLite bazu,
+primenjuje sve migracije i proverava 390/768/1440 px, accessibility, magic-link,
+rate-limit, CSRF i optimistic concurrency. Testovi ne zahtevaju spoljne naloge niti
+mrežu.
 
 ## Test podaci
 
@@ -80,9 +86,10 @@ Za dan isporuke operater bira datum i proverava tri pogleda izvedena iz iste pro
 Otvorenu listu treba ponovo generisati pre izvoza; tada sadrži sve dozvoljene izmene do
 cutoff-a. Posle zaključavanja projekcija ostaje nepromenljiva.
 
-Worker ima `scheduled` handler za dnevnu projekciju, podsetnik za sutrašnju dostavu,
-obračun prvog dana u mesecu i outbox retry. Pri hostingu treba povezati jedan dnevni
-Cloudflare Cron trigger; do tada su iste operacije dostupne ručno u adminu.
+`GET /api/jobs/scheduled` ima zaštićeni handler za dnevnu projekciju, podsetnik za
+sutrašnju dostavu, obračun prvog dana u mesecu i outbox retry. Pri hostingu treba
+povezati Vercel Cron i zaseban `CRON_SECRET`; do tada su iste operacije dostupne ručno
+u adminu. Detalji i status migracije su u `docs/hosting.md`.
 
 ## Monitoring i alarmi
 
@@ -144,3 +151,25 @@ Produkcioni mode se ne uključuje samo postavljanjem env-a. Potrebni su: potpisa
 sa tačno jednim payment providerom, sandbox acceptance, odobrena fiskalna logika,
 verifikovan domen/email, consent/tag QA, privacy/terms/refund/delivery stranice, backup i
 restore proba, admin allowlist/MFA plan i odobren rollback.
+
+## Kontrolisani rollout i rollback
+
+1. Deploy na staging sa `APP_ENV=test`, isključenim produkcionim integracijama i samo
+   fiktivnim kupcima.
+2. Pokrenuti CI i lokalni ručni regresioni scenario iz `docs/acceptance.md`.
+3. Aktivirati i dokazati jednu integraciju odjednom: payment sandbox, Badi sandbox,
+   email, pa consent/tag QA. Sačuvati ID test transakcija i potpis odgovorne osobe.
+4. Napraviti enkriptovan backup, izvršiti restore u izolovanu bazu i reconciliation.
+5. Postaviti alarme, dnevni Cron, on-call kontakt i prethodni deployment kao rollback
+   kandidat. Zamrznuti migracije tokom launch prozora.
+6. Tek kada su P01–P10 potpisani, postaviti produkcione tajne i aktivirati
+   `ALLOW_PRODUCTION_INTEGRATIONS=true` za odobrene adaptere.
+7. Posle puštanja proveriti jedan fiktivni/sandbox smoke tok bez stvarne naplate, zatim
+   prvu stvarnu porudžbinu pratiti kroz order, payment, fiscal, email i delivery
+   projekciju.
+
+Rollback: odmah onemogućiti adaptere i nove card checkout-e, vratiti prethodni
+deployment, ne vraćati bazu automatski i ne ponavljati nejasne spoljne pozive. Najpre
+reconcile provider ID-eve i pending outbox, pa tek onda odlučiti o forward-fix migraciji
+ili kontrolisanom restore-u. SQL rollback mora biti unapred testiran; `git reset` ili
+brisanje produkcione baze nisu rollback procedura.

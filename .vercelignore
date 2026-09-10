@@ -1,0 +1,14 @@
+.git
+.wrangler
+.data
+.openai
+.vinext
+dist
+outputs
+tmp
+test-results
+playwright-report
+blob-report
+*.tsbuildinfo
+.env*
+!.env.example

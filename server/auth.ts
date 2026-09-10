@@ -1,4 +1,4 @@
-import { env } from "cloudflare:workers";
+import { env } from "@/server/runtime";
 import { constantTimeEqual, randomToken, sha256 } from "./crypto";
 import { DomainError, assertDomain, emailAddress } from "./domain";
 import { batch, first, run } from "./sql";
@@ -19,8 +19,39 @@ interface CustomerRow extends Record<string, unknown> {
   email: string;
 }
 
-function runtimeEnv(): { APP_ORIGIN?: string; ADMIN_SECRET?: string; LOCAL_AUTH_EXPOSE_TOKEN?: string } {
-  return env as unknown as { APP_ORIGIN?: string; ADMIN_SECRET?: string; LOCAL_AUTH_EXPOSE_TOKEN?: string };
+function runtimeEnv(): { APP_ENV?: string; APP_ORIGIN?: string; ADMIN_SECRET?: string; LOCAL_AUTH_EXPOSE_TOKEN?: string } {
+  return env as unknown as { APP_ENV?: string; APP_ORIGIN?: string; ADMIN_SECRET?: string; LOCAL_AUTH_EXPOSE_TOKEN?: string };
+}
+
+const PRODUCTION_SESSION_COOKIE = "__Host-mm_session";
+const LOCAL_SESSION_COOKIE = "mm_session";
+
+function cookies(request: Request): Map<string, string> {
+  return new Map((request.headers.get("cookie") ?? "").split(";").map((part): [string, string] => {
+    const separator = part.indexOf("=");
+    return separator < 0 ? [part.trim(), ""] : [part.slice(0, separator).trim(), decodeURIComponent(part.slice(separator + 1))];
+  }).filter(([name]) => Boolean(name)));
+}
+
+export function sessionTokenFromRequest(request: Request): string {
+  const values = cookies(request);
+  return values.get(PRODUCTION_SESSION_COOKIE) ?? values.get(LOCAL_SESSION_COOKIE) ?? "";
+}
+
+export function sessionCookie(request: Request, token: string, expiresAt: string): string {
+  const secure = new URL(request.url).protocol === "https:";
+  const name = secure ? PRODUCTION_SESSION_COOKIE : LOCAL_SESSION_COOKIE;
+  return `${name}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${Math.max(0, Math.floor((Date.parse(expiresAt) - Date.now()) / 1_000))}; Expires=${new Date(expiresAt).toUTCString()}${secure ? "; Secure" : ""}`;
+}
+
+export function expiredSessionCookies(): string[] {
+  return [PRODUCTION_SESSION_COOKIE, LOCAL_SESSION_COOKIE].map((name) => `${name}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Expires=Thu, 01 Jan 1970 00:00:00 GMT${name === PRODUCTION_SESSION_COOKIE ? "; Secure" : ""}`);
+}
+
+export function assertSameOrigin(request: Request): void {
+  const supplied = request.headers.get("origin");
+  const expected = runtimeEnv().APP_ORIGIN ?? new URL(request.url).origin;
+  assertDomain(Boolean(supplied) && supplied === expected, "CSRF_REJECTED", "Zahtev nije poslat sa dozvoljenog porekla.", 403);
 }
 
 export async function issueMagicLink(rawEmail: unknown, request: Request): Promise<{ accepted: true; magicLink?: string; localDevelopment?: { url: string; token: string } }> {
@@ -41,7 +72,8 @@ export async function issueMagicLink(rawEmail: unknown, request: Request): Promi
   await processOutboxFor("customer", customer?.id ?? email);
 
   // The raw token is exposed only on localhost (or when explicitly opted into local mode).
-  const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(new URL(request.url).hostname) || runtimeEnv().LOCAL_AUTH_EXPOSE_TOKEN === "true";
+  const runtime = runtimeEnv();
+  const local = runtime.APP_ENV !== "production" && (["localhost", "127.0.0.1", "::1", "[::1]"].includes(new URL(request.url).hostname) || runtime.LOCAL_AUTH_EXPOSE_TOKEN === "true");
   return local ? { accepted: true, magicLink: url, localDevelopment: { url, token } } : { accepted: true };
 }
 
@@ -64,9 +96,8 @@ export async function exchangeMagicLink(token: string): Promise<{ customerId: st
   return { customerId: customer.id, sessionToken, sessionExpiresAt: expiresAt };
 }
 
-export async function authenticateCustomer(request: Request, queryToken?: string | null): Promise<{ customerId: string; email: string }> {
-  const authorization = request.headers.get("authorization");
-  const token = authorization?.startsWith("Bearer ") ? authorization.slice(7).trim() : queryToken?.trim();
+export async function authenticateCustomer(request: Request): Promise<{ customerId: string; email: string }> {
+  const token = sessionTokenFromRequest(request);
   assertDomain(token && token.length >= 32 && token.length <= 200, "AUTH_REQUIRED", "A valid customer session is required.", 401);
   const hash = await sha256(token);
   const row = await first<AuthRow>("SELECT id, customer_id, email, kind, expires_at, used_at FROM auth_tokens WHERE token_hash = ?", hash);
@@ -75,15 +106,43 @@ export async function authenticateCustomer(request: Request, queryToken?: string
 }
 
 export async function requireAdmin(request: Request): Promise<void> {
+  if (isLocalAdminRequest(request)) return;
   const supplied = request.headers.get("x-admin-secret") ?? "";
   const configured = runtimeEnv().ADMIN_SECRET;
-  const hostname = new URL(request.url).hostname;
-  const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(hostname);
-  if (!configured && !local) throw new DomainError("ADMIN_NOT_CONFIGURED", "ADMIN_SECRET must be configured outside local development.", 503);
-  const expected = configured ?? "local-dev-change-me";
-  assertDomain(supplied.length > 0 && await constantTimeEqual(supplied, expected), "ADMIN_FORBIDDEN", "Admin access denied.", 403);
+  if (!configured) throw new DomainError("ADMIN_NOT_CONFIGURED", "Admin pristup nije podešen na serveru. Postavite ADMIN_SECRET i ponovo pokrenite aplikaciju.", 503);
+  assertDomain(supplied.length > 0 && await constantTimeEqual(supplied, configured), "ADMIN_FORBIDDEN", "Admin ključ nije ispravan. Pokušajte ponovo.", 403);
+}
+
+// Production builds disable this branch. A hostname or runtime
+// environment variable alone must never enable unauthenticated admin access.
+export function isLocalAdminRequest(request: Request): boolean {
+  if (process.env.NODE_ENV !== "development" || process.env.VERCEL || runtimeEnv().APP_ENV === "production") return false;
+  const url = new URL(request.url);
+  if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) return false;
+  if (request.headers.has("forwarded")) return false;
+  const loopback = ["127.0.0.1", "::1", "::ffff:127.0.0.1"];
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor && !forwardedFor.split(",").every((ip) => loopback.includes(ip.trim()))) return false;
+  // Next.js and Miniflare add forwarding headers even for direct local requests.
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const clientIp = request.headers.get("cf-connecting-ip") ?? request.headers.get("x-real-ip");
+  if (forwardedHost && forwardedHost !== url.host) return false;
+  if (clientIp && !loopback.includes(clientIp)) return false;
+  const origin = request.headers.get("origin");
+  const fetchSite = request.headers.get("sec-fetch-site");
+  return (!origin || origin === url.origin) && (!fetchSite || fetchSite === "same-origin" || fetchSite === "none");
+}
+
+export async function adminAccess(request: Request) {
+  const local = isLocalAdminRequest(request);
+  const configured = Boolean(runtimeEnv().ADMIN_SECRET);
+  if (local) return { authenticated: true, configured, mode: "local" as const };
+  if (!request.headers.get("x-admin-secret")) return { authenticated: false, configured, mode: "key" as const };
+  await requireAdmin(request);
+  return { authenticated: true, configured, mode: "key" as const };
 }
 
 export async function revokeSession(token: string): Promise<void> {
+  if (!token) return;
   await run("UPDATE auth_tokens SET used_at = ? WHERE token_hash = ? AND kind = 'session'", new Date().toISOString(), await sha256(token));
 }

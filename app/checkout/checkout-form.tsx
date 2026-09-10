@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useCart } from "../components/cart-provider";
-import { useAnalytics } from "../components/analytics-provider";
+import { getConsentPreferences, useAnalytics } from "../components/analytics-provider";
+import { getAttributionSnapshot } from "../lib/attribution";
 import {
   cadenceLabel,
   fetchJson,
@@ -110,12 +111,8 @@ export function CheckoutForm() {
     setSubmitting(true);
     setError("");
     const form = new FormData(event.currentTarget);
-    const query = new URLSearchParams(window.location.search);
-    const source = Object.fromEntries(
-      ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "gclid", "fbclid"]
-        .map((key) => [key, query.get(key)] as const)
-        .filter((entry): entry is readonly [string, string] => Boolean(entry[1])),
-    );
+    const attribution = getAttributionSnapshot();
+    const consent = getConsentPreferences();
     idempotencyKey.current ??= window.crypto.randomUUID();
 
     try {
@@ -142,12 +139,13 @@ export function CheckoutForm() {
             purchaseType: item.purchaseType,
             cadence: item.cadence,
           })),
-          source,
+          attribution,
+          analyticsConsent: consent.analytics,
         }),
       });
       setResult(payload);
       const orderId = payload.order?.id ?? payload.orderId ?? payload.id;
-      track("purchase", { valueRsd: quote ? quote.totalMinor / 100 : 0, paymentMethod }, orderId);
+      track("order_created", { paymentMethod }, orderId);
       clearCart();
     } catch (requestError) {
       setError(
@@ -302,7 +300,7 @@ export function CheckoutForm() {
           <label className="checkbox-row">
             <input type="checkbox" required />
             <span>
-              Saglasan/na sam sa uslovima kupovine i pravilima redovne dostave.
+              Saglasan/na sam sa <a href="/uslovi-kupovine" target="_blank">uslovima kupovine</a> i <a href="/pravila-pretplate" target="_blank">pravilima redovne dostave</a>.
             </span>
           </label>
           {error ? <p className="notice error" role="alert">{error}</p> : null}
@@ -317,6 +315,7 @@ export function CheckoutForm() {
                 {line.quantity} × {line.productName}<br />
                 <span className="muted">
                   {line.purchaseType === "one_time" ? "Jednokratno" : `${cadenceLabel(line.cadence ?? undefined)} · ${formatMoney(line.unitPriceMinor * line.quantity / 100)} po dostavi · ${line.occurrences}× ovog meseca`}
+                  {line.deliveryDates.length ? <><br />Termini: {line.deliveryDates.map((date) => formatDate(date)).join(", ")}</> : null}
                 </span>
               </span>
               <strong>{formatMoney(line.lineTotalMinor / 100)}</strong>

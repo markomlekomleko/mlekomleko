@@ -1,4 +1,5 @@
 import { assertDomain, requiredString } from "./domain";
+import { enqueueOnce } from "./outbox";
 import { run } from "./sql";
 
 const eventNames = new Set([
@@ -10,7 +11,7 @@ const eventNames = new Set([
   "view_cart",
   "begin_checkout",
   "add_payment_info",
-  "purchase",
+  "order_created",
   "subscription_selected",
   "delivery_cadence_selected",
   "postcode_checked",
@@ -56,4 +57,9 @@ export async function recordAnalyticsEvent(input: Record<string, unknown>) {
     crypto.randomUUID(), eventName, anonymousId, sessionId, orderId, path, JSON.stringify(properties),
   );
   return { accepted: true };
+}
+
+export function purchaseAnalyticsEvent(orderId: string, transactionId?: string, source = "payment-confirmation") {
+  const eventId = `purchase:${orderId}`;
+  return enqueueOnce("analytics.purchase", "order", orderId, { eventId, transactionId: transactionId ?? orderId, source }, eventId);
 }

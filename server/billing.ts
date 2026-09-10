@@ -5,10 +5,12 @@ import { audit, enqueue } from "./outbox";
 import { all, batch, first, type SqlValue } from "./sql";
 import { isCadenceDue } from "./time";
 import { getBusinessSettings } from "./settings";
+import { purchaseAnalyticsEvent } from "./analytics";
 
 interface BillingSubscription extends Record<string, unknown> {
   id: string; customer_id: string; payment_method: "card" | "cash"; payment_provider_ref: string | null;
   status: "active" | "paused"; pause_until: string | null; next_delivery_date: string; started_at: string;
+  source_json: string;
 }
 
 interface BillingItem extends Record<string, unknown> {
@@ -50,7 +52,7 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
 
   const settings = await getBusinessSettings();
   const deliveryDates = weekdayDates(month, settings.deliveryWeekday);
-  const subscriptions = await all<BillingSubscription>("SELECT * FROM subscriptions WHERE status IN ('active', 'paused') AND substr(started_at, 1, 7) <= ? ORDER BY id", month);
+  const subscriptions = await all<BillingSubscription>("SELECT s.*, c.source_json FROM subscriptions s JOIN customers c ON c.id = s.customer_id WHERE s.status IN ('active', 'paused') AND substr(s.started_at, 1, 7) <= ? ORDER BY s.id", month);
   const results: Array<Record<string, unknown>> = [];
   for (const subscription of subscriptions) {
     const orderKey = `billing:${month}:${subscription.id}`;
@@ -95,7 +97,7 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
     const paymentFeeMinor = subscription.payment_method === "card" ? Math.round(totalMinor * settings.paymentFeeBps / 10_000) : 0;
     const estimatedDeliveryCostMinor = settings.estimatedDeliveryCostMinor * Math.max(1, billedDeliveryDates.length);
     const statements: Array<{ sql: string; bindings?: SqlValue[] }> = [
-      { sql: "INSERT INTO orders (id, order_number, customer_id, subscription_id, kind, payment_method, payment_provider_ref, payment_status, fulfillment_status, delivery_date, subtotal_minor, delivery_fee_minor, payment_fee_minor, estimated_delivery_cost_minor, credit_applied_minor, total_minor, currency, source_json, idempotency_key, created_at, updated_at) VALUES (?, ?, ?, ?, 'subscription_invoice', ?, ?, ?, 'planned', ?, ?, ?, ?, ?, ?, ?, 'RSD', '{}', ?, ?, ?)", bindings: [orderId, orderNumber, subscription.customer_id, subscription.id, subscription.payment_method, payment.providerReference, payment.status, deliveryDate, subtotalMinor, deliveryFeeMinor, paymentFeeMinor, estimatedDeliveryCostMinor, creditAppliedMinor, totalMinor, orderKey, now, now] },
+      { sql: "INSERT INTO orders (id, order_number, customer_id, subscription_id, kind, payment_method, payment_provider_ref, payment_status, fulfillment_status, delivery_date, subtotal_minor, delivery_fee_minor, payment_fee_minor, estimated_delivery_cost_minor, credit_applied_minor, total_minor, currency, source_json, idempotency_key, created_at, updated_at) VALUES (?, ?, ?, ?, 'subscription_invoice', ?, ?, ?, 'planned', ?, ?, ?, ?, ?, ?, ?, 'RSD', ?, ?, ?, ?)", bindings: [orderId, orderNumber, subscription.customer_id, subscription.id, subscription.payment_method, payment.providerReference, payment.status, deliveryDate, subtotalMinor, deliveryFeeMinor, paymentFeeMinor, estimatedDeliveryCostMinor, creditAppliedMinor, totalMinor, subscription.source_json || "{}", orderKey, now, now] },
     ];
     for (const line of lines) statements.push({ sql: "INSERT INTO order_items (id, order_id, product_id, product_name, unit_label, quantity, unit_price_minor, unit_cost_minor, unit_packaging_cost_minor, total_cost_minor, line_total_minor, purchase_type, cadence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'subscription', ?)", bindings: [crypto.randomUUID(), orderId, line.item.product_id, line.item.product_name, line.item.unit_label, line.item.quantity, line.item.price_minor, line.item.cost_minor, line.item.packaging_cost_minor, (line.item.cost_minor + line.item.packaging_cost_minor) * line.item.quantity * line.occurrences, line.lineTotalMinor, line.item.cadence] });
     for (const credit of credits) statements.push({ sql: "UPDATE credits_ledger SET status = 'applied', order_id = ?, applied_at = ? WHERE id = ? AND status = 'open'", bindings: [orderId, now, credit.id] });
@@ -104,7 +106,10 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
     statements.push(audit("system", "monthly-billing-job", "billing.invoice_created", "order", orderId, null, summary));
     statements.push(enqueue("billing.invoice_created", "order", orderId, summary));
     statements.push(enqueue(payment.status === "paid" ? "payment.captured" : payment.status === "pending" ? "payment.cash_due" : "payment.method_required", "order", orderId, summary));
-    if (payment.status === "paid") statements.push(enqueue("fiscal.receipt.requested", "order", orderId, summary));
+    if (payment.status === "paid") {
+      statements.push(enqueue("fiscal.receipt.requested", "order", orderId, summary));
+      statements.push(purchaseAnalyticsEvent(orderId, orderNumber, "monthly-billing"));
+    }
     statements.push(enqueue("email.invoice.requested", "order", orderId, summary));
     try {
       await batch(statements);

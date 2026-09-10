@@ -1,11 +1,7 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
-import { generateMonthlyBilling } from "../server/billing";
-import { generateDelivery } from "../server/deliveries";
-import { processOutbox, queueDeliveryReminders } from "../server/integration-jobs";
-import { getNextDeliveryWindow } from "../server/settings";
-import { addLocalDays } from "../server/time";
+import { runScheduledJobs } from "../server/jobs";
 
 interface Env {
   ASSETS: Fetcher;
@@ -26,10 +22,20 @@ interface ExecutionContext {
 
 interface ScheduledController { scheduledTime: number; cron: string }
 
-function belgradeDate(timestamp: number): string {
-  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Belgrade", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(timestamp));
-  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
-  return `${value.year}-${value.month}-${value.day}`;
+function secureResponse(request: Request, response: Response): Response {
+  const url = new URL(request.url);
+  const local = ["localhost", "127.0.0.1", "::1", "[::1]"].includes(url.hostname);
+  const headers = new Headers(response.headers);
+  headers.set("x-content-type-options", "nosniff");
+  headers.set("referrer-policy", "strict-origin-when-cross-origin");
+  headers.set("permissions-policy", "camera=(), microphone=(), geolocation=(), payment=(self)");
+  headers.set("x-frame-options", "DENY");
+  headers.set("cross-origin-opener-policy", "same-origin");
+  if (url.protocol === "https:" && !local) {
+    headers.set("strict-transport-security", "max-age=31536000; includeSubDomains; preload");
+    headers.set("content-security-policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.google-analytics.com https://www.facebook.com; font-src 'self' data:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com; frame-src https://www.youtube.com https://www.tiktok.com; upgrade-insecure-requests");
+  }
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
 // Image security config. SVG sources with .svg extension auto-skip the
@@ -44,27 +50,20 @@ const worker = {
 
     if (url.pathname === "/_vinext/image") {
       const allowedWidths = [...DEFAULT_DEVICE_SIZES, ...DEFAULT_IMAGE_SIZES];
-      return handleImageOptimization(request, {
+      const image = await handleImageOptimization(request, {
         fetchAsset: (path) => env.ASSETS.fetch(new Request(new URL(path, request.url))),
         transformImage: async (body, { width, format, quality }) => {
           const result = await env.IMAGES.input(body).transform(width > 0 ? { width } : {}).output({ format, quality });
           return result.response();
         },
       }, allowedWidths);
+      return secureResponse(request, image);
     }
 
-    return handler.fetch(request, env, ctx);
+    return secureResponse(request, await handler.fetch(request, env, ctx));
   },
   async scheduled(controller: ScheduledController, _env: Env, ctx: ExecutionContext): Promise<void> {
-    ctx.waitUntil((async () => {
-      const today = belgradeDate(controller.scheduledTime);
-      const nextWindow = await getNextDeliveryWindow(new Date(controller.scheduledTime));
-      await generateDelivery(nextWindow.deliveryDate, `cron-delivery:${today}:${nextWindow.deliveryDate}`);
-      const tomorrow = addLocalDays(today, 1);
-      await queueDeliveryReminders(tomorrow);
-      if (today.endsWith("-01")) await generateMonthlyBilling(today.slice(0, 7), `cron-billing:${today.slice(0, 7)}`);
-      await processOutbox(100);
-    })());
+    ctx.waitUntil(runScheduledJobs(controller.scheduledTime));
   },
 };
 

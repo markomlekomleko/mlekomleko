@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   cadenceLabel,
+  ApiError,
   fetchJson,
   formatDate,
   formatMoney,
@@ -14,7 +15,6 @@ import {
 } from "../lib/frontend";
 import { useAnalytics } from "../components/analytics-provider";
 
-const SESSION_KEY = "mleko-i-mleko-session";
 type Row = Record<string, unknown>;
 
 type AccountPayload = {
@@ -46,8 +46,7 @@ function idOf(value: Row) {
 
 export function AccountView() {
   const { track } = useAnalytics();
-  const [sessionToken, setSessionToken] = useState("");
-  const [sessionReady, setSessionReady] = useState(false);
+  const [authenticated, setAuthenticated] = useState(true);
   const [account, setAccount] = useState<AccountPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -56,41 +55,26 @@ export function AccountView() {
   const [cancellingId, setCancellingId] = useState("");
   const [cancelReason, setCancelReason] = useState("too_frequent");
 
-  useEffect(() => {
-    queueMicrotask(() => {
-      setSessionToken(window.localStorage.getItem(SESSION_KEY) ?? "");
-      setSessionReady(true);
-    });
-  }, []);
-
-  const loadAccount = useCallback(async (token: string) => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+  const loadAccount = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const payload = await fetchJson<AccountPayload>("/api/account", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const payload = await fetchJson<AccountPayload>("/api/account");
       setAccount(payload);
+      setAuthenticated(true);
     } catch (requestError) {
-      setError(
-        requestError instanceof Error
-          ? requestError.message
-          : "Nalog trenutno nije moguće učitati.",
-      );
+      if (requestError instanceof ApiError && requestError.status === 401) {
+        setAuthenticated(false);
+        setAccount(null);
+      } else setError(requestError instanceof Error ? requestError.message : "Nalog trenutno nije moguće učitati.");
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (!sessionReady) return;
-    if (sessionToken) queueMicrotask(() => void loadAccount(sessionToken));
-    else queueMicrotask(() => setLoading(false));
-  }, [sessionReady, sessionToken, loadAccount]);
+    queueMicrotask(() => void loadAccount());
+  }, [loadAccount]);
 
   const wrapper = useMemo(() => row(account?.data), [account]);
   const customer = row(account?.customer ?? account?.account ?? wrapper.customer);
@@ -114,15 +98,16 @@ export function AccountView() {
   const nextItems = unwrapList(nextDelivery, ["items", "products"]).map(row);
 
   async function mutate(subscriptionId: string, action: string, details: Row = {}) {
-    if (!sessionToken) return;
+    const current = subscriptions.find((subscription) => idOf(subscription) === subscriptionId);
+    if (!current) return;
     setBusy(`${subscriptionId}:${action}`);
     setError("");
     setNotice("");
     try {
       await fetchJson(`/api/account/subscriptions/${encodeURIComponent(subscriptionId)}`, {
         method: "PATCH",
-        headers: { Authorization: `Bearer ${sessionToken}`, "Idempotency-Key": window.crypto.randomUUID() },
-        body: JSON.stringify({ action, ...details }),
+        headers: { "Idempotency-Key": window.crypto.randomUUID() },
+        body: JSON.stringify({ action, expectedVersion: number(current.version, 0), ...details }),
       });
       setNotice("Izmena je sačuvana. Sledeća dostava je ažurirana ako rok nije istekao.");
       if (action === "add_next_only") track("add_to_next_delivery", { subscriptionId, productId: string(details.productId, "") });
@@ -130,9 +115,10 @@ export function AccountView() {
         track("subscription_saved", { subscriptionId, action });
         setCancellingId("");
       }
-      await loadAccount(sessionToken);
+      await loadAccount();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : "Izmena nije sačuvana.");
+      if (requestError instanceof ApiError && requestError.status === 409) await loadAccount();
     } finally {
       setBusy("");
     }
@@ -144,9 +130,9 @@ export function AccountView() {
     return base.toISOString().slice(0, 10);
   }
 
-  function signOut() {
-    window.localStorage.removeItem(SESSION_KEY);
-    setSessionToken("");
+  async function signOut() {
+    try { await fetchJson("/api/auth/logout", { method: "POST" }); } catch { /* Clear local UI even if the session already expired. */ }
+    setAuthenticated(false);
     setAccount(null);
   }
 
@@ -154,7 +140,7 @@ export function AccountView() {
     return <div className="page-shell"><p className="loading-state" role="status">Učitavamo vaš nalog…</p></div>;
   }
 
-  if (!sessionToken) {
+  if (!authenticated) {
     return (
       <div className="page-shell narrow">
         <div className="empty-state">
@@ -174,8 +160,8 @@ export function AccountView() {
           <h1>Nalog nije učitan.</h1>
           <p>{error}</p>
           <div className="button-row">
-            <button className="button secondary" type="button" onClick={() => loadAccount(sessionToken)}>Pokušaj ponovo</button>
-            <button className="button danger" type="button" onClick={signOut}>Odjavi ovaj uređaj</button>
+            <button className="button secondary" type="button" onClick={() => void loadAccount()}>Pokušaj ponovo</button>
+            <button className="button danger" type="button" onClick={() => void signOut()}>Odjavi ovaj uređaj</button>
           </div>
         </div>
       </div>
@@ -189,7 +175,7 @@ export function AccountView() {
         <h1>Zdravo, {string(customer.fullName ?? customer.full_name ?? customer.name, "kupče")}.</h1>
         <div className="button-row">
           <a className="button secondary small" href="/prodavnica">Dodaj proizvod</a>
-          <button className="button danger small" type="button" onClick={signOut}>Odjavi se</button>
+          <button className="button danger small" type="button" onClick={() => void signOut()}>Odjavi se</button>
         </div>
       </header>
 
@@ -299,7 +285,7 @@ export function AccountView() {
                             <input
                               type="date"
                               disabled={disabled}
-                              min={new Date().toISOString().slice(0, 10)}
+                              min={new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Belgrade" }).format(new Date())}
                               onChange={(event) => event.target.value && void mutate(subscriptionId, "pause", { pauseUntil: event.target.value })}
                             />
                           </label>

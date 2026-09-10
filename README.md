@@ -1,8 +1,9 @@
-# Mleko i Mleko - lokalni webshop MVP
+# Mleko i Mleko - produkciono ojačan webshop
 
 Lokalni full-stack MVP za katalog, mešovitu korpu, jednokratne porudžbine, mesečne
 pretplate po stavci, korisnički magic-link nalog, rok za izmene, admin i pripremu
-dostave. Frontend je namerno osnovan; backend i poslovna pravila su glavni fokus.
+dostave. Poslovno vreme, obračun, autentikacija, analitika i isporuke koriste server kao
+jedini autoritet.
 
 Spoljne integracije podrazumevano nisu aktivne: kartice koriste lokalni adapter,
 fiskalizacija Badi mock, a email console režim. Badi HTTP i Resend adapteri su
@@ -22,13 +23,16 @@ npm run dev
 ```
 
 Otvorite [http://localhost:3000](http://localhost:3000). Lokalni admin je na
-[http://localhost:3000/admin](http://localhost:3000/admin); development ključ iz
-`.env.example` je `local-dev-change-me`. Taj fallback je samo za loopback razvoj i ne
-sme se koristiti u produkciji.
+[http://localhost:3000/admin](http://localhost:3000/admin). U razvojnom serveru pristup
+sa istog računara je automatski; admin ključ nije potreban. To važi samo za loopback,
+zahteve sa istog porekla i razvojni build, kada `APP_ENV` nije `production`.
+Objavljeni/produkcioni build uvek zahteva sopstveni `ADMIN_SECRET`. Admin prvo proverava
+pristup, a tek zatim učitava podatke. Ključ za prijavu van lokalnog režima čuva se samo
+u memoriji otvorene stranice; ne upisuje se u browser storage.
 
-Početne migracije ubacuju razvojne podatke, a `0006_take_catalog.sql` ih zamenjuje
-stvarnim kravljim i kozjim mlekom, cenama i sadržajem iz postojeće Mleko i Mleko
-prodavnice. Kupac bira litre po dostavi direktno na proizvodu.
+Početne migracije ubacuju razvojne podatke, a poslednja migracija koristi lokalne,
+neutralne fotografije kravljeg i kozjeg mleka i uklanja tvrdnje koje zahtevaju dokaz.
+Kupac bira litre po dostavi direktno na proizvodu.
 
 Migracije su idempotentne; `npm run db:migrate:local` pokrenite nakon novih migration
 fajlova. Nemojte pokretati drugi dev server ako jedan već radi.
@@ -38,10 +42,17 @@ fajlova. Nemojte pokretati drugi dev server ako jedan već radi.
 ```bash
 npm run lint
 npm test
+npm run test:vercel
+npm run test:e2e
 ```
 
-`npm test` pravi build i zatim izvršava rendered HTML/API smoke testove i izolovane
-integration contract testove. Testovi ne koriste mrežu, prave kartice, email ili Badi.
+`npm test` zadržava Vinext build samo za postojeće determinističke unit, rendered
+HTML/API i integration contract testove. `npm run test:vercel` pravi produkcioni
+Next.js build i testira stvarni HTTP server, admin, upis/rollback u libSQL bazi,
+checkout i zaštitu cron rute. `npm run test:e2e` automatski pravi novu izolovanu SQLite
+bazu, primenjuje migracije i pokreće Playwright na 390, 768 i 1440 px, uključujući axe
+proveru ozbiljnih i kritičnih accessibility grešaka. Testovi koriste samo fiktivne
+kupce i ne pozivaju prave kartice, email ili Badi.
 
 Za bržu proveru samo provider-neutralnih modula:
 
@@ -58,16 +69,23 @@ node --test tests/integrations.test.mjs
 - customers, orders, subscription items, idempotent skip/pause/resume/cancel, zasebno
   naplaćen next-only dodatak i kreditni ledger sa automatskim prenosom;
 - kalendarski obračun broja isporuka i cutoff u `Europe/Belgrade`;
-- jednokratni email magic link i lokalna session razmena;
+- jednokratni email magic link i `HttpOnly`, `Secure`, `SameSite=Lax` session cookie;
+- logout/revocation, Origin/CSRF zaštita i rate limit za login, checkout i webhook;
+- optimističko zaključavanje pretplate kroz obavezni `expectedVersion` i strukturirani
+  `409` konflikt;
 - admin proizvodi/kupci/porudžbine/pretplate/isporuke/podešavanja;
 - idempotent delivery projekcija, dnevni zbir za pripremu i Spoke CSV/XLSX izvoz;
 - audit, webhook inbox i izvršivi outbox sa backoff-om, greškama i ručnim retry-em;
 - trajna evidencija fiskalnih računa, Badi mock/HTTP i Resend/console adapteri;
-- automatske potvrde posle checkout-a/uplate, podsetnici i scheduled worker za dnevne
-  projekcije, mesečni obračun i retry;
+- automatske potvrde posle checkout-a/uplate, podsetnici i zaštićena cron ruta za dnevne
+  projekcije, mesečni obračun i retry (raspored se aktivira na Vercelu);
 - config ugovori za OTP ili RaiAccept, Badi, email, WhatsApp-ready queue i analytics;
-- consent-gated GA4/GTM/Meta helper i first/last-touch UTM allowlist;
-- sitemap/robots i osnovni mobile-first frontend.
+- odvojena analytics/marketing saglasnost sa trajno dostupnim povlačenjem;
+- first/last-touch snapshot bez PII i server-side `purchase` outbox tek posle potvrđene
+  naplate;
+- CSP, HSTS i sigurnosni headeri u HTTPS produkcionom odgovoru;
+- mobilni meni, 44 px kontrole, pravne stranice, sitemap/robots i noindex stranica za nepostojeće proizvode;
+- lokalne AVIF/WebP varijante ključnih slika.
 
 ## Važne lokalne vrednosti
 
@@ -75,6 +93,8 @@ node --test tests/integrations.test.mjs
 
 ```dotenv
 APP_ENV=local
+ADMIN_SECRET=
+PAYMENT_WEBHOOK_SECRET=unesite-sopstveni-dug-slucajni-kljuc
 PAYMENT_PROVIDER=disabled
 PAYMENT_MODE=disabled
 BADI_MODE=mock
@@ -100,27 +120,32 @@ API je pod `/api`:
 
 - `GET /api/products`, `GET /api/products/:slug`;
 - `POST /api/checkout` sa `Idempotency-Key` headerom;
-- `POST /api/auth/magic-link`, `GET /api/account` i
+- `POST /api/auth/magic-link`, `POST /api/auth/magic-link/exchange`,
+  `POST /api/auth/logout`, `GET /api/account` i
   `PATCH /api/account/subscriptions/:id`;
-- `/api/admin/*` sa `x-admin-secret` u trenutnom lokalnom MVP-u;
+- `GET /api/admin/access` za proveru režima pristupa, bez čitanja poslovnih podataka;
+- `/api/admin/*` sa `x-admin-secret` van direktnog lokalnog razvoja;
 - `POST /api/jobs/deliveries` za projekciju/zaključavanje i
   `POST /api/jobs/billing` za lokalni mesečni obračun;
+- `GET /api/jobs/scheduled` sa `Authorization: Bearer <CRON_SECRET>` za Vercel Cron;
 - `GET|POST /api/admin/integrations` za status računa/outbox-a, obradu, retry i
   podsetnike;
 - `POST /api/webhooks/payments` za lokalni mock callback.
 
-API greške imaju `{ "error": { "code", "message", "details" } }` i `no-store` response.
+API greške imaju `{ "error": { "code", "message", "details" }, "requestId": "..." }`,
+`X-Request-Id` i `no-store` response.
 Browser return sa payment stranice nije dokaz naplate; samo verifikovan provider webhook
 ili lookup može promeniti payment status u production adapteru.
 
 ## Struktura
 
 ```text
-app/             Next/vinext stranice, klijentski tokovi i API rute
-db/              Drizzle D1 šema i binding
+app/             Next.js stranice, klijentski tokovi i API rute
+db/              SQLite šema i Node/libSQL adapter sa atomskim batch upisima
 migrations/      Lokalna/production SQL istorija
 server/          Domen, autentikacija, obračun, delivery i adapter interfejsi
 integrations/    Provider-neutralni config/ugovori/CSV/attribution helperi
+scripts/         Migracije baze i pokretanje legacy test builda
 tests/           Rendered/API i integration testovi
 docs/            Arhitektura, integracije, threat model, operacije i acceptance lista
 ```
@@ -131,12 +156,14 @@ Detalji:
 - [Integracije i activation checklist](docs/integrations.md)
 - [Threat model](docs/threat-model.md)
 - [Lokalna operativa i incidenti](docs/operations.md)
+- [Hosting i preostali koraci za Vercel](docs/hosting.md)
 - [Acceptance kriterijumi](docs/acceptance.md)
 
 ## Pre production-a
 
-Ovaj repozitorijum nije production-ready samo zato što lokalni testovi prolaze. Potrebni
-su: lista proizvoda/cene/fotografije i pravila dostave, tačno izabran payment provider,
-sandbox acceptance, knjigovodstveno potvrđen Badi tok, transakcioni email domen,
-privacy/terms/refund/delivery sadržaj, consent/tag QA, backup/restore proba i pravi admin
-identity/MFA model. Kompletna lista je u `docs/operations.md` i `docs/acceptance.md`.
+Kod je spreman za staging, ali produkcioni launch ostaje blokiran dok vlasnik ne izabere
+tačno jedan payment provider, ne dostavi ugovor/test pristupe i ne završi sandbox
+acceptance. Dodatni obavezni gate-ovi su knjigovodstveno odobren Badi tok, verifikovan
+email domen, pravno odobren tekst, realni Spoke import, backup/restore i reconciliation
+proba, monitoring/rollback i admin identitet sa allowlist ulogama i MFA. Kompletna lista
+sa dokazima je u `docs/operations.md` i `docs/acceptance.md`.

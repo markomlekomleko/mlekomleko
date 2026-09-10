@@ -79,9 +79,14 @@ export type StorefrontSettings = {
 
 export type DeliveryWindow = {
   deliveryDate: string;
+  billingMonth: string;
   deliveryLocalTime: string;
   cutoffAt: string;
   cutoffHours: number;
+  remainingOccurrences: {
+    weekly: number;
+    biweekly: number;
+  };
 };
 
 export type CartQuote = {
@@ -94,6 +99,7 @@ export type CartQuote = {
     purchaseType: PurchaseType;
     cadence: DeliveryCadence | null;
     occurrences: number;
+    deliveryDates: string[];
     lineTotalMinor: number;
   }>;
   subtotalMinor: number;
@@ -243,6 +249,13 @@ export function unwrapList(payload: unknown, keys: string[]) {
   return [];
 }
 
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number, readonly code?: string, readonly requestId?: string) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, {
     ...init,
@@ -257,13 +270,16 @@ export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> 
   if (!response.ok) {
     const body = record(payload);
     const nestedError = record(body.error);
-    throw new Error(
+    throw new ApiError(
       textValue(
         body.message,
         nestedError.message,
         body.error,
         `Zahtev nije uspeo (${response.status}).`,
       ),
+      response.status,
+      textValue(nestedError.code) || undefined,
+      textValue(body.requestId, response.headers.get("x-request-id")) || undefined,
     );
   }
 
@@ -310,10 +326,4 @@ export function statusLabel(value?: string) {
     paid: "Plaćeno",
   };
   return labels[value ?? ""] ?? value ?? "-";
-}
-
-export function lineMonthlyTotal(item: CartItem) {
-  if (item.purchaseType === "one_time") return item.unitPriceRsd * item.quantity;
-  const deliveries = item.cadence === "biweekly" ? 2 : 4;
-  return item.unitPriceRsd * item.quantity * deliveries;
 }

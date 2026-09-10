@@ -45,7 +45,13 @@ export function renderTransactionalMessage(topic: string, data: Record<string, u
   if (topic.startsWith("subscription.")) {
     const labels: Record<string, string> = { paused: "Pretplata je pauzirana", resumed: "Pretplata je nastavljena", cancelled: "Pretplata je otkazana", skip_next: "Sledeća dostava je preskočena", change_quantity: "Količina je promenjena", change_cadence: "Dinamika dostave je promenjena", add_next_only: "Dodatak za sledeću dostavu je evidentiran", activated: "Pretplata je aktivirana" };
     const action = topic.split(".").slice(1).join("_");
-    return shell(labels[action] ?? "Pretplata je ažurirana", [greeting, deliveryDate ? `Sledeća dostava: ${deliveryDate}.` : "", Number(data.adjustmentMinor ?? 0) > 0 ? `Kredit za sledeći obračun: ${money(data.adjustmentMinor)}.` : Number(data.adjustmentMinor ?? 0) < 0 ? `Doplatа za sledeći obračun: ${money(-Number(data.adjustmentMinor))}.` : ""].filter(Boolean));
+    const cutoffAt = String(data.cutoffAt ?? data.cutoff_at ?? "").trim();
+    const accountUrl = String(data.accountUrl ?? "").trim();
+    return shell(
+      labels[action] ?? "Pretplata je ažurirana",
+      [greeting, deliveryDate ? `Sledeća dostava: ${deliveryDate}.` : "", cutoffAt ? `Rok za izmene: ${cutoffAt}.` : "", Number(data.adjustmentMinor ?? 0) > 0 ? `Kredit za sledeći obračun: ${money(data.adjustmentMinor)}.` : Number(data.adjustmentMinor ?? 0) < 0 ? `Doplatа za sledeći obračun: ${money(-Number(data.adjustmentMinor))}.` : ""].filter(Boolean),
+      accountUrl ? { label: "Uredi pretplatu", url: accountUrl } : undefined,
+    );
   }
   return shell("Potvrda porudžbine", [greeting, `Porudžbina ${orderNumber} je primljena. Ukupno: ${total}.`, deliveryDate ? `Planirana dostava: ${deliveryDate}.` : "", itemSummary ? `Stavke: ${itemSummary}.` : ""].filter(Boolean));
 }

@@ -39,7 +39,10 @@ async function deliveryPayload(date: string) {
 }
 
 export async function getDelivery(date: string) {
-  return deliveryPayload(assertLocalDate(date));
+  const normalized = assertLocalDate(date);
+  const delivery = await first<DeliveryRow>("SELECT * FROM deliveries WHERE delivery_date = ?", normalized);
+  if (!delivery) return { delivery: null, preparation: [], orders: [], canGenerate: true };
+  return { ...(await deliveryPayload(normalized)), canGenerate: false };
 }
 
 export async function listDeliveries(limit = 60) {

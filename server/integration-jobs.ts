@@ -1,10 +1,11 @@
-import { env } from "cloudflare:workers";
+import { env } from "@/server/runtime";
 import { readIntegrationConfig, publicIntegrationStatus } from "../integrations/config.mjs";
 import { DomainError, assertDomain } from "./domain";
 import { renderTransactionalMessage } from "./notifications";
 import { enqueueOnce } from "./outbox";
 import { all, batch, first, run } from "./sql";
 import { assertLocalDate } from "./time";
+import { sha256 } from "./crypto";
 
 interface OutboxRow extends Record<string, unknown> {
   id: string; topic: string; aggregate_type: string; aggregate_id: string; payload_json: string;
@@ -15,6 +16,7 @@ interface OrderRow extends Record<string, unknown> {
   id: string; order_number: string; kind: string; payment_method: "card" | "cash"; payment_status: string;
   delivery_date: string; subtotal_minor: number; discount_minor: number; delivery_fee_minor: number; credit_applied_minor: number; total_minor: number;
   customer_id: string; email: string; full_name: string;
+  source_json: string;
 }
 
 interface OrderItemRow extends Record<string, unknown> {
@@ -22,8 +24,10 @@ interface OrderItemRow extends Record<string, unknown> {
 }
 
 type RuntimeEnv = Record<string, string | undefined> & {
+  APP_ORIGIN?: string;
   BADI_MODE?: string; BADI_API_KEY?: string; BADI_API_SECRET?: string; BADI_CLIENT_ID?: string; BADI_LOCAL_BASE_URL?: string;
   BADI_DELIVERY_SKU?: string; BADI_ADJUSTMENT_SKU?: string; EMAIL_MODE?: string; EMAIL_PROVIDER?: string; EMAIL_API_KEY?: string; EMAIL_FROM?: string;
+  GA4_MEASUREMENT_ID?: string; NEXT_PUBLIC_GA4_MEASUREMENT_ID?: string; GA4_API_SECRET?: string;
 };
 
 class IntegrationError extends Error {
@@ -49,8 +53,8 @@ async function sendEmail(row: OutboxRow, payload: Record<string, unknown>): Prom
     const { order, items } = await orderData(row.aggregate_id);
     data = messageData(order, items, payload);
   } else if (row.aggregate_type === "subscription") {
-    const subscription = await first<Record<string, unknown>>("SELECT s.next_delivery_date, c.full_name, c.email FROM subscriptions s JOIN customers c ON c.id = s.customer_id WHERE s.id = ?", row.aggregate_id);
-    if (subscription) data = { ...payload, fullName: subscription.full_name, email: subscription.email, deliveryDate: subscription.next_delivery_date };
+    const subscription = await first<Record<string, unknown>>("SELECT s.next_delivery_date, c.full_name, c.email, d.cutoff_at FROM subscriptions s JOIN customers c ON c.id = s.customer_id LEFT JOIN deliveries d ON d.delivery_date = s.next_delivery_date WHERE s.id = ?", row.aggregate_id);
+    if (subscription) data = { ...payload, fullName: subscription.full_name, email: subscription.email, deliveryDate: subscription.next_delivery_date, cutoffAt: payload.cutoffAt ?? subscription.cutoff_at, accountUrl: `${runtimeEnv().APP_ORIGIN ?? "http://localhost:3000"}/nalog` };
   }
   const recipient = String(data.email ?? "").trim();
   if (!recipient) throw new IntegrationError("EMAIL_RECIPIENT_MISSING", "Email događaj nema primaoca.");
@@ -140,8 +144,38 @@ function isEmailTopic(topic: string) {
   return topic.startsWith("email.") || topic === "auth.magic_link.requested" || topic.startsWith("subscription.") || topic === "payment.method_required";
 }
 
+async function sendPurchaseAnalytics(row: OutboxRow, payload: Record<string, unknown>): Promise<string> {
+  const { order } = await orderData(row.aggregate_id);
+  let source: Record<string, unknown> = {};
+  try { source = JSON.parse(order.source_json || "{}") as Record<string, unknown>; } catch { /* Invalid legacy attribution is treated as denied. */ }
+  const consent = source.consent && typeof source.consent === "object" ? source.consent as Record<string, unknown> : {};
+  if (consent.analytics !== true) return `analytics-consent-denied:${order.id}`;
+  const eventId = String(payload.eventId ?? `purchase:${order.id}`).slice(0, 120);
+  const transactionId = String(payload.transactionId ?? order.order_number).slice(0, 120);
+  const properties = { eventId, transactionId, valueMinor: order.total_minor, currency: "RSD", paymentMethod: order.payment_method, source: String(payload.source ?? "payment-confirmation").slice(0, 80) };
+  await run(
+    "INSERT INTO analytics_events (id, event_name, anonymous_id, session_id, order_id, path, properties_json) VALUES (?, 'purchase', ?, ?, ?, '/checkout', ?) ON CONFLICT(id) DO NOTHING",
+    eventId, `server:${(await sha256(order.customer_id)).slice(0, 24)}`, `order:${order.id}`, order.id, JSON.stringify(properties),
+  );
+  const current = runtimeEnv();
+  const measurementId = current.GA4_MEASUREMENT_ID ?? current.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+  if (measurementId && current.GA4_API_SECRET) {
+    const response = await fetch(`https://www.google-analytics.com/mp/collect?measurement_id=${encodeURIComponent(measurementId)}&api_secret=${encodeURIComponent(current.GA4_API_SECRET)}`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        client_id: `server.${(await sha256(order.customer_id)).slice(0, 24)}`,
+        events: [{ name: "purchase", params: { transaction_id: transactionId, value: order.total_minor / 100, currency: "RSD", shipping: order.delivery_fee_minor / 100, event_id: eventId, engagement_time_msec: 1 } }],
+      }),
+    });
+    if (!response.ok) throw new IntegrationError(`GA4_HTTP_${response.status}`, "GA4 Measurement Protocol je odbio purchase događaj.");
+  }
+  return eventId;
+}
+
 async function dispatch(row: OutboxRow): Promise<string> {
   const payload = JSON.parse(row.payload_json) as Record<string, unknown>;
+  if (row.topic === "analytics.purchase") return sendPurchaseAnalytics(row, payload);
   if (row.topic === "fiscal.receipt.requested") return (await issueFiscalReceipt(row)).externalId;
   if (isEmailTopic(row.topic)) return sendEmail(row, payload);
   return `internal:${row.topic}:${row.aggregate_id}`;

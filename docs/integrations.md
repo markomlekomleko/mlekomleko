@@ -135,14 +135,19 @@ Minimalni event ugovor:
 | `view_item` | prikaz proizvoda | item ID/name, cena |
 | `add_to_cart` | potvrđen add | item, quantity, purchase type, cadence |
 | `begin_checkout` | ulazak u checkout | items, value, currency |
-| `purchase` | server potvrdi uspeh | order ID, value, currency, items |
-| `subscription_activated` | aktivna pretplata | subscription ID, value |
-| `subscription_frequency_selected` | izbor dinamike | weekly/biweekly |
-| `apply_promotion` | validan promo kod | promo ID/code |
-| `subscription_paused/cancelled` | server potvrdi promenu | pseudonymous ID |
+| `order_created` | browser dobije uspešan checkout odgovor | order ID, bez revenue vrednosti |
+| `purchase` | server outbox posle potvrđene naplate | transaction ID, value, currency, shipping |
+| `subscription_selected` | izbor redovne dostave | item ID, quantity, cadence |
+| `delivery_cadence_selected` | izbor dinamike | weekly/biweekly |
+| `promo_applied` | server potvrdi promo kod | promo kod, discount |
+| `subscription_paused/resumed/cancelled` | server potvrdi promenu | pseudonymous ID |
 
-`transaction_id`/`event_id` deduplikuje browser i server događaj. Event payload nema
-ime, email, telefon, adresu ni magic-link podatke.
+Browser nikad ne šalje `purchase`; `/api/events` ga eksplicitno odbija. Potvrđena
+naplata kreira `analytics.purchase` u outbox-u sa stabilnim
+`eventId=purchase:<orderId>` i `transactionId`. Unique outbox ključ i analytics event ID
+sprečavaju duplikat pri retry-u/webhook-u. Gotovinska porudžbina dobija `purchase` tek
+posle admin/server potvrde uplate. Event payload nema ime, email, telefon, adresu ni
+magic-link podatke i šalje se samo ako order snapshot sadrži analytics saglasnost.
 
 UTM/gclid/fbclid se normalizuju na ulazu i čuvaju kao first-touch + last-touch uz
 session, a snapshot se vezuje za order. Maksimalna dužina je ograničena, kontrolni

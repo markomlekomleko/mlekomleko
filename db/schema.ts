@@ -79,6 +79,7 @@ export const subscriptions = sqliteTable(
     startedAt: text("started_at").notNull(),
     cancelledAt: text("cancelled_at"),
     cancellationReason: text("cancellation_reason"),
+    version: integer("version").notNull().default(1),
     ...timestamps,
   },
   (table) => [index("subscriptions_customer_idx").on(table.customerId), index("subscriptions_status_idx").on(table.status)],
@@ -111,6 +112,21 @@ export const subscriptionSkips = sqliteTable(
     createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   },
   (table) => [uniqueIndex("subscription_skips_unique").on(table.subscriptionId, table.deliveryDate)],
+);
+
+export const subscriptionMutationVersions = sqliteTable(
+  "subscription_mutation_versions",
+  {
+    id: text("id").primaryKey(),
+    subscriptionId: text("subscription_id").notNull().references(() => subscriptions.id),
+    expectedVersion: integer("expected_version").notNull(),
+    mutationKey: text("mutation_key").notNull(),
+    createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => [
+    uniqueIndex("subscription_mutation_version_unique").on(table.subscriptionId, table.expectedVersion),
+    uniqueIndex("subscription_mutation_key_unique").on(table.mutationKey),
+  ],
 );
 
 export const nextDeliveryAddons = sqliteTable(
@@ -471,4 +487,19 @@ export const outbox = sqliteTable(
     sentAt: text("sent_at"),
   },
   (table) => [index("outbox_pending_idx").on(table.status, table.availableAt), uniqueIndex("outbox_idempotency_unique").on(table.idempotencyKey)],
+);
+
+export const rateLimits = sqliteTable(
+  "rate_limits",
+  {
+    keyHash: text("key_hash").notNull(),
+    scope: text("scope").notNull(),
+    windowStartedAt: text("window_started_at").notNull(),
+    requestCount: integer("request_count").notNull().default(1),
+    expiresAt: text("expires_at").notNull(),
+  },
+  (table) => [
+    uniqueIndex("rate_limits_key_scope_unique").on(table.keyHash, table.scope),
+    index("rate_limits_expires_idx").on(table.expiresAt),
+  ],
 );

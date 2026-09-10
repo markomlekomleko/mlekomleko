@@ -4,9 +4,10 @@ import { localPaymentGateway } from "./integrations";
 import { audit, enqueue } from "./outbox";
 import { ProductRow, publicProduct } from "./products";
 import { all, batch, first, sqlPlaceholders, type SqlValue } from "./sql";
-import { addLocalDays, assertBeforeCutoff, assertLocalDate, cutoffForDelivery, isCadenceDue, localDateAt, nextWeekday, remainingOccurrencesInMonth } from "./time";
+import { addLocalDays, assertBeforeCutoff, assertLocalDate, cutoffForDelivery, isCadenceDue, localDateAt, nextWeekday, occurrenceDatesInMonth, remainingOccurrencesInMonth } from "./time";
 import { getBusinessSettings, getNextDeliveryWindow, isServiceablePostalCode } from "./settings";
 import { generateDelivery } from "./deliveries";
+import { purchaseAnalyticsEvent } from "./analytics";
 
 interface CustomerRow extends Record<string, unknown> {
   id: string; email: string; full_name: string; phone: string; address_line_1: string; address_line_2: string | null;
@@ -17,6 +18,7 @@ interface SubscriptionRow extends Record<string, unknown> {
   id: string; customer_id: string; status: "active" | "paused" | "cancelled"; payment_method: "card" | "cash";
   payment_provider_ref: string | null;
   pause_until: string | null; next_delivery_date: string; started_at: string; cancelled_at: string | null; cancellation_reason: string | null;
+  version: number;
 }
 
 interface SubscriptionItemRow extends Record<string, unknown> {
@@ -61,7 +63,7 @@ function parseCheckoutItems(value: unknown): CheckoutItemInput[] {
 
 const ATTRIBUTION_KEYS = new Set(["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"]);
 
-export function sanitizeAttribution(value: unknown): Record<string, string> {
+export function sanitizeAttribution(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   const source = value as Record<string, unknown>;
   const candidates = new Map<string, unknown>(Object.entries(source));
@@ -69,7 +71,7 @@ export function sanitizeAttribution(value: unknown): Record<string, string> {
     const query = source.query.startsWith("?") ? source.query.slice(1) : source.query;
     for (const [key, child] of new URLSearchParams(query)) candidates.set(key, child);
   }
-  const result: Record<string, string> = {};
+  const result: Record<string, unknown> = {};
   for (const [key, child] of candidates) {
     if (!ATTRIBUTION_KEYS.has(key) || typeof child !== "string") continue;
     const clean = child.trim().slice(0, 200);
@@ -84,6 +86,31 @@ export function sanitizeAttribution(value: unknown): Record<string, string> {
   if (typeof source.landingPath === "string") {
     const path = source.landingPath.split(/[?#]/, 1)[0].slice(0, 200);
     if (/^\/[a-zA-Z0-9/_-]*$/.test(path)) result.landing_path = path;
+  }
+  const sanitizeTouch = (touch: unknown) => {
+    if (!touch || typeof touch !== "object" || Array.isArray(touch)) return null;
+    const row = touch as Record<string, unknown>;
+    const parameters: Record<string, string> = {};
+    if (row.parameters && typeof row.parameters === "object" && !Array.isArray(row.parameters)) {
+      for (const [key, child] of Object.entries(row.parameters as Record<string, unknown>)) {
+        if (ATTRIBUTION_KEYS.has(key) && typeof child === "string" && child.trim()) parameters[key] = child.trim().slice(0, 200);
+      }
+    }
+    const clean: Record<string, unknown> = { parameters };
+    if (typeof row.landingPath === "string") {
+      const path = row.landingPath.split(/[?#]/, 1)[0].slice(0, 200);
+      if (/^\/[a-zA-Z0-9/_-]*$/.test(path)) clean.landingPath = path;
+    }
+    if (typeof row.referrerHost === "string" && /^[a-z0-9.-]+$/i.test(row.referrerHost)) clean.referrerHost = row.referrerHost.toLowerCase().slice(0, 253);
+    if (typeof row.capturedAt === "string" && !Number.isNaN(Date.parse(row.capturedAt))) clean.capturedAt = new Date(row.capturedAt).toISOString();
+    return clean;
+  };
+  const firstTouch = sanitizeTouch(source.firstTouch);
+  const lastTouch = sanitizeTouch(source.lastTouch);
+  if (firstTouch && lastTouch) {
+    result.firstTouch = firstTouch;
+    result.lastTouch = lastTouch;
+    Object.assign(result, (lastTouch.parameters as Record<string, string>) ?? {});
   }
   return result;
 }
@@ -123,9 +150,10 @@ export async function quoteCart(input: Record<string, unknown>) {
     const product = products.get(item.productId);
     assertDomain(product, "PRODUCT_UNAVAILABLE", `Proizvod ${item.productId} nije dostupan.`, 409);
     assertDomain(item.purchaseType !== "subscription" || Boolean(product.allow_subscription), "SUBSCRIPTION_UNAVAILABLE", "Redovna dostava nije dostupna za ovaj proizvod.", 409);
-    const occurrences = item.purchaseType === "subscription" ? remainingOccurrencesInMonth(deliveryDate, item.cadence!) : 1;
+    const deliveryDates = item.purchaseType === "subscription" ? occurrenceDatesInMonth(deliveryDate, item.cadence!) : [deliveryDate];
+    const occurrences = deliveryDates.length;
     const unitPriceMinor = productUnitPrice(product, item.purchaseType);
-    return { ...item, productName: product.name, unitLabel: product.unit_label, unitPriceMinor, occurrences, lineTotalMinor: unitPriceMinor * item.quantity * occurrences };
+    return { ...item, productName: product.name, unitLabel: product.unit_label, unitPriceMinor, occurrences, deliveryDates, lineTotalMinor: unitPriceMinor * item.quantity * occurrences };
   });
   const subtotalMinor = lines.reduce((sum, line) => sum + line.lineTotalMinor, 0);
   const { code: promoCode, discountMinor } = await resolvePromo(input.promoCode, subtotalMinor);
@@ -231,7 +259,7 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   const now = new Date().toISOString();
   const paymentFeeMinor = paymentMethod === "card" ? Math.round(totalMinor * settings.paymentFeeBps / 10_000) : 0;
   const estimatedDeliveryCostMinor = settings.estimatedDeliveryCostMinor;
-  const attribution = sanitizeAttribution(input.attribution ?? input.source);
+  const attribution = { ...sanitizeAttribution(input.attribution ?? input.source), consent: { analytics: input.analyticsConsent === true } };
   const eligibleConversionItems = !hasSubscription ? items.filter((item) => Boolean(products.get(item.productId)?.allow_subscription)) : [];
   const conversionToken = eligibleConversionItems.length ? randomToken() : null;
   const conversionTokenHash = conversionToken ? await sha256(conversionToken) : null;
@@ -271,8 +299,11 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   statements.push(enqueue("order.created", "order", orderId, response));
   statements.push(enqueue("email.order_confirmation.requested", "order", orderId, response));
   statements.push(enqueue(payment.status === "paid" ? "payment.captured" : "payment.cash_due", "order", orderId, response.order));
-  if (payment.status === "paid") statements.push(enqueue("fiscal.receipt.requested", "order", orderId, response.order));
-  if (subscriptionId) statements.push(enqueue("subscription.activated", "subscription", subscriptionId, response.subscription));
+  if (payment.status === "paid") {
+    statements.push(enqueue("fiscal.receipt.requested", "order", orderId, response.order));
+    statements.push(purchaseAnalyticsEvent(orderId, response.order.orderNumber, "checkout-capture"));
+  }
+  if (subscriptionId) statements.push(enqueue("subscription.activated", "subscription", subscriptionId, { ...response.subscription, cutoffAt }));
   if (conversionTokenHash) statements.push({ sql: "INSERT INTO order_conversion_tokens (id, order_id, token_hash, expires_at) VALUES (?, ?, ?, ?)", bindings: [crypto.randomUUID(), orderId, conversionTokenHash, response.subscriptionOffer!.expiresAt] });
   const recoveryCartId = optionalString(input.recoveryCartId, "recoveryCartId", 100);
   if (recoveryCartId) statements.push({ sql: "UPDATE abandoned_carts SET status = 'converted', converted_order_id = ?, updated_at = ? WHERE id = ?", bindings: [orderId, now, recoveryCartId] });
@@ -329,7 +360,9 @@ export async function convertOrderToSubscription(input: Record<string, unknown>)
   }));
   statements.push({ sql: "UPDATE order_conversion_tokens SET used_at = ? WHERE id = ? AND used_at IS NULL", bindings: [now, conversion.token_id] });
   statements.push(audit("customer", conversion.customer_id, "order.converted_to_subscription", "subscription", subscriptionId, null, { sourceOrderId: conversion.order_id, cadence, nextDeliveryDate }));
-  statements.push(enqueue("subscription.activated", "subscription", subscriptionId, { sourceOrderId: conversion.order_id, cadence, nextDeliveryDate }));
+  const conversionSettings = await getBusinessSettings();
+  const conversionCutoffAt = cutoffForDelivery(nextDeliveryDate, conversionSettings.cutoffHours, conversionSettings.deliveryLocalTime);
+  statements.push(enqueue("subscription.activated", "subscription", subscriptionId, { sourceOrderId: conversion.order_id, cadence, nextDeliveryDate, cutoffAt: conversionCutoffAt }));
   await batch(statements);
   return { subscription: { id: subscriptionId, status: "active", cadence, nextDeliveryDate, itemCount: sourceItems.length } };
 }
@@ -350,7 +383,7 @@ export async function getAccount(customerId: string) {
   const addonProducts = (await all<ProductRow>("SELECT * FROM products WHERE is_active = 1 ORDER BY (price_minor - cost_minor - packaging_cost_minor) DESC, sort_order LIMIT 8")).map((product) => publicProduct(product));
   return {
     customer: { id: customer.id, email: customer.email, fullName: customer.full_name, phone: customer.phone, addressLine1: customer.address_line_1, addressLine2: customer.address_line_2, city: customer.city, postalCode: customer.postal_code, deliveryNote: customer.delivery_note },
-    subscriptions: subscriptions.map((subscription) => ({ id: subscription.id, status: subscription.status, paymentMethod: subscription.payment_method, pauseUntil: subscription.pause_until, nextDeliveryDate: subscription.next_delivery_date, cancellationReason: subscription.cancellation_reason, items: items.filter((item) => item.subscription_id === subscription.id).map((item) => ({ id: item.id, productId: item.product_id, productName: item.product_name, unitLabel: item.unit_label, priceMinor: item.price_minor, quantity: item.quantity, cadence: item.cadence, cadenceAnchorDate: item.cadence_anchor_date, status: item.status })), nextOnlyAddons: addons.filter((item) => item.subscription_id === subscription.id) })),
+    subscriptions: subscriptions.map((subscription) => ({ id: subscription.id, version: subscription.version, status: subscription.status, paymentMethod: subscription.payment_method, pauseUntil: subscription.pause_until, nextDeliveryDate: subscription.next_delivery_date, cancellationReason: subscription.cancellation_reason, items: items.filter((item) => item.subscription_id === subscription.id).map((item) => ({ id: item.id, productId: item.product_id, productName: item.product_name, unitLabel: item.unit_label, priceMinor: item.price_minor, quantity: item.quantity, cadence: item.cadence, cadenceAnchorDate: item.cadence_anchor_date, status: item.status })), nextOnlyAddons: addons.filter((item) => item.subscription_id === subscription.id) })),
     addonProducts,
     orders,
     credits,
@@ -380,6 +413,8 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
   }
   const subscription = await first<SubscriptionRow>("SELECT * FROM subscriptions WHERE id = ? AND customer_id = ?", subscriptionId, customerId);
   if (!subscription) throw new DomainError("SUBSCRIPTION_NOT_FOUND", "Subscription was not found.", 404);
+  const expectedVersion = positiveInt(input.expectedVersion, "expectedVersion", 1_000_000_000);
+  assertDomain(expectedVersion === subscription.version, "SUBSCRIPTION_VERSION_CONFLICT", "Pretplata je promenjena u drugom prozoru. Učitani su najnoviji podaci.", 409, { expectedVersion, currentVersion: subscription.version });
   const action = enumValue(input.action, "action", ["update_item", "remove_item", "add_next_only", "skip_next", "slow_down", "pause", "resume", "cancel"] as const);
   assertDomain(subscription.status !== "cancelled", "SUBSCRIPTION_CANCELLED", "A cancelled subscription is terminal and cannot be changed or resumed.", 409);
   if (action === "resume") assertDomain(subscription.status === "paused", "INVALID_SUBSCRIPTION_STATE", "Only a paused subscription can be resumed.", 409);
@@ -389,7 +424,10 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
   // Resume intentionally schedules a new future delivery and never edits a stale/locked snapshot.
   if (action !== "resume") await assertSubscriptionMutable(subscription);
   const now = new Date().toISOString();
-  const statements: Array<{ sql: string; bindings?: SqlValue[] }> = [];
+  const statements: Array<{ sql: string; bindings?: SqlValue[] }> = [
+    { sql: "INSERT INTO subscription_mutation_versions (id, subscription_id, expected_version, mutation_key) VALUES (?, ?, ?, ?)", bindings: [crypto.randomUUID(), subscriptionId, expectedVersion, mutationKey] },
+    { sql: "UPDATE subscriptions SET version = version + 1, updated_at = ? WHERE id = ? AND customer_id = ? AND version = ?", bindings: [now, subscriptionId, customerId, expectedVersion] },
+  ];
   let resultingNextDeliveryDate = subscription.next_delivery_date;
   let adjustmentMinor = 0;
   let addonOrder: Record<string, unknown> | null = null;
@@ -443,7 +481,10 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
     statements.push(enqueue("order.created", "order", addonOrderId, { order: addonOrder, source: "next_delivery_addon" }));
     statements.push(enqueue("email.order_confirmation.requested", "order", addonOrderId, { order: addonOrder, source: "next_delivery_addon" }));
     statements.push(enqueue(payment.status === "paid" ? "payment.captured" : "payment.cash_due", "order", addonOrderId, addonOrder));
-    if (payment.status === "paid") statements.push(enqueue("fiscal.receipt.requested", "order", addonOrderId, addonOrder));
+    if (payment.status === "paid") {
+      statements.push(enqueue("fiscal.receipt.requested", "order", addonOrderId, addonOrder));
+      statements.push(purchaseAnalyticsEvent(addonOrderId, addonOrderNumber, "next-delivery-addon"));
+    }
   } else if (action === "skip_next") {
     let nextDueDate = addLocalDays(subscription.next_delivery_date, 7);
     for (let attempts = 0; attempts < 8 && activeItems.length && !activeItems.some((item) => isCadenceDue(item.cadence_anchor_date, nextDueDate, item.cadence)); attempts += 1) nextDueDate = addLocalDays(nextDueDate, 7);
@@ -492,15 +533,20 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
     statements.push({ sql: "UPDATE orders SET delivery_date = ?, updated_at = ? WHERE id IN (SELECT order_id FROM next_delivery_addons WHERE subscription_id = ? AND delivery_date = ? AND consumed_at IS NULL AND cancelled_at IS NULL AND order_id IS NOT NULL)", bindings: [resultingNextDeliveryDate, now, subscriptionId, resultingNextDeliveryDate] });
   }
   if (adjustmentMinor !== 0) statements.push({ sql: "INSERT INTO credits_ledger (id, customer_id, subscription_id, amount_minor, reason, status) VALUES (?, ?, ?, ?, ?, 'open')", bindings: [crypto.randomUUID(), customerId, subscriptionId, adjustmentMinor, `paid_month_${action}`] });
-  const response = { subscriptionId, action, adjustmentMinor, currency: "RSD", addonOrder };
+  const response = { subscriptionId, action, version: expectedVersion + 1, adjustmentMinor, currency: "RSD", addonOrder };
   statements.push({ sql: "INSERT INTO idempotency_keys (id, namespace, key, request_hash, response_json, status_code, expires_at) VALUES (?, 'subscription-mutation', ?, ?, ?, 200, ?)", bindings: [crypto.randomUUID(), mutationKey, requestHash, JSON.stringify(response), new Date(Date.now() + 400 * 86_400_000).toISOString()] });
   statements.push(audit("customer", customerId, `subscription.${action}`, "subscription", subscriptionId, subscription, { ...input, adjustmentMinor }));
-  statements.push(enqueue(`subscription.${action}`, "subscription", subscriptionId, { customerId, nextDeliveryDate: resultingNextDeliveryDate, adjustmentMinor, addonOrder }));
+  const notificationSettings = await getBusinessSettings();
+  const notificationDelivery = action === "cancel" ? null : await first<{ cutoff_at: string } & Record<string, unknown>>("SELECT cutoff_at FROM deliveries WHERE delivery_date = ?", resultingNextDeliveryDate);
+  const notificationCutoffAt = action === "cancel" ? null : notificationDelivery?.cutoff_at ?? cutoffForDelivery(resultingNextDeliveryDate, notificationSettings.cutoffHours, notificationSettings.deliveryLocalTime);
+  statements.push(enqueue(`subscription.${action}`, "subscription", subscriptionId, { customerId, nextDeliveryDate: resultingNextDeliveryDate, cutoffAt: notificationCutoffAt, adjustmentMinor, addonOrder }));
   try {
     await batch(statements);
   } catch (error) {
     const raced = await first<{ request_hash: string; response_json: string | null } & Record<string, unknown>>("SELECT request_hash, response_json FROM idempotency_keys WHERE namespace = 'subscription-mutation' AND key = ?", mutationKey);
     if (raced?.request_hash === requestHash && raced.response_json) return { ...JSON.parse(raced.response_json), account: await getAccount(customerId) };
+    const current = await first<{ version: number } & Record<string, unknown>>("SELECT version FROM subscriptions WHERE id = ? AND customer_id = ?", subscriptionId, customerId);
+    if (current && current.version !== expectedVersion) throw new DomainError("SUBSCRIPTION_VERSION_CONFLICT", "Pretplata je promenjena u drugom prozoru. Učitani su najnoviji podaci.", 409, { expectedVersion, currentVersion: current.version });
     throw error;
   }
   // Open projections are operational read models, so refresh them immediately after an accepted pre-cutoff mutation.

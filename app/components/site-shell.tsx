@@ -1,8 +1,10 @@
 "use client";
-/* eslint-disable @next/next/no-img-element -- The official local raster logo is served directly in this vinext runtime. */
 
 import Link from "next/link";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
 import { useCart } from "./cart-provider";
+import { CookieSettingsButton } from "./analytics-provider";
 
 export type HeaderSettings = {
   storeName: string;
@@ -11,14 +13,28 @@ export type HeaderSettings = {
   announcementLinkLabel: string;
   announcementUrl: string;
   storeDemoMode: boolean;
+  serviceAreaNote: string;
 };
 
 export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   const { count, ready } = useCart();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const isVideoAnnouncement = /(?:tiktok\.com|youtu\.?be)/i.test(settings.announcementUrl);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setMenuOpen(false); menuButton.current?.focus(); }
+    };
+    window.addEventListener("keydown", dismiss);
+    return () => window.removeEventListener("keydown", dismiss);
+  }, [menuOpen]);
 
   return (
     <>
-      {settings.announcementEnabled && settings.announcementText ? (
+      <div className="delivery-bar"><span>Dostava na kućnu adresu</span><span>{settings.serviceAreaNote}</span></div>
+      {settings.announcementEnabled && settings.announcementText && !isVideoAnnouncement ? (
         <aside className="announcement-bar" aria-label="Važno obaveštenje">
           <a href={settings.announcementUrl}>
             <span>{settings.announcementText}</span>
@@ -29,26 +45,28 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
       <header className="site-header">
         <div className="nav-shell">
           <Link className="brand" href="/" aria-label={`${settings.storeName} - početna`}>
-            <img
+            <Image
               className="brand-logo brand-logo-header"
               src="/images/mleko-i-mleko-logo.png"
               alt=""
-              width="4167"
-              height="4167"
+              width={76}
+              height={76}
+              sizes="76px"
             />
             <span className="brand-name">{settings.storeName}</span>
             {settings.storeDemoMode ? <small>DEMO</small> : null}
           </Link>
-          <nav className="main-nav" aria-label="Glavna navigacija">
-            <a className="mobile-store" href="/prodavnica">Prodavnica</a>
+          <nav id="glavna-navigacija" className={`main-nav ${menuOpen ? "is-open" : ""}`} aria-label="Glavna navigacija">
+            <a href="/prodavnica">Prodavnica</a>
             <a href="/kako-funkcionise">Kako funkcioniše</a>
-            <a href="/o-nama">O nama</a>
-            <a href="/faq">FAQ</a>
-            <a href="/kontakt">Kontakt</a>
+            <a href="/farme">Naše farme</a>
+            <a className="nav-support" href="/faq">FAQ</a>
+            <a className="nav-support" href="/kontakt">Kontakt</a>
+            <a className="mobile-account" href="/nalog">Nalog</a>
           </nav>
           <div className="header-actions">
-            <a href="/prodavnica">Prodavnica</a>
-            <a href="/nalog">Nalog</a>
+            <a className="header-shop" href="/prodavnica">Izaberi mleko ↗</a>
+            <a className="header-account" href="/nalog">Nalog</a>
             <a className="cart-link" href="/korpa">
               Korpa
               {ready && count > 0 ? (
@@ -58,6 +76,9 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
               ) : null}
             </a>
           </div>
+          <button ref={menuButton} id="menu-toggle" className="mobile-menu-button" type="button" aria-label="Meni" aria-expanded={menuOpen} aria-controls="glavna-navigacija" onClick={() => setMenuOpen((current) => !current)}>
+            <span className={`menu-lines ${menuOpen ? "is-open" : ""}`} aria-hidden="true"><span /><span /></span>
+          </button>
         </div>
       </header>
     </>
@@ -70,12 +91,13 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
       <div className="page-shell footer-grid">
         <div>
           <Link className="brand footer-brand" href="/" aria-label={`${storeName} - početna`}>
-            <img
+            <Image
               className="brand-logo brand-logo-footer"
               src="/images/mleko-i-mleko-logo.png"
               alt=""
-              width="4167"
-              height="4167"
+              width={82}
+              height={82}
+              sizes="82px"
             />
             <span>{storeName}</span>
           </Link>
@@ -84,15 +106,25 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
           </p>
           <p className="small-text"><a href="tel:+381605022323">060 502 23 23</a> · <a href="https://instagram.com/mleko_i_mleko" target="_blank" rel="noreferrer">Instagram ↗</a></p>
         </div>
-        <div className="footer-links" aria-label="Dodatne stranice">
+        <nav className="footer-links" aria-label="Istražite">
+          <h2>Istražite</h2>
+          <a href="/prodavnica">Prodavnica</a>
           <a href="/gde-kupiti">Gde kupiti</a>
           <a href="/dostava-mleka/beograd">Dostava Beograd</a>
           <a href="/dostava-mleka/novi-sad">Dostava Novi Sad</a>
           <a href="/farme">Naše farme</a>
           <a href="/faq">Česta pitanja</a>
           <a href="/kontakt">Kontakt</a>
-          <a href="/admin">Administracija</a>
-        </div>
+        </nav>
+        <nav className="footer-links" aria-label="Korisne informacije">
+          <h2>Korisne informacije</h2>
+          <a href="/uslovi-kupovine">Uslovi kupovine</a>
+          <a href="/privatnost">Privatnost i kolačići</a>
+          <a href="/dostava">Dostava</a>
+          <a href="/reklamacije">Reklamacije i povraćaj</a>
+          <a href="/pravila-pretplate">Pravila pretplate</a>
+          <CookieSettingsButton />
+        </nav>
       </div>
     </footer>
   );

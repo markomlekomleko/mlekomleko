@@ -13,7 +13,7 @@ export default function HowItWorksPage() {
       <header className="page-heading">
         <p className="eyebrow">Kako funkcioniše</p>
         <h1>Vi birate mleko, litre i ritam.</h1>
-        <p className="lead">Paketi od 8, 16 i 32 L mesečno odgovaraju količinama od 2, 4 i 8 L nedeljno.</p>
+        <p className="lead">Birate 2, 4 ili 8 L po dostavi, ili unosite tačnu količinu. Mesečni zbir računamo iz stvarnih preostalih termina.</p>
       </header>
       <div className="form-stack">
         <section className="card"><h2>1. Izaberite mleko i litre</h2><p>Odaberite kravlje ili kozje mleko, zatim 2, 4 ili 8 litara po dostavi. Količinu možete dodatno podesiti dugmadima − i +.</p></section>

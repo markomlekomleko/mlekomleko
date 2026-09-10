@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { absoluteUrl } from "./lib/seo";
 import { listProducts } from "../server/products";
 
+export const dynamic = "force-dynamic";
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const products = await listProducts();
   const routes = [
@@ -15,6 +17,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/farme",
     "/faq",
     "/kontakt",
+    "/uslovi-kupovine",
+    "/privatnost",
+    "/dostava",
+    "/reklamacije",
+    "/pravila-pretplate",
   ];
   const staticEntries = routes.map((route) => ({
     url: absoluteUrl(route || "/"),

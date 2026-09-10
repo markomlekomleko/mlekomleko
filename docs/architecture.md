@@ -24,7 +24,7 @@ Izmena kataloga ne sme retroaktivno da promeni već formiranu obavezu ili račun
 flowchart LR
   UI["Javni sajt / nalog / admin"] --> API["Server-side API i autorizacija"]
   API --> Domain["Porudžbine, pretplate, raspored, obračun"]
-  Domain --> DB["Lokalna D1/SQLite baza"]
+  Domain --> DB["Node/libSQL: lokalni SQLite ili trajna udaljena baza"]
   Domain --> Outbox["Transakcioni outbox"]
   Outbox --> Pay["OTP ili RaiAccept adapter"]
   Outbox --> Badi["Badi adapter"]

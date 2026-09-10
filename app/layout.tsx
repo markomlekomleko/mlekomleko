@@ -1,15 +1,28 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Fraunces, Geist } from "next/font/google";
 import { CartProvider } from "./components/cart-provider";
 import { AnalyticsProvider } from "./components/analytics-provider";
 import { SiteFooter, SiteHeader } from "./components/site-shell";
 import { absoluteUrl, canonicalUrl, getSiteUrl, serializeJsonLd } from "./lib/seo";
 import { getStorefront } from "../server/storefront";
 import "./globals.css";
+import "./storefront.css";
+import "./pastoral.css";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const geist = Geist({
   variable: "--font-geist",
   subsets: ["latin", "latin-ext"],
+});
+
+const fraunces = Fraunces({
+  variable: "--font-editorial",
+  subsets: ["latin", "latin-ext"],
+  weight: ["400", "500"],
+  style: ["normal", "italic"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -74,8 +87,8 @@ export default async function RootLayout({
     ],
   };
   return (
-    <html lang="sr-Latn">
-      <body className={geist.variable}>
+    <html lang="sr-Latn" data-scroll-behavior="smooth">
+      <body className={`${geist.variable} ${fraunces.variable}`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}

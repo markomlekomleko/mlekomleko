@@ -73,19 +73,23 @@ export function rejectCardData(value: unknown): void {
 }
 
 export function jsonResponse(data: unknown, status = 200, headers?: HeadersInit): Response {
-  return Response.json(data, { status, headers: { "cache-control": "no-store", ...headers } });
+  const responseHeaders = new Headers(headers);
+  if (!responseHeaders.has("cache-control")) responseHeaders.set("cache-control", "no-store");
+  return Response.json(data, { status, headers: responseHeaders });
 }
 
 export function routeError(error: unknown): Response {
+  const requestId = crypto.randomUUID();
   if (error instanceof DomainError) {
-    return jsonResponse({ error: { code: error.code, message: error.message, details: error.details } }, error.status);
+    return jsonResponse({ error: { code: error.code, message: error.message, details: error.details }, requestId }, error.status, { "x-request-id": requestId });
   }
   const message = error instanceof Error ? error.message : "Unexpected server error";
   console.error(error);
-  const unavailable = message.includes("no such table") || message.includes("D1 binding");
+  const unavailable = /no such table|Database (?:binding|is not configured|on Vercel)/i.test(message);
   return jsonResponse(
-    { error: { code: unavailable ? "DATABASE_NOT_READY" : "INTERNAL_ERROR", message: unavailable ? "Local D1 is not ready. Apply migrations/0000_awesome_scorpion.sql to binding DB." : "Unexpected server error." } },
+    { error: { code: unavailable ? "DATABASE_NOT_READY" : "INTERNAL_ERROR", message: unavailable ? "Baza podataka nije spremna. Proverite vezu i primenite migracije." : "Unexpected server error." }, requestId },
     unavailable ? 503 : 500,
+    { "x-request-id": requestId },
   );
 }
 

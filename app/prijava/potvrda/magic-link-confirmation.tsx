@@ -3,15 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchJson } from "../../lib/frontend";
 
-const SESSION_KEY = "mleko-i-mleko-session";
-
-type ExchangeResponse = {
-  sessionToken?: string;
-  session_token?: string;
-  token?: string;
-  session?: { token?: string };
-};
-
 export function MagicLinkConfirmation() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
@@ -28,12 +19,10 @@ export function MagicLinkConfirmation() {
     }
 
     try {
-      const payload = await fetchJson<ExchangeResponse>(
-        `/api/account?token=${encodeURIComponent(magicToken)}`,
-      );
-      const sessionToken = payload.session?.token ?? payload.sessionToken ?? payload.session_token ?? payload.token;
-      if (!sessionToken) throw new Error("Server nije vratio sesiju za nalog.");
-      window.localStorage.setItem(SESSION_KEY, sessionToken);
+      await fetchJson<{ authenticated: true }>("/api/auth/magic-link/exchange", {
+        method: "POST",
+        body: JSON.stringify({ token: magicToken }),
+      });
       window.history.replaceState({}, "", "/prijava/potvrda");
       setStatus("success");
     } catch (requestError) {
@@ -59,7 +48,7 @@ export function MagicLinkConfirmation() {
       ) : status === "success" ? (
         <div className="notice success" role="status">
           <h1>Uspešno ste prijavljeni.</h1>
-          <p>Sesija je sačuvana samo na ovom uređaju.</p>
+          <p>Bezbedna sesija je aktivna na ovom uređaju.</p>
           <a className="button" href="/nalog">Otvori nalog</a>
         </div>
       ) : (

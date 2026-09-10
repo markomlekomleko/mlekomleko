@@ -5,7 +5,7 @@ export const frequentlyAskedQuestions = [
   },
   {
     question: "Koliko mleka mogu da poručim?",
-    answer: "Brzo birate 2, 4 ili 8 litara po dostavi, što uz četiri nedeljne dostave odgovara paketima od 8, 16 ili 32 litra mesečno. Možete uneti i drugu količinu.",
+    answer: "Brzo birate 2, 4 ili 8 litara po dostavi, ili unesete drugu količinu. Mesečni zbir zavisi od stvarnog broja preostalih termina i prikazuje se pre potvrde.",
   },
   {
     question: "Kada su dostave?",

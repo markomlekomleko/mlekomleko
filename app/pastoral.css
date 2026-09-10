@@ -1,0 +1,240 @@
+/* Pastoral luxury: the original seal, generous typography and layered daylight. */
+:root {
+  --ink: #263e35;
+  --ink-soft: #536157;
+  --forest: #2c615b;
+  --forest-dark: #223d33;
+  --leaf: #e9eee4;
+  --cream: #eeeee5;
+  --paper: #f7f7f0;
+  --orange: #2c615b;
+  --orange-dark: #204a43;
+  --line: #d9ded2;
+  --muted: #58665b;
+}
+.page-shell, .nav-shell { width: min(1440px, calc(100% - 7rem)); }
+.eyebrow { font-size: .75rem; letter-spacing: .13em; }
+.button { border-radius: 100px; font-size: .875rem; padding-inline: 1.65rem; }
+.button:focus-visible, .text-link:focus-visible { outline-offset: 6px; }
+.delivery-bar { min-height: 30px; background: #e5eadf; font-size: .75rem; }
+.site-header { background: rgb(247 247 240 / 94%); backdrop-filter: blur(12px); }
+.nav-shell { min-height: 96px; }
+.brand-logo-header { width: 76px; height: 76px; }
+.brand-name { font-size: 1.3rem; }
+.main-nav a, .header-actions a { font-size: .875rem; }
+.header-actions .cart-link { border: 1px solid #bfcabf; border-radius: 50px; padding-inline: 1.15rem; }
+.header-actions .header-shop { display: none; }
+.pastoral-home { overflow: clip; }
+.pastoral-home h1, .pastoral-home h2, .pastoral-home h3 { font-family: var(--font-editorial), Georgia, serif; font-weight: 400; }
+.pastoral-home .page-shell { padding-block: 0; }
+.pastoral-hero { position: relative; isolation: isolate; min-height: 770px; height: min(920px, calc(100svh - 126px)); background: #eeefe7; }
+.pastoral-landscape { position: absolute; inset: 0; z-index: -2; overflow: hidden; }
+.pastoral-landscape img { height: 100%; width: 100%; object-fit: cover; object-position: center 73%; }
+.pastoral-landscape::after { position: absolute; inset: 0; content: ''; background: linear-gradient(#f1f2eccc, #f1f2ec55 55%, #f1f2ec00 80%); }
+.pastoral-hero .page-shell { position: relative; height: 100%; }
+.hero-topline { position: absolute; top: 36px; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: #40574b; }
+.hero-topline p, .hero-topline > span { margin: 0; font-size: .75rem; letter-spacing: .13em; text-transform: uppercase; }
+.hero-topline p { display: flex; align-items: center; gap: .65rem; }
+.origin-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pastoral-title { position: absolute; z-index: 1; top: 110px; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; max-width: none; margin: 0; font-size: clamp(6.5rem, 15.5vw, 15rem); letter-spacing: -.075em; line-height: 1.05; }
+.pastoral-title span:last-child { padding-top: .55em; font-style: italic; font-weight: 400; }
+.pastoral-home h1.pastoral-title { letter-spacing: -.075em; }
+.pastoral-title.custom-title { display: block; max-width: 12ch; font-size: clamp(4rem, 9vw, 8rem); }
+.hero-object { position: absolute; z-index: 2; width: min(650px, 54vw); height: 610px; left: 50%; top: 130px; transform: translateX(-50%); }
+.milk-scene { position: relative; width: 100%; height: 100%; }
+.milk-scene canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .6s ease; }
+.milk-scene[data-ready='true'] canvas { opacity: 1; }
+.milk-scene-poster { position: absolute; inset: 7% 15% 9%; margin: 0; overflow: hidden; border-radius: 48% 48% 3px 3px; transition: opacity .6s ease; }
+.milk-scene-poster img { width: 100%; height: 100%; object-fit: cover; }
+.milk-scene[data-ready='true'] .milk-scene-poster { opacity: 0; }
+.hero-product-note { position: absolute; z-index: 3; top: 53%; left: 0; max-width: 23ch; }
+.hero-product-note .eyebrow { margin-bottom: .65rem; }
+.hero-product-note p:last-child { color: var(--ink-soft); font-size: .875rem; line-height: 1.8; }
+.hero-purchase { position: absolute; z-index: 3; right: 0; bottom: 125px; width: 240px; }
+.hero-purchase p { margin-bottom: 1.2rem; font-size: 1rem; line-height: 1.7; }
+.hero-purchase .button { justify-content: space-between; width: 100%; min-height: 58px; }
+.hero-purchase .button span { margin-left: 1rem; font-size: 1.3rem; }
+.hero-purchase small { display: block; margin-top: .85rem; font-size: .75rem; color: #40574b; }
+.hero-bottomline { position: absolute; z-index: 3; bottom: 25px; left: 0; right: 0; display: flex; justify-content: space-between; gap: 1rem; align-items: end; }
+.hero-bottomline a { display: inline-flex; align-items: center; gap: 1rem; text-decoration: none; font-size: .75rem; color: #fff; background: #263e35cc; padding: .6rem 1rem; border-radius: 24px; min-height: 44px; }
+.hero-bottomline a span { font-size: 1.2rem; }
+.hero-bottomline > span { color: #fff; background: #263e35cc; padding: .6rem 1rem; border-radius: 24px; font-size: .75rem; }
+.pastoral-home .section-index { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.5rem 0; border-bottom: 1px solid var(--line); font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; }
+.pastoral-home .section-index span:last-child { color: var(--muted); letter-spacing: .04em; }
+.origin-intro { padding-block: 4.5rem 6rem; }
+.origin-intro-layout { display: grid; grid-template-columns: 1fr 2.4fr; gap: 4rem; margin-top: 4.5rem; }
+.origin-intro .eyebrow { max-width: 17ch; line-height: 1.8; }
+.origin-intro h2 { font-size: clamp(2.5rem, 4.9vw, 5rem); max-width: 23ch; letter-spacing: -.055em; line-height: 1.13; margin-bottom: 2rem; }
+.origin-intro h2 em { font-weight: 400; color: #647a58; }
+.intro-details { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: end; }
+.intro-details p { margin: 0; font-size: 1rem; line-height: 1.8; color: var(--muted); max-width: 42ch; }
+.intro-details .text-link { justify-self: end; }
+.pastoral-trust { display: flex; justify-content: space-between; gap: 1rem 2rem; margin-top: 3.5rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .875rem; }
+.pastoral-home .text-link { font-size: .875rem; text-decoration: none; border-bottom: 1px solid #9dab98; gap: 2rem; }
+.pastoral-home .text-link:hover { border-bottom-color: var(--forest-dark); }
+.pastoral-products { background: #e9ede2; padding-block: 0 6rem; scroll-margin-top: 110px; }
+.pastoral-home .section-heading { margin-block: 4rem 3rem; max-width: none; }
+.pastoral-home .section-heading h2 { font-size: clamp(2.75rem, 5.2vw, 5rem); letter-spacing: -.055em; line-height: 1.07; }
+.pastoral-home .section-heading h2 em { font-weight: 400; }
+.pastoral-home .product-grid { gap: 4rem; }
+.pastoral-home .product-image { aspect-ratio: 1.12; border-radius: 2px; background: #f4f3eb; }
+.pastoral-home .product-image img { transition: transform .7s cubic-bezier(.22,.61,.36,1); }
+.pastoral-home .product-card:hover img { transform: scale(1.035); }
+.pastoral-home .product-card-body { padding-top: 1.5rem; }
+.pastoral-home .product-title { font-size: 2rem; }
+.pastoral-home .product-category { font-size: .75rem; }
+.pastoral-home .product-description { font-size: 1rem; max-width: 40ch; }
+.pastoral-home .product-select { font-size: .875rem; border-color: #bac6b4; }
+.pastoral-home .product-subscription-price { font-size: .875rem; }
+.pastoral-home .price { font-size: 1.15rem; }
+.pastoral-home .price span { font-size: .875rem; }
+.pastoral-home .bundle-section { margin-top: 4rem; }
+.provenance { position: relative; min-height: 750px; display: grid; align-items: end; isolation: isolate; background: #324636; color: #fff; }
+.provenance-image { position: absolute; z-index: -2; inset: 0; overflow: hidden; }
+.provenance-image img { width: 100%; height: 100%; object-fit: cover; object-position: center 50%; }
+.provenance::after { position: absolute; z-index: -1; inset: 0; content: ''; background: linear-gradient(90deg, #15291b9e, #15291b22), linear-gradient(0deg, #15291bbd, transparent 75%); }
+.provenance-content { display: grid; grid-template-columns: 1.7fr 1fr; gap: 7rem; align-items: end; padding-block: 6rem !important; }
+.provenance .eyebrow { color: #fff; }
+.provenance h2 { font-size: clamp(3.25rem, 6vw, 6rem); letter-spacing: -.05em; line-height: 1.03; margin-bottom: 0; }
+.provenance h2 em { font-weight: 400; }
+.provenance-copy p { font-size: 1.05rem; line-height: 1.8; color: #f0f2e9; }
+.provenance .text-link { color: #fff; border-color: #c4ceb9; }
+.provenance .story-video-link, .provenance .story-video-link small { color: #fff; }
+.provenance .video-play { border-color: #c4ceb9; }
+.pastoral-ritual { padding-block: 0 6rem; }
+.ritual-heading { display: flex; align-items: end; justify-content: space-between; gap: 2rem; }
+.ritual-heading p { max-width: 32ch; color: var(--muted); margin: 0; font-size: 1rem; }
+.ritual-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3rem; }
+.ritual-step { border-top: 1px solid var(--line); padding-top: 1.4rem; }
+.ritual-step > span { font-family: var(--font-editorial), Georgia, serif; font-size: 4.5rem; color: #9dac93; line-height: 1; }
+.ritual-step h3 { font-size: 1.9rem; letter-spacing: -.035em; margin: 2rem 0 1rem; }
+.ritual-step p { max-width: 34ch; color: var(--muted); font-size: 1rem; line-height: 1.8; }
+.pastoral-delivery { border-top: 1px solid var(--line); margin-top: 3.5rem; }
+.pastoral-delivery .delivery-checker { gap: 4rem; padding-block: 2.5rem 0; border-bottom: 0; }
+.pastoral-delivery .delivery-checker h2 { font-family: var(--font-geist), Arial, sans-serif; font-size: 1.4rem; }
+.pastoral-delivery .delivery-checker .muted, .pastoral-delivery .delivery-date { font-size: .875rem; }
+.pastoral-delivery .input-action input { border-radius: 50px; padding-inline: 1.2rem; }
+.pastoral-faq { padding-block: 0 6rem; }
+.pastoral-faq .faq-home { display: grid; grid-template-columns: 1fr 1.1fr; gap: 6rem; padding-block: 4.5rem 0; border-bottom: 0; }
+.pastoral-faq h2 { font-size: clamp(2.5rem, 4vw, 4rem); letter-spacing: -.05em; }
+.pastoral-faq .faq-list summary { font-size: 1rem; padding-block: .5rem; gap: 1.5rem; }
+.pastoral-faq .faq-list p { font-size: 1rem; padding-right: 2rem; }
+.pastoral-close { position: relative; overflow: hidden; background: #dfe7d6; padding-block: 6rem; text-align: center; }
+.pastoral-close h2 { font-size: clamp(4rem, 9vw, 9rem); letter-spacing: -.065em; line-height: 1; margin-bottom: 2rem; }
+.pastoral-close h2 em { font-weight: 400; }
+.pastoral-close p:not(.eyebrow) { max-width: 48ch; margin: 0 auto 2rem; font-size: 1rem; line-height: 1.8; }
+.pastoral-close .button { min-height: 60px; gap: 2.5rem; }
+.pastoral-close .closing-note { font-size: .75rem; max-width: 58ch; margin-top: 1.5rem; color: var(--muted); }
+.site-footer { background: #f7f7f0; }
+.site-footer .footer-grid { padding-block: 4rem; }
+.site-footer .footer-brand { font-family: var(--font-editorial), Georgia, serif; font-size: 1.7rem; }
+.footer-links a, .footer-links button, .site-footer .small-text { font-size: .875rem; }
+.footer-links h2 { font-size: .875rem; }
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) and (min-width: 761px) {
+    .provenance-image img {
+      animation: pastoral-landscape-drift linear both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
+    }
+    @keyframes pastoral-landscape-drift {
+      from { transform: scale(1.13) translateY(-3%); }
+      to { transform: scale(1.13) translateY(3%); }
+    }
+  }
+}
+@media (min-width: 1600px) { .hero-object { height: 650px; top: 125px; } }
+@media (max-width: 1100px) {
+  .page-shell, .nav-shell { width: calc(100% - 4rem); }
+  .brand-name { display: none; }
+  .hero-object { width: 58vw; top: 150px; height: 560px; }
+  .hero-purchase { width: 205px; bottom: 95px; }
+  .hero-product-note { top: 53%; max-width: 18ch; }
+  .pastoral-title { font-size: 15vw; }
+  .provenance-content { gap: 3rem; }
+  .origin-intro-layout { gap: 2rem; grid-template-columns: 1fr 3fr; }
+  .pastoral-home .product-grid { gap: 2rem; }
+  .pastoral-faq .faq-home { gap: 3rem; }
+}
+@media (max-width: 760px) {
+  .page-shell, .nav-shell { width: calc(100% - 2.5rem); }
+  .delivery-bar { padding-block: .4rem; font-size: .75rem; }
+  .delivery-bar > span:first-child { display: none; }
+  .delivery-bar > span + span { border: 0; padding: 0; }
+  .nav-shell { min-height: 78px; }
+  .brand-logo-header { width: 62px; height: 62px; }
+  .brand-name { display: none; }
+  .header-actions { margin-left: auto; gap: .8rem; }
+  .header-actions > a.header-shop { display: inline-flex; color: var(--forest); font-size: .875rem; }
+  .header-actions .cart-link { padding: .45rem .9rem; font-size: .875rem; }
+  .pastoral-hero { min-height: 830px; height: auto; }
+  .pastoral-hero .page-shell { min-height: 830px; }
+  .hero-topline { top: 22px; }
+  .hero-topline p { font-size: .75rem; letter-spacing: .075em; }
+  .hero-topline > span { display: none; }
+  .pastoral-title { top: 65px; font-size: clamp(4.8rem, 17vw, 7.7rem); line-height: 1.05; }
+  .pastoral-title span:last-child { padding-top: .68em; }
+  .pastoral-title.custom-title { font-size: 3.6rem; max-width: 11ch; }
+  .hero-object { width: min(540px, 115vw); height: 455px; top: 155px; }
+  .hero-product-note { display: none; }
+  .hero-purchase { left: 0; right: 0; top: 603px; bottom: auto; width: auto; display: grid; grid-template-columns: 1fr 1fr; gap: .6rem 1rem; align-items: center; }
+  .hero-purchase p { font-size: .95rem; line-height: 1.6; margin: 0; }
+  .hero-purchase .button { padding-inline: 1rem; font-size: .875rem; min-height: 54px; }
+  .hero-purchase small { grid-column: 1 / -1; font-size: .75rem; margin-top: .25rem; }
+  .hero-bottomline { bottom: 20px; }
+  .hero-bottomline > span { display: none; }
+  .hero-bottomline .hero-secondary { font-size: .75rem; gap: .4rem; }
+  .hero-bottomline a { font-size: .75rem; }
+  .pastoral-landscape img { object-position: 50% 80%; }
+  .pastoral-landscape::after { background: linear-gradient(#f1f2ecbb, #f1f2ec33 45%, #f1f2ecaa 68%, #f1f2ec77 85%, transparent); }
+  .origin-intro { padding-block: 2rem 3.5rem; }
+  .origin-intro-layout { grid-template-columns: 1fr; gap: 1rem; margin-top: 2.5rem; }
+  .origin-intro .eyebrow { max-width: none; }
+  .origin-intro h2 { font-size: 2.7rem; }
+  .intro-details { grid-template-columns: 1fr; gap: 1.25rem; }
+  .intro-details .text-link { justify-self: start; }
+  .pastoral-trust { flex-direction: column; gap: .7rem; margin-top: 2rem; }
+  .pastoral-home .section-index { padding-block: 1.25rem; font-size: .75rem; }
+  .pastoral-home .section-index span:last-child { font-size: .75rem; }
+  .pastoral-products { padding-bottom: 3.5rem; }
+  .pastoral-home .section-heading { margin-block: 2.5rem 2rem; }
+  .pastoral-home .section-heading h2 { font-size: 3rem; }
+  .pastoral-home .split-heading { display: block; }
+  .pastoral-home .split-heading > .text-link { margin-top: 1rem; }
+  .pastoral-home .product-grid { grid-template-columns: 1fr; gap: 3rem; }
+  .pastoral-home .product-image { aspect-ratio: 1.1; }
+  .pastoral-home .product-title { font-size: 1.85rem; }
+  .provenance { min-height: 690px; }
+  .provenance-content { grid-template-columns: 1fr; padding-block: 3rem !important; gap: 2rem; }
+  .provenance h2 { font-size: 3.5rem; }
+  .provenance-copy p { font-size: 1rem; }
+  .provenance::after { background: linear-gradient(0deg, #15291bf0, #15291b22); }
+  .pastoral-ritual { padding-bottom: 3.5rem; }
+  .ritual-heading { display: block; }
+  .ritual-heading p { margin-top: 1.25rem; }
+  .ritual-grid { grid-template-columns: 1fr; gap: 1.25rem; }
+  .ritual-step { display: grid; grid-template-columns: 70px 1fr; gap: .5rem 1rem; padding-top: 1.5rem; }
+  .ritual-step > span { grid-row: 1 / 3; font-size: 3rem; }
+  .ritual-step h3 { font-size: 1.6rem; margin: 0; }
+  .ritual-step p { margin: 0; font-size: .95rem; }
+  .pastoral-delivery { margin-top: 2.5rem; }
+  .pastoral-delivery .delivery-checker { grid-template-columns: 1fr; gap: 1.5rem; }
+  .pastoral-delivery .delivery-checker h2 { font-size: 1.2rem; }
+  .pastoral-faq { padding-bottom: 3.5rem; }
+  .pastoral-faq .faq-home { grid-template-columns: 1fr; gap: 1.5rem; padding-top: 2.5rem; }
+  .pastoral-faq h2 { font-size: 2.75rem; }
+  .pastoral-close { padding-block: 4rem; }
+  .pastoral-close h2 { font-size: 4.4rem; }
+  .site-footer .footer-grid { padding-block: 3rem; }
+}
+@media (max-width: 380px) {
+  .brand-name { display: none; }
+  .hero-purchase { grid-template-columns: 1fr; top: 580px; gap: .75rem; }
+  .hero-purchase p { max-width: 30ch; }
+  .pastoral-hero, .pastoral-hero .page-shell { min-height: 860px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .milk-scene canvas, .milk-scene-poster, .pastoral-home .product-image img { transition: none; }
+  .pastoral-home .product-card:hover .product-image img { transform: none; }
+}

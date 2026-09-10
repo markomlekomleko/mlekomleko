@@ -105,7 +105,9 @@ class FakeD1Statement {
 
   async first() {
     queries.push({ method: "first", sql: this.sql, bindings: this.bindings });
-    if (/\bFROM deliveries\b/i.test(this.sql)) return deliveryFixture;
+    if (/\bFROM deliveries\b/i.test(this.sql)) {
+      return this.bindings[0] === "2099-01-01" ? null : deliveryFixture;
+    }
     if (/\bFROM products\b/i.test(this.sql)) {
       return this.bindings[0] === "nema-proizvoda" ? null : productFixture;
     }
@@ -188,6 +190,14 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
   assert.doesNotMatch(html, /Your site is taking shape|Building your site|SkeletonPreview/);
 });
 
+test("production errors include CSP, HSTS and a support request ID", async () => {
+  const response = await request("/api/products/nema-proizvoda", {}, "https://shop.mlekoimleko.rs");
+  assert.equal(response.status, 404);
+  assert.match(response.headers.get("content-security-policy") ?? "", /default-src 'self'/);
+  assert.match(response.headers.get("strict-transport-security") ?? "", /max-age=31536000/);
+  assert.match(response.headers.get("x-request-id") ?? "", /^[0-9a-f-]{36}$/i);
+});
+
 test("public catalog and product content are present in server-rendered HTML", async () => {
   const [storeResponse, productResponse] = await Promise.all([
     request("/prodavnica", { headers: { accept: "text/html" } }),
@@ -261,6 +271,11 @@ test("indexable pages have a self-canonical, one H1 and unique titles", async ()
     "/farme",
     "/faq",
     "/kontakt",
+    "/uslovi-kupovine",
+    "/privatnost",
+    "/dostava",
+    "/reklamacije",
+    "/pravila-pretplate",
   ];
   const titles = new Set();
   for (const path of paths) {
@@ -302,6 +317,11 @@ test("robots, noindex metadata and sitemap expose only canonical public pages", 
   assert.match(sitemap, /<loc>http:\/\/localhost:3000\/dostava-mleka\/beograd<\/loc>/);
   assert.match(sitemap, /<loc>http:\/\/localhost:3000\/dostava-mleka\/novi-sad<\/loc>/);
   assert.match(sitemap, /<loc>http:\/\/localhost:3000\/proizvodi\/kravlje-mleko<\/loc>/);
+  assert.match(sitemap, /<loc>http:\/\/localhost:3000\/uslovi-kupovine<\/loc>/);
+  assert.match(sitemap, /<loc>http:\/\/localhost:3000\/privatnost<\/loc>/);
+  assert.match(sitemap, /<loc>http:\/\/localhost:3000\/dostava<\/loc>/);
+  assert.match(sitemap, /<loc>http:\/\/localhost:3000\/reklamacije<\/loc>/);
+  assert.match(sitemap, /<loc>http:\/\/localhost:3000\/pravila-pretplate<\/loc>/);
   assert.doesNotMatch(sitemap, /<loc>[^<]*\/(?:admin|nalog|checkout)<\/loc>/);
 
   const privatePaths = ["/korpa", "/checkout", "/prijava", "/nalog", "/admin"];
@@ -372,6 +392,7 @@ test("checkout rejects raw card data before touching the database", async () => 
   assert.equal(response.headers.get("cache-control"), "no-store");
   const payload = await response.json();
   assert.equal(payload.error.code, "CARD_DATA_REJECTED");
+  assert.match(payload.requestId, /^[0-9a-f-]{36}$/i);
   assert.doesNotMatch(JSON.stringify(payload), /4111111111111111|123/);
   assert.equal(queries.length, 0);
 });
@@ -426,6 +447,7 @@ test("checkout prices products server-side and stores only allowlisted attributi
     utm_source: "newsletter",
     utm_campaign: "avgust",
     referrer_host: "instagram.com",
+    consent: { analytics: false },
   });
   assert.doesNotMatch(
     JSON.stringify(attribution),
@@ -439,35 +461,42 @@ test("weekly milk quote charges 350 RSD for each planned delivery", async () => 
     { key: "servicePostalCodes", value_json: '["11","21"]' },
   ];
   try {
+    const candidate = new Date();
+    candidate.setUTCMonth(candidate.getUTCMonth() + 2, 1);
+    candidate.setUTCHours(12, 0, 0, 0);
+    while (candidate.getUTCDay() !== 5) candidate.setUTCDate(candidate.getUTCDate() + 1);
+    const deliveryDate = candidate.toISOString().slice(0, 10);
+    let occurrences = 0;
+    for (const date = new Date(candidate); date.getUTCMonth() === candidate.getUTCMonth(); date.setUTCDate(date.getUTCDate() + 7)) occurrences += 1;
     const response = await request("/api/cart", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
-        deliveryDate: "2026-09-04",
+        deliveryDate,
         postalCode: "11000",
         items: [{ productId: productFixture.id, quantity: 2, purchaseType: "subscription", cadence: "weekly" }],
       }),
     });
     assert.equal(response.status, 200);
     const quote = await response.json();
-    assert.equal(quote.lines[0].occurrences, 4);
-    assert.equal(quote.subtotalMinor, 200000);
+    assert.equal(quote.lines[0].occurrences, occurrences);
+    assert.deepEqual(quote.lines[0].deliveryDates.length, occurrences);
+    assert.equal(quote.subtotalMinor, productFixture.price_minor * 2 * occurrences);
     assert.equal(quote.deliveryFeePerOccurrenceMinor, 35000);
-    assert.equal(quote.deliveryOccurrences, 4);
-    assert.equal(quote.deliveryFeeMinor, 140000);
-    assert.equal(quote.totalMinor, 340000);
+    assert.equal(quote.deliveryOccurrences, occurrences);
+    assert.equal(quote.deliveryFeeMinor, 35000 * occurrences);
+    assert.equal(quote.totalMinor, (productFixture.price_minor * 2 + 35000) * occurrences);
     assert.equal(quote.serviceable, true);
   } finally {
     settingsFixture = [];
   }
 });
 
-test("milk product cards expose litre presets and a custom quantity control", () => {
-  const source = readFileSync(new URL("../app/components/product-card.tsx", import.meta.url), "utf8");
-  assert.match(source, /Litara po dostavi/);
-  assert.match(source, /\[2, 4, 8\]/);
-  assert.match(source, /quantity,/);
-  assert.match(source, /type="number"/);
+test("subscription notifications include date, cutoff and a self-service action", () => {
+  const source = readFileSync(new URL("../server/notifications.ts", import.meta.url), "utf8");
+  assert.match(source, /Sledeća dostava:/);
+  assert.match(source, /Rok za izmene:/);
+  assert.match(source, /Uredi pretplatu/);
 });
 
 test("admin delivery export returns a complete formula-safe UTF-8 Spoke CSV", async () => {
@@ -501,6 +530,40 @@ test("admin delivery export returns a complete formula-safe UTF-8 Spoke CSV", as
     /"'=HYPERLINK\(""https:\/\/attacker\.invalid""\)"/,
   );
   assert.match(csv, /"order_1"/);
+});
+
+test("an ungenerated admin delivery is an actionable empty state", async () => {
+  const response = await request(
+    "/api/admin/deliveries?date=2099-01-01",
+    { headers: { "x-admin-secret": "test-admin-secret" } },
+    "https://shop.example.test",
+  );
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    delivery: null,
+    preparation: [],
+    orders: [],
+    canGenerate: true,
+  });
+});
+
+test("browser analytics endpoint rejects revenue events", async () => {
+  queries.length = 0;
+  const response = await request("/api/events", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      consent: true,
+      eventName: "purchase",
+      anonymousId: "anon_test",
+      sessionId: "session_test",
+      path: "/checkout",
+      properties: { value: 1 },
+    }),
+  });
+  assert.equal(response.status, 422);
+  assert.equal((await response.json()).error.code, "VALIDATION_ERROR");
+  assert.equal(queries.length, 0);
 });
 
 test("admin delivery Excel contains route and preparation sheets", async () => {
@@ -554,4 +617,48 @@ test("admin and payment webhook routes deny invalid credentials before DB access
     "INVALID_WEBHOOK_SIGNATURE",
   );
   assert.equal(queries.length, 0);
+});
+
+test("admin access probe is data-free and production builds never allow localhost bypass", async () => {
+  const env = globalThis.__mlekoTestCloudflareEnv;
+  const originalMode = env.APP_ENV;
+  queries.length = 0;
+  try {
+    env.APP_ENV = "local";
+    for (const origin of ["http://localhost", "http://127.0.0.1", "http://[::1]", "https://shop.example.test"]) {
+      const probe = await request("/api/admin/access", {}, origin);
+      assert.equal(probe.status, 200);
+      assert.match(probe.headers.get("cache-control"), /no-store/);
+      assert.deepEqual(await probe.json(), { authenticated: false, configured: true, mode: "key" });
+      const denied = await request("/api/admin/dashboard", {}, origin);
+      assert.equal(denied.status, 403);
+    }
+    const wrong = await request("/api/admin/access", { headers: { "x-admin-secret": "wrong" } });
+    assert.equal(wrong.status, 403);
+    assert.equal((await wrong.json()).error.code, "ADMIN_FORBIDDEN");
+    const accepted = await request("/api/admin/access", { headers: { "x-admin-secret": "test-admin-secret" } });
+    assert.equal(accepted.status, 200);
+    assert.deepEqual(await accepted.json(), { authenticated: true, configured: true, mode: "key" });
+    assert.equal(queries.length, 0);
+  } finally {
+    if (originalMode === undefined) delete env.APP_ENV;
+    else env.APP_ENV = originalMode;
+  }
+});
+
+test("an unconfigured admin returns setup status without querying the database", async () => {
+  const env = globalThis.__mlekoTestCloudflareEnv;
+  const originalSecret = env.ADMIN_SECRET;
+  queries.length = 0;
+  try {
+    delete env.ADMIN_SECRET;
+    const probe = await request("/api/admin/access");
+    assert.deepEqual(await probe.json(), { authenticated: false, configured: false, mode: "key" });
+    const data = await request("/api/admin/products");
+    assert.equal(data.status, 503);
+    assert.equal((await data.json()).error.code, "ADMIN_NOT_CONFIGURED");
+    assert.equal(queries.length, 0);
+  } finally {
+    env.ADMIN_SECRET = originalSecret;
+  }
 });

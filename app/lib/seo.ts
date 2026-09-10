@@ -1,6 +1,4 @@
 const LOCAL_SITE_URL = "http://localhost:3000";
-const PRODUCTION_SITE_URL =
-  "https://mleko-i-mleko.ivosevicluka2000.chatgpt.site";
 
 function normalizeBaseUrl(value: string): URL {
   const url = new URL(value);
@@ -17,8 +15,8 @@ function normalizeBaseUrl(value: string): URL {
 }
 
 export function getSiteUrl(): URL {
-  const fallback =
-    process.env.APP_ENV === "production" ? PRODUCTION_SITE_URL : LOCAL_SITE_URL;
+  const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+  const fallback = vercelHost ? `https://${vercelHost}` : LOCAL_SITE_URL;
   return normalizeBaseUrl(
     process.env.NEXT_PUBLIC_SITE_URL ?? process.env.APP_ORIGIN ?? fallback,
   );

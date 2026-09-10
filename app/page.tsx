@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-/* eslint-disable @next/next/no-img-element -- Official product imagery is sourced from the existing Mleko i Mleko store. */
 import { DeliveryChecker } from "./components/delivery-checker";
 import { BundleOffers } from "./components/bundle-offers";
 import { ProductCard } from "./components/product-card";
+import { MilkScene } from "./components/milk-scene";
 import { frequentlyAskedQuestions } from "./lib/content";
 import { normalizeProduct } from "./lib/frontend";
 import { canonicalUrl, serializeJsonLd } from "./lib/seo";
@@ -10,11 +10,9 @@ import { getStorefront } from "../server/storefront";
 
 export const metadata: Metadata = {
   title: "Domaće kravlje i kozje mleko na vašoj adresi",
-  description:
-    "Punomasno sirovo kravlje i kozje mleko u povratnim staklenim flašama, sa dostavom u Beogradu i Novom Sadu.",
+  description: "Punomasno sirovo kravlje i kozje mleko u povratnim staklenim flašama, sa dostavom u Beogradu i Novom Sadu.",
   alternates: { canonical: canonicalUrl("/") },
 };
-
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
@@ -22,126 +20,84 @@ export default async function HomePage() {
   const { settings, delivery } = storefront;
   const products = storefront.products.map(normalizeProduct);
   const featured = products.filter((product) => product.isFeatured).slice(0, 4);
+  const defaultTitle = settings.heroTitle === "Pravo mleko više nije daleko.";
   return (
-    <>
-      <section className="hero hero-split" aria-labelledby="hero-title">
-        <div className="page-shell hero-grid">
-          <div className="hero-copy">
-            <p className="eyebrow">{settings.heroEyebrow}</p>
-            <h1 id="hero-title">{settings.heroTitle}</h1>
-            <p className="lead">{settings.heroSubtitle}</p>
-            <div className="button-row">
-              <a className="button" href={settings.heroPrimaryUrl}>{settings.heroPrimaryLabel} →</a>
-            </div>
+    <div className="pastoral-home">
+      <section className="pastoral-hero" aria-labelledby="hero-title">
+        <picture className="pastoral-landscape">
+          <source srcSet="/images/pastoral-morning.avif" type="image/avif" />
+          <img src="/images/pastoral-morning.webp" alt="" width="1536" height="1024" fetchPriority="high" />
+        </picture>
+        <div className="page-shell">
+          <div className="hero-topline"><p><span className="origin-dot" aria-hidden="true" />{settings.heroEyebrow}</p><span>Kravlje & kozje · U staklu</span></div>
+          <h1 id="hero-title" className={`pastoral-title${defaultTitle ? "" : " custom-title"}`}>
+            {defaultTitle ? <><span>Pravo</span>{" "}<span>mleko.</span></> : settings.heroTitle}
+          </h1>
+          <div className="hero-object"><MilkScene /></div>
+          <div className="hero-product-note"><p className="eyebrow">Punoća prirode.</p><p>{settings.heroSubtitle}</p></div>
+          <div className="hero-purchase">
+            <p>Više nije daleko.<br />Domaće mleko, na vašem pragu.</p>
+            <a className="button" href={settings.heroPrimaryUrl}>{settings.heroPrimaryLabel}<span aria-hidden="true">↗</span></a>
+            <small>Vaša količina. Vaš ritam dostave.</small>
           </div>
-          <figure className="hero-media">
-            <img
-              src="https://storage.googleapis.com/takeapp/media/clvwgn1at00130cl451x24roh.png"
-              alt="Mleko i Mleko domaće mleko u staklenim flašama"
-              width="940"
-              height="788"
-              fetchPriority="high"
-            />
-            <figcaption>Domaće mleko u povratnim staklenim flašama</figcaption>
-          </figure>
+          <div className="hero-bottomline"><a href="#poreklo">Od prirode do vašeg jutra<span aria-hidden="true">↓</span></a><a className="hero-secondary" href={settings.heroSecondaryUrl}>{settings.heroSecondaryLabel}<span aria-hidden="true">↗</span></a></div>
         </div>
       </section>
-
-      <div className="page-shell home-content">
-        <DeliveryChecker title={settings.serviceAreaTitle} note={settings.serviceAreaNote} delivery={delivery} />
-
-        <aside className="trust-strip" aria-label="Ključne pogodnosti">
-          {settings.trustItems.map((item) => <span key={item}><strong>✓</strong>{item}</span>)}
-        </aside>
-
-        {featured.length ? (
-          <section className="section" aria-labelledby="izdvojeno-title">
-            <div className="section-heading split-heading">
-              <div><p className="eyebrow">Izaberite svoje mleko</p><h2 id="izdvojeno-title">Koliko litara vam stiže po dostavi?</h2></div>
-              <a className="text-link" href="/prodavnica">Pogledaj celu ponudu →</a>
+      <section id="poreklo" className="origin-intro" aria-labelledby="origin-title">
+        <div className="page-shell">
+          <div className="section-index"><span>01 / Ono što je važno</span><span>Mleko i Mleko</span></div>
+          <div className="origin-intro-layout">
+            <p className="eyebrow">Dobro jutro počinje dobrim poreklom.</p>
+            <div><h2 id="origin-title">Neke dobre stvari<br />dolaze <em>pravo iz prirode.</em></h2>
+              <div className="intro-details"><p>Domaće kravlje i kozje mleko. Punoća ukusa koju pamtite, u staklu koje nam se vraća. Mali svakodnevni ritual koji vredi sačuvati.</p><a className="text-link" href="/o-nama">Upoznajte Mleko i Mleko<span aria-hidden="true">↗</span></a></div>
             </div>
-            <div className="product-grid featured-grid">
-              {featured.map((product) => <ProductCard key={product.id} product={product} />)}
-            </div>
-          </section>
-        ) : null}
-
-        <BundleOffers products={products} bundles={storefront.bundles} />
-
-        <section className="section" aria-labelledby="koraci-title">
-          <div className="section-heading">
-            <p className="eyebrow">Jednostavno kao navika</p>
-            <h2 id="koraci-title">Vi birate mleko, litre i ritam. Mi donosimo.</h2>
           </div>
-          <div className="grid-3 steps-grid">
-            <article className="card number-card"><strong>01</strong><h3>Izaberite mleko</h3><p className="muted">Kravlje ili kozje, jednokratno ili kao redovnu dostavu.</p></article>
-            <article className="card number-card"><strong>02</strong><h3>Odredite litre i ritam</h3><p className="muted">Izaberite jednokratnu, nedeljnu ili dvonedeljnu isporuku, bez komplikovanih paketa.</p></article>
-            <article className="card number-card"><strong>03</strong><h3>Vratite čiste flaše</h3><p className="muted">Od druge dostave preuzimamo korišćene, čiste flaše i donosimo pune.</p></article>
+          <div className="pastoral-trust" aria-label="Ključne pogodnosti">{[...new Set(settings.trustItems)].map((item) => <span key={item}>{item}</span>)}</div>
+        </div>
+      </section>
+      <section id="izaberite-mleko" className="pastoral-products" aria-labelledby="products-title">
+        <div className="page-shell">
+          <div className="section-index"><span>02 / Izaberite svoje mleko</span><span>Jednokratno ili redovno</span></div>
+          <div className="section-heading split-heading"><h2 id="products-title">Dva ukusa.<br /><em>Jedan dobar ritual.</em></h2><a className="text-link" href="/prodavnica">Cela ponuda<span aria-hidden="true">↗</span></a></div>
+          {featured.length ? <div className="product-grid featured-grid">{featured.map((product) => <ProductCard key={product.id} product={product} />)}</div> : <p>Aktuelnu ponudu možete pogledati u <a href="/prodavnica">prodavnici</a>.</p>}
+          <BundleOffers products={products} bundles={storefront.bundles} />
+        </div>
+      </section>
+      <section className="provenance" aria-labelledby="farm-title">
+        <picture className="provenance-image"><source srcSet="/images/farma-demo.avif" type="image/avif" /><source srcSet="/images/farma-demo.webp" type="image/webp" /><img src="/images/farma-demo.jpg" alt="Krave na pašnjaku — ilustracija domaćeg uzgoja" width="1600" height="1066" loading="lazy" /></picture>
+        <div className="page-shell provenance-content">
+          <div><p className="eyebrow">03 / Odakle sve počinje</p><h2 id="farm-title">Dobar ukus<br />ima svoje<br /><em>poreklo.</em></h2></div>
+          <div className="provenance-copy"><p>Na domaćim farmama počinje put našeg kravljeg i kozjeg mleka. Do vas stiže punomasno i sirovo, u povratnoj staklenoj flaši.</p><a className="text-link" href="/farme">Upoznajte naše farme<span aria-hidden="true">↗</span></a>
+            {settings.announcementEnabled && /(?:tiktok\.com|youtu\.?be)/i.test(settings.announcementUrl) ? <a className="story-video-link" href={settings.announcementUrl} target="_blank" rel="noreferrer"><span className="video-play" aria-hidden="true">▷</span><span>Od našeg mleka, domaći kajmak.<small>{settings.announcementLinkLabel} ↗</small></span></a> : null}
           </div>
-        </section>
-
-        <section className="section farm-story" aria-labelledby="farme-title">
-          <figure className="farm-media">
-            <img
-              src="https://storage.googleapis.com/takeapp/media/cm52rz909000003mhagpjf52k.png"
-              alt="Domaće kravlje mleko Mleko i Mleko"
-              width="1080"
-              height="1080"
-              loading="lazy"
-            />
-            <figcaption>Tradicionalan uzgoj i savremena dostava</figcaption>
-          </figure>
-          <div className="farm-copy">
-            <p className="eyebrow">Odakle dolazi</p>
-            <h2 id="farme-title">Direktno sa domaćih farmi.</h2>
-            <p className="lead">Punomasno sirovo mleko od krava i koza iz tradicionalnog uzgoja, sa prirodnom ishranom i redovnom laboratorijskom kontrolom.</p>
-            <div className="farm-facts">
-              <article><strong>01</strong><span>Prirodan ukus</span><p>Punoća od koje možete napraviti pravi domaći kajmak.</p></article>
-              <article><strong>02</strong><span>Bez dodataka</span><p>Bez hormona, antibiotika i aditiva.</p></article>
-              <article><strong>03</strong><span>Manje otpada</span><p>Povratne staklene flaše umesto jednokratne plastike.</p></article>
-            </div>
-            <a className="button secondary" href="/farme">Saznaj put našeg mleka →</a>
+        </div>
+      </section>
+      <section className="pastoral-ritual" aria-labelledby="ritual-title">
+        <div className="page-shell">
+          <div className="section-index"><span>04 / Vaša nova dobra navika</span><span>Od farme do vrata</span></div>
+          <div className="section-heading ritual-heading"><h2 id="ritual-title">Prirodan ukus.<br /><em>Jednostavan ritam.</em></h2><p>Vi birate šta i koliko.<br />Mi donosimo mleko na vašu adresu.</p></div>
+          <div className="ritual-grid">
+            <article className="ritual-step"><span aria-hidden="true">01</span><h3>Izaberite svoje mleko.</h3><p>Kravlje ili kozje, jednokratno ili kao redovnu dostavu.</p></article>
+            <article className="ritual-step"><span aria-hidden="true">02</span><h3>Pronađite svoj ritam.</h3><p>Odredite litre i nedeljnu ili dvonedeljnu dostavu. Vaš izbor je uvek jasno prikazan pre poručivanja.</p></article>
+            <article className="ritual-step"><span aria-hidden="true">03</span><h3>Flaša se vraća. Ritual ostaje.</h3><p>Od druge dostave preuzimamo čiste korišćene flaše i donosimo pune.</p></article>
           </div>
-        </section>
-
-        <section className="section faq-home" aria-labelledby="faq-home-title">
-          <div className="faq-intro">
-            <p className="eyebrow">Bez nedoumica</p>
-            <h2 id="faq-home-title">Česta pitanja pre prve dostave.</h2>
-            <p className="lead">Sve što najčešće zaustavi kupovinu — od pretplate do plaćanja — rešeno je ovde, pre korpe.</p>
-            <a className="text-link" href="/kontakt">Niste pronašli odgovor? Pišite nam →</a>
+          <div className="pastoral-delivery"><DeliveryChecker title={settings.serviceAreaTitle} note={settings.serviceAreaNote} delivery={delivery} /></div>
+        </div>
+      </section>
+      <section className="pastoral-faq" aria-labelledby="faq-home-title">
+        <div className="page-shell">
+          <div className="section-index"><span>05 / Pre prve dostave</span><span>Dobro je znati</span></div>
+          <div className="faq-home">
+            <div className="faq-intro"><h2 id="faq-home-title">Sve što želite<br /><em>da znate.</em></h2><p className="lead">O mleku, flašama i vašem ritmu.</p><a className="text-link" href="/kontakt">Tu smo za vas<span aria-hidden="true">↗</span></a></div>
+            <div className="details-list faq-list">{frequentlyAskedQuestions.map(({ question, answer }) => <details key={question}><summary>{question}<span aria-hidden="true">＋</span></summary><p>{answer}</p></details>)}</div>
           </div>
-          <div className="details-list faq-list">
-            {frequentlyAskedQuestions.map(({ question, answer }, index) => (
-              <details key={question} open={index === 0}>
-                <summary>{question}<span aria-hidden="true">＋</span></summary>
-                <p>{answer}</p>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        <section className="conversion-band" aria-labelledby="garancija-title">
-          <div>
-            <p className="eyebrow">Bez sitnih slova</p>
-            <h2 id="garancija-title">{settings.guaranteeTitle}</h2>
-            <p>{settings.guaranteeText}</p>
-          </div>
-          <div className="button-row">
-            <a className="button light" href="/prodavnica">Sastavi dostavu →</a>
-            <a className="text-link light-link" href="/kako-funkcionise">Kako funkcioniše</a>
-          </div>
-        </section>
-      </div>
+        </div>
+      </section>
+      <section className="pastoral-close" aria-labelledby="closing-title"><div className="page-shell"><p className="eyebrow">Mleko i Mleko</p><h2 id="closing-title">Za vaša<br /><em>dobra jutra.</em></h2><p>{settings.guaranteeText}</p><a className="button" href="/prodavnica">Sastavi svoju dostavu<span aria-hidden="true">↗</span></a><p className="closing-note">{settings.guaranteeTitle}</p></div></section>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd({
-        "@context": "https://schema.org",
-        "@type": "FAQPage",
-        mainEntity: frequentlyAskedQuestions.map(({ question, answer }) => ({
-          "@type": "Question",
-          name: question,
-          acceptedAnswer: { "@type": "Answer", text: answer },
-        })),
+        "@context": "https://schema.org", "@type": "FAQPage",
+        mainEntity: frequentlyAskedQuestions.map(({ question, answer }) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })),
       }) }} />
-    </>
+    </div>
   );
 }

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { canonicalUrl } from "../lib/seo";
-/* eslint-disable @next/next/no-img-element -- Official product image is sourced from the existing Mleko i Mleko store. */
 
 export const metadata: Metadata = {
   title: "Naše farme",
@@ -15,17 +14,15 @@ export default function FarmsPage() {
         <div>
           <p className="eyebrow">Put našeg mleka</p>
           <h1>Tradicija sa farme, dostava za danas.</h1>
-          <p className="lead">Krave i koze odgajaju se tradicionalno, u skladu sa prirodom i uz prirodnu ishranu. Mleko stiže bez hormona, antibiotika i aditiva.</p>
+          <p className="lead">Sarađujemo sa domaćim farmama i organizujemo dostavu mleka u povratnim staklenim flašama.</p>
           <div className="button-row"><a className="button" href="/prodavnica">Izaberi mleko →</a><a className="button secondary" href="/kontakt">Kontakt</a></div>
         </div>
         <figure className="farm-media">
-          <img
-            src="https://storage.googleapis.com/takeapp/media/cm52vt3e6000a03jq3nsw8bzc.png"
-            alt="Domaće kozje mleko Mleko i Mleko"
-            width="1080"
-            height="1080"
-            fetchPriority="high"
-          />
+          <picture>
+            <source srcSet="/images/farma-demo.avif" type="image/avif" />
+            <source srcSet="/images/farma-demo.webp" type="image/webp" />
+            <img src="/images/farma-demo.jpg" alt="Krave na pašnjaku domaće farme" width="1600" height="1066" fetchPriority="high" />
+          </picture>
           <figcaption>Domaće mleko u povratnoj staklenoj ambalaži</figcaption>
         </figure>
       </header>
@@ -34,7 +31,7 @@ export default function FarmsPage() {
         <div className="section-heading"><p className="eyebrow">Šta dobijate</p><h2 id="profil-title">Kvalitet koji možete da prepoznate.</h2></div>
         <div className="grid-3 farm-profile-grid">
           <article className="card"><span>01</span><h3>Punomasno i sirovo</h3><p>Prirodan ukus i punoća od koje možete napraviti pravi domaći kajmak.</p></article>
-          <article className="card"><span>02</span><h3>Laboratorijska kontrola</h3><p>Mleko se redovno kontroliše pre nego što stigne do kupaca.</p></article>
+          <article className="card"><span>02</span><h3>Dokumentovan kvalitet</h3><p>Podatke o kontroli i deklaraciji objavljujemo uz proizvod kada su potvrđeni dokumentacijom dobavljača.</p></article>
           <article className="card"><span>03</span><h3>Povratno staklo</h3><p>Čiste korišćene flaše vraćate pri sledećoj dostavi, a preuzimate pune.</p></article>
         </div>
       </section>

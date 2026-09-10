@@ -1,5 +1,5 @@
 import { all } from "./sql";
-import { addLocalDays, cutoffForDelivery, nextWeekday } from "./time";
+import { addLocalDays, cutoffForDelivery, nextWeekday, occurrenceDatesInMonth } from "./time";
 
 export interface BusinessSettings {
   timezone: "Europe/Belgrade";
@@ -96,9 +96,14 @@ export async function getNextDeliveryWindow(now = new Date()) {
   }
   return {
     deliveryDate,
+    billingMonth: deliveryDate.slice(0, 7),
     deliveryLocalTime: settings.deliveryLocalTime,
     cutoffAt,
     cutoffHours: settings.cutoffHours,
+    remainingOccurrences: {
+      weekly: occurrenceDatesInMonth(deliveryDate, "weekly").length,
+      biweekly: occurrenceDatesInMonth(deliveryDate, "biweekly").length,
+    },
   };
 }
 
