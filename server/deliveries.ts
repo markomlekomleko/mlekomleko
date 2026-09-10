@@ -62,7 +62,7 @@ export async function generateDelivery(rawDate: unknown, rawKey: string | null) 
   const cutoffAt = delivery?.cutoff_at ?? cutoffForDelivery(date, settings.cutoffHours, settings.deliveryLocalTime);
 
   const oneTimeSources = await all<CustomerSnapshotRow & { source_order_id: string }>(
-    "SELECT o.id AS source_order_id, o.customer_id, c.full_name, c.email, c.phone, c.address_line_1, c.address_line_2, c.city, c.postal_code, COALESCE(o.customer_note, c.delivery_note) AS delivery_note FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.delivery_date = ? AND o.kind = 'one_time' AND o.fulfillment_status = 'planned' AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id AND oi.purchase_type = 'one_time')",
+    "SELECT o.id AS source_order_id, o.customer_id, c.full_name, c.email, c.phone, c.address_line_1, c.address_line_2, c.city, c.postal_code, COALESCE(o.customer_note, c.delivery_note) AS delivery_note FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.delivery_date = ? AND o.kind IN ('one_time', 'subscription_invoice') AND o.fulfillment_status = 'planned' AND EXISTS (SELECT 1 FROM order_items oi WHERE oi.order_id = o.id AND oi.purchase_type = 'one_time')",
     date,
   );
   const subscriptionSources = await all<CustomerSnapshotRow & { subscription_id: string }>(

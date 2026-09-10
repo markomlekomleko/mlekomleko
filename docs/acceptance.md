@@ -113,8 +113,10 @@ release-candidate verziji:
   povlačenje zaustavlja buduće tagove.
 - [ ] **Sadržaj P06:** vlasnik dostavlja finalne fotografije/cene/pravila i dokumentaciju
   za svaku tvrdnju o kvalitetu. Nedokazane tvrdnje ostaju neobjavljene.
-- [ ] **Admin P07:** produkcija dobija identitet, allowlist role, MFA i re-auth za opasne
-  akcije; shared-secret admin nije dozvoljen za launch.
+- [ ] **Admin P07 (izmenjen zahtev vlasnika):** implementirana prijava preko
+  `ADMIN_USERNAME` i `ADMIN_PASSWORD`, obavezna pri svakom otvaranju/refresh-u,
+  opoziv sesije i ograničenje pokušaja. Pre launch-a postaviti vrednosti u Vercel
+  environment i proveriti na javnom domenu. MFA/uloge nisu deo ovog dogovorenog toka.
 - [ ] **Operacije P08:** enkriptovan backup i restore proba, payment↔order↔fiscal
   reconciliation, alarmi, incident drill i dokumentovan rollback su potpisani.
 - [ ] **Performance P09:** na produkcionom/staging URL-u Lighthouse potvrđuje LCP ≤2,5 s,

@@ -4,6 +4,7 @@ import { DomainError, assertDomain, emailAddress } from "./domain";
 import { batch, first, run } from "./sql";
 import { enqueue } from "./outbox";
 import { processOutboxFor } from "./integration-jobs";
+import { enforceRateLimit } from "./rate-limit";
 
 interface AuthRow extends Record<string, unknown> {
   id: string;
@@ -19,8 +20,8 @@ interface CustomerRow extends Record<string, unknown> {
   email: string;
 }
 
-function runtimeEnv(): { APP_ENV?: string; APP_ORIGIN?: string; ADMIN_SECRET?: string; LOCAL_AUTH_EXPOSE_TOKEN?: string } {
-  return env as unknown as { APP_ENV?: string; APP_ORIGIN?: string; ADMIN_SECRET?: string; LOCAL_AUTH_EXPOSE_TOKEN?: string };
+function runtimeEnv(): Record<string, string | undefined> {
+  return env as Record<string, string | undefined>;
 }
 
 const PRODUCTION_SESSION_COOKIE = "__Host-mm_session";
@@ -56,6 +57,9 @@ export function assertSameOrigin(request: Request): void {
 
 export async function issueMagicLink(rawEmail: unknown, request: Request): Promise<{ accepted: true; magicLink?: string; localDevelopment?: { url: string; token: string } }> {
   const email = emailAddress(rawEmail);
+  const runtime = env as Record<string, string | undefined>;
+  const local = runtime.APP_ENV !== "production" && (["localhost", "127.0.0.1", "::1", "[::1]"].includes(new URL(request.url).hostname) || runtime.LOCAL_AUTH_EXPOSE_TOKEN === "true");
+  assertDomain(local || (runtime.EMAIL_MODE === "provider" && runtime.EMAIL_PROVIDER?.toLowerCase() === "resend" && runtime.EMAIL_API_KEY && runtime.EMAIL_FROM), "EMAIL_NOT_CONFIGURED", "Prijava emailom trenutno nije dostupna. Obratite nam se preko kontakt stranice.", 503);
   const token = randomToken();
   const tokenHash = await sha256(token);
   const customer = await first<CustomerRow>("SELECT id, email FROM customers WHERE email = ?", email);
@@ -72,18 +76,16 @@ export async function issueMagicLink(rawEmail: unknown, request: Request): Promi
   await processOutboxFor("customer", customer?.id ?? email);
 
   // The raw token is exposed only on localhost (or when explicitly opted into local mode).
-  const runtime = runtimeEnv();
-  const local = runtime.APP_ENV !== "production" && (["localhost", "127.0.0.1", "::1", "[::1]"].includes(new URL(request.url).hostname) || runtime.LOCAL_AUTH_EXPOSE_TOKEN === "true");
   return local ? { accepted: true, magicLink: url, localDevelopment: { url, token } } : { accepted: true };
 }
 
 export async function exchangeMagicLink(token: string): Promise<{ customerId: string; sessionToken: string; sessionExpiresAt: string }> {
-  assertDomain(token.length >= 32 && token.length <= 200, "INVALID_TOKEN", "Magic-link token is invalid.", 401);
+  assertDomain(token.length >= 32 && token.length <= 200, "INVALID_TOKEN", "Link za prijavu nije važeći. Zatražite novi link.", 401);
   const hash = await sha256(token);
   const row = await first<AuthRow>("SELECT id, customer_id, email, kind, expires_at, used_at FROM auth_tokens WHERE token_hash = ?", hash);
-  assertDomain(row?.kind === "magic_link" && !row.used_at && Date.parse(row.expires_at) > Date.now(), "INVALID_TOKEN", "Magic link is invalid, expired, or already used.", 401);
+  assertDomain(row?.kind === "magic_link" && !row.used_at && Date.parse(row.expires_at) > Date.now(), "INVALID_TOKEN", "Link je istekao ili je već iskorišćen. Zatražite novi link.", 401);
   const customer = row.customer_id ? await first<CustomerRow>("SELECT id, email FROM customers WHERE id = ?", row.customer_id) : await first<CustomerRow>("SELECT id, email FROM customers WHERE email = ?", row.email);
-  assertDomain(customer, "ACCOUNT_NOT_FOUND", "No completed order exists for this email address.", 404);
+  assertDomain(customer, "ACCOUNT_NOT_FOUND", "Za ovu email adresu još nema porudžbine. Nalog se otvara nakon prve porudžbine.", 404);
   const sessionToken = randomToken();
   const sessionHash = await sha256(sessionToken);
   const expiresAt = new Date(Date.now() + 30 * 86_400_000).toISOString();
@@ -92,7 +94,7 @@ export async function exchangeMagicLink(token: string): Promise<{ customerId: st
     { sql: "UPDATE auth_tokens SET used_at = ? WHERE id = ? AND used_at IS NULL", bindings: [new Date().toISOString(), row.id] },
   ]);
   const issued = await first<Record<string, unknown>>("SELECT id FROM auth_tokens WHERE token_hash = ? AND kind = 'session'", sessionHash);
-  assertDomain(issued, "INVALID_TOKEN", "Magic link was already used.", 401);
+  assertDomain(issued, "INVALID_TOKEN", "Link je već iskorišćen. Zatražite novi link.", 401);
   return { customerId: customer.id, sessionToken, sessionExpiresAt: expiresAt };
 }
 
@@ -105,17 +107,72 @@ export async function authenticateCustomer(request: Request): Promise<{ customer
   return { customerId: row.customer_id, email: row.email };
 }
 
+function adminCredentials() {
+  const { ADMIN_USERNAME: username, ADMIN_PASSWORD: password } = runtimeEnv();
+  return username && password && password.length >= 12 ? { username, password } : null;
+}
+
+// Compatibility for isolated legacy worker fixtures only. Never enabled on Vercel.
+function legacyAdminAccess(): boolean {
+  return runtimeEnv().ADMIN_LEGACY_ACCESS === "true" && runtimeEnv().APP_ENV !== "production"
+    && !process.env.VERCEL && !runtimeEnv().ADMIN_USERNAME && !runtimeEnv().ADMIN_PASSWORD;
+}
+
+function adminToken(request: Request): string {
+  return request.headers.get("authorization")?.match(/^Bearer ([A-Za-z0-9_-]{43})$/)?.[1] ?? "";
+}
+
+async function credentialFingerprint(credentials: { username: string; password: string }) {
+  return sha256(JSON.stringify([credentials.username, credentials.password]));
+}
+
+export async function loginAdmin(request: Request, input: Record<string, unknown>) {
+  assertSameOrigin(request);
+  const credentials = adminCredentials();
+  if (!credentials) throw new DomainError("ADMIN_NOT_CONFIGURED", "Postavite ADMIN_USERNAME i ADMIN_PASSWORD (najmanje 12 znakova) na serveru.", 503);
+  await enforceRateLimit(request, "admin-login", 10, 15 * 60);
+  const username = typeof input.username === "string" ? input.username : "";
+  const password = typeof input.password === "string" ? input.password : "";
+  const [nameMatches, passwordMatches] = await Promise.all([
+    constantTimeEqual(username, credentials.username), constantTimeEqual(password, credentials.password),
+  ]);
+  assertDomain(nameMatches && passwordMatches, "ADMIN_FORBIDDEN", "Korisničko ime ili lozinka nisu ispravni.", 403);
+  const sessionToken = randomToken();
+  const expiresAt = new Date(Date.now() + 8 * 60 * 60_000).toISOString();
+  await batch([
+    { sql: "DELETE FROM admin_sessions WHERE expires_at <= ? OR revoked_at IS NOT NULL", bindings: [new Date().toISOString()] },
+    { sql: "INSERT INTO admin_sessions (token_hash, credential_hash, expires_at) VALUES (?, ?, ?)", bindings: [await sha256(sessionToken), await credentialFingerprint(credentials), expiresAt] },
+  ]);
+  return { authenticated: true, configured: true, mode: "password" as const, sessionToken, expiresAt };
+}
+
+export async function logoutAdmin(request: Request) {
+  const token = adminToken(request);
+  if (token) await run("UPDATE admin_sessions SET revoked_at = ? WHERE token_hash = ?", new Date().toISOString(), await sha256(token));
+  return { authenticated: false };
+}
+
 export async function requireAdmin(request: Request): Promise<void> {
   if (isLocalAdminRequest(request)) return;
-  const supplied = request.headers.get("x-admin-secret") ?? "";
-  const configured = runtimeEnv().ADMIN_SECRET;
-  if (!configured) throw new DomainError("ADMIN_NOT_CONFIGURED", "Admin pristup nije podešen na serveru. Postavite ADMIN_SECRET i ponovo pokrenite aplikaciju.", 503);
-  assertDomain(supplied.length > 0 && await constantTimeEqual(supplied, configured), "ADMIN_FORBIDDEN", "Admin ključ nije ispravan. Pokušajte ponovo.", 403);
+  if (legacyAdminAccess()) {
+    const configured = runtimeEnv().ADMIN_SECRET;
+    if (!configured) throw new DomainError("ADMIN_NOT_CONFIGURED", "Admin pristup nije podešen.", 503);
+    assertDomain(await constantTimeEqual(request.headers.get("x-admin-secret") ?? "", configured), "ADMIN_FORBIDDEN", "Admin pristup nije dozvoljen.", 403);
+    return;
+  }
+  const credentials = adminCredentials();
+  if (!credentials) throw new DomainError("ADMIN_NOT_CONFIGURED", "Postavite ADMIN_USERNAME i ADMIN_PASSWORD (najmanje 12 znakova) na serveru.", 503);
+  const token = adminToken(request);
+  assertDomain(token, "ADMIN_FORBIDDEN", "Prijavite se korisničkim imenom i lozinkom.", 403);
+  const session = await first<Record<string, unknown>>("SELECT credential_hash, expires_at, revoked_at FROM admin_sessions WHERE token_hash = ?", await sha256(token));
+  assertDomain(session && !session.revoked_at && Date.parse(String(session.expires_at)) > Date.now()
+    && session.credential_hash === await credentialFingerprint(credentials), "ADMIN_FORBIDDEN", "Prijava je istekla. Prijavite se ponovo.", 403);
 }
 
 // Production builds disable this branch. A hostname or runtime
 // environment variable alone must never enable unauthenticated admin access.
 export function isLocalAdminRequest(request: Request): boolean {
+  if (runtimeEnv().ADMIN_USERNAME || runtimeEnv().ADMIN_PASSWORD) return false;
   if (process.env.NODE_ENV !== "development" || process.env.VERCEL || runtimeEnv().APP_ENV === "production") return false;
   const url = new URL(request.url);
   if (!["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)) return false;
@@ -134,12 +191,12 @@ export function isLocalAdminRequest(request: Request): boolean {
 }
 
 export async function adminAccess(request: Request) {
-  const local = isLocalAdminRequest(request);
-  const configured = Boolean(runtimeEnv().ADMIN_SECRET);
-  if (local) return { authenticated: true, configured, mode: "local" as const };
-  if (!request.headers.get("x-admin-secret")) return { authenticated: false, configured, mode: "key" as const };
+  const configured = legacyAdminAccess() ? Boolean(runtimeEnv().ADMIN_SECRET) : Boolean(adminCredentials());
+  const mode = legacyAdminAccess() ? "key" as const : "password" as const;
+  if (isLocalAdminRequest(request)) return { authenticated: true, configured, mode: "local" as const };
+  if (!request.headers.has("authorization") && !request.headers.has("x-admin-secret")) return { authenticated: false, configured, mode };
   await requireAdmin(request);
-  return { authenticated: true, configured, mode: "key" as const };
+  return { authenticated: true, configured, mode };
 }
 
 export async function revokeSession(token: string): Promise<void> {

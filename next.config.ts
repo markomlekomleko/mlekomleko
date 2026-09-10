@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  distDir: process.env.E2E_DIST_DIR || ".next",
   serverExternalPackages: ["@libsql/client", "libsql", "pg"],
   async headers() {
     const headers = [
@@ -12,7 +13,7 @@ const nextConfig: NextConfig = {
     ];
     if (process.env.NODE_ENV === "production") headers.push(
       { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" },
-      { key: "Content-Security-Policy", value: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.google-analytics.com https://www.facebook.com; font-src 'self' data:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com; frame-src https://www.youtube.com https://www.tiktok.com; upgrade-insecure-requests" },
+      { key: "Content-Security-Policy", value: "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://www.google-analytics.com https://www.facebook.com; font-src 'self' data:; connect-src 'self' blob: https://www.google-analytics.com https://region1.google-analytics.com; frame-src https://www.youtube.com https://www.tiktok.com; upgrade-insecure-requests" },
     );
     return [{ source: "/:path*", headers }];
   },

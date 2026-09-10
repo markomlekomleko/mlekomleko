@@ -30,7 +30,8 @@ Serverske promenljive na Vercelu:
 | --- | --- |
 | `POSTGRES_URL` | Supabase transaction pooler, port 6543, samo na serveru |
 | `POSTGRES_URL_NON_POOLING` | Supabase session pooler, port 5432, za migracije |
-| `ADMIN_SECRET` | sopstveni dug nasumični ključ za admin |
+| `ADMIN_USERNAME` | korisničko ime za admin |
+| `ADMIN_PASSWORD` | jaka lozinka, najmanje 12 znakova; samo server |
 | `CRON_SECRET` | zaseban nasumični ključ za zakazane poslove |
 | `APP_ENV` | `production` (Vercel runtime ga svakako prisilno koristi) |
 | `APP_ORIGIN` | puna HTTPS adresa deployment-a ili konačnog domena |
@@ -62,10 +63,20 @@ Next.js HTTP server preko pooler-a i uklanjaju isključivo svoju šemu. `public`
 koristi za testne kupce i porudžbine. Jedino eksplicitna `db:migrate` komanda menja
 produkcionu šemu.
 
-Admin prvo poziva `/api/admin/access`, pa tek nakon uspešne autentikacije učitava
-sekcije. Lokalni razvoj sa loopback adrese ima automatski pristup. Produkcioni build
-uvek traži `ADMIN_SECRET`; `APP_ENV=local` ili podmetnut localhost header ne uključuju
-lokalni pristup. Bez podešenog ključa prikazuje se konkretna poruka o konfiguraciji.
+Admin prvo poziva `/api/admin/access`, pa nakon prijave učitava sekcije. U Vercel
+Project Settings → Environment Variables postaviti `ADMIN_USERNAME` i
+`ADMIN_PASSWORD` za Production (i zasebno Preview ako je potreban), zatim uraditi
+redeploy. Vrednosti nemaju prefiks `NEXT_PUBLIC_` i ne ulaze u browser bundle.
+`APP_ORIGIN` mora biti tačan javni origin prodavnice, bez završne kose crte.
+Primeniti migraciju `0011_admin_sessions.sql` pre korišćenja prijave.
+
+Prijava je obavezna posle novog otvaranja/refresh-a, sesija traje najviše 8 sati,
+a odjava je opoziva u bazi. Server čuva samo hash tokena. Promena korisničkog imena
+ili lozinke i redeploy poništavaju prethodne sesije. Ne postoji podrazumevana lozinka.
+Posle 10 pokušaja sa iste adrese u 15 minuta vraća se 429.
+Lokalni razvoj bez podešenih kredencijala zadržava loopback pristup; Vercel i
+produkcioni build ga uvek odbijaju. `ADMIN_SECRET` nije produkciona admin prijava.
+
 
 ## Zakazani poslovi
 

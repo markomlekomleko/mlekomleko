@@ -6,7 +6,7 @@ import { useCart } from "./cart-provider";
 import { formatMoney, type BundleOffer, type Product } from "../lib/frontend";
 
 export function BundleOffers({ products, bundles }: { products: Product[]; bundles: BundleOffer[] }) {
-  const { addItem } = useCart();
+  const { addItem, ready } = useCart();
   const { track } = useAnalytics();
   const [added, setAdded] = useState("");
 
@@ -45,7 +45,7 @@ export function BundleOffers({ products, bundles }: { products: Product[]; bundl
             <p className="muted">{bundle.description}</p>
             <ul>{bundle.lines.map((item) => <li key={item.id}><span>{item.quantity}× {item.productName}</span><small>{item.purchaseType === "one_time" ? "samo sledeći put" : item.cadence === "biweekly" ? "svake 2 nedelje" : "svake nedelje"}</small></li>)}</ul>
             <div className="bundle-price"><strong>{formatMoney(bundle.perDeliveryMinor / 100)}</strong><span>po prikazanoj dostavi</span>{bundle.savingPerDeliveryMinor > 0 ? <small>Štedite {formatMoney(bundle.savingPerDeliveryMinor / 100)} po dostavi</small> : null}</div>
-            {added === bundle.id ? <a className="button" href="/korpa">Otvori korpu →</a> : <button className="button" type="button" onClick={() => addBundle(bundle)}>Dodaj paket</button>}
+            {added === bundle.id ? <a className="button" href="/korpa">Nastavi na kupovinu →</a> : <button className="button" type="button" disabled={!ready} onClick={() => addBundle(bundle)}>Dodaj paket</button>}
           </article>
         ))}
       </div>

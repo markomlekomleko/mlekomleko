@@ -6,7 +6,7 @@ import { createDatabase } from './sqlite-d1.mjs';
 
 const realDate = Date;
 let database;
-const env = { APP_ENV: 'local', APP_ORIGIN: 'http://localhost', ADMIN_SECRET: 'test-admin-secret', PAYMENT_WEBHOOK_SECRET: 'test-webhook-secret', LOCAL_AUTH_EXPOSE_TOKEN: 'true' };
+const env = { APP_ENV: 'local', PAYMENT_MODE: 'mock', APP_ORIGIN: 'http://localhost', ADMIN_LEGACY_ACCESS: "true", ADMIN_SECRET: 'test-admin-secret', PAYMENT_WEBHOOK_SECRET: 'test-webhook-secret', LOCAL_AUTH_EXPOSE_TOKEN: 'true' };
 globalThis.__mlekoTestCloudflareEnv = env;
 register(new URL('./cloudflare-loader.mjs', import.meta.url));
 const worker = (await import('../dist/server/index.js')).default;
@@ -36,11 +36,11 @@ async function create(extra={},items=[line()]) { return expectStatus(await api('
 function session() {
  const c=database.raw.prepare('SELECT id,email FROM customers LIMIT 1').get();
  const token=randomUUID()+randomUUID();
- database.raw.prepare("INSERT INTO auth_tokens (id, customer_id,email,token_hash,kind,expires_at) VALUES (?,?,?,?,'session','2030-01-01T00:00:00Z')").run(randomUUID(),c.id,c.email,createHash('sha256').update(token).digest('hex'));
+ database.raw.prepare("INSERT INTO auth_tokens (id, customer_id,email,token_hash,kind,expires_at) VALUES (?,?,?,?,'session','2030-01-01T00:00:00Z')").run(randomUUID(),c.id,c.email,createHash('sha256').update(token).digest('base64url'));
  return 'mm_session='+token;
 }
 const scalar=(sql,...args)=>Object.values(database.raw.prepare(sql).get(...args))[0];
-async function mutate(id, action, details={}, cookie=session(), key=randomUUID()) { const version=scalar('SELECT version FROM subscriptions WHERE id=?',id); return api('/api/account/subscriptions/'+id,{action,expectedVersion:version,...details},{cookie,key}); }
+async function mutate(id, action, details={}, cookie=session(), key=randomUUID()) { const version=scalar('SELECT version FROM subscriptions WHERE id=?',id); return api('/api/account/subscriptions/'+id,{action,expectedVersion:version,...details},{cookie,key,method:'PATCH'}); }
 async function delivery(date='2027-01-01') { return expectStatus(await api('/api/admin/deliveries',{action:'generate',date},{admin:true})); }
 
 test('T-04: independent mixed-cart monthly total is 6,350 RSD', async()=>{
@@ -81,7 +81,7 @@ test('T-09/T-34: checkout rejects wrong weekday and invalid postal code',async()
 test('T-17/T-18/T-19: magic link single use and logout revoke actual session',async()=>{
  await create();
  const link=expectStatus(await api('/api/auth/magic-link',{email:'qa@example.test'}),202);
- const token=link.token ?? new URL(link.url??link.magicLinkUrl??link.localUrl).searchParams.get('token');
+ const token=link.token ?? new URL(link.magicLink??link.url??link.magicLinkUrl??link.localUrl).searchParams.get('token');
  const exchange=await api('/api/auth/magic-link/exchange',{token}); expectStatus(exchange);
  const cookie=exchange.headers.get('set-cookie').split(';')[0];
  expectStatus(await api('/api/auth/magic-link/exchange',{token}),401);
@@ -93,7 +93,7 @@ test('T-22/T-31: actual concurrent mutations keep one version and projection',as
  const order=await create(); const id=order.subscription.id,cookie=session();
  const item=database.raw.prepare('SELECT id FROM subscription_items LIMIT 1').get().id;
  await delivery();
- const outcomes=await Promise.all([api('/api/account/subscriptions/'+id,{action:'update_item',expectedVersion:1,itemId:item,quantity:4},{cookie}),api('/api/account/subscriptions/'+id,{action:'update_item',expectedVersion:1,itemId:item,quantity:5},{cookie})]);
+ const outcomes=await Promise.all([api('/api/account/subscriptions/'+id,{action:'update_item',expectedVersion:1,itemId:item,quantity:4},{cookie,method:'PATCH'}),api('/api/account/subscriptions/'+id,{action:'update_item',expectedVersion:1,itemId:item,quantity:5},{cookie,method:'PATCH'})]);
  assert.deepEqual(outcomes.map(r=>r.status).sort(),[200,409]);
  assert.equal(scalar('SELECT version FROM subscriptions WHERE id=?',id),2);
  const qty=scalar('SELECT quantity FROM subscription_items WHERE id=?',item);
@@ -171,4 +171,52 @@ test('T-73: last promo usage cannot be consumed by two simultaneous orders',asyn
  const result=await Promise.all([api('/api/checkout',checkoutData([line()],{promoCode:code})),api('/api/checkout',checkoutData([line()],{promoCode:code}))]);
  assert.equal(result.filter(r=>r.status===201).length,1,JSON.stringify(result));
  assert.equal(scalar("SELECT times_used FROM promo_codes WHERE id='promo_demo_welcome'"),1);
+});
+
+
+test('live checkout rejects simulated cards and unconfigured email login', async () => {
+ const original = { APP_ENV: env.APP_ENV, PAYMENT_MODE: env.PAYMENT_MODE };
+ try {
+  env.PAYMENT_MODE = 'disabled';
+  expectStatus(await api('/api/checkout', checkoutData([line()], { paymentMethod: 'card', paymentToken: 'local-mock-token' })), 503);
+  assert.equal(scalar('SELECT COUNT(*) FROM orders'), 0);
+  env.APP_ENV = 'production';
+  env.PAYMENT_MODE = 'mock';
+  expectStatus(await api('/api/checkout', checkoutData([line()], { paymentMethod: 'card', paymentToken: 'local-mock-token' })), 503);
+  assert.equal(scalar('SELECT COUNT(*) FROM orders'), 0);
+  expectStatus(await api('/api/auth/magic-link', { email: 'qa@example.test' }), 503);
+  assert.equal(scalar('SELECT COUNT(*) FROM auth_tokens'), 0);
+  const order = await create();
+  assert.equal(order.order.paymentStatus, 'pending');
+  assert.equal(scalar("SELECT COUNT(*) FROM outbox WHERE topic='email.order_confirmation.requested' AND status='sent'"), 0);
+ } finally { Object.assign(env, original); }
+});
+
+test('Resend login sends a usable single-use link without exposing it in the production response', async () => {
+ await create();
+ const original = { APP_ENV: env.APP_ENV, EMAIL_MODE: env.EMAIL_MODE, EMAIL_PROVIDER: env.EMAIL_PROVIDER, EMAIL_API_KEY: env.EMAIL_API_KEY, EMAIL_FROM: env.EMAIL_FROM };
+ const originalFetch = globalThis.fetch;
+ const sent = [];
+ try {
+  Object.assign(env, { APP_ENV: 'production', EMAIL_MODE: 'provider', EMAIL_PROVIDER: 'resend', EMAIL_API_KEY: 'test-resend-key', EMAIL_FROM: 'Mleko <noreply@example.test>' });
+  globalThis.fetch = async (url, init) => {
+   assert.equal(url, 'https://api.resend.com/emails');
+   assert.equal(init.headers.authorization, 'Bearer test-resend-key');
+   sent.push(JSON.parse(init.body));
+   return new Response(JSON.stringify({ id: 'email-test' }), { status: 200 });
+  };
+  const result = expectStatus(await api('/api/auth/magic-link', { email: 'qa@example.test' }), 202);
+  assert.deepEqual(result, { accepted: true });
+  assert.equal(sent.length, 1);
+  assert.deepEqual(sent[0].to, ['qa@example.test']);
+  const link = sent[0].text.match(/http:\/\/localhost\/prijava\/potvrda\?token=[A-Za-z0-9_-]+/)[0];
+  const token = new URL(link).searchParams.get('token');
+  expectStatus(await api('/api/auth/magic-link/exchange', { token }));
+  expectStatus(await api('/api/auth/magic-link/exchange', { token }), 401);
+ } finally {
+  globalThis.fetch = originalFetch;
+  for (const [key, value] of Object.entries(original)) {
+   if (value === undefined) delete env[key]; else env[key] = value;
+  }
+ }
 });

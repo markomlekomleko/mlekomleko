@@ -13,6 +13,7 @@ export default defineConfig({
   reporter: process.env.CI ? [["line"], ["html", { open: "never" }]] : "line",
   use: {
     baseURL: "http://localhost:4173",
+    actionTimeout: 15_000,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     locale: "sr-Latn-RS",
@@ -21,6 +22,7 @@ export default defineConfig({
   webServer: {
     command: "node scripts/migrate.mjs --local && npm run dev -- --port 4173",
     env: {
+      E2E_DIST_DIR: ".next-e2e",
       TURSO_DATABASE_URL: e2eDatabaseUrl,
       TURSO_AUTH_TOKEN: "",
       POSTGRES_URL: "",
@@ -30,7 +32,8 @@ export default defineConfig({
       APP_ENV: "local",
       APP_ORIGIN: "http://localhost:4173",
       NEXT_PUBLIC_SITE_URL: "http://localhost:4173",
-      ADMIN_SECRET: "e2e-admin-secret",
+      ADMIN_USERNAME: "e2e-admin",
+      ADMIN_PASSWORD: "e2e-admin-password",
       PAYMENT_WEBHOOK_SECRET: "e2e-webhook-secret",
       PAYMENT_PROVIDER: "disabled",
       PAYMENT_MODE: "disabled",

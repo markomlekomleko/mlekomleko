@@ -60,7 +60,10 @@ async function sendEmail(row: OutboxRow, payload: Record<string, unknown>): Prom
   if (!recipient) throw new IntegrationError("EMAIL_RECIPIENT_MISSING", "Email događaj nema primaoca.");
   const message = renderTransactionalMessage(row.topic, data);
   const config = readIntegrationConfig(runtimeEnv() as typeof process.env);
-  if (config.integrations.email.mode === "console") return `console:${row.id}`;
+  if (config.integrations.email.mode === "console") {
+    if (config.appEnvironment === "production") throw new IntegrationError("EMAIL_NOT_CONFIGURED", "Slanje emaila nije povezano. Podesite servis za transakcione poruke.");
+    return `console:${row.id}`;
+  }
   if (String(config.integrations.email.provider).toLowerCase() !== "resend") throw new IntegrationError("EMAIL_PROVIDER_UNSUPPORTED", "Trenutno je podržan EMAIL_PROVIDER=resend.");
   const current = runtimeEnv();
   const response = await fetch("https://api.resend.com/emails", {
@@ -100,6 +103,7 @@ async function issueFiscalReceipt(row: OutboxRow): Promise<{ externalId: string;
     return { externalId: `disabled:${order.id}`, status: "skipped" };
   }
   if (mode === "mock") {
+    if (config.appEnvironment === "production") throw new IntegrationError("FISCAL_NOT_CONFIGURED", "Fiskalizacija nije povezana. Podesite Badi produkcioni pristup.");
     const invoiceNumber = `MOCK-${order.order_number}`;
     await run("UPDATE fiscal_receipts SET status = 'issued', provider_reference = ?, invoice_number = ?, attempts = attempts + 1, issued_at = ?, updated_at = ?, last_error_code = NULL, last_error_message = NULL WHERE operation_key = ?", `badi-mock:${order.id}`, invoiceNumber, now, now, operationKey);
     return { externalId: `badi-mock:${order.id}`, status: "issued" };

@@ -503,3 +503,12 @@ export const rateLimits = sqliteTable(
     index("rate_limits_expires_idx").on(table.expiresAt),
   ],
 );
+
+
+// Admin credentials stay in server environment variables; only session hashes persist.
+export const adminSessions = sqliteTable("admin_sessions", {
+  tokenHash: text("token_hash").primaryKey(),
+  credentialHash: text("credential_hash").notNull(),
+  expiresAt: text("expires_at").notNull(),
+  revokedAt: text("revoked_at"),
+}, (table) => [index("admin_sessions_expiry_idx").on(table.expiresAt)]);

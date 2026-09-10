@@ -37,6 +37,7 @@ test("responsive navigation has no overflow and exposes every primary destinatio
 });
 
 test("mixed cart checkout, magic-link login and subscription mutation work", async ({ page }) => {
+  test.setTimeout(90_000);
   const email = `e2e-${crypto.randomUUID()}@example.test`;
   await page.goto("/prodavnica");
   await acceptNecessary(page);
@@ -48,7 +49,7 @@ test("mixed cart checkout, magic-link login and subscription mutation work", asy
   await page.locator("article.product-card").nth(1).getByRole("link", { name: "Izaberi količinu i ritam" }).click();
   await page.getByRole("radio", { name: /Jednokratno/ }).check();
   await page.getByRole("button", { name: "Dodaj u korpu →", exact: true }).click();
-  await page.goto("/korpa");
+  await page.locator(".cart-added").getByRole("link", { name: "Nastavi na kupovinu →" }).click();
   await expect(page.getByText("Danas plaćate za ovaj mesec")).toBeVisible();
   await page.getByRole("link", { name: /Nastavi na podatke/ }).click();
   await page.getByLabel("Ime i prezime").fill("Fiktivni E2E Kupac");
@@ -75,6 +76,9 @@ test("mixed cart checkout, magic-link login and subscription mutation work", asy
   expect(replay.status()).toBe(401);
   await page.getByRole("link", { name: "Otvori nalog" }).click();
   await expect(page.getByRole("heading", { name: /Zdravo, Fiktivni E2E Kupac/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Moje porudžbine" })).toBeVisible();
+  await expect(page.locator(".account-orders > li")).toHaveCount(1);
+  await expect(page.locator("body")).not.toContainText(/demo|mockup/i);
   const subscriptionHeading = page.getByRole("heading", { name: /^Pretplata sub_/ }).first();
   const subscriptionId = (await subscriptionHeading.textContent())!.replace(/^Pretplata\s+/, "");
   const csrf = await page.request.patch(`/api/account/subscriptions/${encodeURIComponent(subscriptionId)}`, {
@@ -96,6 +100,35 @@ test("mixed cart checkout, magic-link login and subscription mutation work", asy
   expect(conflict.status).toBe(409);
   expect(conflict.body.error.code).toBe("SUBSCRIPTION_VERSION_CONFLICT");
   expect(conflict.body.requestId).toMatch(/^[0-9a-f-]{36}$/i);
+  const subscription = page.locator("article.card").filter({ has: page.getByRole("heading", { name: `Pretplata ${subscriptionId}`, exact: true }) });
+  await subscription.getByRole("spinbutton").fill("3");
+  await subscription.getByRole("spinbutton").press("Tab");
+  await expect(subscription.getByRole("spinbutton")).toHaveValue("3");
+  await expect(page.getByRole("status").filter({ hasText: "Izmena je sačuvana" })).toBeVisible();
+  await subscription.getByRole("combobox").selectOption("biweekly");
+  await expect(subscription.getByRole("combobox")).toHaveValue("biweekly");
+  await expect(page.getByRole("status").filter({ hasText: "Izmena je sačuvana" })).toBeVisible();
+  await subscription.getByRole("region", { name: "Dodajte sledećoj dostavi" }).getByRole("button").first().click();
+  await expect(subscription.locator(".next-addon-summary")).toContainText("Dodato samo sledećoj dostavi");
+  const pauseUntil = new Date(Date.now() + 40 * 86400000).toISOString().slice(0, 10);
+  await subscription.getByLabel("Pauziraj do").fill(pauseUntil);
+  await expect(subscription.getByRole("button", { name: "Nastavi pretplatu" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Nema zakazane redovne dostave" })).toBeVisible();
+  await page.reload();
+  await expect(subscription.getByRole("button", { name: "Nastavi pretplatu" })).toBeVisible();
+  await subscription.getByRole("button", { name: "Nastavi pretplatu" }).click();
+  await expect(subscription.getByLabel("Pauziraj do")).toBeVisible();
+  await subscription.getByRole("button", { name: "Razmišljam o otkazivanju" }).click();
+  await subscription.getByRole("button", { name: "Ipak trajno otkaži" }).click();
+  await expect(subscription.getByRole("spinbutton")).toBeDisabled();
+  await page.reload();
+  await expect(subscription.getByRole("spinbutton")).toBeDisabled();
+  await page.getByRole("button", { name: "Odjavi se", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Prijavite se bez lozinke." })).toBeVisible();
+  expect((await page.request.get("/api/account")).status()).toBe(401);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Prijavite se bez lozinke." })).toBeVisible();
+
 });
 
 test("magic-link requests are rate limited per identity", async ({ request }, testInfo) => {
@@ -125,11 +158,12 @@ test("hero priorities remain visible and a custom milk selection survives the ca
   await page.goto("/");
   await acceptNecessary(page);
   const viewport = page.viewportSize()!;
-  for (const target of [page.locator(".hero-media img"), page.locator(".hero-copy .button")]) {
+  for (const target of [page.locator(".conversion-copy h1"), page.locator(".conversion-actions .button"), page.locator(".hero-price-list")]) {
     const bounds = await target.boundingBox();
     expect(bounds).not.toBeNull();
     expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height);
   }
+  await expect(page.locator(".conversion-stage .milk-scene-poster img")).toBeAttached();
   await page.getByRole("link", { name: "Pogledaj Domaće kravlje mleko", exact: true }).click();
   await page.getByRole("button", { name: "4 L", exact: true }).click();
   await expect(page.locator(".purchase-total")).toContainText("1.000");
@@ -140,7 +174,7 @@ test("hero priorities remain visible and a custom milk selection survives the ca
   if (viewport.width <= 560) await expect(page.locator(".mobile-buy-bar")).toContainText("3 L · svake 2 nedelje");
   await page.getByRole("button", { name: "Dodaj u korpu →", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Vaš izbor je u korpi");
-  await page.getByRole("link", { name: "Otvori korpu →", exact: true }).click();
+  await page.locator(".cart-added").getByRole("link", { name: "Nastavi na kupovinu →", exact: true }).click();
   await expect(page.getByRole("spinbutton", { name: "Količina za Domaće kravlje mleko" })).toHaveValue("3");
   await expect(page.getByLabel("Ritam isporuke za Domaće kravlje mleko")).toHaveValue("biweekly");
   await expect(page.getByLabel("Tip kupovine za Domaće kravlje mleko")).toHaveValue("subscription");

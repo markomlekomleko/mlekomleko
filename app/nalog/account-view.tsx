@@ -23,6 +23,7 @@ type AccountPayload = {
   nextDelivery?: Row;
   next_delivery?: Row;
   subscriptions?: unknown[];
+  orders?: unknown[];
   addonProducts?: unknown[];
   data?: unknown;
 };
@@ -79,9 +80,10 @@ export function AccountView() {
   const wrapper = useMemo(() => row(account?.data), [account]);
   const customer = row(account?.customer ?? account?.account ?? wrapper.customer);
   const subscriptions = unwrapList(account ?? {}, ["subscriptions"]).map(row);
+  const orders = unwrapList(account ?? {}, ["orders"]).map(row);
   const addonProducts: Product[] = unwrapList(account ?? {}, ["addonProducts", "addon_products"]).map(normalizeProduct);
   const derivedNextSubscription = subscriptions
-    .filter((subscription) => ["active", "paused"].includes(string(subscription.status, "active")))
+    .filter((subscription) => string(subscription.status, "active") === "active")
     .sort((a, b) => string(a.nextDeliveryDate ?? a.next_delivery_date, "9999").localeCompare(string(b.nextDeliveryDate ?? b.next_delivery_date, "9999")))[0];
   const nextDelivery = row(
     account?.nextDelivery ??
@@ -91,7 +93,7 @@ export function AccountView() {
     (derivedNextSubscription
       ? {
           date: derivedNextSubscription.nextDeliveryDate ?? derivedNextSubscription.next_delivery_date,
-          items: derivedNextSubscription.items,
+          items: unwrapList(derivedNextSubscription, ["items"]).map(row).filter((item) => string(item.status, "active") === "active"),
         }
       : undefined),
   );
@@ -109,6 +111,7 @@ export function AccountView() {
         headers: { "Idempotency-Key": window.crypto.randomUUID() },
         body: JSON.stringify({ action, expectedVersion: number(current.version, 0), ...details }),
       });
+      if (action === "cancel") setCancellingId("");
       setNotice("Izmena je sačuvana. Sledeća dostava je ažurirana ako rok nije istekao.");
       if (action === "add_next_only") track("add_to_next_delivery", { subscriptionId, productId: string(details.productId, "") });
       if (["skip_next", "slow_down", "pause"].includes(action) && cancellingId === subscriptionId) {
@@ -131,9 +134,14 @@ export function AccountView() {
   }
 
   async function signOut() {
-    try { await fetchJson("/api/auth/logout", { method: "POST" }); } catch { /* Clear local UI even if the session already expired. */ }
-    setAuthenticated(false);
-    setAccount(null);
+    setError("");
+    try {
+      await fetchJson("/api/auth/logout", { method: "POST" });
+      setAuthenticated(false);
+      setAccount(null);
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Odjava nije uspela. Pokušajte ponovo.");
+    }
   }
 
   if (loading) {
@@ -184,10 +192,18 @@ export function AccountView() {
 
       <div className="account-layout" style={{ marginTop: "1rem" }}>
         <div className="form-stack">
+          <section className="card" aria-labelledby="orders-title">
+            <h2 id="orders-title">Moje porudžbine</h2>
+            {orders.length ? <ul className="list-clean account-orders">{orders.map((order) => <li key={idOf(order)}>
+              <div className="summary-row"><strong>{string(order.order_number ?? order.orderNumber)}</strong><strong>{formatMoney(number(order.total_minor ?? order.totalMinor, 0) / 100)}</strong></div>
+              <p>Dostava: {formatDate(string(order.delivery_date ?? order.deliveryDate, ""))}</p>
+              <div className="button-row"><span className="tag">Plaćanje: {statusLabel(string(order.payment_status ?? order.paymentStatus))}</span><span className="tag">Dostava: {statusLabel(string(order.fulfillment_status ?? order.fulfillmentStatus))}</span></div>
+            </li>)}</ul> : <p className="muted">Još nema porudžbina.</p>}
+          </section>
           <section className="card" aria-labelledby="sledeca-title">
             <p className="eyebrow">Sledeća dostava</p>
             <h2 id="sledeca-title">
-              {formatDate(string(nextDelivery.date ?? nextDelivery.deliveryDate ?? nextDelivery.delivery_date, ""))}
+              {nextDelivery.date || nextDelivery.deliveryDate || nextDelivery.delivery_date ? formatDate(string(nextDelivery.date ?? nextDelivery.deliveryDate ?? nextDelivery.delivery_date)) : "Nema zakazane redovne dostave"}
             </h2>
             <p className="muted">
               Izmene su moguće do roka koji važi za ovaj termin dostave.
@@ -220,9 +236,9 @@ export function AccountView() {
               <div className="form-stack">
                 {subscriptions.map((subscription) => {
                   const subscriptionId = idOf(subscription);
-                  const items = unwrapList(subscription, ["items", "products"]).map(row);
+                  const items = unwrapList(subscription, ["items", "products"]).map(row).filter((item) => string(item.status, "active") === "active");
                   const status = string(subscription.status, "active");
-                  const disabled = Boolean(busy) || status === "cancelled" || status === "canceled";
+                  const disabled = Boolean(busy) || status !== "active";
                   return (
                     <article className="card form-stack" key={subscriptionId}>
                       <div className="summary-row">
@@ -290,7 +306,7 @@ export function AccountView() {
                             />
                           </label>
                         )}
-                        <button className="button danger small" type="button" disabled={disabled} onClick={() => { setCancellingId(subscriptionId); track("subscription_cancel_started", { subscriptionId }); }}>Razmišljam o otkazivanju</button>
+                        <button className="button danger small" type="button" disabled={Boolean(busy) || status === "cancelled" || status === "canceled"} onClick={() => { setCancellingId(subscriptionId); track("subscription_cancel_started", { subscriptionId }); }}>Razmišljam o otkazivanju</button>
                       </div>
                       {cancellingId === subscriptionId ? <section className="cancel-saver" aria-labelledby={`cancel-${subscriptionId}`}><div><p className="eyebrow">Pre nego što odete</p><h3 id={`cancel-${subscriptionId}`}>Šta bi vam više odgovaralo?</h3><p>Izaberite lakšu opciju ili nastavite na trajno otkazivanje. Nema skrivenih koraka.</p></div><div className="cancel-save-grid"><button className="button secondary small" type="button" onClick={() => void mutate(subscriptionId, "skip_next")}>Preskoči samo sledeću</button><button className="button secondary small" type="button" onClick={() => void mutate(subscriptionId, "slow_down")}>Prebaci sve na 2 nedelje</button><button className="button secondary small" type="button" onClick={() => void mutate(subscriptionId, "pause", { pauseUntil: pauseDate(subscription) })}>Pauziraj oko mesec dana</button></div><label className="field"><span>Zašto želite da otkažete?</span><select value={cancelReason} onChange={(event) => setCancelReason(event.target.value)}><option value="too_frequent">Prečesto stiže</option><option value="too_expensive">Preskupo mi je</option><option value="too_much_product">Ostaje mi proizvoda</option><option value="delivery_issue">Problem sa dostavom</option><option value="quality_issue">Problem sa kvalitetom</option><option value="other">Drugi razlog</option></select></label><div className="inline-controls"><button className="text-button danger-text" type="button" onClick={() => void mutate(subscriptionId, "cancel", { reason: cancelReason })}>Ipak trajno otkaži</button><button className="text-button" type="button" onClick={() => setCancellingId("")}>Zadrži pretplatu</button></div></section> : null}
                     </article>
@@ -318,13 +334,6 @@ export function AccountView() {
           </dl>
           <p className="muted small-text">Za promenu kontakt podataka javite nam se putem kontakt stranice.</p>
           <a className="button secondary small" href="/kontakt">Kontakt</a>
-          <section className="referral-mockup" aria-labelledby="referral-title">
-            <span className="tag">DEMO · nije povezano</span>
-            <h3 id="referral-title">500 RSD vama, 500 RSD komšiji</h3>
-            <p>Pozovite prijatelja; nagrada bi se aktivirala tek posle njegove prve plaćene porudžbine.</p>
-            <div className="mock-referral-code"><code>MLEKO-{String(customer.fullName ?? customer.full_name ?? "DEMO").slice(0, 4).toUpperCase()}</code><button type="button" disabled aria-disabled="true">Kopiraj link</button></div>
-            <small>Vizuelni mockup — ne kreira kod, kredit ni evidenciju.</small>
-          </section>
         </aside>
       </div>
     </div>

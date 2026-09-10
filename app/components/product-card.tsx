@@ -14,7 +14,6 @@ export function ProductCard({ product }: { product: Product }) {
     <article className="product-card">
       <a className="product-image" href={href} aria-label={`Pogledaj ${product.name}`} onClick={select}>
         {product.imageUrl ? <img src={product.imageUrl} alt={product.imageAlt} width="1080" height="1080" loading="lazy" /> : <span>Fotografija uskoro</span>}
-        {product.isDemo ? <span className="product-badges"><small>DEMO</small></span> : null}
       </a>
       <div className="product-card-body">
         <div className="product-card-heading">

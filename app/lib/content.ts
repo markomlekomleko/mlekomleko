@@ -25,7 +25,7 @@ export const frequentlyAskedQuestions = [
   },
   {
     question: "Kako se plaća?",
-    answer: "Jednokratna porudžbina se plaća karticom ili gotovinom. Kod gotovinske pretplate ceo mesečni iznos plaća se pri prvoj dostavi u mesecu.",
+    answer: "Jednokratna porudžbina se plaća gotovinom pri dostavi. Kod gotovinske pretplate ceo mesečni iznos plaća se pri prvoj dostavi u mesecu.",
   },
   {
     question: "Koliko košta dostava?",

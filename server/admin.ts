@@ -3,6 +3,9 @@ import { audit, enqueue } from "./outbox";
 import { all, batch, first, type SqlValue } from "./sql";
 import { getBusinessSettings } from "./settings";
 import { purchaseAnalyticsEvent } from "./analytics";
+import { quoteCart } from "./commerce";
+import { generateDelivery } from "./deliveries";
+import { assertBeforeCutoff, cutoffForDelivery } from "./time";
 
 export async function dashboard() {
   const [counts, revenue, nextDeliveries, preparation, funnel, topProducts, orderStates, profitBase, retention, postalProfit, channelProfit] = await Promise.all([
@@ -127,12 +130,46 @@ export async function updateOrder(input: Record<string, unknown>) {
     audit("admin", "local-admin", "order.updated", "order", id, before, after),
     enqueue("order.updated", "order", id, after),
   ];
+  const editingDelivery = input.items !== undefined || input.customer !== undefined;
+  if (editingDelivery) {
+    assertDomain(before.kind === "one_time" && before.payment_status === "pending" && paymentStatus === "pending" && before.fulfillment_status === "planned" && fulfillmentStatus === "planned", "ORDER_NOT_EDITABLE", "Stavke i adresu možete menjati samo pre naplate i zaključavanja jednokratne porudžbine.", 409);
+    const settings = await getBusinessSettings();
+    const delivery = await first<Record<string, unknown>>("SELECT * FROM deliveries WHERE delivery_date = ?", String(before.delivery_date));
+    assertBeforeCutoff(cutoffForDelivery(String(before.delivery_date), settings.cutoffHours, settings.deliveryLocalTime), delivery?.status && delivery.status !== "open" ? "locked" : null);
+    const customer = await first<Record<string, unknown>>("SELECT * FROM customers WHERE id = ?", String(before.customer_id));
+    assertDomain(customer, "CUSTOMER_NOT_FOUND", "Kupac nije pronađen.", 404);
+    const address = input.customer === undefined ? {} : input.customer;
+    assertDomain(address && typeof address === "object" && !Array.isArray(address), "VALIDATION_ERROR", "Adresa nije ispravna.", 422);
+    const fields = address as Record<string, unknown>;
+    const street = fields.addressLine1 === undefined ? String(customer.address_line_1) : requiredString(fields.addressLine1, "addressLine1", 200);
+    const city = fields.city === undefined ? String(customer.city) : requiredString(fields.city, "city", 100);
+    const postalCode = fields.postalCode === undefined ? String(customer.postal_code) : requiredString(fields.postalCode, "postalCode", 5);
+    const currentItems = await all<Record<string, unknown>>("SELECT product_id, quantity FROM order_items WHERE order_id = ?", id);
+    const replacement = input.items ?? currentItems.map((item) => ({ productId: item.product_id, quantity: item.quantity }));
+    assertDomain(Array.isArray(replacement) && replacement.every((item) => item && typeof item === "object" && !Array.isArray(item)), "VALIDATION_ERROR", "Stavke porudžbine nisu ispravne.", 422);
+    const quote = await quoteCart({ items: replacement.map((item) => ({ ...item, purchaseType: "one_time" })), deliveryDate: before.delivery_date, postalCode, promoCode: before.promo_code });
+    assertDomain(quote.serviceable !== false, "DELIVERY_AREA_UNAVAILABLE", "Adresa nije u zoni dostave.", 422);
+    if (input.items !== undefined) {
+      statements.push({ sql: "DELETE FROM order_items WHERE order_id = ?", bindings: [id] });
+      for (const line of quote.lines) statements.push({
+        sql: "INSERT INTO order_items (id, order_id, product_id, product_name, unit_label, quantity, unit_price_minor, unit_cost_minor, unit_packaging_cost_minor, total_cost_minor, line_total_minor, purchase_type, cadence) SELECT ?, ?, id, name, unit_label, ?, ?, cost_minor, packaging_cost_minor, (cost_minor + packaging_cost_minor) * ?, ?, 'one_time', NULL FROM products WHERE id = ?",
+        bindings: [crypto.randomUUID(), id, line.quantity, line.unitPriceMinor, line.quantity, line.lineTotalMinor, line.productId],
+      });
+      statements.push({ sql: "UPDATE orders SET subtotal_minor = ?, discount_minor = ?, delivery_fee_minor = ?, total_minor = ? WHERE id = ?", bindings: [quote.subtotalMinor, quote.discountMinor, quote.deliveryFeeMinor, quote.totalMinor, id] });
+    }
+    if (input.customer !== undefined) statements.push({ sql: "UPDATE customers SET address_line_1 = ?, city = ?, postal_code = ?, updated_at = ? WHERE id = ?", bindings: [street, city, postalCode, new Date().toISOString(), String(before.customer_id)] });
+    statements.push(audit("admin", "local-admin", "order.delivery_updated", "order", id, { items: currentItems, address: { street: customer.address_line_1, city: customer.city, postalCode: customer.postal_code } }, { items: quote.lines, address: { street, city, postalCode } }));
+  }
   if (paymentStatus === "paid" && before.payment_status !== "paid") {
     statements.push(enqueue("fiscal.receipt.requested", "order", id, { orderId: id, source: "admin-payment-confirmation" }));
     statements.push(enqueue("email.receipt.requested", "order", id, { orderId: id }));
     statements.push(purchaseAnalyticsEvent(id, String(before.order_number ?? id), "admin-payment-confirmation"));
   }
   await batch(statements);
+  if (editingDelivery) {
+    const delivery = await first<Record<string, unknown>>("SELECT id FROM deliveries WHERE delivery_date = ? AND status = 'open'", String(before.delivery_date));
+    if (delivery) await generateDelivery(String(before.delivery_date), `admin-order:${id}:${crypto.randomUUID()}`);
+  }
   return first<Record<string, unknown>>("SELECT * FROM orders WHERE id = ?", id);
 }
 
@@ -174,7 +211,7 @@ const numericSettings = new Map<string, number>([
   ["estimatedDeliveryCostMinor", 10_000_000],
   ["paymentFeeBps", 10_000],
 ]);
-const booleanSettings = new Set(["announcementEnabled", "storeDemoMode"]);
+const booleanSettings = new Set(["announcementEnabled"]);
 const urlSettings = new Set(["announcementUrl", "heroPrimaryUrl", "heroSecondaryUrl"]);
 
 function safeLink(value: string, field: string) {
@@ -216,7 +253,7 @@ export async function updateSettings(input: Record<string, unknown>) {
     } else if (key === "servicePostalCodes") {
       const values = Array.isArray(value) ? value : String(value ?? "").split(",");
       const postalCodes = [...new Set(values.map((item) => String(item).trim()).filter(Boolean))];
-      assertDomain(postalCodes.every((item) => /^\d{5}$/.test(item)), "VALIDATION_ERROR", "Poštanski brojevi moraju imati pet cifara.", 422);
+      assertDomain(postalCodes.every((item) => /^\d{2,5}\*?$/.test(item)), "VALIDATION_ERROR", "Unesite poštanski broj od pet cifara ili prefiks od dve do četiri cifre.", 422);
       normalized[key] = postalCodes;
     } else {
       const parsed = requiredString(value, key, textSettings.get(key) ?? 500);

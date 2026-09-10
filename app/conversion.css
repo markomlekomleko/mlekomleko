@@ -1,0 +1,141 @@
+/* Purchase-led homepage: a readable offer beside a locally authored product scene. */
+:root { --forest-dark: #223d33; --forest: #223d33; --orange: #223d33; --orange-dark: #142c23; }
+.announcement-bar, .delivery-bar { background: var(--forest-dark); color: #f9f7ed; min-height: 36px; font-size: .75rem; }
+.announcement-bar { padding: 0 1rem; }
+.announcement-bar strong { font-size: .75rem; color: #f9f7ed; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+.announcement-bar a { min-height: 36px; padding-block: .45rem; gap: 1.6rem; }
+.delivery-bar > span + span { border-color: #75887b; }
+.site-header { background: #faf9f2f5; }
+.nav-shell { min-height: 82px; }
+.brand-logo-header { width: 64px; height: 64px; }
+.header-actions .header-shop { display: inline-flex; padding: .65rem 1.2rem; background: var(--forest-dark); color: white; border-radius: 100px; }
+.header-actions .header-shop:hover { background: #142c23; text-decoration: none; }
+.header-actions .header-account { display: none; }
+.conversion-hero { position: relative; background: #f5f3e9; }
+.conversion-hero-grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 640px; gap: 2rem; align-items: center; }
+.conversion-copy { padding-block: 44px 40px; position: relative; z-index: 2; }
+.conversion-copy > .eyebrow { display: flex; gap: .65rem; align-items: center; margin-bottom: 22px; color: #53614e; font-size: .7rem; }
+.pastoral-home .conversion-copy h1 { font-size: clamp(3.6rem, 5.2vw, 5.6rem); line-height: 1.02; letter-spacing: -.055em; max-width: 12ch; margin-bottom: 24px; }
+.conversion-copy h1 em { font-weight: 400; color: #687956; }
+.conversion-lead { color: #58624f; font-size: .98rem; line-height: 1.8; max-width: 40ch; margin-bottom: 26px; }
+.conversion-actions { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
+.conversion-actions .button { gap: 2rem; min-height: 56px; padding-inline: 1.55rem; }
+.conversion-actions .button span { font-size: 1.3rem; transition: transform .25s ease; }
+.conversion-actions .button:hover span { transform: translate(2px,-2px); }
+.conversion-secondary { display: inline-flex; gap: .6rem; align-items: center; min-height: 44px; font-size: .8rem; text-decoration: none; border-bottom: 1px solid #b4baa6; }
+.conversion-reassurance { font-size: .72rem; color: #5b6554; margin-block: 13px 26px; }
+.conversion-reassurance span { margin-right: .25rem; }
+.hero-price-list { display: flex; max-width: 470px; gap: 1.3rem; border-top: 1px solid #d5d8c7; padding-top: 18px; }
+.hero-price-list a { position: relative; flex: 1; display: grid; gap: .2rem; padding-right: 20px; font-size: .72rem; color: #59634f; text-decoration: none; }
+.hero-price-list a + a { border-left: 1px solid #d5d8c7; padding-left: 1.3rem; }
+.hero-price-list strong { color: var(--ink); font-weight: 500; font-size: 1.05rem; }
+.hero-price-list small { font-size: .72rem; font-weight: 400; }
+.hero-price-list .price-arrow { position: absolute; right: 0; top: 10px; font-size: 1rem; transition: transform .2s; }
+.hero-price-list a:hover .price-arrow { transform: translate(2px,-2px); }
+.conversion-stage { position: relative; min-width: 0; height: 580px; isolation: isolate; border-radius: 48% 48% 6px 6px; background: radial-gradient(ellipse at 48% 40%, #edf0da 0, #dce4c8 52%, #d0d9ba 100%); margin-block: 26px; }
+.conversion-stage::after { content: ''; position: absolute; left: 15%; right: 15%; height: 40px; bottom: 50px; background: #33462b; filter: blur(19px); opacity: .18; border-radius: 50%; z-index: -1; }
+.stage-word { position: absolute; top: 58px; width: 100%; text-align: center; font-family: var(--font-editorial), Georgia, serif; font-style: italic; color: #fafbf2a8; font-size: clamp(6rem, 11vw, 11rem); letter-spacing: -.07em; line-height: 1; user-select: none; }
+.stage-caption { position: absolute; top: 30px; left: 12%; right: 12%; display: flex; justify-content: space-between; gap: 1rem; font-size: .56rem; letter-spacing: .14em; color: #4e6240; }
+.conversion-stage .hero-object { position: absolute; inset: 30px -20px 0; width: auto; height: auto; transform: none; z-index: 2; }
+.conversion-stage .milk-scene-poster { inset: 0; border-radius: 0; overflow: visible; }
+.conversion-stage .milk-scene-poster img { object-fit: contain; width: 100%; height: 100%; }
+.stage-stamp { position: absolute; z-index: 3; bottom: 113px; right: -18px; width: 122px; height: 122px; border-radius: 50%; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 3px; background: #f8f5df; outline: 1px solid #f8f5df; outline-offset: 5px; transform: rotate(9deg); box-shadow: 0 6px 25px #23342313; }
+.stage-stamp span:first-child { font-size: .72rem; }
+.stage-stamp em { font-family: var(--font-editorial), Georgia, serif; font-size: 1.6rem; }
+.stage-stamp span:last-child { font-size: .43rem; letter-spacing: .07em; }
+.stage-footnote { position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; font-size: .65rem; color: #516242; }
+.stage-orbit { position: absolute; border: 1px solid #fff8; border-radius: 50%; pointer-events: none; }
+.orbit-one { inset: 12% -5%; transform: rotate(-26deg) scaleY(.6); }
+.orbit-two { inset: 6% 0; transform: rotate(25deg) scaleY(.65); }
+.scene-controls { position: absolute; bottom: 20px; left: 16px; z-index: 4; display: flex; gap: 6px; }
+.scene-controls button { display: grid; place-items: center; width: 38px; min-height: 38px; border-radius: 50%; border: 1px solid #7c8a6d; background: #f5f4e9e8; color: #223d33; font-size: .9rem; }
+.scene-controls button:hover { background: white; }
+.conversion-benefits { background: var(--forest-dark); color: #f6f5e8; }
+.conversion-benefits .page-shell { display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-height: 66px; }
+.conversion-benefits span { display: flex; align-items: center; gap: 12px; font-size: .78rem; }
+.conversion-benefits i { font-style: normal; color: #c8d6b2; font-size: 1.35rem; }
+.pastoral-products { background: #faf9f2; padding-bottom: 4rem; }
+.pastoral-home .section-heading { margin-block: 3rem 2rem; }
+.pastoral-home .section-heading h2 { font-size: clamp(2.5rem, 4vw, 4rem); }
+.pastoral-home .product-grid { gap: 2rem; }
+.pastoral-home .product-image { aspect-ratio: 1.18; border-radius: 10px; }
+.pastoral-home .product-card-body { padding: 1.3rem 0 0; }
+.pastoral-home .product-select { background: var(--forest-dark); color: #fff; padding: .8rem 1.25rem; border-radius: 100px; border: 0; margin-top: 1rem; }
+.pastoral-home .product-select:hover { background: #142c23; }
+.origin-intro { background: #edf0e4; padding-block: 1rem 3.5rem; }
+.origin-intro-layout { margin-top: 2.5rem; }
+.origin-intro h2 { font-size: clamp(2.5rem, 4vw, 4rem); }
+.provenance { min-height: 580px; }
+#proveri-dostavu { scroll-margin-top: 105px; }
+@media (prefers-reduced-motion: no-preference) {
+  .conversion-copy { animation: offer-enter .75s both; }
+  .conversion-stage { animation: offer-enter 1s .12s both; }
+  .stage-stamp { animation: stamp-enter 1s .5s both; }
+  @keyframes offer-enter { from { opacity: 1; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes stamp-enter { from { opacity: 1; transform: rotate(-8deg) scale(.85); } to { opacity: 1; transform: rotate(9deg) scale(1); } }
+  @supports (animation-timeline: view()) {
+    .ritual-step, .origin-intro-layout { animation: offer-enter linear both; animation-timeline: view(); animation-range: entry 0% entry 25%; }
+  }
+}
+@media (min-width: 1600px) {
+  .conversion-hero-grid { min-height: 740px; gap: 4rem; }
+  .conversion-stage { height: 660px; }
+}
+@media (max-width: 1100px) {
+  .conversion-hero-grid { gap: 1.5rem; min-height: 600px; }
+  .conversion-stage { height: 530px; }
+  .conversion-actions { gap: .65rem 1rem; }
+  .conversion-actions .button { gap: 1rem; }
+  .conversion-copy > .eyebrow { font-size: .65rem; letter-spacing: .08em; }
+  .stage-stamp { width: 100px; height: 100px; right: -5px; }
+  .stage-stamp em { font-size: 1.4rem; }
+  .stage-caption { display: none; }
+}
+@media (max-width: 760px) {
+  .announcement-bar a { gap: .5rem; font-size: .62rem; flex-wrap: wrap; }
+  .nav-shell { min-height: 72px; }
+  .brand-logo-header { width: 56px; height: 56px; }
+  .header-actions > a.header-shop { background: transparent; padding: .5rem .25rem; }
+  .conversion-hero-grid { grid-template-columns: 1fr; gap: 0; }
+  .conversion-copy { padding-block: 30px 0; }
+  .conversion-copy > .eyebrow { margin-bottom: 16px; }
+  .pastoral-home .conversion-copy h1 { font-size: clamp(2.7rem, 10.6vw, 4.8rem); max-width: 15ch; margin-bottom: 18px; }
+  .desktop-break { display: none; }
+  .conversion-lead { font-size: .88rem; line-height: 1.7; margin-bottom: 18px; }
+  .conversion-actions { gap: .7rem; }
+  .conversion-actions .button { min-height: 50px; padding-inline: 1.1rem; font-size: .78rem; }
+  .conversion-secondary { font-size: .74rem; }
+  .conversion-reassurance { font-size: .66rem; margin-block: 11px 20px; }
+  .hero-price-list { padding-top: 12px; gap: 1rem; }
+  .hero-price-list a { font-size: .65rem; }
+  .hero-price-list a + a { padding-left: 1rem; }
+  .hero-price-list strong { font-size: .95rem; }
+  .conversion-stage { height: 340px; margin-block: 24px; border-radius: 160px 160px 6px 6px; }
+  .conversion-stage .hero-object { inset: -12px 0 3px; }
+  .stage-word { font-size: 6.5rem; top: 32px; }
+  .stage-footnote { bottom: 10px; font-size: .6rem; }
+  .stage-stamp { width: 88px; height: 88px; right: 7px; bottom: 60px; }
+  .stage-stamp span:first-child { font-size: .6rem; }
+  .stage-stamp em { font-size: 1.2rem; }
+  .stage-stamp span:last-child { font-size: .34rem; }
+  .conversion-benefits .page-shell { min-height: 75px; gap: .6rem; }
+  .conversion-benefits span { flex: 1; flex-direction: column; text-align: center; gap: 0; font-size: .6rem; line-height: 1.5; padding-block: 10px; }
+  .conversion-benefits i { font-size: 1.1rem; }
+  .pastoral-home .product-image { aspect-ratio: 1.1; }
+  .pastoral-home .product-grid { gap: 2rem; }
+  .scene-controls { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .conversion-actions .button span, .hero-price-list .price-arrow { transition: none; }
+  .stage-stamp { animation: none; }
+}
+
+.hero-delivery-terms { display: inline-block; color: #58624f; font-size: .7rem; margin-top: 14px; text-decoration: none; }
+.hero-delivery-terms:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.ritual-step > span { color: #718265; }
+
+@media (min-width: 761px) and (max-width: 1100px) {
+  .stage-footnote { bottom: 10px; font-size: .55rem; }
+  .scene-controls { bottom: 32px; }
+}

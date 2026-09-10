@@ -16,9 +16,12 @@ import { migratePostgres } from '../../scripts/migrate-postgres.mjs';
 
 let server, client, directory, origin;
 let pgClient, schema;
+let migratedTableNames;
 const postgresTestUrl = process.env.TEST_POSTGRES_URL;
 let serverOutput = '';
 const adminSecret = randomUUID();
+const adminUsername = "runtime-admin";
+let adminSession;
 const cronSecret = randomUUID();
 
 before(async () => {
@@ -34,7 +37,7 @@ before(async () => {
     APP_ORIGIN: origin, NEXT_PUBLIC_SITE_URL: origin,
     TURSO_DATABASE_URL: url, TURSO_AUTH_TOKEN: '', DATABASE_URL: url,
     POSTGRES_URL: '', POSTGRES_PRISMA_URL: '', POSTGRES_URL_NON_POOLING: '', POSTGRES_SCHEMA: '',
-    ADMIN_SECRET: adminSecret, CRON_SECRET: cronSecret,
+    ADMIN_USERNAME: adminUsername, ADMIN_PASSWORD: adminSecret, ADMIN_SECRET: "ignored-legacy-key", ADMIN_LEGACY_ACCESS: "false", CRON_SECRET: cronSecret,
     PAYMENT_WEBHOOK_SECRET: randomUUID(), PAYMENT_PROVIDER: 'disabled', PAYMENT_MODE: 'disabled',
     BADI_MODE: 'mock', EMAIL_MODE: 'console', WHATSAPP_MODE: 'queue',
     ALLOW_PRODUCTION_INTEGRATIONS: 'false',
@@ -50,6 +53,7 @@ before(async () => {
     await pgClient.query(`SET search_path TO "${schema}", pg_catalog`);
     // Verify every migrated table has the same column names as the SQLite source.
     const tables = (await client.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name != '__mleko_migrations'")).rows;
+    migratedTableNames = [...tables.map(table => table.name), "__mleko_migrations"].sort();
     for (const { name } of tables) {
       const expected = (await client.execute(`PRAGMA table_info("${name}")`)).rows.map(row => row.name).sort();
       const actual = (await pgClient.query('SELECT column_name FROM information_schema.columns WHERE table_schema=$1 AND table_name=$2', [schema, name])).rows.map(row => row.column_name).sort();
@@ -107,20 +111,43 @@ after(async () => {
 });
 
 async function api(path, { admin = false, body, headers = {}, ...options } = {}) {
+  if (admin && !adminSession) {
+    const login = await api('/api/admin/access', { method: 'POST', body: { username: adminUsername, password: adminSecret } });
+    assert.equal(login.status, 200, JSON.stringify(login.body));
+    adminSession = login.body.sessionToken;
+  }
   const response = await fetch(origin + path, {
     ...options,
-    headers: { ...(admin ? { 'x-admin-secret': adminSecret } : {}), ...(body ? { 'content-type': 'application/json' } : {}), ...headers },
+    headers: { origin, ...(admin ? { authorization: `Bearer ${adminSession}` } : {}), ...(body ? { 'content-type': 'application/json' } : {}), ...headers },
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   return { status: response.status, headers: response.headers, body: await response.json() };
 }
 
-test('production admin requires a key even with APP_ENV=local and loopback headers', async () => {
+test('production admin requires username and password; expired, revoked and rotated sessions fail', async () => {
   const access = await api('/api/admin/access', { headers: { 'x-forwarded-for': '127.0.0.1' } });
-  assert.deepEqual(access.body, { authenticated: false, configured: true, mode: 'key' });
+  assert.deepEqual(access.body, { authenticated: false, configured: true, mode: 'password' });
   assert.equal((await api('/api/admin/products')).status, 403);
-  assert.equal((await api('/api/admin/access', { headers: { 'x-admin-secret': 'wrong' } })).status, 403);
-  assert.deepEqual((await api('/api/admin/access', { admin: true })).body, { authenticated: true, configured: true, mode: 'key' });
+  assert.equal((await api('/api/admin/products', { headers: { 'x-admin-secret': 'ignored-legacy-key' } })).status, 403);
+  assert.equal((await api('/api/admin/access', { method: 'POST', headers: { origin: 'https://wrong.example' }, body: { username: adminUsername, password: adminSecret } })).status, 403);
+  for (const body of [{ username: 'wrong', password: adminSecret }, { username: adminUsername, password: 'wrong' }]) {
+    assert.equal((await api('/api/admin/access', { method: 'POST', body })).status, 403);
+  }
+  assert.deepEqual((await api('/api/admin/access', { admin: true })).body, { authenticated: true, configured: true, mode: 'password' });
+  const stored = (await client.execute('SELECT * FROM admin_sessions')).rows[0];
+  assert.ok(stored.token_hash && stored.token_hash !== adminSession);
+  await client.execute({ sql: 'UPDATE admin_sessions SET expires_at = ? WHERE token_hash = ?', args: ['2000-01-01T00:00:00.000Z', stored.token_hash] });
+  assert.equal((await api('/api/admin/products', { admin: true })).status, 403);
+  adminSession = null;
+  await api('/api/admin/access', { admin: true });
+  await client.execute("UPDATE admin_sessions SET credential_hash = 'rotated'");
+  assert.equal((await api('/api/admin/products', { admin: true })).status, 403);
+  adminSession = null;
+  await api('/api/admin/access', { admin: true });
+  const revokedToken = adminSession;
+  assert.equal((await api('/api/admin/access', { admin: true, method: 'DELETE' })).status, 200);
+  assert.equal((await api('/api/admin/products', { headers: { authorization: `Bearer ${revokedToken}` } })).status, 403);
+  adminSession = null;
 });
 
 test('all ten admin sections load from the migrated database with no cache', async () => {
@@ -268,8 +295,41 @@ test('migration preserves append-only history and foreign keys', async () => {
 
 test('Supabase public roles have no access to commerce tables', { skip: !postgresTestUrl }, async () => {
   const tables = (await pgClient.query('SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname=$1', [schema])).rows;
-  assert.equal(tables.length, 28);
+  assert.deepEqual(tables.map(table => table.tablename).sort(), migratedTableNames);
+  assert.ok(tables.some(table => table.tablename === "admin_sessions"));
   assert.ok(tables.every(table => table.rowsecurity));
   const grants = await pgClient.query("SELECT table_name FROM information_schema.role_table_grants WHERE table_schema=$1 AND grantee IN ('anon', 'authenticated', 'PUBLIC')", [schema]);
   assert.equal(grants.rowCount, 0);
+});
+
+
+test('order confirmations export saved items and totals; protected downloads reject anonymous callers', async () => {
+  const order = (await api('/api/admin/orders', { admin: true })).body.orders[0];
+  const path = `/api/admin/orders/${order.id}/export`;
+  assert.equal((await fetch(origin + path)).status, 403);
+  assert.equal((await api(path + '?format=pdf', { admin: true })).status, 422);
+  assert.equal((await api('/api/admin/orders/missing/export', { admin: true })).status, 404);
+  const headers = { authorization: `Bearer ${adminSession}` };
+  const csv = await fetch(origin + path + '?format=csv', { headers });
+  assert.equal(csv.status, 200);
+  assert.equal(csv.headers.get('cache-control'), 'no-store');
+  assert.match(csv.headers.get('content-disposition'), /attachment/);
+  const text = await csv.text();
+  assert.ok(text.includes(order.order_number));
+  assert.ok(text.includes('Cena po jedinici (RSD)'));
+  assert.ok(text.includes(String(order.total_minor / 100)));
+  const workbook = await fetch(origin + path + '?format=xlsx', { headers });
+  const bytes = Buffer.from(await workbook.arrayBuffer());
+  assert.equal(bytes.readUInt32LE(0), 0x04034b50);
+  assert.ok(bytes.includes(Buffer.from('name="Potvrda"')));
+  assert.ok(bytes.includes(Buffer.from('name="Stavke"')));
+  assert.ok(bytes.includes(Buffer.from(order.order_number)));
+  assert.ok(bytes.includes(Buffer.from(`<v>${order.total_minor / 100}</v>`)));
+});
+
+test('admin login attempts are rate limited', async () => {
+  for (let attempt = 0; attempt < 11; attempt++) {
+    const response = await api('/api/admin/access', { method: 'POST', headers: { 'x-real-ip': '192.0.2.200' }, body: { username: adminUsername, password: 'wrong' } });
+    assert.equal(response.status, attempt < 10 ? 403 : 429);
+  }
 });

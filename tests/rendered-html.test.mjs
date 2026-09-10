@@ -131,7 +131,7 @@ const database = {
 
 globalThis.__mlekoTestCloudflareEnv = {
   DB: database,
-  ADMIN_SECRET: "test-admin-secret",
+  ADMIN_LEGACY_ACCESS: "true", ADMIN_SECRET: "test-admin-secret",
   PAYMENT_WEBHOOK_SECRET: "test-webhook-secret",
 };
 register(new URL("./cloudflare-loader.mjs", import.meta.url));
@@ -172,7 +172,7 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<html lang="sr-Latn">/);
+  assert.match(html, /<html[^>]* lang="sr-Latn"[^>]*>/);
   assert.match(
     html,
     /<title>Domaće kravlje i kozje mleko na vašoj adresi \| Mleko i Mleko<\/title>/,
@@ -182,7 +182,7 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
   assert.match(html, /Proverite sledeću dostavu/);
   assert.match(html, /href="\/prodavnica"/);
   assert.match(html, /href="\/nalog"/);
-  assert.match(html, /src="\/images\/mleko-i-mleko-logo\.png"/);
+  assert.match(html, /<img[^>]+(?:src|srcSet)="[^"]*mleko-i-mleko-logo(?:\.|%2E)png/i);
   assert.match(html, /class="skip-link"[^>]*href="#glavni-sadrzaj"/);
   assert.match(html, /<main id="glavni-sadrzaj">/);
   assert.match(html, /<link rel="canonical" href="http:\/\/localhost:3000"/);

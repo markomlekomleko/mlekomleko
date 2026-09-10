@@ -25,49 +25,18 @@ type CheckoutResult = {
 export function CheckoutForm() {
   const { items, ready, promoCode, clearCart } = useCart();
   const { track } = useAnalytics();
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
+  const paymentMethod = "cash";
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<CheckoutResult | null>(null);
   const [postalCode, setPostalCode] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [emailReminder, setEmailReminder] = useState(false);
-  const [whatsappReminder, setWhatsappReminder] = useState(false);
-  const [recoveryNotice, setRecoveryNotice] = useState("");
   const [conversionBusy, setConversionBusy] = useState(false);
   const [conversionDone, setConversionDone] = useState(false);
   const [quote, setQuote] = useState<CartQuote | null>(null);
   const [quoteError, setQuoteError] = useState("");
   const idempotencyKey = useRef<string | null>(null);
-  const recoveryCartId = useRef<string | null>(null);
-
-  async function saveCartForLater() {
-    setRecoveryNotice("");
-    if (!emailReminder && !whatsappReminder) {
-      setRecoveryNotice("Izaberite email ili WhatsApp podsetnik.");
-      return;
-    }
-    recoveryCartId.current ??= `cart_${window.crypto.randomUUID()}`;
-    try {
-      await fetchJson("/api/cart/recovery", {
-        method: "POST",
-        body: JSON.stringify({
-          cartId: recoveryCartId.current,
-          email,
-          phone,
-          emailConsent: emailReminder,
-          whatsappConsent: whatsappReminder,
-          promoCode: promoCode || undefined,
-          items: items.map((item) => ({ productId: item.productId, quantity: item.quantity, purchaseType: item.purchaseType, cadence: item.cadence })),
-        }),
-      });
-      setRecoveryNotice("Korpa je sačuvana. Poslaćemo jedan podsetnik ako ne završite kupovinu.");
-      track("cart_recovery_saved", { email: emailReminder, whatsapp: whatsappReminder });
-    } catch (requestError) {
-      setRecoveryNotice(requestError instanceof Error ? requestError.message : "Korpa nije sačuvana.");
-    }
-  }
 
   async function convertToSubscription(token: string) {
     setConversionBusy(true);
@@ -93,7 +62,6 @@ export function CheckoutForm() {
         body: JSON.stringify({
           items: items.map((item) => ({ productId: item.productId, quantity: item.quantity, purchaseType: item.purchaseType, cadence: item.cadence })),
           promoCode: promoCode || undefined,
-          recoveryCartId: recoveryCartId.current || undefined,
           postalCode: postalCode.length === 5 ? postalCode : undefined,
         }),
       }).then((value) => { if (active) setQuote(value); }).catch((requestError) => {
@@ -132,7 +100,6 @@ export function CheckoutForm() {
           note: form.get("note"),
           paymentMethod,
           promoCode: promoCode || undefined,
-          paymentToken: paymentMethod === "card" ? "local-mock-token" : undefined,
           items: items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
@@ -175,7 +142,7 @@ export function CheckoutForm() {
           <p className="eyebrow">Porudžbina je primljena</p>
           <h1>Hvala na porudžbini.</h1>
           <p>
-            Potvrda i link za upravljanje dostavom su evidentirani za slanje na vaš email.
+            Porudžbina je sačuvana. Status i redovnu dostavu možete pratiti iz svog naloga.
             {result.order?.orderNumber || result.orderId || result.order?.id || result.id ? (
               <> Broj porudžbine: <strong>{result.order?.orderNumber ?? result.orderId ?? result.order?.id ?? result.id}</strong>.</>
             ) : null}
@@ -233,13 +200,7 @@ export function CheckoutForm() {
               <span>Broj telefona</span>
               <input name="phone" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required />
             </label>
-            <div className="recovery-box">
-              <div><strong>Da sačuvamo ovu korpu?</strong><p>Ako stanete pre potvrde, šaljemo jedan podsetnik sa povratkom pravo u kupovinu.</p></div>
-              <label className="checkbox-row"><input type="checkbox" checked={emailReminder} onChange={(event) => setEmailReminder(event.target.checked)} /><span>Email podsetnik</span></label>
-              <label className="checkbox-row"><input type="checkbox" checked={whatsappReminder} onChange={(event) => setWhatsappReminder(event.target.checked)} /><span>WhatsApp podsetnik</span></label>
-              <button className="button secondary small" type="button" onClick={() => void saveCartForLater()}>Sačuvaj korpu</button>
-              {recoveryNotice ? <small role="status">{recoveryNotice}</small> : null}
-            </div>
+
           </section>
 
           <section className="card form-stack" aria-labelledby="adresa-title">
@@ -278,22 +239,12 @@ export function CheckoutForm() {
                   type="radio"
                   name="paymentMethod"
                   checked={paymentMethod === "cash"}
-                  onChange={() => setPaymentMethod("cash")}
+                  readOnly
                 />
                 Gotovina pri dostavi
                 <span className="muted small-text">Pretplata se plaća pri prvoj dostavi u mesecu.</span>
               </label>
-              <label className="radio-card" htmlFor="placanje-kartica">
-                <input
-                  id="placanje-kartica"
-                  type="radio"
-                  name="paymentMethod"
-                  checked={paymentMethod === "card"}
-                  onChange={() => setPaymentMethod("card")}
-                />
-                Online kartica · demo
-                <span className="muted small-text">Lokalni tok koristi test token; prava banka se uključuje kroz produkcione kredencijale.</span>
-              </label>
+
             </div>
           </fieldset>
 
@@ -324,7 +275,7 @@ export function CheckoutForm() {
           {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Danas plaćate za tekući mesec" : "Danas plaćate"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Izmene do {formatDate(quote.cutoffAt)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
           <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Plaćate samo isporuke planirane za tekući mesec.</p>
           <button className="button" type="submit" disabled={submitting || !quote || quote.serviceable === false}>
-            {submitting ? "Čuvamo porudžbinu…" : paymentMethod === "card" ? "Nastavi na karticu" : "Potvrdi porudžbinu"}
+            {submitting ? "Čuvamo porudžbinu…" : "Potvrdi porudžbinu"}
           </button>
           <a className="button secondary" href="/korpa">Izmeni korpu</a>
         </aside>

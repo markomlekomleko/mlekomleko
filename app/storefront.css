@@ -162,6 +162,10 @@ body { font-size: 1rem; -webkit-font-smoothing: antialiased; }
 .purchase-summary > .button { width: 100%; }
 .cart-added { margin: .8rem 0 0; font-size: .82rem; color: var(--forest); }
 .cart-added a { font-weight: 600; }
+.cart-added .button { width: 100%; }
+.account-orders > li { padding-block: 1rem; border-bottom: 1px solid var(--line); }
+.account-orders > li:last-child { border-bottom: 0; }
+.account-orders .summary-row { flex-wrap: wrap; }
 .purchase-panel .next-delivery { margin: 0 !important; padding: 0; background: transparent; font-size: .78rem; }
 .purchase-footnote { margin: -.9rem 0 0; text-align: left; font-size: .71rem; line-height: 1.65; }
 .product-story-section { margin-top: 4rem; padding-block: 3rem; }
@@ -301,3 +305,6 @@ body { font-size: 1rem; -webkit-font-smoothing: antialiased; }
 @media (prefers-reduced-motion: reduce) {
   .product-card:hover .product-image > img { transform: none; }
 }
+
+/* Keep the full bottle and label visible in the new square catalog photographs. */
+.product-card .product-image:has(> img[src$="-mleko-v2.webp"]) { aspect-ratio: 1; }

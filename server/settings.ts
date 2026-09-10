@@ -65,8 +65,8 @@ const defaults: BusinessSettings = {
   guaranteeText: "Ako proizvod stigne oštećen ili isporuka ne ispuni dogovorene uslove, evidentiramo zamenu ili kredit.",
   trustItemOne: "Redovna dostava bez ugovorne obaveze",
   trustItemTwo: "Izmena i preskakanje do roka za dostavu",
-  trustItemThree: "Plaćanje karticom ili gotovinom",
-  storeDemoMode: true,
+  trustItemThree: "Plaćanje gotovinom pri dostavi",
+  storeDemoMode: false,
 };
 
 export async function getBusinessSettings(): Promise<BusinessSettings> {
@@ -108,7 +108,8 @@ export async function getNextDeliveryWindow(now = new Date()) {
 }
 
 export function isServiceablePostalCode(settings: BusinessSettings, postalCode: string) {
-  if (settings.servicePostalCodes.length === 0) return true;
   const normalized = postalCode.trim();
+  if (!/^\d{5}$/.test(normalized)) return false;
+  if (settings.servicePostalCodes.length === 0) return true;
   return settings.servicePostalCodes.some((entry) => normalized.startsWith(entry.replace(/\*$/, "")));
 }

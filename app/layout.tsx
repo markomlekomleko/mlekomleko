@@ -8,6 +8,7 @@ import { getStorefront } from "../server/storefront";
 import "./globals.css";
 import "./storefront.css";
 import "./pastoral.css";
+import "./conversion.css";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

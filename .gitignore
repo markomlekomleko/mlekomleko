@@ -46,3 +46,9 @@ yarn-error.log*
 /work/
 /.data/
 /tmp/
+
+# Isolated browser test server
+/.next-e2e/
+
+# Local visual QA captures
+/output/qa/

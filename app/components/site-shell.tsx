@@ -33,15 +33,14 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
 
   return (
     <>
-      <div className="delivery-bar"><span>Dostava na kućnu adresu</span><span>{settings.serviceAreaNote}</span></div>
-      {settings.announcementEnabled && settings.announcementText && !isVideoAnnouncement ? (
+      {settings.announcementEnabled && settings.announcementText ? (
         <aside className="announcement-bar" aria-label="Važno obaveštenje">
-          <a href={settings.announcementUrl}>
+          <a href={settings.announcementUrl} target={isVideoAnnouncement ? "_blank" : undefined} rel={isVideoAnnouncement ? "noreferrer" : undefined}>
             <span>{settings.announcementText}</span>
             <strong>{settings.announcementLinkLabel} →</strong>
           </a>
         </aside>
-      ) : null}
+      ) : <div className="delivery-bar"><span>Dostava na kućnu adresu</span><span>{settings.serviceAreaNote}</span></div>}
       <header className="site-header">
         <div className="nav-shell">
           <Link className="brand" href="/" aria-label={`${settings.storeName} - početna`}>
@@ -54,7 +53,6 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
               sizes="76px"
             />
             <span className="brand-name">{settings.storeName}</span>
-            {settings.storeDemoMode ? <small>DEMO</small> : null}
           </Link>
           <nav id="glavna-navigacija" className={`main-nav ${menuOpen ? "is-open" : ""}`} aria-label="Glavna navigacija">
             <a href="/prodavnica">Prodavnica</a>

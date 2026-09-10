@@ -5,8 +5,10 @@ pretplate po stavci, korisnički magic-link nalog, rok za izmene, admin i pripre
 dostave. Poslovno vreme, obračun, autentikacija, analitika i isporuke koriste server kao
 jedini autoritet.
 
-Spoljne integracije podrazumevano nisu aktivne: kartice koriste lokalni adapter,
-fiskalizacija Badi mock, a email console režim. Badi HTTP i Resend adapteri su
+Checkout trenutno prima gotovinske porudžbine. Kartice nisu ponuđene dok se ne
+poveže bankarski adapter; simulirana naplata je moguća samo uz APP_ENV=local i
+PAYMENT_MODE=mock. Spoljne integracije podrazumevano nisu aktivne: fiskalizacija
+koristi Badi mock, a email console režim. Badi HTTP i Resend adapteri su
 implementirani, ali ostaju isključeni dok se ne unesu kredencijali, SKU mapa i ne prođe
 sandbox provera. OTP i RaiAccept su pripremljeni kao alternativni config izbori; konkretan
 bankarski adapter se povezuje tek uz dokumentaciju i test parametre izabrane banke.
@@ -26,9 +28,13 @@ Otvorite [http://localhost:3000](http://localhost:3000). Lokalni admin je na
 [http://localhost:3000/admin](http://localhost:3000/admin). U razvojnom serveru pristup
 sa istog računara je automatski; admin ključ nije potreban. To važi samo za loopback,
 zahteve sa istog porekla i razvojni build, kada `APP_ENV` nije `production`.
-Objavljeni/produkcioni build uvek zahteva sopstveni `ADMIN_SECRET`. Admin prvo proverava
-pristup, a tek zatim učitava podatke. Ključ za prijavu van lokalnog režima čuva se samo
-u memoriji otvorene stranice; ne upisuje se u browser storage.
+Objavljeni/produkcioni build zahteva `ADMIN_USERNAME` i `ADMIN_PASSWORD` (najmanje
+12 znakova). Kada su podešeni, prijava važi i lokalno. Admin prvo proverava pristup,
+a tek zatim učitava podatke. Lozinka se šalje samo pri prijavi; nasumična sesija živi
+isključivo u memoriji stranice, do 8 sati. Novo otvaranje/refresh traži novu prijavu.
+Odjava opoziva sesiju u bazi; promena kredencijala i redeploy opozivaju stare sesije.
+CSV za Spoke i Excel „Dostave“ + „Priprema“ dostupni su u kartici Dostave.
+Kartica Porudžbine ima „Potvrda Excel“ i „Potvrda CSV“ uz svaku porudžbinu.
 
 Početne migracije ubacuju razvojne podatke, a poslednja migracija koristi lokalne,
 neutralne fotografije kravljeg i kozjeg mleka i uklanja tvrdnje koje zahtevaju dokaz.
@@ -63,6 +69,9 @@ checkout i zaštitu cron rute. `npm run test:e2e` automatski pravi novu izolovan
 bazu, primenjuje migracije i pokreće Playwright na 390, 768 i 1440 px, uključujući axe
 proveru ozbiljnih i kritičnih accessibility grešaka. Testovi koriste samo fiktivne
 kupce i ne pozivaju prave kartice, email ili Badi.
+
+Pregled proveravanih korisničkih tokova i preostalih koraka za live integracije je
+u [docs/live-flows.md](docs/live-flows.md).
 
 Za bržu proveru samo provider-neutralnih modula:
 
@@ -103,7 +112,8 @@ node --test tests/integrations.test.mjs
 
 ```dotenv
 APP_ENV=local
-ADMIN_SECRET=
+ADMIN_USERNAME=
+ADMIN_PASSWORD=
 PAYMENT_WEBHOOK_SECRET=unesite-sopstveni-dug-slucajni-kljuc
 PAYMENT_PROVIDER=disabled
 PAYMENT_MODE=disabled
@@ -175,5 +185,5 @@ Kod je spreman za staging, ali produkcioni launch ostaje blokiran dok vlasnik ne
 tačno jedan payment provider, ne dostavi ugovor/test pristupe i ne završi sandbox
 acceptance. Dodatni obavezni gate-ovi su knjigovodstveno odobren Badi tok, verifikovan
 email domen, pravno odobren tekst, realni Spoke import, backup/restore i reconciliation
-proba, monitoring/rollback i admin identitet sa allowlist ulogama i MFA. Kompletna lista
+proba, monitoring/rollback i konfigurisani admin kredencijali u Vercel okruženju. Kompletna lista
 sa dokazima je u `docs/operations.md` i `docs/acceptance.md`.

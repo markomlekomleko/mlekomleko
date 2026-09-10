@@ -142,6 +142,7 @@ export async function quoteCart(input: Record<string, unknown>) {
   const items = parseCheckoutItems(input.items);
   const settings = await getBusinessSettings();
   const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow()).deliveryDate : assertLocalDate(input.deliveryDate);
+  assertDomain(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay() === settings.deliveryWeekday, "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
   assertBeforeCutoff(cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime));
   const productIds = [...new Set(items.map((item) => item.productId))];
   const rows = await all<ProductRow>(`SELECT * FROM products WHERE id IN (${sqlPlaceholders(productIds.length)}) AND is_active = 1`, ...productIds);
@@ -224,6 +225,7 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   const settings = await getBusinessSettings();
   assertDomain(isServiceablePostalCode(settings, customer.postalCode), "DELIVERY_AREA_UNAVAILABLE", "Dostava trenutno nije dostupna za uneti poštanski broj.", 422, { field: "customer.postalCode" });
   const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow()).deliveryDate : assertLocalDate(input.deliveryDate);
+  assertDomain(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay() === settings.deliveryWeekday, "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
   const cutoffAt = cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime);
   assertBeforeCutoff(cutoffAt);
 
@@ -312,6 +314,7 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   } catch (error) {
     const replay = await first<{ request_hash: string; response_json: string | null; status_code: number | null } & Record<string, unknown>>("SELECT request_hash, response_json, status_code FROM idempotency_keys WHERE namespace = 'checkout' AND key = ?", idempotencyKey);
     if (replay?.request_hash === requestHash && replay.response_json) return { status: replay.status_code ?? 201, body: JSON.parse(replay.response_json) };
+    if (promo) await resolvePromo(promoCode, subtotalMinor);
     throw error;
   }
   return { status: 201, body: response };
@@ -415,10 +418,10 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
   if (!subscription) throw new DomainError("SUBSCRIPTION_NOT_FOUND", "Subscription was not found.", 404);
   const expectedVersion = positiveInt(input.expectedVersion, "expectedVersion", 1_000_000_000);
   assertDomain(expectedVersion === subscription.version, "SUBSCRIPTION_VERSION_CONFLICT", "Pretplata je promenjena u drugom prozoru. Učitani su najnoviji podaci.", 409, { expectedVersion, currentVersion: subscription.version });
-  const action = enumValue(input.action, "action", ["update_item", "remove_item", "add_next_only", "skip_next", "slow_down", "pause", "resume", "cancel"] as const);
+  let action = enumValue(input.action, "action", ["add_item", "update_item", "remove_item", "add_next_only", "skip_next", "slow_down", "pause", "resume", "cancel"] as const);
   assertDomain(subscription.status !== "cancelled", "SUBSCRIPTION_CANCELLED", "A cancelled subscription is terminal and cannot be changed or resumed.", 409);
   if (action === "resume") assertDomain(subscription.status === "paused", "INVALID_SUBSCRIPTION_STATE", "Only a paused subscription can be resumed.", 409);
-  if (["update_item", "remove_item", "add_next_only", "skip_next", "slow_down", "pause"].includes(action)) {
+  if (["add_item", "update_item", "remove_item", "add_next_only", "skip_next", "slow_down", "pause"].includes(action)) {
     assertDomain(subscription.status === "active", "INVALID_SUBSCRIPTION_STATE", "This action requires an active subscription.", 409);
   }
   // Resume intentionally schedules a new future delivery and never edits a stale/locked snapshot.
@@ -444,7 +447,22 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
     return count;
   };
 
-  if (action === "update_item" || action === "remove_item") {
+  if (action === "remove_item" && activeItems.length === 1 && activeItems[0].id === input.itemId) action = "cancel";
+
+  if (action === "add_item") {
+    const productId = requiredString(input.productId, "productId", 100);
+    const quantity = positiveInt(input.quantity, "quantity", 100);
+    const cadence = enumValue(input.cadence, "cadence", ["weekly", "biweekly"] as const);
+    const product = await first<ProductRow>("SELECT * FROM products WHERE id = ? AND is_active = 1", productId);
+    assertDomain(product && product.allow_subscription, "SUBSCRIPTION_UNAVAILABLE", "Proizvod nije dostupan za redovnu dostavu.", 409);
+    const existingItem = activeItems.find((item) => item.product_id === productId && item.cadence === cadence);
+    const anchor = existingItem?.cadence_anchor_date ?? subscription.next_delivery_date;
+    if (existingItem) {
+      assertDomain(existingItem.quantity + quantity <= 100, "VALIDATION_ERROR", "Najviše 100 komada po stavci.", 422);
+      statements.push({ sql: "UPDATE subscription_items SET quantity = quantity + ?, updated_at = ? WHERE id = ?", bindings: [quantity, now, existingItem.id] });
+    } else statements.push({ sql: "INSERT INTO subscription_items (id, subscription_id, product_id, quantity, cadence, cadence_anchor_date, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)", bindings: [crypto.randomUUID(), subscriptionId, productId, quantity, cadence, anchor, now, now] });
+    if (paid) adjustmentMinor = -productUnitPrice(product, "subscription") * quantity * dueCount({ cadence_anchor_date: anchor, cadence });
+  } else if (action === "update_item" || action === "remove_item") {
     const itemId = requiredString(input.itemId, "itemId", 100);
     const item = activeItems.find((candidate) => candidate.id === itemId);
     assertDomain(item, "SUBSCRIPTION_ITEM_NOT_FOUND", "Subscription item was not found.", 404);

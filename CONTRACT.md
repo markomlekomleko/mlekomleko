@@ -12,15 +12,17 @@ npm run db:migrate:local
 
 The migration seeds four clearly marked demo products and the business defaults (Friday delivery at 08:00 Europe/Belgrade, 24-hour cutoff). Replace product data through the admin API.
 
-Production admin requests use `X-Admin-Secret` and fail closed unless `ADMIN_SECRET`
-is configured. Only a development build on direct loopback permits local admin access
-without a key. Cross-origin requests and remote forwarded clients cannot use this mode.
-There is no default shared secret. This shared-secret route is suitable
-for local/staging operations only; production launch requires an identity provider,
-server-side role/allowlist checks and MFA. Payment webhooks similarly require an
-explicit `PAYMENT_WEBHOOK_SECRET`.
+Production admin login uses server-only `ADMIN_USERNAME` and `ADMIN_PASSWORD`
+(minimum 12 characters). `POST /api/admin/access` accepts `{username, password}`
+from `APP_ORIGIN` and returns an opaque bearer session. Only token hashes are stored
+in `admin_sessions`; sessions expire after eight hours, revoke on logout, and are
+invalidated by a credential change. The UI keeps its token only in page memory,
+so reload/new entry requires login. There are ten login attempts per IP per 15 minutes.
+Direct loopback development without configured credentials retains local access;
+production and Vercel always require credentials. `X-Admin-Secret` is supported only
+for explicitly opted-in isolated legacy worker fixtures, never on Vercel.
 
-Useful local environment variables are `APP_ENV=local`, `APP_ORIGIN`, `ADMIN_SECRET`,
+Useful local environment variables are `APP_ENV=local`, `APP_ORIGIN`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`,
 `PAYMENT_WEBHOOK_SECRET`, and `LOCAL_AUTH_EXPOSE_TOKEN=true`. The last setting exposes a
 raw magic-link token only outside `APP_ENV=production` and must only be used for local
 development.
@@ -111,22 +113,23 @@ Locked/cutoff delivery snapshots cannot be changed. Every accepted pre-cutoff mu
 
 ## Admin
 
-Every admin data route requires `X-Admin-Secret`, except direct loopback development
-as described above. `GET /api/admin/access` returns only authentication/configuration
-status; it does not read business data. The UI validates access before loading data
-and never sends requests while a key is being typed.
+Every admin data route requires `Authorization: Bearer <sessionToken>`, except direct
+loopback development as described above. `GET /api/admin/access` probes access;
+`POST` signs in, and `DELETE` revokes the supplied bearer session. The UI validates
+access before loading business data and never persists credentials or session tokens.
 
 - `GET /api/admin/dashboard` - counts, paid revenue in minor RSD, upcoming delivery summary.
 - `GET|POST /api/admin/products`; `PATCH /api/admin/products/:id` - catalog and price operations.
 - `GET /api/admin/customers` - customer list.
 - `GET /api/admin/subscriptions` - active, paused, and cancelled subscriptions.
 - `GET /api/admin/orders?date=YYYY-MM-DD`; `PATCH /api/admin/orders` - list and update payment/fulfillment state or note. PATCH body includes `id` and changed fields.
+- `GET /api/admin/orders/:id/export?format=xlsx|csv` - individual order confirmation. Excel has Potvrda and Stavke sheets; CSV repeats order fields for every item. Stored order item prices/totals are used; current customer contact details are included. This is an order confirmation, not a fiscal receipt.
 - `GET /api/admin/settings`; `PATCH /api/admin/settings` - `cutoffHours`, `deliveryWeekday`, `deliveryLocalTime`, `storeName`.
 - `GET /api/admin/deliveries` or `?date=YYYY-MM-DD` - delivery list or a full customer/item snapshot plus aggregate preparation quantities.
 - If the selected date has not been generated, `GET /api/admin/deliveries?date=...`
   returns `200 { "delivery": null, "preparation": [], "orders": [], "canGenerate": true }`.
 - `POST /api/admin/deliveries` - `{ "action": "generate|lock", "date": "YYYY-MM-DD", "force": false }`, with `Idempotency-Key`. `force=true` is an explicit admin override for pre-cutoff locking.
-- `GET /api/admin/deliveries/export?date=YYYY-MM-DD` - UTF-8 BOM CSV shaped for Spoke (name, address, phone, email, products, quantities, note, order ID). Every CSV cell is formula-injection neutralized.
+- `GET /api/admin/deliveries/export?date=YYYY-MM-DD` - UTF-8 BOM CSV shaped for Spoke (name, address, phone, email, products, quantities, note, order ID). Every CSV cell is formula-injection neutralized. `format=xlsx` exports Dostave and Priprema sheets. Other formats return 422.
 
 An open delivery can be regenerated with a new idempotency key so pre-cutoff customer changes appear. Reusing its generation key is a no-op. Locking fixes the snapshot, consumes next-only add-ons, locks source orders, and advances each subscription to its next actual due cadence date.
 
