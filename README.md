@@ -37,12 +37,22 @@ Kupac bira litre po dostavi direktno na proizvodu.
 Migracije su idempotentne; `npm run db:migrate:local` pokrenite nakon novih migration
 fajlova. Nemojte pokretati drugi dev server ako jedan već radi.
 
+## Supabase lokalno i na Vercelu
+
+Serverske `POSTGRES_URL` (transaction pooler) i `POSTGRES_URL_NON_POOLING` (session
+pooler) vrednosti staviti u `.env.local`, koji je isključen iz Git-a. Pokrenuti
+`npm run db:migrate`, pa `npm run dev`. Iste serverske promenljive moraju biti u
+Vercel projektu pre redeploy-a. Javni Supabase ključevi nisu potrebni SQL adapteru.
+Lokalne izmene kroz tako povezan sajt upisuju se u istu udaljenu bazu. Za odvojeni
+SQLite razvoj ukloniti PostgreSQL konekcije iz lokalnog environment-a.
+
 ## Provera
 
 ```bash
 npm run lint
 npm test
 npm run test:vercel
+npm run test:postgres # sa Supabase konekcijama u .env.local
 npm run test:e2e
 ```
 
@@ -141,8 +151,8 @@ ili lookup može promeniti payment status u production adapteru.
 
 ```text
 app/             Next.js stranice, klijentski tokovi i API rute
-db/              SQLite šema i Node/libSQL adapter sa atomskim batch upisima
-migrations/      Lokalna/production SQL istorija
+db/              PostgreSQL i SQLite/libSQL adapteri sa atomskim batch upisima
+migrations/      SQLite istorija i PostgreSQL ekvivalenti u postgres/
 server/          Domen, autentikacija, obračun, delivery i adapter interfejsi
 integrations/    Provider-neutralni config/ugovori/CSV/attribution helperi
 scripts/         Migracije baze i pokretanje legacy test builda

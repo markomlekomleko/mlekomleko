@@ -5,7 +5,7 @@ produkcioni build; `vercel.json` bira Next.js i region Frankfurt. Sites sajt je 
 7. septembra 2026. Stara adresa vraća 404. Uklonjeni su `.openai/hosting.json`, Sites
 build plugin i Git remote `sites`.
 
-Lokalni server koristi `.data/mleko.sqlite`. Postojeća lokalna D1 baza je preneta SQLite
+Lokalni server koristi Supabase kada je postavljen `POSTGRES_URL`; bez njega koristi `.data/mleko.sqlite`. Postojeća lokalna D1 baza je preneta SQLite
 backup API-jem, a original u `.wrangler/` je sačuvan. `npm run db:migrate:local`
 primenjuje samo nove migracije i prepoznaje prenetu D1 istoriju. Vinext/Worker ostaju
 samo zbog postojećeg test okruženja, nisu deo Vercel runtime-a.
@@ -17,17 +17,19 @@ kupaca, porudžbina ili pretplata. SQL šema je u `migrations/`. Backup, lokalne
 
 ## Povezivanje i objavljivanje
 
-Vercel projekat još nije kreiran. Potrebno je odabrati korisnikov nalog/tim i povezati
-trajnu udaljenu bazu. Implementirani adapter podržava libSQL/Turso; Supabase/Postgres
-zahteva poseban adapter i prilagođavanje SQL-a. Lokalna datoteka nije dozvoljena kao
-baza na Vercelu, jer filesystem funkcije nije trajno skladište.
+Aktivni projekat je `mlekomleko-wyku`, sa adresom
+[https://mlekomleko-wyku.vercel.app](https://mlekomleko-wyku.vercel.app).
+Podržani su Supabase/PostgreSQL i prethodni libSQL/Turso adapter. PostgreSQL ima
+prednost kada postoje `POSTGRES_URL`, `POSTGRES_PRISMA_URL` ili PostgreSQL
+`DATABASE_URL`. SQLite ostaje za rad bez mreže i izolovane regresione testove.
+Lokalna datoteka nije dozvoljena kao baza na Vercelu.
 
 Serverske promenljive na Vercelu:
 
 | Promenljiva | Vrednost |
 | --- | --- |
-| `TURSO_DATABASE_URL` | `libsql://...` adresa izdvojene baze za ovaj projekat |
-| `TURSO_AUTH_TOKEN` | serverski token te baze |
+| `POSTGRES_URL` | Supabase transaction pooler, port 6543, samo na serveru |
+| `POSTGRES_URL_NON_POOLING` | Supabase session pooler, port 5432, za migracije |
 | `ADMIN_SECRET` | sopstveni dug nasumični ključ za admin |
 | `CRON_SECRET` | zaseban nasumični ključ za zakazane poslove |
 | `APP_ENV` | `production` (Vercel runtime ga svakako prisilno koristi) |
@@ -39,10 +41,26 @@ Integracije ostaju u postojećem razvojnom režimu (`PAYMENT_MODE=disabled`,
 `PAYMENT_PROVIDER=disabled`, `BADI_MODE=mock`, `EMAIL_MODE=console`,
 `ALLOW_PRODUCTION_INTEGRATIONS=false`) dok se ne povežu pravi provajderi.
 
-Sa adresom/tokenom izabrane baze u lokalnom, ignorisanom environment fajlu, pokrenuti
-`npm run db:migrate`. Migracije ne treba automatski pokretati u build koraku: preview
-build ne sme menjati produkcionu bazu. Prenos podataka iz backupa je zaseban korak i
-još nije izvršen na udaljenoj bazi. Preview treba da koristi zasebnu test bazu.
+Sa konekcijama u ignorisanom `.env.local` fajlu, `npm run db:migrate` bira PostgreSQL
+migracije iz `migrations/postgres/`. Dev server automatski učitava isti fajl. Komanda
+`npm run db:migrate:local` uvek ostaje namenjena lokalnom SQLite fajlu.
+
+Devet PostgreSQL migracija odgovara postojećoj SQLite istoriji: sve tabele, indeksi,
+strani ključevi, zaštita audit/outbox istorije, katalog i podešavanja. Rekonstrukcija
+SQLite products tabele zamenjena je PostgreSQL ALTER naredbama. Sve migracije se
+izvršavaju u jednoj transakciji pod advisory lock-om; checksums sprečavaju tiho menjanje
+već izvršene istorije. Ponovljeno izvršavanje ne vraća početne cene ili druga podešavanja.
+
+Tablice su u `public` šemi, sa RLS i bez prava za `anon`, `authenticated` i `PUBLIC`.
+Aplikacija im pristupa kroz serversku SQL konekciju; Supabase javni ključevi i service
+role ključ nisu potrebni ovom toku. TLS verifikuje server i hostname uz Supabase CA iz
+`db/certs/supabase-ca.json`; sertifikat je javni podatak, a konekcije ostaju van Git-a.
+
+Migracije se ne pokreću u build koraku. Preview treba da koristi zasebnu test bazu.
+Testovi sa `npm run test:postgres` prave nasumičnu `mleko_test_*` šemu, testiraju pravi
+Next.js HTTP server preko pooler-a i uklanjaju isključivo svoju šemu. `public` se ne
+koristi za testne kupce i porudžbine. Jedino eksplicitna `db:migrate` komanda menja
+produkcionu šemu.
 
 Admin prvo poziva `/api/admin/access`, pa tek nakon uspešne autentikacije učitava
 sekcije. Lokalni razvoj sa loopback adrese ima automatski pristup. Produkcioni build
@@ -63,6 +81,12 @@ Vercel šalje podešeni `CRON_SECRET` u Authorization headeru
 ([dokumentacija](https://vercel.com/docs/cron-jobs/manage-cron-jobs)).
 
 ## Provera
+
+`npm run test:postgres` proverava PostgreSQL šemu i početne podatke prema SQLite
+migracijama, idempotentnost migracija, zaštitu istorije i prava pristupa, pa pokreće
+iste HTTP testove kao `test:vercel`, uključujući checkout, nalog i izmenu pretplate.
+Pristupni podaci se uzimaju iz `.env.local`, bez upisivanja u testove ili Git.
+
 
 `npm run test:vercel` pravi Next.js build i pokreće stvarni produkcioni server sa
 privremenom SQLite bazom: svih deset admin sekcija, obavezna prijava, atomski rollback,

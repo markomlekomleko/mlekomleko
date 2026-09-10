@@ -2,6 +2,8 @@ import { createClient, type Client, type InStatement, type ResultSet } from "@li
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { postgresUrl } from "./postgres-config.mjs";
+import { connectPostgresDatabase } from "./postgres";
 
 let database: D1Database | undefined;
 
@@ -39,9 +41,14 @@ export function createDatabase(client: Client): D1Database {
 
 export function getDatabase(): D1Database {
   if (database) return database;
+  const postgres = postgresUrl();
+  if (postgres) {
+    database = connectPostgresDatabase(postgres);
+    return database;
+  }
   const hosted = Boolean(process.env.VERCEL) || process.env.APP_ENV === "production";
   const url = process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL ?? (hosted ? "" : "file:.data/mleko.sqlite");
-  if (!url) throw new Error("Database is not configured. Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN on Vercel.");
+  if (!url) throw new Error("Database is not configured. Set POSTGRES_URL for Supabase, or TURSO_DATABASE_URL and TURSO_AUTH_TOKEN for libSQL.");
   if (hosted && !/^(libsql|https):\/\//.test(url)) throw new Error("Database on Vercel must be a persistent remote libSQL database.");
   if (url.startsWith("file:")) {
     const path = fileURLToPath(new URL(url, `file://${process.cwd()}/`));

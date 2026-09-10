@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["@libsql/client", "libsql"],
+  serverExternalPackages: ["@libsql/client", "libsql", "pg"],
   async headers() {
     const headers = [
       { key: "X-Content-Type-Options", value: "nosniff" },

@@ -46,7 +46,7 @@ export async function getDelivery(date: string) {
 }
 
 export async function listDeliveries(limit = 60) {
-  return all<Record<string, unknown>>("SELECT d.*, COUNT(do.id) AS order_count FROM deliveries d LEFT JOIN delivery_orders do ON do.delivery_id = d.id GROUP BY d.id ORDER BY d.delivery_date DESC LIMIT ?", limit);
+  return all<Record<string, unknown>>("SELECT d.*, COUNT(dor.id) AS order_count FROM deliveries d LEFT JOIN delivery_orders dor ON dor.delivery_id = d.id GROUP BY d.id ORDER BY d.delivery_date DESC LIMIT ?", limit);
 }
 
 export async function generateDelivery(rawDate: unknown, rawKey: string | null) {

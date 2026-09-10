@@ -85,7 +85,7 @@ export function routeError(error: unknown): Response {
   }
   const message = error instanceof Error ? error.message : "Unexpected server error";
   console.error(error);
-  const unavailable = /no such table|Database (?:binding|is not configured|on Vercel)/i.test(message);
+  const unavailable = /no such table|relation .+ does not exist|Database (?:binding|is not configured|on Vercel)/i.test(message);
   return jsonResponse(
     { error: { code: unavailable ? "DATABASE_NOT_READY" : "INTERNAL_ERROR", message: unavailable ? "Baza podataka nije spremna. Proverite vezu i primenite migracije." : "Unexpected server error." }, requestId },
     unavailable ? 503 : 500,

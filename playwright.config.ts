@@ -23,6 +23,10 @@ export default defineConfig({
     env: {
       TURSO_DATABASE_URL: e2eDatabaseUrl,
       TURSO_AUTH_TOKEN: "",
+      POSTGRES_URL: "",
+      POSTGRES_PRISMA_URL: "",
+      POSTGRES_URL_NON_POOLING: "",
+      POSTGRES_SCHEMA: "",
       APP_ENV: "local",
       APP_ORIGIN: "http://localhost:4173",
       NEXT_PUBLIC_SITE_URL: "http://localhost:4173",

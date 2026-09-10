@@ -90,7 +90,7 @@ export async function listCustomers() {
 
 export async function listSubscriptions() {
   return all<Record<string, unknown>>(
-    "SELECT s.*, c.full_name, c.email, COUNT(si.id) AS item_count FROM subscriptions s JOIN customers c ON c.id = s.customer_id LEFT JOIN subscription_items si ON si.subscription_id = s.id AND si.status = 'active' GROUP BY s.id ORDER BY s.created_at DESC LIMIT 500",
+    "SELECT s.*, c.full_name, c.email, COUNT(si.id) AS item_count FROM subscriptions s JOIN customers c ON c.id = s.customer_id LEFT JOIN subscription_items si ON si.subscription_id = s.id AND si.status = 'active' GROUP BY s.id, c.full_name, c.email ORDER BY s.created_at DESC LIMIT 500",
   );
 }
 
