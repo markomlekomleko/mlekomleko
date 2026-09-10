@@ -1,4 +1,5 @@
 import { DomainError, assertDomain, enumValue, nonNegativeInt, optionalString, requiredString } from "./domain";
+import { orderFilters } from "./order-filters";
 import { audit, enqueue } from "./outbox";
 import { all, batch, first, type SqlValue } from "./sql";
 import { getBusinessSettings } from "./settings";
@@ -97,15 +98,14 @@ export async function listSubscriptions() {
   );
 }
 
-export async function listOrders(date?: string | null) {
-  return date
-    ? all<Record<string, unknown>>(
-        "SELECT o.*, c.full_name, c.email, c.phone, fr.status AS fiscal_status, fr.invoice_number FROM orders o JOIN customers c ON c.id = o.customer_id LEFT JOIN fiscal_receipts fr ON fr.order_id = o.id AND fr.operation_key = 'receipt:' || o.id || ':sale' WHERE o.delivery_date = ? ORDER BY o.created_at",
-        date,
-      )
-    : all<Record<string, unknown>>(
-        "SELECT o.*, c.full_name, c.email, c.phone, fr.status AS fiscal_status, fr.invoice_number FROM orders o JOIN customers c ON c.id = o.customer_id LEFT JOIN fiscal_receipts fr ON fr.order_id = o.id AND fr.operation_key = 'receipt:' || o.id || ':sale' ORDER BY o.created_at DESC LIMIT 500",
-      );
+export async function listOrders(params = new URLSearchParams()) {
+  const { where, bindings, orderBy, page, pageSize } = orderFilters(params);
+  const from = "FROM orders o JOIN customers c ON c.id = o.customer_id LEFT JOIN fiscal_receipts fr ON fr.order_id = o.id AND fr.operation_key = 'receipt:' || o.id || ':sale'";
+  const [orders, count] = await Promise.all([
+    all<Record<string, unknown>>(`SELECT o.*, c.full_name, c.email, c.phone, fr.status AS fiscal_status, fr.invoice_number ${from} ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`, ...bindings, pageSize, (page - 1) * pageSize),
+    first<Record<string, unknown>>(`SELECT COUNT(*) AS total ${from} ${where}`, ...bindings),
+  ]);
+  return { orders, total: Number(count?.total ?? 0), page, pageSize };
 }
 
 export async function updateOrder(input: Record<string, unknown>) {

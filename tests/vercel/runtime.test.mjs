@@ -333,3 +333,72 @@ test('admin login attempts are rate limited', async () => {
     assert.equal(response.status, attempt < 10 ? 403 : 429);
   }
 });
+
+test('catalog CRUD handles bundles, duplicate slugs, invalid lines and product archival', async () => {
+  const suffix = randomUUID();
+  const payload = { slug: `catalog-${suffix}`, name: 'Provera kataloga', unitLabel: '1 L', priceMinor: 35050, subscriptionPriceMinor: 33025, costMinor: 12050, packagingCostMinor: 505 };
+  const created = await api('/api/admin/products', { admin: true, method: 'POST', body: payload });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  const product = created.body.product;
+  assert.equal((await api('/api/admin/products', { admin: true, method: 'POST', body: payload })).status, 409);
+  const changed = await api(`/api/admin/products/${product.id}`, { admin: true, method: 'PATCH', body: { ...payload, name: 'Izmenjeni proizvod', priceMinor: 39999 } });
+  assert.equal(changed.status, 200, JSON.stringify(changed.body));
+  assert.equal(changed.body.product.priceMinor, 39999);
+  const bundlePayload = { slug: `bundle-${suffix}`, name: 'Provera paketa', items: [{ productId: product.id, quantity: 2, purchaseType: 'one_time' }] };
+  const createdBundle = await api('/api/admin/bundles', { admin: true, method: 'POST', body: bundlePayload });
+  assert.equal(createdBundle.status, 201, JSON.stringify(createdBundle.body));
+  const bundle = createdBundle.body.bundle;
+  assert.equal(bundle.perDeliveryMinor, 79998);
+  assert.equal((await api('/api/admin/bundles', { admin: true, method: 'POST', body: bundlePayload })).status, 409);
+  const invalid = await api(`/api/admin/bundles/${bundle.id}`, { admin: true, method: 'PATCH', body: { items: [{ productId: 'missing', quantity: 1, purchaseType: 'one_time' }] } });
+  assert.equal(invalid.status, 409, JSON.stringify(invalid.body));
+  const updatedBundle = await api(`/api/admin/bundles/${bundle.id}`, { admin: true, method: 'PATCH', body: { items: [{ productId: product.id, quantity: 3, purchaseType: 'subscription', cadence: 'weekly' }] } });
+  assert.equal(updatedBundle.status, 200, JSON.stringify(updatedBundle.body));
+  assert.equal(updatedBundle.body.bundle.perDeliveryMinor, 99075);
+  const removed = await api(`/api/admin/products/${product.id}`, { admin: true, method: 'DELETE' });
+  assert.equal(removed.status, 200, JSON.stringify(removed.body));
+  assert.equal(removed.body.archived, true);
+  assert.equal((await api('/api/storefront')).body.bundles.some(item => item.id === bundle.id), false, 'Unavailable bundles must not silently lose products');
+  assert.equal((await api(`/api/admin/bundles/${bundle.id}`, { admin: true, method: 'DELETE' })).status, 200);
+  const deleted = await api(`/api/admin/products/${product.id}`, { admin: true, method: 'DELETE' });
+  assert.equal(deleted.status, 200, JSON.stringify(deleted.body));
+  assert.equal(deleted.body.deleted, true);
+});
+
+test('order filters search the full database, paginate and include complete Belgrade dates', async () => {
+  const customerId = randomUUID();
+  const prefix = `FILTER-${randomUUID()}`;
+  await client.execute({ sql: 'INSERT INTO customers (id,email,full_name,phone,address_line_1,city,postal_code) VALUES (?,?,?,?,?,?,?)', args: [customerId, `${customerId}@example.test`, 'Filter Kupac', '+38161111222', 'Test 1', 'Beograd', '11000'] });
+  // More than the previous 500-order limit; all fixtures live in the isolated test database.
+  const timestamps = ['2026-10-24T21:59:59.999Z', '2026-10-24T22:00:00.000Z', '2026-10-25T22:59:59.999Z', '2026-10-25T23:00:00.000Z'];
+  const args = [];
+  const rows = Array.from({ length: 505 }, (_, index) => {
+    const id = randomUUID();
+    args.push(id, `${prefix}-${index}`, customerId, 'one_time', 'cash', index % 2 ? 'paid' : 'pending', 'planned', index < 4 ? '2026-11-01' : '2026-11-02', 10000 + index, 10000 + index, id, timestamps[index] ?? '2026-10-26 10:00:00');
+    return '(?,?,?,?,?,?,?,?,?,?,?,?)';
+  });
+  await client.execute({ sql: `INSERT INTO orders (id,order_number,customer_id,kind,payment_method,payment_status,fulfillment_status,delivery_date,subtotal_minor,total_minor,idempotency_key,created_at) VALUES ${rows.join(',')}`, args });
+  const list = async query => {
+    const response = await api(`/api/admin/orders?q=${prefix}&${query}`, { admin: true });
+    assert.equal(response.status, 200, JSON.stringify(response.body));
+    return response.body;
+  };
+  const first = await list('sort=oldest');
+  assert.equal(first.total, 505);
+  assert.equal(first.orders.length, 50);
+  const last = await list('sort=oldest&page=11');
+  assert.equal(last.orders.length, 5);
+  assert.ok(!first.orders.some(order => last.orders.some(other => order.id === other.id)));
+  const localDay = await list('from=2026-10-25&to=2026-10-25');
+  assert.deepEqual(localDay.orders.map(order => order.order_number).sort(), [`${prefix}-1`, `${prefix}-2`]);
+  const combined = await list('dateField=delivery&from=2026-11-01&to=2026-11-01&paymentStatus=paid&paymentMethod=cash&fulfillmentStatus=planned&kind=one_time&sort=total_desc');
+  assert.deepEqual(combined.orders.map(order => order.order_number), [`${prefix}-3`, `${prefix}-1`]);
+  assert.equal((await list('date=2026-11-01')).total, 4);
+  assert.equal((await list('from=2026-10-26')).total, 502);
+  assert.equal((await list('to=2026-10-24')).total, 1);
+  assert.equal((await list('kind=subscription_invoice')).total, 0);
+  for (const query of ['from=2026-11-02&to=2026-11-01', 'from=2026-02-30', 'paymentStatus=invalid', 'page=0', 'sort=unknown']) {
+    assert.equal((await api(`/api/admin/orders?${query}`, { admin: true })).status, 422, query);
+  }
+  assert.equal((await api('/api/admin/orders?q=%25', { admin: true })).body.total, 0, 'Search treats LIKE wildcards literally');
+});

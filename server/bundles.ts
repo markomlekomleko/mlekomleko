@@ -29,6 +29,7 @@ interface BundleItemRow extends Record<string, unknown> {
   price_minor: number;
   subscription_price_minor: number | null;
   product_active: number;
+  allow_subscription: number;
 }
 
 type BundleItemInput = {
@@ -82,12 +83,16 @@ export async function listBundles(includeInactive = false) {
   const rows = await all<BundleRow>(`SELECT * FROM bundles ${includeInactive ? "" : "WHERE is_active = 1"} ORDER BY sort_order, created_at`);
   if (!rows.length) return [];
   const items = await all<BundleItemRow>(
-    `SELECT bi.*, p.name AS product_name, p.slug AS product_slug, p.unit_label, p.price_minor, p.subscription_price_minor, p.is_active AS product_active
+    `SELECT bi.*, p.name AS product_name, p.slug AS product_slug, p.unit_label, p.price_minor, p.subscription_price_minor, p.is_active AS product_active, p.allow_subscription
      FROM bundle_items bi JOIN products p ON p.id = bi.product_id
      WHERE bi.bundle_id IN (${sqlPlaceholders(rows.length)}) ORDER BY bi.bundle_id, bi.sort_order`,
     ...rows.map((row) => row.id),
   );
-  return rows.map((bundle) => {
+  return rows.filter((bundle) => {
+    if (includeInactive) return true;
+    const contents = items.filter((item) => item.bundle_id === bundle.id);
+    return contents.length > 0 && contents.every((item) => item.product_active && (item.purchase_type !== "subscription" || item.allow_subscription));
+  }).map((bundle) => {
     const lines = items.filter((item) => item.bundle_id === bundle.id && (includeInactive || item.product_active)).map((item) => {
       const unitPriceMinor = item.purchase_type === "subscription" ? item.subscription_price_minor ?? item.price_minor : item.price_minor;
       return {
@@ -125,12 +130,26 @@ export async function listBundles(includeInactive = false) {
   });
 }
 
+async function assertBundleSlug(slug: string, id = "") {
+  const existing = await first<BundleRow>("SELECT id FROM bundles WHERE slug = ? AND id != ?", slug, id);
+  assertDomain(!existing, "SLUG_ALREADY_EXISTS", "Paket sa ovim slugom već postoji. Unesite drugi slug.", 409, { field: "slug" });
+}
+
+async function validateBundleItems(items: BundleItemInput[]) {
+  const products = await all<Record<string, unknown>>(`SELECT id, allow_subscription FROM products WHERE id IN (${sqlPlaceholders(items.length)})`, ...items.map(item => item.productId));
+  for (const item of items) {
+    const product = products.find(product => product.id === item.productId);
+    assertDomain(product, "PRODUCT_UNAVAILABLE", "Jedan od proizvoda paketa ne postoji. Izaberite drugi proizvod.", 409);
+    assertDomain(item.purchaseType !== "subscription" || product.allow_subscription, "SUBSCRIPTION_NOT_ALLOWED", "Proizvod ne podržava redovnu dostavu. Izaberite jednokratnu kupovinu.", 422);
+  }
+}
+
 export async function createBundle(input: Record<string, unknown>) {
   const id = crypto.randomUUID();
   const value = bundleValue(input);
   const items = parseItems(input.items);
-  const products = await all<Record<string, unknown>>(`SELECT id FROM products WHERE id IN (${sqlPlaceholders(items.length)})`, ...items.map((item) => item.productId));
-  assertDomain(new Set(products.map((item) => String(item.id))).size === new Set(items.map((item) => item.productId)).size, "PRODUCT_UNAVAILABLE", "Jedan od proizvoda paketa ne postoji.", 409);
+  await validateBundleItems(items);
+  await assertBundleSlug(value.slug);
   const now = new Date().toISOString();
   const statements: Array<{ sql: string; bindings?: SqlValue[] }> = [{
     sql: "INSERT INTO bundles (id, slug, eyebrow, name, description, is_featured, is_active, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -150,6 +169,8 @@ export async function updateBundle(id: string, input: Record<string, unknown>) {
   if (!before) throw new DomainError("BUNDLE_NOT_FOUND", "Paket nije pronađen.", 404);
   const value = bundleValue(input, before);
   const items = input.items === undefined ? null : parseItems(input.items);
+  if (items) await validateBundleItems(items);
+  await assertBundleSlug(value.slug, id);
   const now = new Date().toISOString();
   const statements: Array<{ sql: string; bindings?: SqlValue[] }> = [{
     sql: "UPDATE bundles SET slug = ?, eyebrow = ?, name = ?, description = ?, is_featured = ?, is_active = ?, sort_order = ?, updated_at = ? WHERE id = ?",

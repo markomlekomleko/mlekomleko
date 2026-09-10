@@ -120,6 +120,11 @@ function slugValue(value: unknown): string {
   return slug;
 }
 
+async function assertProductSlug(slug: string, id = "") {
+  const existing = await first<ProductRow>("SELECT id FROM products WHERE slug = ? AND id != ?", slug, id);
+  assertDomain(!existing, "SLUG_ALREADY_EXISTS", "Proizvod sa ovim URL slugom već postoji. Unesite drugi slug.", 409, { field: "slug" });
+}
+
 export async function createProduct(input: Record<string, unknown>) {
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
@@ -150,6 +155,7 @@ export async function createProduct(input: Record<string, unknown>) {
     badiSku: optionalSku(input.badiSku),
     isActive: booleanValue(input.isActive, true),
   };
+  await assertProductSlug(value.slug);
   await batch([
     {
       sql: "INSERT INTO products (id, slug, name, short_description, description, category, unit_label, price_minor, cost_minor, packaging_cost_minor, subscription_price_minor, compare_at_price_minor, currency, image_url, image_alt, badge, origin, is_featured, allow_subscription, is_demo, sort_order, seo_title, seo_description, badi_sku, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'RSD', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -194,6 +200,7 @@ export async function updateProduct(id: string, input: Record<string, unknown>) 
     badiSku: input.badiSku === undefined ? before.badi_sku : optionalSku(input.badiSku),
     isActive: input.isActive === undefined ? before.is_active : booleanValue(input.isActive, true),
   };
+  await assertProductSlug(next.slug, id);
   await batch([
     {
       sql: "UPDATE products SET slug = ?, name = ?, short_description = ?, description = ?, category = ?, unit_label = ?, price_minor = ?, cost_minor = ?, packaging_cost_minor = ?, subscription_price_minor = ?, compare_at_price_minor = ?, image_url = ?, image_alt = ?, badge = ?, origin = ?, is_featured = ?, allow_subscription = ?, is_demo = ?, sort_order = ?, seo_title = ?, seo_description = ?, badi_sku = ?, is_active = ?, updated_at = ? WHERE id = ?",
@@ -214,8 +221,8 @@ export async function removeProduct(id: string) {
   const before = await first<ProductRow>("SELECT * FROM products WHERE id = ?", id);
   if (!before) throw new DomainError("PRODUCT_NOT_FOUND", "Proizvod nije pronađen.", 404);
   const references = await first<{ count: number } & Record<string, unknown>>(
-    "SELECT (SELECT COUNT(*) FROM order_items WHERE product_id = ?) + (SELECT COUNT(*) FROM subscription_items WHERE product_id = ?) + (SELECT COUNT(*) FROM next_delivery_addons WHERE product_id = ?) + (SELECT COUNT(*) FROM delivery_items WHERE product_id = ?) AS count",
-    id, id, id, id,
+    "SELECT (SELECT COUNT(*) FROM order_items WHERE product_id = ?) + (SELECT COUNT(*) FROM subscription_items WHERE product_id = ?) + (SELECT COUNT(*) FROM next_delivery_addons WHERE product_id = ?) + (SELECT COUNT(*) FROM delivery_items WHERE product_id = ?) + (SELECT COUNT(*) FROM bundle_items WHERE product_id = ?) AS count",
+    id, id, id, id, id,
   );
   const referenced = Number(references?.count ?? 0) > 0;
   await batch([
