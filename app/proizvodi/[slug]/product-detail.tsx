@@ -1,113 +1,157 @@
 "use client";
-/* eslint-disable @next/next/no-img-element -- Optimized catalog images and admin-managed image URLs are served directly. */
+/* eslint-disable @next/next/no-img-element -- Optimised catalog images and admin-managed image URLs are served directly. */
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useCart } from "../../components/cart-provider";
 import { useAnalytics } from "../../components/analytics-provider";
-import { ProductCard } from "../../components/product-card";
-import { cadenceLabel, formatMoney, formatDate, type DeliveryWindow, type DeliveryCadence, type Product, type PurchaseType } from "../../lib/frontend";
+import { ProductConfigurator } from "../../components/product-configurator";
+import { formatDate, formatMoney, type DeliveryWindow, type Product } from "../../lib/frontend";
 
-export function ProductDetail({ product, delivery, recommendations }: { product: Product; delivery: DeliveryWindow; recommendations: Product[] }) {
-  const { addItem, ready } = useCart();
+type Selection = { label: string; totalRsd: number; disabled: boolean };
+
+export function ProductDetail({
+  product,
+  delivery,
+  recommendations,
+}: {
+  product: Product;
+  delivery: DeliveryWindow;
+  recommendations: Product[];
+}) {
   const { track } = useAnalytics();
-  const [purchaseType, setPurchaseType] = useState<PurchaseType>(product.allowSubscription ? "subscription" : "one_time");
-  const [cadence, setCadence] = useState<DeliveryCadence>("weekly");
-  const [quantity, setQuantity] = useState(2);
-  const [added, setAdded] = useState(false);
+  const sentinel = useRef<HTMLDivElement>(null);
+  const addToCart = useRef<() => void>(() => {});
   const trackedProduct = useRef("");
-  const unitPrice = purchaseType === "subscription" ? product.subscriptionPriceRsd : product.priceRsd;
-  const monthlyOccurrences = delivery.remainingOccurrences[cadence];
-  const saving = (product.priceRsd - product.subscriptionPriceRsd) * quantity;
-  const selectionLabel = `${quantity} L · ${purchaseType === "subscription" ? cadenceLabel(cadence).toLocaleLowerCase("sr-Latn") : "jednokratno"}`;
-  const cutoff = new Intl.DateTimeFormat("sr-Latn-RS", { timeZone: "Europe/Belgrade", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(delivery.cutoffAt));
+  const [selection, setSelection] = useState<Selection>({ label: "", totalRsd: 0, disabled: true });
+  const [barVisible, setBarVisible] = useState(false);
+
+  const cutoff = new Intl.DateTimeFormat("sr-Latn-RS", {
+    timeZone: "Europe/Belgrade",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(delivery.cutoffAt));
 
   useEffect(() => {
-    if (trackedProduct.current !== product.id) {
-      trackedProduct.current = product.id;
-      track("view_item", { productId: product.id, productName: product.name });
-    }
+    if (trackedProduct.current === product.id) return;
+    trackedProduct.current = product.id;
+    track("view_item", { productId: product.id, productName: product.name });
   }, [product, track]);
 
-  function addToCart() {
-    if (!product.available || !ready) return;
-    addItem({ productId: product.id, slug: product.slug, name: product.name, unit: product.unit, unitPriceRsd: unitPrice, purchaseType, cadence: purchaseType === "subscription" ? cadence : undefined, quantity });
-    track("add_to_cart", { productId: product.id, purchaseType, cadence: purchaseType === "subscription" ? cadence : null, quantity, valueRsd: unitPrice * quantity });
-    setAdded(true);
-  }
-
-  function choosePurchaseType(value: PurchaseType) {
-    setPurchaseType(value);
-    setAdded(false);
-    track(value === "subscription" ? "subscription_selected" : "select_item", { productId: product.id, purchaseType: value });
-  }
-
-  function chooseQuantity(value: number) {
-    setQuantity(Math.min(99, Math.max(1, Math.round(value) || 1)));
-    setAdded(false);
-  }
+  // The buy bar only appears once the real purchase button has scrolled away.
+  useEffect(() => {
+    const node = sentinel.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setBarVisible(!entry.isIntersecting && entry.boundingClientRect.top < 0),
+      { threshold: 0 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="page-shell product-detail-page">
-      <nav className="breadcrumbs" aria-label="Putanja"><Link href="/">Početna</Link><span aria-hidden="true">/</span><a href="/prodavnica">Prodavnica</a><span aria-hidden="true">/</span><span aria-current="page">{product.name}</span></nav>
+      <nav className="breadcrumbs" aria-label="Putanja">
+        <Link href="/">Početna</Link>
+        <span aria-hidden="true">/</span>
+        <a href="/prodavnica">Prodavnica</a>
+        <span aria-hidden="true">/</span>
+        <span aria-current="page">{product.name}</span>
+      </nav>
+
       <div className="product-detail">
         <div className="product-visual-column">
           <div className="product-detail-media">
-            {product.imageUrl ? <img src={product.imageUrl} alt={product.imageAlt} width="1080" height="1080" fetchPriority="high" /> : <div className="product-placeholder">Fotografija uskoro</div>}
+            {product.imageUrl ? (
+              <img
+                src={product.imageUrl}
+                alt={product.imageAlt}
+                width="1080"
+                height="1080"
+                fetchPriority="high"
+              />
+            ) : (
+              <div className="product-placeholder">Fotografija uskoro</div>
+            )}
           </div>
-          <div className="product-quick-facts"><span><strong>Pakovanje</strong>{product.unit} · povratna flaša</span><span><strong>Poreklo</strong>{product.origin || "Uskoro"}</span></div>
+          <div className="product-quick-facts">
+            <span>
+              <strong>Pakovanje</strong>
+              {product.unit} · povratna staklena flaša
+            </span>
+            {product.origin ? (
+              <span>
+                <strong>Poreklo</strong>
+                {product.origin}
+              </span>
+            ) : null}
+          </div>
         </div>
 
-        <section className="purchase-panel" aria-labelledby="porucivanje-title">
-          <div className="purchase-heading">
-            <p className="eyebrow">{product.category}</p>
-            <h1 id="porucivanje-title">{product.name}</h1>
-            <p>{product.shortDescription}</p>
-            <div className="detail-price"><strong>{formatMoney(unitPrice)}</strong><span>/ {product.unit}</span>{purchaseType === "subscription" && product.priceRsd > unitPrice ? <s>{formatMoney(product.priceRsd)}</s> : null}</div>
-          </div>
-
-          <fieldset className="fieldset purchase-step">
-            <legend><span className="step-label">01</span> Litara po dostavi</legend>
-            <div className="quantity-presets" aria-label="Litara po dostavi">
-              {[2, 4, 8].map((value) => <button key={value} type="button" aria-pressed={quantity === value} onClick={() => chooseQuantity(value)}>{value} L</button>)}
-            </div>
-            <details className="custom-quantity">
-              <summary>Druga količina{![2, 4, 8].includes(quantity) ? ` · ${quantity} L` : ""}</summary>
-              <div className="quantity-control" aria-label="Druga količina u litrima">
-                <button type="button" aria-label="Smanji količinu" onClick={() => chooseQuantity(quantity - 1)}>−</button>
-                <input aria-label="Količina" type="number" min="1" max="99" value={quantity} onChange={(event) => chooseQuantity(Number(event.target.value))} />
-                <button type="button" aria-label="Povećaj količinu" onClick={() => chooseQuantity(quantity + 1)}>+</button>
-              </div>
-            </details>
-          </fieldset>
-
-          <fieldset className="fieldset purchase-step">
-            <legend><span className="step-label">02</span> Izaberite kupovinu</legend>
-            <div className="radio-group">
-              <label className="radio-card" htmlFor="kupovina-jednom"><input id="kupovina-jednom" type="radio" name="purchaseType" value="one_time" checked={purchaseType === "one_time"} onChange={() => choosePurchaseType("one_time")} />Jednokratno<span className="muted small-text">Samo sledeća dostava</span></label>
-              {product.allowSubscription ? <label className="radio-card" htmlFor="kupovina-pretplata"><input id="kupovina-pretplata" type="radio" name="purchaseType" value="subscription" checked={purchaseType === "subscription"} onChange={() => choosePurchaseType("subscription")} />Redovna dostava<span className="muted small-text">Preskočite ili pauzirajte</span></label> : null}
-            </div>
-          </fieldset>
-
-          {purchaseType === "subscription" ? <label className="field purchase-cadence"><span><span className="step-label">03</span> Ritam dostave</span><select value={cadence} onChange={(event) => { const value = event.target.value as DeliveryCadence; setCadence(value); setAdded(false); track("delivery_cadence_selected", { productId: product.id, cadence: value }); }}><option value="weekly">Svake nedelje</option><option value="biweekly">Svake 2 nedelje</option></select><small className="muted">{quantity * monthlyOccurrences} L kroz {monthlyOccurrences} preostale isporuke ovog meseca</small></label> : null}
-
-          {purchaseType === "subscription" && saving > 0 ? <p className="saving-callout">Ušteda {formatMoney(saving)} po isporuci</p> : null}
-          <div className="purchase-summary">
-            <p className="summary-row purchase-total"><span>Mleko po isporuci<small>{selectionLabel}</small></span><strong>{formatMoney(unitPrice * quantity)}</strong></p>
-            <p className="purchase-delivery-note">Dostava se obračunava u korpi. <a href="/dostava">Detalji dostave</a></p>
-            <button className="button" type="button" disabled={!product.available || !ready} onClick={addToCart}>{product.available ? (added ? "Dodato u korpu ✓" : "Dodaj u korpu →") : "Trenutno nije dostupno"}</button>
-            {added ? <div className="cart-added"><p role="status">Vaš izbor je u korpi.</p><Link className="button" href="/korpa">Nastavi na kupovinu →</Link></div> : null}
-          </div>
-          <p className="next-delivery">Sledeća dostava: <strong>{formatDate(delivery.deliveryDate)}</strong></p>
-          <p className="purchase-footnote">Izmene za sledeću dostavu do {cutoff} h.{purchaseType === "subscription" ? " Bez ugovorne obaveze." : ""}</p>
-        </section>
+        <div className="product-buy-column">
+          <ProductConfigurator
+            product={product}
+            delivery={delivery}
+            layout="panel"
+            onSelectionChange={(value) => {
+              addToCart.current = value.addToCart;
+              setSelection((current) =>
+                current.label === value.label &&
+                current.totalRsd === value.totalRsd &&
+                current.disabled === value.disabled
+                  ? current
+                  : { label: value.label, totalRsd: value.totalRsd, disabled: value.disabled },
+              );
+            }}
+          />
+          <div ref={sentinel} aria-hidden="true" />
+          <p className="next-delivery">
+            Sledeća dostava: <strong>{formatDate(delivery.deliveryDate)}</strong>
+          </p>
+          <p className="purchase-footnote">Izmene za tu dostavu moguće su do {cutoff} h.</p>
+        </div>
       </div>
 
-      <section className="product-story-section" aria-labelledby="opis-title"><div><p className="eyebrow">O proizvodu</p><h2 id="opis-title">Šta treba da znate.</h2></div><div><p className="lead">{product.description || product.shortDescription}</p></div></section>
+      <section className="product-story-section" aria-labelledby="opis-title">
+        <div>
+          <p className="eyebrow">O proizvodu</p>
+          <h2 id="opis-title">Šta treba da znaš.</h2>
+        </div>
+        <div>
+          <p className="lead">{product.description || product.shortDescription}</p>
+        </div>
+      </section>
 
-      {recommendations.length ? <section className="section cross-sell-section" aria-labelledby="cross-sell-title"><div className="section-heading split-heading"><div><p className="eyebrow">Još iz naše ponude</p><h2 id="cross-sell-title">Probajte i drugi ukus.</h2></div><a className="text-link" href="/prodavnica">Cela ponuda →</a></div><div className="product-grid">{recommendations.map((item) => <ProductCard key={item.id} product={item} />)}</div></section> : null}
+      {recommendations.length ? (
+        <section className="section cross-sell-section" aria-labelledby="cross-sell-title">
+          <div className="section-head">
+            <p className="eyebrow">Još iz naše ponude</p>
+            <h2 id="cross-sell-title">Probaj i drugi ukus.</h2>
+          </div>
+          <div className="offer-grid" data-count={recommendations.length}>
+            {recommendations.map((item) => (
+              <ProductConfigurator key={item.id} product={item} delivery={delivery} />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
-      <div className="mobile-buy-bar"><div><small>{selectionLabel}</small><strong>{formatMoney(unitPrice * quantity)}<span> + dostava</span></strong></div>{added ? <Link className="button" href="/korpa">Nastavi na kupovinu →</Link> : <button className="button" type="button" disabled={!product.available || !ready} onClick={addToCart}>{!product.available ? "Nedostupno" : "Dodaj u korpu"}</button>}</div>
+      <div className="buy-bar" data-visible={barVisible && !selection.disabled}>
+        <div className="buy-bar-info">
+          <small>{selection.label}</small>
+          <strong>{formatMoney(selection.totalRsd)}</strong>
+        </div>
+        <button
+          className="button"
+          type="button"
+          disabled={selection.disabled}
+          onClick={() => addToCart.current()}
+        >
+          Dodaj u korpu
+        </button>
+      </div>
     </div>
   );
 }

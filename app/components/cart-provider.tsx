@@ -20,9 +20,13 @@ type CartContextValue = {
   promoCode: string;
   setPromoCode: (value: string) => void;
   addItem: (item: Omit<CartItem, "key">) => void;
+  addItems: (items: Array<Omit<CartItem, "key">>) => void;
   updateItem: (key: string, changes: Partial<Omit<CartItem, "key">>) => void;
   removeItem: (key: string) => void;
   clearCart: () => void;
+  drawerOpen: boolean;
+  openDrawer: () => void;
+  closeDrawer: () => void;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -35,6 +39,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [promoCode, setPromoCodeState] = useState("");
   const [ready, setReady] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -77,19 +82,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setPromoCodeState(value.toUpperCase().replace(/\s+/g, "").slice(0, 40));
   }, []);
 
+  function mergeInto(current: CartItem[], newItem: Omit<CartItem, "key">) {
+    const key = itemKey(newItem);
+    const existing = current.find((item) => item.key === key);
+    if (existing) {
+      return current.map((item) =>
+        item.key === key
+          ? { ...item, quantity: item.quantity + newItem.quantity }
+          : item,
+      );
+    }
+    return [...current, { ...newItem, key }];
+  }
+
   const addItem = useCallback((newItem: Omit<CartItem, "key">) => {
-    setItems((current) => {
-      const key = itemKey(newItem);
-      const existing = current.find((item) => item.key === key);
-      if (existing) {
-        return current.map((item) =>
-          item.key === key
-            ? { ...item, quantity: item.quantity + newItem.quantity }
-            : item,
-        );
-      }
-      return [...current, { ...newItem, key }];
-    });
+    setItems((current) => mergeInto(current, newItem));
+  }, []);
+
+  /** Bundles add every line or none, so a half-added package can never reach the cart. */
+  const addItems = useCallback((newItems: Array<Omit<CartItem, "key">>) => {
+    if (!newItems.length) return;
+    setItems((current) => newItems.reduce(mergeInto, current));
   }, []);
 
   const updateItem = useCallback(
@@ -129,6 +142,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setPromoCodeState("");
   }, []);
 
+  const openDrawer = useCallback(() => setDrawerOpen(true), []);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+
   const value = useMemo(
     () => ({
       items,
@@ -137,11 +153,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
       promoCode,
       setPromoCode,
       addItem,
+      addItems,
       updateItem,
       removeItem,
       clearCart,
+      drawerOpen,
+      openDrawer,
+      closeDrawer,
     }),
-    [items, promoCode, ready, addItem, updateItem, removeItem, clearCart, setPromoCode],
+    [items, promoCode, ready, addItem, addItems, updateItem, removeItem, clearCart, setPromoCode, drawerOpen, openDrawer, closeDrawer],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

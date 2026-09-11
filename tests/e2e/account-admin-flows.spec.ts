@@ -102,17 +102,26 @@ test("admin product, promo and content edits persist and reach the storefront", 
   expect(await page.evaluate(() => window.localStorage.getItem("mleko-i-mleko-admin-secret"))).toBeNull();
 });
 
-test("mobile add button immediately offers checkout and keeps the selected quantity", async ({ page }) => {
+test("the mobile buy bar appears below the panel and keeps the selected quantity", async ({ page }) => {
   test.skip(page.viewportSize()!.width > 560, "Mobile purchase bar only");
   await page.goto("/proizvodi/sveze-kravlje-mleko-1l");
   const consent = page.getByRole("button", { name: "Samo neophodno" });
   if (await consent.isVisible()) await consent.click();
-  await page.getByRole("button", { name: "4 L", exact: true }).click();
-  await page.locator(".mobile-buy-bar").getByRole("button", { name: "Dodaj u korpu", exact: true }).click();
-  const proceed = page.locator(".mobile-buy-bar").getByRole("link", { name: "Nastavi na kupovinu →" });
-  await expect(proceed).toBeInViewport();
-  await page.screenshot({ path: "test-results/mobile-added-to-cart.png" });
-  await proceed.click();
+  const card = page.locator(".configurator").first();
+  await card.getByRole("button", { name: "4 L", exact: true }).click();
+
+  // The bar stays hidden while the real purchase button is still on screen.
+  await expect(page.locator('.buy-bar[data-visible="true"]')).toHaveCount(0);
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  const bar = page.locator(".buy-bar");
+  await expect(bar).toHaveAttribute("data-visible", "true");
+  await expect(bar).toContainText("4 L");
+  await expect(bar).toContainText("1.000");
+  await page.screenshot({ path: "test-results/mobile-buy-bar.png" });
+
+  await bar.getByRole("button", { name: "Dodaj u korpu" }).click();
+  await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "true");
+  await page.locator(".cart-drawer").getByRole("link", { name: "Otvori celu korpu" }).click();
   await expect(page.getByRole("spinbutton", { name: "Količina za Domaće kravlje mleko" })).toHaveValue("4");
   await page.reload();
   await expect(page.getByRole("spinbutton", { name: "Količina za Domaće kravlje mleko" })).toHaveValue("4");

@@ -1,24 +1,40 @@
 @import "tailwindcss";
 
+/* Redesign "Jutro počinje ovde." — palette from docs/OPUS-REDIZAJN-PLAN.md section 3.
+   Legacy variable names are kept and remapped so every existing route inherits the new brand. */
 :root {
-  --ink: #263e35;
-  --ink-soft: #50596a;
-  --forest: #2f7184;
-  --forest-dark: #353a4a;
-  --leaf: #dcecf0;
+  --milk: #f7f3e9;
+  --cobalt: #2146db;
+  --cobalt-dark: #1834ab;
+  --cobalt-wash: #e7ebfb;
+  --butter: #f2d36a;
+  --brand-teal: #2f7184;
+
+  --ink: #17251f;
+  --ink-soft: #40514a;
+  --forest: #2146db;
+  --forest-dark: #17251f;
+  --leaf: #e7ebfb;
   --cream: #f7f3e9;
+  --wash: #efe9db;
   --paper: #ffffff;
   --white: #ffffff;
-  --orange: #2f7184;
-  --orange-dark: #235a6a;
-  --yellow: #f5d981;
-  --line: #d5dfe2;
-  --muted: #596472;
+  --orange: #2146db;
+  --orange-dark: #1834ab;
+  --yellow: #f2d36a;
+  --line: #e0d8c6;
+  --muted: #58655d;
   --danger: #a33b33;
-  --success: #2e7184;
-  --shadow: 0 16px 40px rgba(53, 58, 74, 0.06);
+  --success: #1f6b4d;
+  --shadow: 0 18px 44px rgba(23, 37, 31, 0.08);
   --radius: 16px;
+  --control-radius: 12px;
+  --photo-radius: 20px;
+  --tap: 52px;
 }
+
+@media (min-width: 768px) { :root { --photo-radius: 24px; } }
+@media (min-width: 1200px) { :root { --photo-radius: 28px; } }
 
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }

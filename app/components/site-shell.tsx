@@ -17,10 +17,12 @@ export type HeaderSettings = {
 };
 
 export function SiteHeader({ settings }: { settings: HeaderSettings }) {
-  const { count, ready } = useCart();
+  const { count, ready, openDrawer, drawerOpen } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const isVideoAnnouncement = /(?:tiktok\.com|youtu\.?be)/i.test(settings.announcementUrl);
+  // Only one overlay is ever active: the cart takes precedence over the menu.
+  const menuVisible = menuOpen && !drawerOpen;
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -54,28 +56,27 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
             />
             <span className="brand-name">{settings.storeName}</span>
           </Link>
-          <nav id="glavna-navigacija" className={`main-nav ${menuOpen ? "is-open" : ""}`} aria-label="Glavna navigacija">
-            <a href="/prodavnica">Prodavnica</a>
-            <a href="/kako-funkcionise">Kako funkcioniše</a>
-            <a href="/farme">Naše farme</a>
-            <a className="nav-support" href="/faq">FAQ</a>
+          <nav id="glavna-navigacija" className={`main-nav ${menuVisible ? "is-open" : ""}`} aria-label="Glavna navigacija">
+            <a href="/prodavnica">Mleko</a>
+            <a href="/kako-funkcionise">Kako dostavljamo</a>
+            <a href="/farme">Naše poreklo</a>
+            <a className="nav-support" href="/faq">Česta pitanja</a>
             <a className="nav-support" href="/kontakt">Kontakt</a>
-            <a className="mobile-account" href="/nalog">Nalog</a>
+            <a className="mobile-account" href="/nalog">Moj nalog</a>
           </nav>
           <div className="header-actions">
-            <a className="header-shop" href="/prodavnica">Izaberi mleko ↗</a>
-            <a className="header-account" href="/nalog">Nalog</a>
-            <a className="cart-link" href="/korpa">
+            <a className="header-account" href="/nalog">Moj nalog</a>
+            <button className="cart-link" type="button" onClick={openDrawer} aria-label={ready && count > 0 ? `Korpa, ${count} jedinica` : "Korpa"}>
               Korpa
               {ready && count > 0 ? (
-                <span className="cart-count" aria-label={`${count} stavki u korpi`}>
+                <span className="cart-count" aria-hidden="true">
                   {count}
                 </span>
               ) : null}
-            </a>
+            </button>
           </div>
-          <button ref={menuButton} id="menu-toggle" className="mobile-menu-button" type="button" aria-label="Meni" aria-expanded={menuOpen} aria-controls="glavna-navigacija" onClick={() => setMenuOpen((current) => !current)}>
-            <span className={`menu-lines ${menuOpen ? "is-open" : ""}`} aria-hidden="true"><span /><span /></span>
+          <button ref={menuButton} id="menu-toggle" className="mobile-menu-button" type="button" aria-label="Meni" aria-expanded={menuVisible} aria-controls="glavna-navigacija" onClick={() => setMenuOpen((current) => !current)}>
+            <span className={`menu-lines ${menuVisible ? "is-open" : ""}`} aria-hidden="true"><span /><span /></span>
           </button>
         </div>
       </header>

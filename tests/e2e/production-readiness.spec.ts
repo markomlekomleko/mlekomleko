@@ -20,11 +20,10 @@ test("responsive navigation has no overflow and exposes every primary destinatio
     await page.waitForTimeout(300);
     await menu.click();
     await expect(menu).toHaveAttribute("aria-expanded", "true");
-    await expect(page.getByRole("navigation", { name: "Glavna navigacija" }).getByRole("link", { name: "Prodavnica" })).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Glavna navigacija" }).getByRole("link", { name: "Kako funkcioniše" })).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Glavna navigacija" }).getByRole("link", { name: "FAQ" })).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Glavna navigacija" }).getByRole("link", { name: "Kontakt" })).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Glavna navigacija" }).getByRole("link", { name: "Nalog" })).toBeVisible();
+    const nav = page.getByRole("navigation", { name: "Glavna navigacija" });
+    for (const label of ["Mleko", "Kako dostavljamo", "Naše poreklo", "Česta pitanja", "Kontakt", "Moj nalog"]) {
+      await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
+    }
   } else {
     await expect(page.getByRole("navigation", { name: "Glavna navigacija" })).toBeVisible();
   }
@@ -41,15 +40,16 @@ test("mixed cart checkout, magic-link login and subscription mutation work", asy
   const email = `e2e-${crypto.randomUUID()}@example.test`;
   await page.goto("/prodavnica");
   await acceptNecessary(page);
-  const cards = page.locator("article.product-card");
+  const cards = page.locator(".configurator");
   expect(await cards.count()).toBeGreaterThanOrEqual(2);
-  await cards.nth(0).getByRole("link", { name: "Izaberi količinu i ritam" }).click();
-  await page.getByRole("button", { name: "Dodaj u korpu →", exact: true }).click();
-  await page.goto("/prodavnica");
-  await page.locator("article.product-card").nth(1).getByRole("link", { name: "Izaberi količinu i ritam" }).click();
-  await page.getByRole("radio", { name: /Jednokratno/ }).check();
-  await page.getByRole("button", { name: "Dodaj u korpu →", exact: true }).click();
-  await page.locator(".cart-added").getByRole("link", { name: "Nastavi na kupovinu →" }).click();
+  await cards.nth(0).getByRole("button", { name: "Redovna dostava" }).click();
+  await cards.nth(0).locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
+  await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "true");
+  await page.keyboard.press("Escape");
+  await cards.nth(1).getByRole("button", { name: "Jednokratno" }).click();
+  await cards.nth(1).locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
+  await expect(page.locator(".drawer-item")).toHaveCount(2);
+  await page.locator(".cart-drawer").getByRole("link", { name: "Otvori celu korpu" }).click();
   await expect(page.getByText("Danas plaćate za ovaj mesec")).toBeVisible();
   await page.getByRole("link", { name: /Nastavi na podatke/ }).click();
   await page.getByLabel("Ime i prezime").fill("Fiktivni E2E Kupac");
@@ -157,24 +157,33 @@ test("public pages have no serious or critical automated accessibility findings"
 test("hero priorities remain visible and a custom milk selection survives the cart", async ({ page }) => {
   await page.goto("/");
   await acceptNecessary(page);
-  const viewport = page.viewportSize()!;
-  for (const target of [page.locator(".conversion-copy h1"), page.locator(".conversion-actions .button"), page.locator(".hero-price-list")]) {
-    const bounds = await target.boundingBox();
-    expect(bounds).not.toBeNull();
-    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height);
+  // Headline, description and the primary action are fully inside the first screen
+  // without waiting for media. toBeInViewport retries, so a poster settling into place
+  // cannot turn this into a flake.
+  for (const target of [
+    page.locator(".scene-intro h1"),
+    page.locator(".scene-lead"),
+    page.locator(".scene-actions .button"),
+  ]) {
+    await expect(target).toBeInViewport({ ratio: 1 });
   }
-  await expect(page.locator(".conversion-stage .milk-scene-poster img")).toBeAttached();
-  await page.getByRole("link", { name: "Pogledaj Domaće kravlje mleko", exact: true }).click();
-  await page.getByRole("button", { name: "4 L", exact: true }).click();
-  await expect(page.locator(".purchase-total")).toContainText("1.000");
-  await page.getByText("Druga količina", { exact: true }).click();
-  await page.getByRole("spinbutton", { name: "Količina", exact: true }).fill("3");
-  await page.getByLabel("Ritam dostave").selectOption("biweekly");
-  await expect(page.locator(".purchase-total")).toContainText("750");
-  if (viewport.width <= 560) await expect(page.locator(".mobile-buy-bar")).toContainText("3 L · svake 2 nedelje");
-  await page.getByRole("button", { name: "Dodaj u korpu →", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("Vaš izbor je u korpi");
-  await page.locator(".cart-added").getByRole("link", { name: "Nastavi na kupovinu →", exact: true }).click();
+  await expect(page.locator(".scene-poster img")).toBeAttached();
+
+  await page.locator(".scene-actions .button").click();
+  await expect(page.locator("#offer-title")).toBeInViewport();
+
+  const card = page.locator(".configurator").first();
+  await card.getByRole("button", { name: "4 L", exact: true }).click();
+  await expect(card.locator(".configurator-total")).toContainText("1.000");
+  await card.getByRole("button", { name: "Druga količina", exact: true }).click();
+  await card.getByRole("spinbutton").fill("3");
+  await card.getByRole("button", { name: "Redovna dostava" }).click();
+  await card.getByRole("button", { name: "Svake 2 nedelje" }).click();
+  await expect(card.locator(".configurator-total")).toContainText("750");
+  await card.locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
+
+  await expect(page.locator(".drawer-item-meta").first()).toContainText("3 L po dostavi · svake 2 nedelje");
+  await page.locator(".cart-drawer").getByRole("link", { name: "Otvori celu korpu" }).click();
   await expect(page.getByRole("spinbutton", { name: "Količina za Domaće kravlje mleko" })).toHaveValue("3");
   await expect(page.getByLabel("Ritam isporuke za Domaće kravlje mleko")).toHaveValue("biweekly");
   await expect(page.getByLabel("Tip kupovine za Domaće kravlje mleko")).toHaveValue("subscription");

@@ -14,5 +14,5 @@ export const metadata: Metadata = {
 export default async function StorePage() {
   const storefront = await getStorefront();
   const products = storefront.products.map(normalizeProduct);
-  return <StoreView initialProducts={products} />;
+  return <StoreView initialProducts={products} delivery={storefront.delivery} />;
 }

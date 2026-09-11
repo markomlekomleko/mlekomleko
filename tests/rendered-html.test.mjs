@@ -175,11 +175,11 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
   assert.match(html, /<html[^>]* lang="sr-Latn"[^>]*>/);
   assert.match(
     html,
-    /<title>Domaće kravlje i kozje mleko na vašoj adresi \| Mleko i Mleko<\/title>/,
+    /<title>Domaće kravlje i kozje mleko na tvojoj adresi \| Mleko i Mleko<\/title>/,
   );
-  assert.match(html, /<h1[^>]*>Pravo mleko\. Bez odlaska u nabavku\.<\/h1>/);
-  assert.match(html, /Jednom izaberite proizvode i ritam/);
-  assert.match(html, /Proverite sledeću dostavu/);
+  assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Jutro počinje ovde\.<\/h1>/);
+  assert.match(html, /Kravlje i kozje mleko u povratnim staklenim flašama/);
+  assert.match(html, /Izaberi svoje mleko/);
   assert.match(html, /href="\/prodavnica"/);
   assert.match(html, /href="\/nalog"/);
   assert.match(html, /<img[^>]+(?:src|srcSet)="[^"]*mleko-i-mleko-logo(?:\.|%2E)png/i);

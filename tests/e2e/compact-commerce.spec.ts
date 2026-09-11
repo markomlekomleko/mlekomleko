@@ -1,34 +1,58 @@
 import { expect, test } from "@playwright/test";
 
-test("product photography and purchase action fit the initial viewport", async ({ page }) => {
+async function acceptNecessary(page: import("@playwright/test").Page) {
+  const consent = page.getByRole("button", { name: "Samo neophodno" });
+  if (await consent.isVisible()) await consent.click();
+}
+
+test("the product page reaches price and purchase controls without a long scroll", async ({ page }) => {
   const width = page.viewportSize()!.width;
   await page.setViewportSize({ width, height: width >= 1000 ? 720 : 844 });
   await page.goto("/proizvodi/sveze-kravlje-mleko-1l");
-  const consent = page.getByRole("button", { name: "Samo neophodno" });
-  if (await consent.isVisible()) await consent.click();
-  const photograph = page.locator(".product-detail-media > img:visible").first();
+  await acceptNecessary(page);
+
+  const photograph = page.locator(".product-detail-media > img").first();
   const image = await photograph.boundingBox();
   expect(image!.y).toBeGreaterThan(0);
-  expect(image!.y + image!.height).toBeLessThan(page.viewportSize()!.height);
-  const button = width <= 760 ? page.locator(".mobile-buy-bar").getByRole("button", { name: "Dodaj u korpu", exact: true }) : page.locator(".purchase-summary > button:visible").first();
-  await expect(button).toBeEnabled();
-  const bounds = await button.boundingBox();
-  expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
-  await button.click();
+  expect(image!.height).toBeLessThan(page.viewportSize()!.height * 0.75);
+
+  // Price and the add button are within one short scroll of the top.
+  const price = await page.locator(".configurator-price strong").first().boundingBox();
+  expect(price!.y).toBeLessThan(page.viewportSize()!.height * 1.6);
+
+  const add = page.locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).first();
+  await expect(add).toBeEnabled();
+  await add.click();
+
+  await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "true");
+  await expect(page.locator(".drawer-item")).toHaveCount(1);
+  await expect(page.locator(".cart-drawer-foot .button")).toHaveAttribute("href", "/checkout");
+
+  await page.keyboard.press("Escape");
   await page.goto("/korpa");
   await expect(page.locator(".cart-item:visible")).toHaveCount(1);
-  await expect(page.getByRole("link", { name: "Nastavi na podatke za dostavu →" })).toHaveAttribute("href", "/checkout");
-  const cartItem = await page.locator(".cart-item:visible").boundingBox();
-  expect(cartItem!.height).toBeLessThan(width >= 900 ? 240 : 530);
+  await expect(page.getByRole("link", { name: "Nastavi na podatke za dostavu →" })).toHaveAttribute(
+    "href",
+    "/checkout",
+  );
 });
 
-test("shop photography stays compact and fully contained", async ({ page }) => {
+test("the shop offers every active product with its own buying controls", async ({ page }) => {
   await page.goto("/prodavnica");
-  const photos = page.locator(".product-card .product-image:visible");
-  await expect(photos).toHaveCount(2);
-  for (const photo of await photos.all()) {
-    const bounds = await photo.boundingBox();
-    expect(bounds!.height).toBeLessThanOrEqual(361);
-    await expect(photo.locator("img")).toHaveCSS("object-fit", "contain");
+  await acceptNecessary(page);
+  const cards = page.locator(".configurator");
+  await expect(cards).toHaveCount(2);
+  for (const card of await cards.all()) {
+    await expect(card.locator(".configurator-price strong")).toBeVisible();
+    await expect(card.getByRole("button", { name: "Jednokratno" })).toBeVisible();
+    await expect(card.locator(".configurator-actions button", { hasText: "Dodaj u korpu" })).toBeEnabled();
+    // The photograph must never push the price out of easy reach, whether it sits on
+    // top of the card or in the portrait column beside the controls.
+    const photo = (await card.locator(".configurator-media").boundingBox())!;
+    const price = (await card.locator(".configurator-price").boundingBox())!;
+    expect(price.y - photo.y).toBeLessThanOrEqual(page.viewportSize()!.height * 0.75);
   }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(
+    true,
+  );
 });

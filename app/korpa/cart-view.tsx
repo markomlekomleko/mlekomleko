@@ -25,8 +25,22 @@ export function CartView() {
   const [catalog, setCatalog] = useState<Product[]>([]);
   const viewTracked = useRef(false);
   const quoteKey = useMemo(() => JSON.stringify({ items: items.map((item) => ({ productId: item.productId, quantity: item.quantity, purchaseType: item.purchaseType, cadence: item.cadence })), promoCode }), [items, promoCode]);
-  const orderBump = quote?.recommendedAddons?.[0] ? normalizeProduct(quote.recommendedAddons[0]) : null;
-  const canSubscribeMore = items.some((item) => item.purchaseType === "one_time");
+  const orderBump = (() => {
+    for (const raw of quote?.recommendedAddons ?? []) {
+      const candidate = normalizeProduct(raw);
+      // One recommendation only, and never something already in the cart.
+      if (candidate.available && !items.some((item) => item.productId === candidate.id)) return candidate;
+    }
+    return null;
+  })();
+  // Only offer the switch when the catalog actually prices a subscription lower.
+  const canSubscribeMore = items.some(
+    (item) =>
+      item.purchaseType === "one_time" &&
+      (catalog.find((product) => product.id === item.productId)?.subscriptionPriceRsd ?? Infinity) <
+        item.unitPriceRsd,
+  );
+  const hasSubscriptionPeriods = quote?.lines.some((line) => line.occurrences > 1) ?? false;
 
   useEffect(() => {
     void fetchJson<{ products: unknown[] }>("/api/products").then((payload) => setCatalog(payload.products.map(normalizeProduct))).catch(() => setCatalog([]));
@@ -132,11 +146,13 @@ export function CartView() {
           {quote?.lines.map((line, index) => <div className="summary-row small-text" key={`${line.productId}-${index}`}><span>{line.quantity} × {line.productName}<br /><small className="muted">{line.purchaseType === "one_time" ? "Jednokratno" : `${cadenceLabel(line.cadence ?? undefined)} · ${formatMoney(line.unitPriceMinor * line.quantity / 100)} po dostavi`}{line.occurrences > 1 ? ` · ${line.occurrences} dostave ovog meseca` : ""}</small></span><strong>{formatMoney(line.lineTotalMinor / 100)}</strong></div>)}
           <form className="promo-form" onSubmit={applyPromo}><label className="field"><span>Promo kod</span><div className="input-action"><input value={promoInput} onChange={(event) => setPromoInput(event.target.value)} placeholder="DOBRODOSLI10" /><button className="button secondary small" type="submit">Primeni</button></div></label></form>
           {orderBump ? <div className="order-bump"><div><small>Najbolje uz vašu korpu</small><strong>＋ {orderBump.name}</strong><span>{formatMoney(orderBump.priceRsd)} / {orderBump.unit}</span></div><button type="button" onClick={() => addOrderBump(orderBump)}>Dodaj</button></div> : null}
-          {canSubscribeMore ? <button className="cart-upsell" type="button" onClick={subscribeEligibleItems}><strong>Uštedite uz redovan ritam</strong><span>Prebaci dostupne jednokratne proizvode na nedeljnu dostavu →</span></button> : null}
+          {canSubscribeMore ? <button className="cart-upsell" type="button" onClick={subscribeEligibleItems}><strong>Pređi na redovnu dostavu</strong><span>Prebaci jednokratne proizvode na nedeljni ritam po nižoj ceni →</span></button> : null}
           {promoNotice && !quoteError ? <p className="muted small-text">{quote?.discountMinor ? `Kod ${quote.promoCode} je primenjen.` : promoNotice}</p> : null}
           {quoteError ? <p className="notice error small-text" role="alert">{quoteError}</p> : null}
           {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Danas plaćate za ovaj mesec" : "Danas plaćate"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="delivery-summary">Sledeća dostava <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Izmene su moguće do {formatDate(quote.cutoffAt)}.</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
-          {quote && quote.freeDeliveryThresholdMinor > 0 ? <div className={`delivery-progress ${quote.freeDeliveryRemainingMinor === 0 ? "complete" : ""}`}><div className="summary-row"><strong>{quote.freeDeliveryRemainingMinor > 0 ? `Još ${formatMoney(quote.freeDeliveryRemainingMinor / 100)} do besplatne dostave` : "Otključali ste besplatnu dostavu ✓"}</strong><small>{formatMoney(quote.freeDeliveryThresholdMinor / 100)}</small></div><span><i style={{ width: `${Math.min(100, quote.subtotalMinor / quote.freeDeliveryThresholdMinor * 100)}%` }} /></span></div> : null}
+          {/* The server compares the threshold against the subtotal of the whole quote, which
+              can span several subscription deliveries, so the wording says "obračun" then. */}
+          {quote && quote.freeDeliveryThresholdMinor > 0 ? <div className={`delivery-progress ${quote.freeDeliveryRemainingMinor === 0 ? "complete" : ""}`}><div className="summary-row"><strong>{quote.freeDeliveryRemainingMinor > 0 ? (hasSubscriptionPeriods ? `Do besplatne dostave za ovaj obračun nedostaje ${formatMoney(quote.freeDeliveryRemainingMinor / 100)}` : `Do besplatne dostave nedostaje ${formatMoney(quote.freeDeliveryRemainingMinor / 100)}`) : quote.deliveryFeeMinor === 0 ? "Dostava za ovaj obračun je bez naknade." : "Proveravamo troškove dostave."}</strong><small>{formatMoney(quote.freeDeliveryThresholdMinor / 100)}</small></div><span><i style={{ width: `${Math.min(100, quote.subtotalMinor / quote.freeDeliveryThresholdMinor * 100)}%` }} /></span></div> : null}
           <a className={`button ${!quote ? "disabled-link" : ""}`} href={quote ? "/checkout" : "#"} onClick={(event) => { if (!quote) event.preventDefault(); else track("begin_checkout", { valueRsd: quote.totalMinor / 100, itemCount: items.length }); }}>Nastavi na podatke za dostavu →</a>
           <a className="button secondary" href="/prodavnica">Dodaj još proizvoda</a>
           <p className="secure-note">🔒 Tačan iznos proveravamo još jednom pre potvrde.</p>

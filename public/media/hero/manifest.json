@@ -1,0 +1,56 @@
+{
+  "status": "temporary",
+  "statusNote": "Razvojni materijal. Scena je generisana, a ambalaza je preuzeta iz 3D brend rendera public/images/3d/milk-bottles.png, ne iz potvrdjene fotografije fizicke flase. Pre finalnog objavljivanja potrebna je potvrda vlasnika ili zamena stvarnom fotografijom.",
+  "generatedAt": "2026-09-11",
+  "source": {
+    "tool": "Higgsfield",
+    "imageModel": "gpt_image_2",
+    "videoModel": "cinematic_studio_3_0",
+    "promptSource": "docs/HIGGSFIELD-PRODUKCIJSKI-BRIEF.md H07, H08, H09",
+    "packagingReference": "public/images/3d/milk-bottles.png",
+    "jobs": {
+      "refDesktopStart": "d35d1092-5931-4659-853b-a78cbd25dc65",
+      "refDesktopEnd": "a561ea59-cb5d-4307-acbc-83a1c86458bb",
+      "refMobileStart": "daf3e347-1d40-4f83-9ad6-fba9535e4d5c",
+      "refMobileEnd": "b8c0bd78-36a4-42c1-a048-df737826dad9",
+      "videoDesktopRejected": "5d65567a-c8b6-4216-81a3-8080bf2efb15",
+      "videoDesktopAccepted": "bed6a83c-9f5c-428f-a03e-1811a626dfc7",
+      "videoMobileAccepted": "a8283b4b-954c-42d9-8673-fca848b3c1c7"
+    },
+    "rejectionReason": "Prva desktop generacija je pokazala drugu flasu koja sipa mleko oko 2 s i zatim nestaje do 4 s. To je prekid kontinuiteta objekata po H11, pa je uradjena jedna ciljana izmena."
+  },
+  "desktop": {
+    "video": "/media/hero/hero-desktop.mp4",
+    "poster": "/media/hero/poster-desktop.webp",
+    "endFrame": "/media/hero/end-desktop.webp",
+    "width": 1440,
+    "height": 810,
+    "durationSeconds": 8.04,
+    "fps": 24,
+    "codec": "h264",
+    "audio": false,
+    "videoBytes": 2457157,
+    "posterBytes": 61666,
+    "endFrameBytes": 27108,
+    "masterResolution": "1920x1080"
+  },
+  "mobile": {
+    "video": "/media/hero/hero-mobile.mp4",
+    "poster": "/media/hero/poster-mobile.webp",
+    "endFrame": "/media/hero/end-mobile.webp",
+    "width": 720,
+    "height": 1280,
+    "durationSeconds": 8.04,
+    "fps": 24,
+    "codec": "h264",
+    "audio": false,
+    "videoBytes": 1524243,
+    "posterBytes": 28136,
+    "endFrameBytes": 21924,
+    "masterResolution": "1080x1920"
+  },
+  "encoding": {
+    "note": "Kljucni kadar na svakih 6 frejmova (0,25 s) radi trazenja pozicije pri skrolu, faststart, bez audio zapisa.",
+    "command": "ffmpeg -i <master> -an -vf scale=<w>:<h>:flags=lanczos -c:v libx264 -profile:v high -pix_fmt yuv420p -crf <26|27> -preset slow -g 6 -keyint_min 6 -sc_threshold 0 -tune fastdecode -movflags +faststart"
+  }
+}

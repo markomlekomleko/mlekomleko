@@ -237,20 +237,24 @@ test('Next renders the admin gate and real public product pages', async () => {
   assert.equal((await api('/api/products/nepostojeci-proizvod')).status, 404);
 });
 
-test('the redesigned homepage ships purchase navigation and a product fallback before WebGL', async () => {
+test('the redesigned homepage ships the headline, the poster and purchase navigation in the first HTML', async () => {
   const response = await fetch(origin + '/');
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /<h1[^>]*id="hero-title"/);
-  assert.match(html, /milk-scene-poster/);
-  assert.match(html, /class="header-shop" href="\/prodavnica"/);
+  // Nothing in the first screen may wait for the hero video to decode.
+  assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Jutro po/);
+  assert.match(html, /scene-poster/);
+  assert.match(html, /href="#izaberite-mleko"/);
+  assert.match(html, /Izaberi svoje mleko/);
   assert.match(html, /id="delivery-check-title"/);
   assert.match(html, /Da li moram da se pretplatim/);
-  for (const asset of ['/images/pastoral-morning.avif', '/images/demo/kravlje-mleko.avif', '/images/mleko-i-mleko-seal.webp']) {
+  for (const asset of ['/media/hero/poster-mobile.webp', '/media/hero/poster-desktop.webp', '/images/farma.webp']) {
     const image = await fetch(origin + asset);
     assert.equal(image.status, 200, asset);
     assert.match(image.headers.get('content-type'), /^image\//, asset);
   }
+  const video = await fetch(origin + '/media/hero/hero-desktop.mp4', { method: 'HEAD' });
+  assert.equal(video.status, 200);
 });
 
 test('subscription checkout, account login and versioned pause work with persistent data', async () => {

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist } from "next/font/google";
 import { CartProvider } from "./components/cart-provider";
+import { CartDrawer } from "./components/cart-drawer";
 import { AnalyticsProvider } from "./components/analytics-provider";
 import { SiteFooter, SiteHeader } from "./components/site-shell";
 import { absoluteUrl, canonicalUrl, getSiteUrl, serializeJsonLd } from "./lib/seo";
@@ -9,6 +10,7 @@ import "./globals.css";
 import "./storefront.css";
 import "./pastoral.css";
 import "./conversion.css";
+import "./redesign.css";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -102,6 +104,7 @@ export default async function RootLayout({
             <SiteHeader settings={settings} />
             <main id="glavni-sadrzaj">{children}</main>
             <SiteFooter storeName={settings.storeName} />
+            <CartDrawer />
           </CartProvider>
         </AnalyticsProvider>
       </body>

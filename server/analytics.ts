@@ -25,6 +25,10 @@ const eventNames = new Set([
   "subscription_converted",
   "add_to_next_delivery",
   "cart_recovery_saved",
+  // Offer exposure, introduced with the redesign. See docs/AOV-LTV-SPECIFIKACIJA.md G14:
+  // recorded once per offer and session when the block is actually visible.
+  "offer_viewed",
+  "offer_dismissed",
 ]);
 const forbiddenKey = /(email|phone|address|full.?name|first.?name|last.?name|postal.?code|note)/i;
 

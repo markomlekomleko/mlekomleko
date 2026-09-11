@@ -1,10 +1,16 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ProductCard } from "../components/product-card";
-import { type Product } from "../lib/frontend";
+import { ProductConfigurator } from "../components/product-configurator";
+import { type DeliveryWindow, type Product } from "../lib/frontend";
 
-export function StoreView({ initialProducts }: { initialProducts: Product[] }) {
+export function StoreView({
+  initialProducts,
+  delivery,
+}: {
+  initialProducts: Product[];
+  delivery: DeliveryWindow;
+}) {
   const products = initialProducts;
   const [category, setCategory] = useState("Sve");
 
@@ -14,27 +20,20 @@ export function StoreView({ initialProducts }: { initialProducts: Product[] }) {
   );
 
   const visibleProducts =
-    category === "Sve"
-      ? products
-      : products.filter((product) => product.category === category);
+    category === "Sve" ? products : products.filter((product) => product.category === category);
 
   return (
-    <div className="page-shell">
-      <header className="page-heading">
+    <div className="page-shell store-page">
+      <header className="section-head">
         <p className="eyebrow">Prodavnica</p>
-        <h1>Izaberite mleko i količinu.</h1>
-        <p className="lead">
-          Prvo pronađite svoj ukus. Količinu i ritam birate u sledećem koraku.
-        </p>
-        <div className="micro-proof"><span>Povratne staklene flaše</span><span>Jednokratna ili redovna dostava</span></div>
+        <h1>Izaberi svoje mleko</h1>
+        <p className="lead">Odaberi količinu i koliko često želiš dostavu.</p>
       </header>
 
       {products.length === 0 ? (
         <div className="empty-state">
           <h2>Ponuda je trenutno prazna</h2>
-          <p className="muted">
-            Proizvodi će se pojaviti čim budu dodati kroz administraciju.
-          </p>
+          <p className="muted">Proizvodi će se pojaviti čim budu dodati kroz administraciju.</p>
         </div>
       ) : (
         <>
@@ -56,9 +55,9 @@ export function StoreView({ initialProducts }: { initialProducts: Product[] }) {
           {visibleProducts.length === 0 ? (
             <p className="empty-state">Nema proizvoda u izabranoj kategoriji.</p>
           ) : (
-            <div className="product-grid">
+            <div className="offer-grid" data-count={visibleProducts.length}>
               {visibleProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductConfigurator key={product.id} product={product} delivery={delivery} />
               ))}
             </div>
           )}

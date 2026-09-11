@@ -308,6 +308,55 @@ export function formatDate(value: string | number | Date | undefined) {
   }).format(date);
 }
 
+/** Server-side `positiveInt(item.quantity, …, 100)` in server/commerce.ts is the real limit. */
+export const MAX_QUANTITY = 100;
+
+/**
+ * Litres per selling unit, when the catalog unit label states a volume.
+ * Returns null for units such as "500 g" or "kom" so nothing is ever labelled in
+ * litres that the catalog does not actually sell in litres.
+ */
+export function litresPerUnit(unit: string): number | null {
+  const match = /^\s*([\d]+(?:[.,][\d]+)?)\s*l\s*$/i.exec(unit);
+  if (!match) return null;
+  const value = Number(match[1].replace(",", "."));
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+/** "2 L" when a unit is one litre, otherwise "2 × 500 g" so the unit stays honest. */
+export function quantityLabel(quantity: number, unit: string) {
+  const litres = litresPerUnit(unit);
+  if (litres === 1) return `${quantity} L`;
+  if (litres) return `${Number((quantity * litres).toFixed(2))} L`;
+  return `${quantity} × ${unit}`;
+}
+
+/** Cut-off times carry a time of day, so never render them as a bare date. */
+export function formatDateTime(value: string | number | Date | undefined) {
+  if (!value) return "Nije zakazano";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return new Intl.DateTimeFormat("sr-Latn-RS", {
+    timeZone: "Europe/Belgrade",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+/** Serbian counts: 1 jedinica, 2–4 jedinice, 5+ jedinica, with the teens exception. */
+export function pluralUnits(count: number) {
+  const abs = Math.abs(count);
+  const last = abs % 10;
+  const lastTwo = abs % 100;
+  if (lastTwo >= 11 && lastTwo <= 14) return `${count} jedinica`;
+  if (last === 1) return `${count} jedinica`;
+  if (last >= 2 && last <= 4) return `${count} jedinice`;
+  return `${count} jedinica`;
+}
+
 export function cadenceLabel(value?: DeliveryCadence | string) {
   return value === "biweekly" ? "Svake 2 nedelje" : "Svake nedelje";
 }
