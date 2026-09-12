@@ -161,6 +161,10 @@ export function readIntegrationConfig(env = process.env) {
       ["EMAIL_PROVIDER", "EMAIL_API_KEY", "EMAIL_FROM"],
       "Transactional email provider",
     );
+    if (value(env, "EMAIL_PROVIDER") === "infobip") {
+      requireKeys(env, ["INFOBIP_BASE_URL"], "Infobip email");
+      requireHttps(value(env, "INFOBIP_BASE_URL"), "INFOBIP_BASE_URL");
+    }
   }
 
   const whatsappMode = choice(
@@ -175,6 +179,10 @@ export function readIntegrationConfig(env = process.env) {
       ["WHATSAPP_PROVIDER", "WHATSAPP_API_KEY", "WHATSAPP_SENDER_ID"],
       "WhatsApp provider",
     );
+    if (value(env, "WHATSAPP_PROVIDER") === "infobip") {
+      requireKeys(env, ["INFOBIP_BASE_URL", "WHATSAPP_AUTH_TEMPLATE", "WHATSAPP_TEMPLATE_LANGUAGE"], "Infobip WhatsApp");
+      requireHttps(value(env, "INFOBIP_BASE_URL"), "INFOBIP_BASE_URL");
+    }
   }
 
   return Object.freeze({

@@ -33,7 +33,7 @@ before(async () => {
   origin = `http://127.0.0.1:${port}`;
   const url = pathToFileURL(join(directory, 'test.sqlite')).href;
   const env = {
-    ...process.env, NODE_ENV: 'production', APP_ENV: 'local', VERCEL: '',
+    ...process.env, NODE_ENV: 'production', APP_ENV: 'local', AUTH_MODE: 'local', VERCEL: '',
     APP_ORIGIN: origin, NEXT_PUBLIC_SITE_URL: origin,
     TURSO_DATABASE_URL: url, TURSO_AUTH_TOKEN: '', DATABASE_URL: url,
     POSTGRES_URL: '', POSTGRES_PRISMA_URL: '', POSTGRES_URL_NON_POOLING: '', POSTGRES_SCHEMA: '',
@@ -266,10 +266,12 @@ test('subscription checkout, account login and versioned pause work with persist
       customer: { email, fullName: 'Test Pretplatnik', phone: '+381600000000', addressLine1: 'Test 2', city: 'Beograd', postalCode: '11000' } },
   });
   assert.equal(checkout.status, 201, JSON.stringify(checkout.body));
-  const link = await api('/api/auth/magic-link', { method: 'POST', body: { email } });
-  assert.equal(link.status, 202);
-  const login = await api('/api/auth/magic-link/exchange', { method: 'POST', body: { token: link.body.localDevelopment.token } });
+  const challenge = await api('/api/auth/register', { method: 'POST', body: { email, password: 'native-runtime-test-password' } });
+  assert.equal(challenge.status, 202, JSON.stringify(challenge.body));
+  const proof = { challengeId: challenge.body.challengeId, code: challenge.body.localDevelopment.code };
+  const login = await api('/api/auth/code/verify', { method: 'POST', body: proof });
   assert.equal(login.status, 200);
+  assert.equal((await api('/api/auth/code/verify', { method: 'POST', body: proof })).status, 401);
   const headers = { cookie: login.headers.get('set-cookie').split(';')[0], origin };
   const account = await api('/api/account', { headers });
   assert.equal(account.status, 200);

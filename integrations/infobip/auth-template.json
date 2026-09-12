@@ -1,0 +1,11 @@
+{
+  "name": "mm_login_code",
+  "language": "sr",
+  "category": "AUTHENTICATION",
+  "allowCategoryChange": false,
+  "structure": {
+    "body": { "addSecurityRecommendation": true },
+    "footer": { "codeExpirationMinutes": 5 },
+    "buttons": [{ "text": "Kopiraj kod", "otpType": "COPY_CODE" }]
+  }
+}

@@ -5,6 +5,7 @@ import { batch, first, run } from "./sql";
 import { enqueue } from "./outbox";
 import { processOutboxFor } from "./integration-jobs";
 import { enforceRateLimit } from "./rate-limit";
+import { emailConfigured } from "./messaging";
 
 interface AuthRow extends Record<string, unknown> {
   id: string;
@@ -56,10 +57,11 @@ export function assertSameOrigin(request: Request): void {
 }
 
 export async function issueMagicLink(rawEmail: unknown, request: Request): Promise<{ accepted: true; magicLink?: string; localDevelopment?: { url: string; token: string } }> {
+  assertDomain(!runtimeEnv().AUTH_MODE, "MAGIC_LINK_RETIRED", "Prijava sada koristi jednokratni kod. Otvorite stranicu za prijavu.", 410);
   const email = emailAddress(rawEmail);
   const runtime = env as Record<string, string | undefined>;
   const local = runtime.APP_ENV !== "production" && (["localhost", "127.0.0.1", "::1", "[::1]"].includes(new URL(request.url).hostname) || runtime.LOCAL_AUTH_EXPOSE_TOKEN === "true");
-  assertDomain(local || (runtime.EMAIL_MODE === "provider" && runtime.EMAIL_PROVIDER?.toLowerCase() === "resend" && runtime.EMAIL_API_KEY && runtime.EMAIL_FROM), "EMAIL_NOT_CONFIGURED", "Prijava emailom trenutno nije dostupna. Obratite nam se preko kontakt stranice.", 503);
+  assertDomain(local || emailConfigured(), "EMAIL_NOT_CONFIGURED", "Prijava emailom trenutno nije dostupna. Obratite nam se preko kontakt stranice.", 503);
   const token = randomToken();
   const tokenHash = await sha256(token);
   const customer = await first<CustomerRow>("SELECT id, email FROM customers WHERE email = ?", email);

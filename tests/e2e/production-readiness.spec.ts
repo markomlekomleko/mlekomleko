@@ -35,7 +35,7 @@ test("responsive navigation has no overflow and exposes every primary destinatio
   await testInfo.attach("viewport", { body: JSON.stringify(viewport), contentType: "application/json" });
 });
 
-test("mixed cart checkout, magic-link login and subscription mutation work", async ({ page }) => {
+test("mixed cart checkout, email registration and subscription mutation work", async ({ page }) => {
   test.setTimeout(90_000);
   const email = `e2e-${crypto.randomUUID()}@example.test`;
   await page.goto("/prodavnica");
@@ -63,18 +63,19 @@ test("mixed cart checkout, magic-link login and subscription mutation work", asy
   await expect(page.getByRole("heading", { name: "Hvala na porudžbini." })).toBeVisible();
 
   await page.goto("/prijava");
+  await page.getByRole("button", { name: "Napravi nalog", exact: true }).click();
   await page.getByLabel("Email adresa").fill(email);
-  await page.getByRole("button", { name: "Pošalji link za prijavu" }).click();
-  const magicLink = page.getByRole("link", { name: "otvorite generisani link" });
-  const magicHref = await magicLink.getAttribute("href");
-  const magicToken = new URL(magicHref!, page.url()).searchParams.get("token")!;
-  await magicLink.click();
-  await expect(page.getByRole("heading", { name: "Uspešno ste prijavljeni." })).toBeVisible();
+  await page.getByLabel("Lozinka", { exact: true }).fill("e2e-customer-password");
+  const challengeResponse = page.waitForResponse(response => response.url().endsWith("/api/auth/register") && response.request().method() === "POST");
+  await page.getByRole("button", { name: "Napravi nalog i pošalji kod" }).click();
+  const challenge = await (await challengeResponse).json();
+  await page.getByLabel("Šestocifreni kod").fill(challenge.localDevelopment.code);
+  await page.getByRole("button", { name: "Potvrdi kod", exact: true }).click();
+  await expect(page).toHaveURL(/\/nalog$/);
   expect(await page.evaluate(() => window.localStorage.getItem("mleko-i-mleko-session"))).toBeNull();
   expect(await page.evaluate(() => document.cookie)).not.toContain("mm_session");
-  const replay = await page.request.post("/api/auth/magic-link/exchange", { data: { token: magicToken } });
+  const replay = await page.request.post("/api/auth/code/verify", { headers: { origin: new URL(page.url()).origin }, data: { challengeId: challenge.challengeId, code: challenge.localDevelopment.code } });
   expect(replay.status()).toBe(401);
-  await page.getByRole("link", { name: "Otvori nalog" }).click();
   await expect(page.getByRole("heading", { name: /Zdravo, Fiktivni E2E Kupac/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Moje porudžbine" })).toBeVisible();
   await expect(page.locator(".account-orders > li")).toHaveCount(1);
@@ -131,12 +132,12 @@ test("mixed cart checkout, magic-link login and subscription mutation work", asy
 
 });
 
-test("magic-link requests are rate limited per identity", async ({ request }, testInfo) => {
+test("login code requests are rate limited per identity", async ({ request, baseURL }, testInfo) => {
   const email = `rate-${testInfo.project.name}-${crypto.randomUUID()}@example.test`;
-  for (let attempt = 1; attempt <= 4; attempt += 1) {
-    const response = await request.post("/api/auth/magic-link", { data: { email } });
-    expect(response.status()).toBe(attempt <= 3 ? 202 : 429);
-    if (attempt === 4) {
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const response = await request.post("/api/auth/code", { headers: { origin: baseURL! }, data: { email } });
+    expect(response.status()).toBe(attempt === 1 ? 202 : 429);
+    if (attempt === 2) {
       const body = await response.json();
       expect(body.error.code).toBe("RATE_LIMITED");
       expect(body.error.details.retryAfter).toBeGreaterThan(0);

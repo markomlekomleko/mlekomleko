@@ -65,6 +65,35 @@ export const customers = sqliteTable(
   (table) => [uniqueIndex("customers_email_unique").on(table.email)],
 );
 
+export const customerCredentials = sqliteTable("customer_credentials", {
+  customerId: text("customer_id").primaryKey().references(() => customers.id),
+  passwordHash: text("password_hash").notNull(),
+  emailVerifiedAt: text("email_verified_at").notNull(),
+  whatsappPhone: text("whatsapp_phone").unique(),
+  whatsappVerifiedAt: text("whatsapp_verified_at"),
+  whatsappConsentAt: text("whatsapp_consent_at"),
+  whatsappNotificationsAt: text("whatsapp_notifications_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const authChallenges = sqliteTable("auth_challenges", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull(),
+  customerId: text("customer_id").references(() => customers.id),
+  purpose: text("purpose", { enum: ["register", "login", "phone"] }).notNull(),
+  channel: text("channel", { enum: ["email", "whatsapp", "both"] }).notNull(),
+  phone: text("phone"),
+  passwordHash: text("password_hash"),
+  codeHash: text("code_hash").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  expiresAt: text("expires_at").notNull(),
+  usedAt: text("used_at"),
+  claimToken: text("claim_token"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, table => [index("auth_challenges_email_idx").on(table.email, table.purpose, table.expiresAt),
+  check("auth_challenges_purpose_check", sql`${table.purpose} IN ('register', 'login', 'phone')`),
+  check("auth_challenges_channel_check", sql`${table.channel} IN ('email', 'whatsapp', 'both')`)]);
+
 export const subscriptions = sqliteTable(
   "subscriptions",
   {

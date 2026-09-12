@@ -6,6 +6,7 @@ import { enqueueOnce } from "./outbox";
 import { all, batch, first, run } from "./sql";
 import { assertLocalDate } from "./time";
 import { sha256 } from "./crypto";
+import { sendEmailMessage, sendWhatsAppTemplate } from "./messaging";
 
 interface OutboxRow extends Record<string, unknown> {
   id: string; topic: string; aggregate_type: string; aggregate_id: string; payload_json: string;
@@ -64,16 +65,28 @@ async function sendEmail(row: OutboxRow, payload: Record<string, unknown>): Prom
     if (config.appEnvironment === "production") throw new IntegrationError("EMAIL_NOT_CONFIGURED", "Slanje emaila nije povezano. Podesite servis za transakcione poruke.");
     return `console:${row.id}`;
   }
-  if (String(config.integrations.email.provider).toLowerCase() !== "resend") throw new IntegrationError("EMAIL_PROVIDER_UNSUPPORTED", "Trenutno je podržan EMAIL_PROVIDER=resend.");
-  const current = runtimeEnv();
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { authorization: `Bearer ${current.EMAIL_API_KEY ?? ""}`, "content-type": "application/json", "idempotency-key": row.idempotency_key ?? row.id },
-    body: JSON.stringify({ from: current.EMAIL_FROM, to: [recipient], subject: message.subject, text: message.text, html: message.html }),
-  });
-  const body = await response.json().catch(() => ({})) as Record<string, unknown>;
-  if (!response.ok) throw new IntegrationError(`EMAIL_HTTP_${response.status}`, String(body.message ?? "Email provider je odbio poruku."));
-  return String(body.id ?? `resend:${row.id}`);
+  return sendEmailMessage(recipient, message, row.idempotency_key ?? row.id);
+}
+
+async function queueWhatsAppUpdate(row: OutboxRow) {
+  // Separate job: an email failure must not block WhatsApp, or cause an email resend.
+  const tables: Record<string, string> = { order: "orders", subscription: "subscriptions", delivery_order: "delivery_orders" };
+  const table = tables[row.aggregate_type];
+  if (!table || !runtimeEnv().WHATSAPP_UPDATE_TEMPLATE || runtimeEnv().WHATSAPP_MODE !== "provider") return;
+  if (!["email.order_confirmation.requested", "email.delivery_reminder.requested", "email.invoice.requested", "email.receipt.requested"].includes(row.topic) && !row.topic.startsWith("subscription.")) return;
+  const recipient = await first<Record<string, unknown>>(`SELECT a.customer_id FROM customer_credentials a JOIN ${table} x ON x.customer_id = a.customer_id
+    WHERE x.id = ? AND a.whatsapp_verified_at IS NOT NULL AND a.whatsapp_consent_at IS NOT NULL AND a.whatsapp_notifications_at IS NOT NULL`, row.aggregate_id);
+  if (!recipient) return;
+  await batch([enqueueOnce("whatsapp.account_update", row.aggregate_type, row.aggregate_id,
+    { sourceTopic: row.topic, customerId: recipient.customer_id }, `whatsapp:${row.id}`)]);
+}
+
+async function sendWhatsAppUpdate(row: OutboxRow, payload: Record<string, unknown>) {
+  // Recheck consent at send time so queued jobs cannot bypass an opt-out.
+  const recipient = await first<Record<string, unknown>>("SELECT whatsapp_phone FROM customer_credentials WHERE customer_id = ? AND whatsapp_verified_at IS NOT NULL AND whatsapp_consent_at IS NOT NULL AND whatsapp_notifications_at IS NOT NULL", String(payload.customerId ?? ""));
+  if (!recipient) return `suppressed:${row.id}`;
+  // Fixed utility template with a static /nalog button; no authentication token in the URL.
+  return sendWhatsAppTemplate(String(recipient.whatsapp_phone), runtimeEnv().WHATSAPP_UPDATE_TEMPLATE ?? "", [], row.id);
 }
 
 function integerEnv(name: keyof RuntimeEnv): number | null {
@@ -179,9 +192,13 @@ async function sendPurchaseAnalytics(row: OutboxRow, payload: Record<string, unk
 
 async function dispatch(row: OutboxRow): Promise<string> {
   const payload = JSON.parse(row.payload_json) as Record<string, unknown>;
+  if (row.topic === "whatsapp.account_update") return sendWhatsAppUpdate(row, payload);
   if (row.topic === "analytics.purchase") return sendPurchaseAnalytics(row, payload);
   if (row.topic === "fiscal.receipt.requested") return (await issueFiscalReceipt(row)).externalId;
-  if (isEmailTopic(row.topic)) return sendEmail(row, payload);
+  if (isEmailTopic(row.topic)) {
+    await queueWhatsAppUpdate(row);
+    return sendEmail(row, payload);
+  }
   return `internal:${row.topic}:${row.aggregate_id}`;
 }
 

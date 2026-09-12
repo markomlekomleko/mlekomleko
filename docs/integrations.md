@@ -77,7 +77,12 @@ Pre sandboxa potvrditi sa Badi podrškom:
 - idempotency očekivanje i lookup/reconciliation metod;
 - računovodstveno ispravan trenutak fiskalizacije pretplate.
 
-## Transakcioni email i WhatsApp-ready obaveštenja
+## Transakcioni email i WhatsApp obaveštenja
+
+Aktuelni tok registracije, prijave kodom i Infobip aktivacije opisan je u
+[infobip-setup.md](./infobip-setup.md). Podržani su Infobip email i WhatsApp adapteri;
+Resend ostaje alternativni email provider. Produkcija zahteva ključeve, potvrđene
+pošiljaoce i odobrene WhatsApp šablone. Sledeće beleške opisuju raniji MVP:
 
 Email je MVP kanal za magic link i sve potvrde iz brifa. Provider se bira kasnije;
 domen mora imati SPF, DKIM i DMARC pre produkcije. Svaka poruka nastaje iz outbox-a,
@@ -96,8 +101,8 @@ provider-specifičnog payload-a. Za buduću aktivaciju potrebno je:
 - pravila 24-hour customer service prozora;
 - delivery status webhook i suppression lista.
 
-Magic link ne slati preko WhatsApp-a dok sigurnosni i operativni tok nije posebno
-odobren. Email magic link je eksplicitni izbor za početak iz brifa.
+WhatsApp autentifikacija sada koristi jednokratne kodove, a dugmad u obaveštenjima
+običan link na `/nalog`. Magic link tokeni se ne šalju kroz WhatsApp.
 
 ## Spoke Route Planner CSV
 
