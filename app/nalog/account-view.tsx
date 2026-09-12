@@ -1,49 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  cadenceLabel,
-  ApiError,
-  fetchJson,
-  formatDate,
-  formatMoney,
-  normalizeProduct,
-  statusLabel,
-  unwrapList,
-  type DeliveryCadence,
-  type Product,
-} from "../lib/frontend";
+import { useCallback, useEffect, useState } from "react";
+import { ApiError, fetchJson, formatDate, formatMoney, normalizeProduct, statusLabel } from "../lib/frontend";
 import { useAnalytics } from "../components/analytics-provider";
 import { LoginSettings } from "./login-settings";
+import { SubscriptionCard, type Subscription } from "./subscription-card";
+import "./account.css";
 
 type Row = Record<string, unknown>;
-
+type Delivery = { id: string; date: string; status: string; items: { product_name: string; unit_label: string; quantity: number }[] };
 type AccountPayload = {
-  customer?: Row;
-  account?: Row;
-  nextDelivery?: Row;
-  next_delivery?: Row;
-  subscriptions?: unknown[];
-  orders?: unknown[];
-  addonProducts?: unknown[];
-  data?: unknown;
+  currentDate: string;
+  customer: { fullName: string; email: string; phone: string; addressLine1: string; addressLine2?: string; city: string; postalCode: string };
+  subscriptions: Subscription[]; orders: Row[]; addonProducts: Row[]; deliveryHistory: Delivery[];
+  oneTimeDeliveries: { date: string; items: { product_name: string; quantity: number; unit_label: string }[] }[];
 };
-
-function row(value: unknown): Row {
-  return value && typeof value === "object" ? value as Row : {};
-}
-
-function string(value: unknown, fallback = "-") {
-  return typeof value === "string" && value ? value : fallback;
-}
-
-function number(value: unknown, fallback = 1) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
-function idOf(value: Row) {
-  return string(value.id ?? value.subscriptionId ?? value.subscription_id);
+function label(value: unknown) { return typeof value === "string" ? value : ""; }
+function deliveryStatus(status: string) {
+  return ({ planned: "Zakazana", locked: "U pripremi", completed: "Isporučena", failed: "Dostava nije uspela", out_for_delivery: "Na putu", cancelled: "Otkazana", skipped: "Preskočena", delivered: "Isporučena" } as Record<string, string>)[status] ?? "Status se ažurira";
 }
 
 export function AccountView() {
@@ -53,291 +27,70 @@ export function AccountView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [busy, setBusy] = useState("");
-  const [cancellingId, setCancellingId] = useState("");
-  const [cancelReason, setCancelReason] = useState("too_frequent");
-
+  const [busy, setBusy] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState("all");
   const loadAccount = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const payload = await fetchJson<AccountPayload>("/api/account");
-      setAccount(payload);
-      setAuthenticated(true);
-    } catch (requestError) {
-      if (requestError instanceof ApiError && requestError.status === 401) {
-        setAuthenticated(false);
-        setAccount(null);
-      } else setError(requestError instanceof Error ? requestError.message : "Nalog trenutno nije moguće učitati.");
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true); setError("");
+    try { setAccount(await fetchJson<AccountPayload>("/api/account")); setAuthenticated(true); }
+    catch (requestError) {
+      if (requestError instanceof ApiError && requestError.status === 401) { setAuthenticated(false); setAccount(null); }
+      else setError(requestError instanceof Error ? requestError.message : "Nalog trenutno nije moguće učitati.");
+    } finally { setLoading(false); }
   }, []);
+  useEffect(() => { queueMicrotask(() => void loadAccount()); }, [loadAccount]);
 
-  useEffect(() => {
-    queueMicrotask(() => void loadAccount());
-  }, [loadAccount]);
-
-  const wrapper = useMemo(() => row(account?.data), [account]);
-  const customer = row(account?.customer ?? account?.account ?? wrapper.customer);
-  const subscriptions = unwrapList(account ?? {}, ["subscriptions"]).map(row);
-  const orders = unwrapList(account ?? {}, ["orders"]).map(row);
-  const addonProducts: Product[] = unwrapList(account ?? {}, ["addonProducts", "addon_products"]).map(normalizeProduct);
-  const derivedNextSubscription = subscriptions
-    .filter((subscription) => string(subscription.status, "active") === "active")
-    .sort((a, b) => string(a.nextDeliveryDate ?? a.next_delivery_date, "9999").localeCompare(string(b.nextDeliveryDate ?? b.next_delivery_date, "9999")))[0];
-  const nextDelivery = row(
-    account?.nextDelivery ??
-    account?.next_delivery ??
-    wrapper.nextDelivery ??
-    wrapper.next_delivery ??
-    (derivedNextSubscription
-      ? {
-          date: derivedNextSubscription.nextDeliveryDate ?? derivedNextSubscription.next_delivery_date,
-          items: unwrapList(derivedNextSubscription, ["items"]).map(row).filter((item) => string(item.status, "active") === "active"),
-        }
-      : undefined),
-  );
-  const nextItems = unwrapList(nextDelivery, ["items", "products"]).map(row);
-
-  async function mutate(subscriptionId: string, action: string, details: Row = {}) {
-    const current = subscriptions.find((subscription) => idOf(subscription) === subscriptionId);
-    if (!current) return;
-    setBusy(`${subscriptionId}:${action}`);
-    setError("");
-    setNotice("");
+  async function mutate(id: string, action: string, details: Row = {}) {
+    const current = account?.subscriptions.find(sub => sub.id === id);
+    if (!current || busy) return false;
+    setBusy(true); setError(""); setNotice("");
     try {
-      await fetchJson(`/api/account/subscriptions/${encodeURIComponent(subscriptionId)}`, {
-        method: "PATCH",
-        headers: { "Idempotency-Key": window.crypto.randomUUID() },
-        body: JSON.stringify({ action, expectedVersion: number(current.version, 0), ...details }),
+      const result = await fetchJson<{ account: AccountPayload; adjustmentMinor: number }>(`/api/account/subscriptions/${encodeURIComponent(id)}`, {
+        method: "PATCH", headers: { "Idempotency-Key": window.crypto.randomUUID() },
+        body: JSON.stringify({ action, expectedVersion: current.version, ...details }),
       });
-      if (action === "cancel") setCancellingId("");
-      setNotice("Izmena je sačuvana. Sledeća dostava je ažurirana ako rok nije istekao.");
-      if (action === "add_next_only") track("add_to_next_delivery", { subscriptionId, productId: string(details.productId, "") });
-      if (["skip_next", "slow_down", "pause"].includes(action) && cancellingId === subscriptionId) {
-        track("subscription_saved", { subscriptionId, action });
-        setCancellingId("");
+      setAccount(result.account);
+      const updated = result.account.subscriptions.find(sub => sub.id === id);
+      const date = formatDate(updated?.nextDeliveryDate);
+      let message = updated?.status === "cancelled" ? "Pretplata je otkazana. Redovne dostave više nisu zakazane." : action === "skip_next" ? `Dostava je preskočena. Sledeća redovna dostava: ${date}.` : action === "pause" ? `Dostave su pauzirane. Automatski se nastavljaju od ${date}.` : action === "resume" ? `Pretplata je ponovo aktivna. Sledeća redovna dostava: ${date}.` : action === "add_next_only" ? `Proizvod je dodat samo dostavi za ${date}.` : `Izmena je sačuvana. Novi izbor važi za naredne redovne dostave, od ${date}, prema ritmu svakog proizvoda.`;
+      if (result.adjustmentMinor > 0) message += ` Odobreno za naredni obračun: ${formatMoney(result.adjustmentMinor / 100)}.`;
+      if (result.adjustmentMinor < 0) message += ` Doplata u obračunu: ${formatMoney(-result.adjustmentMinor / 100)}.`;
+      setNotice(message);
+      if (action === "add_next_only") track("add_to_next_delivery", { subscriptionId: id, productId: label(details.productId) });
+      return true;
+    } catch (requestError) {
+      // Refresh stale versions without replacing the page or erasing the error.
+      if (requestError instanceof ApiError && requestError.status === 409) {
+        try { setAccount(await fetchJson<AccountPayload>("/api/account")); } catch { /* Keep the last loaded account available for retry. */ }
       }
-      await loadAccount();
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Izmena nije sačuvana.");
-      if (requestError instanceof ApiError && requestError.status === 409) await loadAccount();
-    } finally {
-      setBusy("");
-    }
+      if (requestError instanceof ApiError && requestError.status === 401) setAuthenticated(false);
+      setError(requestError instanceof ApiError && requestError.code === "DELIVERY_LOCKED" ? "Rok za izmenu ove dostave je istekao. Za pomoć nam se javite preko kontakta." : requestError instanceof Error ? requestError.message : "Izmena nije sačuvana. Pokušajte ponovo.");
+      return false;
+    } finally { setBusy(false); }
   }
-
-  function pauseDate(subscription: Row) {
-    const base = new Date(string(subscription.nextDeliveryDate ?? subscription.next_delivery_date, new Date().toISOString()));
-    base.setDate(base.getDate() + 35);
-    return base.toISOString().slice(0, 10);
-  }
-
   async function signOut() {
-    setError("");
-    try {
-      await fetchJson("/api/auth/logout", { method: "POST" });
-      setAuthenticated(false);
-      setAccount(null);
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Odjava nije uspela. Pokušajte ponovo.");
-    }
+    try { await fetchJson("/api/auth/logout", { method: "POST" }); setAuthenticated(false); setAccount(null); }
+    catch { setError("Odjava nije uspela. Pokušajte ponovo."); }
   }
-
-  if (loading) {
-    return <div className="page-shell"><p className="loading-state" role="status">Učitavamo vaš nalog…</p></div>;
-  }
-
-  if (!authenticated) {
-    return (
-      <div className="page-shell narrow">
-        <div className="empty-state">
-          <p className="eyebrow">Korisnički nalog</p>
-          <h1>Prijavite se bez lozinke.</h1>
-          <p className="lead">Prijavite se jednokratnim kodom putem emaila ili potvrđenog WhatsApp broja.</p>
-          <a className="button" href="/prijava">Prijavi se ili napravi nalog</a>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !account) {
-    return (
-      <div className="page-shell narrow">
-        <div className="notice error" role="alert">
-          <h1>Nalog nije učitan.</h1>
-          <p>{error}</p>
-          <div className="button-row">
-            <button className="button secondary" type="button" onClick={() => void loadAccount()}>Pokušaj ponovo</button>
-            <button className="button danger" type="button" onClick={() => void signOut()}>Odjavi ovaj uređaj</button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="page-shell">
-      <header className="page-heading">
-        <p className="eyebrow">Korisnički nalog</p>
-        <h1>Zdravo, {string(customer.fullName ?? customer.full_name ?? customer.name, "kupče")}.</h1>
-        <div className="button-row">
-          <a className="button secondary small" href="/prodavnica">Dodaj proizvod</a>
-          <button className="button danger small" type="button" onClick={() => void signOut()}>Odjavi se</button>
-        </div>
-      </header>
-
-      {notice ? <p className="notice success" role="status">{notice}</p> : null}
-      {error ? <p className="notice error" role="alert">{error}</p> : null}
-
-      <div className="account-layout" style={{ marginTop: "1rem" }}>
-        <div className="form-stack">
-          <LoginSettings />
-          <section className="card" aria-labelledby="orders-title">
-            <h2 id="orders-title">Moje porudžbine</h2>
-            {orders.length ? <ul className="list-clean account-orders">{orders.map((order) => <li key={idOf(order)}>
-              <div className="summary-row"><strong>{string(order.order_number ?? order.orderNumber)}</strong><strong>{formatMoney(number(order.total_minor ?? order.totalMinor, 0) / 100)}</strong></div>
-              <p>Dostava: {formatDate(string(order.delivery_date ?? order.deliveryDate, ""))}</p>
-              <div className="button-row"><span className="tag">Plaćanje: {statusLabel(string(order.payment_status ?? order.paymentStatus))}</span><span className="tag">Dostava: {statusLabel(string(order.fulfillment_status ?? order.fulfillmentStatus))}</span></div>
-            </li>)}</ul> : <p className="muted">Još nema porudžbina.</p>}
-          </section>
-          <section className="card" aria-labelledby="sledeca-title">
-            <p className="eyebrow">Sledeća dostava</p>
-            <h2 id="sledeca-title">
-              {nextDelivery.date || nextDelivery.deliveryDate || nextDelivery.delivery_date ? formatDate(string(nextDelivery.date ?? nextDelivery.deliveryDate ?? nextDelivery.delivery_date)) : "Nema zakazane redovne dostave"}
-            </h2>
-            <p className="muted">
-              Izmene su moguće do roka koji važi za ovaj termin dostave.
-            </p>
-            {nextDelivery.locked === true ? (
-              <p className="notice">Ova dostava je zaključana i više se ne može menjati.</p>
-            ) : null}
-            {nextItems.length === 0 ? (
-              <p className="empty-state">Nema planiranih proizvoda za sledeću dostavu.</p>
-            ) : (
-              <ul className="list-clean">
-                {nextItems.map((item, index) => (
-                  <li className="summary-row" key={string(item.id, String(index))}>
-                    <span>{string(item.name ?? item.productName ?? item.product_name)}</span>
-                    <strong>{number(item.quantity)} × {string(item.unit ?? item.unitLabel ?? item.unit_label, "kom")}</strong>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          <section aria-labelledby="pretplate-title">
-            <h2 id="pretplate-title">Pretplate</h2>
-            {subscriptions.length === 0 ? (
-              <div className="empty-state">
-                <p>Nemate aktivne ili prethodne pretplate.</p>
-                <a className="button small" href="/prodavnica">Izaberite proizvode</a>
-              </div>
-            ) : (
-              <div className="form-stack">
-                {subscriptions.map((subscription) => {
-                  const subscriptionId = idOf(subscription);
-                  const items = unwrapList(subscription, ["items", "products"]).map(row).filter((item) => string(item.status, "active") === "active");
-                  const status = string(subscription.status, "active");
-                  const disabled = Boolean(busy) || status !== "active";
-                  return (
-                    <article className="card form-stack" key={subscriptionId}>
-                      <div className="summary-row">
-                        <div>
-                          <span className="tag">{statusLabel(status)}</span>
-                          <h3 style={{ marginTop: "0.7rem" }}>Pretplata {subscriptionId}</h3>
-                        </div>
-                        <strong>{cadenceLabel(string(subscription.cadence ?? subscription.frequency, "weekly"))}</strong>
-                      </div>
-                      {items.length > 0 ? (
-                        <ul className="list-clean">
-                          {items.map((item, index) => {
-                            const itemId = string(item.id ?? item.subscriptionItemId ?? item.subscription_item_id, String(index));
-                            return (
-                              <li className="inline-controls" key={itemId}>
-                                <span style={{ minWidth: "160px", flex: 1 }}>{string(item.name ?? item.productName ?? item.product_name)}</span>
-                                <label className="field" style={{ width: "100px" }}>
-                                  <span>Količina</span>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    defaultValue={number(item.quantity)}
-                                    disabled={disabled}
-                                    aria-label={`Količina za ${string(item.name ?? item.productName)}`}
-                                    onBlur={(event) => {
-                                      const quantity = Math.max(1, Number(event.target.value) || 1);
-                                      if (quantity !== number(item.quantity)) {
-                                        void mutate(subscriptionId, "update_item", { itemId, quantity });
-                                      }
-                                    }}
-                                  />
-                                </label>
-                                <label className="field" style={{ width: "180px" }}>
-                                  <span>Ritam</span>
-                                  <select
-                                    defaultValue={string(item.cadence ?? item.frequency, "weekly")}
-                                    disabled={disabled}
-                                    aria-label={`Ritam za ${string(item.name ?? item.productName)}`}
-                                    onChange={(event) => void mutate(subscriptionId, "update_item", { itemId, cadence: event.target.value as DeliveryCadence })}
-                                  >
-                                    <option value="weekly">Svake nedelje</option>
-                                    <option value="biweekly">Svake 2 nedelje</option>
-                                  </select>
-                                </label>
-                                <button className="button danger small" type="button" disabled={disabled} onClick={() => mutate(subscriptionId, "remove_item", { itemId })}>Ukloni</button>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      ) : null}
-                      {unwrapList(subscription, ["nextOnlyAddons", "next_only_addons"]).length ? <div className="next-addon-summary"><strong>Dodato samo sledećoj dostavi</strong>{unwrapList(subscription, ["nextOnlyAddons", "next_only_addons"]).map(row).map((addon, index) => <span key={string(addon.id, String(index))}>{number(addon.quantity)}× {string(addon.product_name ?? addon.productName)} · {formatMoney(number(addon.unit_price_minor ?? addon.unitPriceMinor, 0) * number(addon.quantity) / 100)} · {statusLabel(string(addon.payment_status, "pending"))}</span>)}</div> : null}
-                      {status === "active" && addonProducts.length ? <section className="next-addon-picker" aria-label="Dodajte sledećoj dostavi"><div><p className="eyebrow">Bez nove dostave</p><h3>Dodajte samo sledećoj dostavi</h3></div><div>{addonProducts.slice(0, 3).map((product) => <button type="button" disabled={disabled} key={product.id} onClick={() => void mutate(subscriptionId, "add_next_only", { productId: product.id, quantity: 1 })}><span><strong>{product.name}</strong><small>{product.unit}</small></span><b>＋ {formatMoney(product.priceRsd)}</b></button>)}</div></section> : null}
-                      <div className="inline-controls">
-                        <button className="button secondary small" type="button" disabled={disabled} onClick={() => mutate(subscriptionId, "skip_next")}>Preskoči sledeću</button>
-                        {status === "paused" ? (
-                          <button className="button secondary small" type="button" disabled={Boolean(busy)} onClick={() => mutate(subscriptionId, "resume")}>Nastavi pretplatu</button>
-                        ) : (
-                          <label className="field">
-                            <span>Pauziraj do</span>
-                            <input
-                              type="date"
-                              disabled={disabled}
-                              min={new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Belgrade" }).format(new Date())}
-                              onChange={(event) => event.target.value && void mutate(subscriptionId, "pause", { pauseUntil: event.target.value })}
-                            />
-                          </label>
-                        )}
-                        <button className="button danger small" type="button" disabled={Boolean(busy) || status === "cancelled" || status === "canceled"} onClick={() => { setCancellingId(subscriptionId); track("subscription_cancel_started", { subscriptionId }); }}>Razmišljam o otkazivanju</button>
-                      </div>
-                      {cancellingId === subscriptionId ? <section className="cancel-saver" aria-labelledby={`cancel-${subscriptionId}`}><div><p className="eyebrow">Pre nego što odete</p><h3 id={`cancel-${subscriptionId}`}>Šta bi vam više odgovaralo?</h3><p>Izaberite lakšu opciju ili nastavite na trajno otkazivanje. Nema skrivenih koraka.</p></div><div className="cancel-save-grid"><button className="button secondary small" type="button" onClick={() => void mutate(subscriptionId, "skip_next")}>Preskoči samo sledeću</button><button className="button secondary small" type="button" onClick={() => void mutate(subscriptionId, "slow_down")}>Prebaci sve na 2 nedelje</button><button className="button secondary small" type="button" onClick={() => void mutate(subscriptionId, "pause", { pauseUntil: pauseDate(subscription) })}>Pauziraj oko mesec dana</button></div><label className="field"><span>Zašto želite da otkažete?</span><select value={cancelReason} onChange={(event) => setCancelReason(event.target.value)}><option value="too_frequent">Prečesto stiže</option><option value="too_expensive">Preskupo mi je</option><option value="too_much_product">Ostaje mi proizvoda</option><option value="delivery_issue">Problem sa dostavom</option><option value="quality_issue">Problem sa kvalitetom</option><option value="other">Drugi razlog</option></select></label><div className="inline-controls"><button className="text-button danger-text" type="button" onClick={() => void mutate(subscriptionId, "cancel", { reason: cancelReason })}>Ipak trajno otkaži</button><button className="text-button" type="button" onClick={() => setCancellingId("")}>Zadrži pretplatu</button></div></section> : null}
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </section>
-        </div>
-
-        <aside className="card" style={{ alignSelf: "start" }}>
-          <h2>Podaci</h2>
-          <dl>
-            <dt className="muted small-text">Email</dt>
-            <dd>{string(customer.email)}</dd>
-            <dt className="muted small-text">Telefon</dt>
-            <dd>{string(customer.phone)}</dd>
-            <dt className="muted small-text">Adresa</dt>
-            <dd>{[
-              customer.addressLine1 ?? customer.address_line_1,
-              customer.addressLine2 ?? customer.address_line_2,
-              customer.postalCode ?? customer.postal_code,
-              customer.city,
-            ].filter(Boolean).join(", ") || string(customer.address ?? customer.deliveryAddress ?? customer.delivery_address)}</dd>
-          </dl>
-          <p className="muted small-text">Za promenu kontakt podataka javite nam se putem kontakt stranice.</p>
-          <a className="button secondary small" href="/kontakt">Kontakt</a>
-        </aside>
-      </div>
-    </div>
-  );
+  if (loading) return <div className="page-shell"><p className="loading-state" role="status">Učitavamo vaš nalog…</p></div>;
+  if (!authenticated) return <div className="page-shell narrow"><div className="empty-state"><p className="eyebrow">Korisnički nalog</p><h1>Prijavite se bez lozinke.</h1><p className="lead">Prijavite se jednokratnim kodom putem emaila ili potvrđenog WhatsApp broja.</p><a className="button" href="/prijava">Prijavi se ili napravi nalog</a></div></div>;
+  if (!account) return <div className="page-shell narrow"><div className="notice error" role="alert"><h1>Nalog nije učitan.</h1><p>{error}</p><button className="button secondary" onClick={() => void loadAccount()}>Pokušaj ponovo</button></div></div>;
+  const { customer } = account;
+  const subscriptions = [...account.subscriptions].sort((a, b) => Number(a.status === "cancelled") - Number(b.status === "cancelled") || a.nextDeliveryDate.localeCompare(b.nextDeliveryDate));
+  const history = (account.deliveryHistory ?? []).filter(delivery => historyFilter === "all" || (historyFilter === "delivered" ? ["delivered", "completed"].includes(delivery.status) : delivery.status === "skipped"));
+  return <div className="page-shell account-dashboard">
+    <header className="account-welcome"><div><p className="eyebrow">Moj nalog</p><h1>Zdravo, {customer.fullName || "kupče"}.</h1><p>Vaše mleko, u ritmu koji vam odgovara.</p></div><a className="button secondary small" href="/prodavnica">Dodaj proizvod</a></header>
+    <nav className="account-nav" aria-label="Navigacija naloga"><a href="#moje-dostave">Moje dostave</a><a href="#istorija-dostava">Istorija dostava</a><a href="#podesavanja-naloga">Podešavanja</a></nav>
+    <div className="account-feedback">{notice && <p className="notice success" role="status">{notice}</p>}{error && <p className="notice error" role="alert">{error}</p>}</div>
+    <div className="account-main-grid"><div className="form-stack" id="moje-dostave">
+      {(account.deliveryHistory ?? []).filter(delivery => delivery.status === "locked" && delivery.date >= account.currentDate).map(delivery => <section className="card" key={delivery.id}><p className="eyebrow">Dostava u pripremi</p><h2>{formatDate(delivery.date)}</h2><p>Ova dostava je već zaključana. Izmene redovne dostave ispod važe za naredne termine.</p><ul className="list-clean">{delivery.items.map((item, index) => <li key={index}>{item.quantity} × {item.product_name} · {item.unit_label}</li>)}</ul></section>)}
+      {subscriptions.length ? subscriptions.map((sub, index) => <SubscriptionCard key={sub.id} subscription={sub} products={account.addonProducts.map(normalizeProduct)} busy={busy} mutate={mutate} index={index} />) : <section className="card"><h2>Još nemate redovnu dostavu.</h2><p>Izaberite mleko, količinu i koliko često želite da stiže.</p><a className="button" href="/prodavnica">Izaberi mleko</a></section>}
+      {(account.oneTimeDeliveries ?? []).map(delivery => <section className="card" key={delivery.date}><p className="eyebrow">Naručeno jednokratno</p><h2>{formatDate(delivery.date)}</h2><ul className="list-clean">{delivery.items.map((item, index) => <li key={index}>{item.quantity} × {item.product_name} · {item.unit_label}</li>)}</ul><p className="small-text">Ovi proizvodi nisu deo redovne dostave. Pauza ili preskakanje pretplate ih ne pomera. Za izmenu <a href="/kontakt">javite nam se</a>.</p></section>)}
+      <section className="card account-history" id="istorija-dostava" aria-labelledby="history-title"><div className="account-section-heading"><div><p className="eyebrow">Sve na jednom mestu</p><h2 id="history-title">Istorija dostava</h2></div><label className="field"><span>Prikaži</span><select aria-label="Prikaži" value={historyFilter} onChange={event => setHistoryFilter(event.target.value)}><option value="all">Sve dostave</option><option value="delivered">Isporučene</option><option value="skipped">Preskočene</option></select></label></div>
+        {history.length ? <ul className="list-clean account-timeline">{history.map(delivery => <li key={delivery.id}><div className="account-history-title"><strong>{formatDate(delivery.date)}</strong><span className="account-status">{deliveryStatus(delivery.status)}</span></div>{delivery.items.length ? <ul className="list-clean">{delivery.items.map((item, index) => <li key={index}>{item.quantity} × {item.product_name} · {item.unit_label}</li>)}</ul> : <p>{delivery.status === "skipped" ? "Ovaj termin ste preskočili." : "Detalji dostave još nisu dostupni."}</p>}</li>)}</ul> : <div className="account-empty"><strong>{historyFilter === "all" ? "Ovde će se pojaviti vaše dostave." : "Još nema dostava u ovom prikazu."}</strong><p>Datum, proizvodi i status prikazuju se kada dostava bude evidentirana. Račune i naručene proizvode pratite u porudžbinama ispod.</p></div>}
+        <p className="small-text muted">Prikazujemo poslednjih 50 evidentiranih dostava i preskakanja.</p>
+      </section>
+      <details className="card account-orders-panel"><summary>Moje porudžbine <span>{account.orders.length}</span></summary><p>Mesečni obračuni i jednokratne kupovine. Jedna mesečna porudžbina može obuhvatiti više dostava.</p><ul className="list-clean account-orders">{account.orders.map(order => <li key={label(order.id)}><div className="summary-row"><strong>{label(order.order_number)}</strong><strong>{formatMoney(Number(order.total_minor) / 100)}</strong></div><p>{order.kind === "subscription_invoice" ? "Početak obračunatog perioda" : "Termin dostave"}: {formatDate(label(order.delivery_date))}</p><p>Plaćanje: {statusLabel(label(order.payment_status))} · {deliveryStatus(label(order.fulfillment_status))}</p></li>)}</ul>{!account.orders.length && <p>Još nema porudžbina.</p>}</details>
+    </div><aside className="account-side"><section className="card"><p className="eyebrow">Stižemo na adresu</p><h2>{customer.addressLine1 || "Adresa za dostavu"}</h2><p>{[customer.addressLine2, customer.postalCode, customer.city].filter(Boolean).join(", ")}</p><p className="small-text">Promenu adrese ili dogovor oko dostave rešavamo preko kontakta.</p><a href="/kontakt">Javite nam se →</a></section><section className="account-help"><h3>Šta vam danas odgovara?</h3><p><strong>Treba vam više ili manje?</strong><br />Podesite količinu sa − / + i sačuvajte.</p><p><strong>Imate još mleka?</strong><br />Preskočite samo sledeći termin.</p><p><strong>Putujete?</strong><br />Pauzirajte do datuma povratka.</p></section></aside></div>
+    <section className="account-settings" id="podesavanja-naloga" aria-labelledby="settings-title"><h2 id="settings-title">Podaci i obaveštenja</h2><details className="card"><summary>Prijava, email i WhatsApp</summary><LoginSettings /></details><details className="card"><summary>Moji kontakt podaci</summary><dl><dt>Email</dt><dd>{customer.email}</dd><dt>Telefon</dt><dd>{customer.phone || "Nije unet"}</dd></dl><a href="/kontakt">Zatraži izmenu podataka</a></details><button className="text-button" disabled={busy} onClick={() => void signOut()}>Odjavi se</button></section>
+  </div>;
 }

@@ -376,6 +376,10 @@ export async function getAccount(customerId: string) {
   const subscriptions = await all<SubscriptionRow>("SELECT * FROM subscriptions WHERE customer_id = ? ORDER BY created_at DESC", customerId);
   const items = subscriptions.length ? await all<SubscriptionItemRow>(`SELECT si.*, p.name AS product_name, p.unit_label, COALESCE(p.subscription_price_minor, p.price_minor) AS price_minor FROM subscription_items si JOIN products p ON p.id = si.product_id WHERE si.subscription_id IN (${sqlPlaceholders(subscriptions.length)}) ORDER BY si.created_at`, ...subscriptions.map((subscription) => subscription.id)) : [];
   const orders = await all<Record<string, unknown> & { id: string }>("SELECT id, order_number, kind, payment_status, fulfillment_status, delivery_date, total_minor, currency, created_at FROM orders WHERE customer_id = ? ORDER BY created_at DESC LIMIT 50", customerId);
+  const oneTimeItems = await all<{ order_id: string; product_name: string; quantity: number; unit_label: string; delivery_date: string } & Record<string, unknown>>(
+    `SELECT oi.order_id, oi.product_name, oi.quantity, oi.unit_label, o.delivery_date FROM order_items oi JOIN orders o ON o.id = oi.order_id
+     WHERE o.customer_id = ? AND oi.purchase_type = 'one_time' AND o.kind IN ('one_time', 'subscription_invoice') AND o.fulfillment_status = 'planned' AND o.delivery_date >= ? ORDER BY o.delivery_date, oi.id`, customerId, localDateAt(),
+  );
   const credits = await all<Record<string, unknown>>("SELECT id, subscription_id, order_id, amount_minor, reason, status, created_at FROM credits_ledger WHERE customer_id = ? ORDER BY created_at DESC", customerId);
   const addons = subscriptions.length ? await all<Record<string, unknown>>(
     `SELECT nda.id, nda.subscription_id, nda.product_id, nda.delivery_date, nda.quantity, nda.unit_price_minor, nda.order_id, nda.consumed_at, nda.cancelled_at, p.name AS product_name, p.unit_label, o.order_number, o.payment_status
@@ -384,10 +388,34 @@ export async function getAccount(customerId: string) {
     ...subscriptions.map((subscription) => subscription.id),
   ) : [];
   const addonProducts = (await all<ProductRow>("SELECT * FROM products WHERE is_active = 1 ORDER BY (price_minor - cost_minor - packaging_cost_minor) DESC, sort_order LIMIT 8")).map((product) => publicProduct(product));
+  const settings = await getBusinessSettings();
+  const windows = subscriptions.length ? await all<{ delivery_date: string; cutoff_at: string; locked_at: string | null } & Record<string, unknown>>(
+    `SELECT delivery_date, cutoff_at, locked_at FROM deliveries WHERE delivery_date IN (${sqlPlaceholders(subscriptions.length)})`, ...subscriptions.map((subscription) => subscription.next_delivery_date),
+  ) : [];
+  const deliveryHistory = await all<{ id: string; date: string; status: string } & Record<string, unknown>>(
+    `SELECT dord.id, d.delivery_date AS date, dord.status FROM delivery_orders dord
+     JOIN deliveries d ON d.id = dord.delivery_id WHERE dord.customer_id = ? ORDER BY d.delivery_date DESC LIMIT 50`, customerId,
+  );
+  const historyItems = deliveryHistory.length ? await all<{ delivery_order_id: string } & Record<string, unknown>>(
+    `SELECT delivery_order_id, product_name, unit_label, quantity FROM delivery_items WHERE delivery_order_id IN (${sqlPlaceholders(deliveryHistory.length)}) ORDER BY created_at`, ...deliveryHistory.map((delivery) => delivery.id),
+  ) : [];
+  const skips = await all<{ id: string; date: string } & Record<string, unknown>>(
+    `SELECT sk.id, sk.delivery_date AS date FROM subscription_skips sk JOIN subscriptions s ON s.id = sk.subscription_id WHERE s.customer_id = ? ORDER BY sk.delivery_date DESC LIMIT 50`, customerId,
+  );
   return {
     customer: { id: customer.id, email: customer.email, fullName: customer.full_name, phone: customer.phone, addressLine1: customer.address_line_1, addressLine2: customer.address_line_2, city: customer.city, postalCode: customer.postal_code, deliveryNote: customer.delivery_note },
-    subscriptions: subscriptions.map((subscription) => ({ id: subscription.id, version: subscription.version, status: subscription.status, paymentMethod: subscription.payment_method, pauseUntil: subscription.pause_until, nextDeliveryDate: subscription.next_delivery_date, cancellationReason: subscription.cancellation_reason, items: items.filter((item) => item.subscription_id === subscription.id).map((item) => ({ id: item.id, productId: item.product_id, productName: item.product_name, unitLabel: item.unit_label, priceMinor: item.price_minor, quantity: item.quantity, cadence: item.cadence, cadenceAnchorDate: item.cadence_anchor_date, status: item.status })), nextOnlyAddons: addons.filter((item) => item.subscription_id === subscription.id) })),
+    subscriptions: subscriptions.map((subscription) => {
+      const window = windows.find((entry) => entry.delivery_date === subscription.next_delivery_date);
+      const cutoffAt = window?.cutoff_at ?? cutoffForDelivery(subscription.next_delivery_date, settings.cutoffHours, settings.deliveryLocalTime);
+      const activeItems = items.filter((item) => item.subscription_id === subscription.id && item.status === "active");
+      let afterSkipDate = addLocalDays(subscription.next_delivery_date, 7);
+      for (let attempts = 0; attempts < 8 && activeItems.length && !activeItems.some((item) => isCadenceDue(item.cadence_anchor_date, afterSkipDate, item.cadence)); attempts += 1) afterSkipDate = addLocalDays(afterSkipDate, 7);
+      return { id: subscription.id, version: subscription.version, status: subscription.status, paymentMethod: subscription.payment_method, pauseUntil: subscription.pause_until, nextDeliveryDate: subscription.next_delivery_date, cutoffAt, locked: Boolean(window?.locked_at) || Date.now() >= Date.parse(cutoffAt), afterSkipDate, cancellationReason: subscription.cancellation_reason, items: items.filter((item) => item.subscription_id === subscription.id).map((item) => ({ id: item.id, productId: item.product_id, productName: item.product_name, unitLabel: item.unit_label, priceMinor: item.price_minor, quantity: item.quantity, cadence: item.cadence, cadenceAnchorDate: item.cadence_anchor_date, dueNext: isCadenceDue(item.cadence_anchor_date, subscription.next_delivery_date, item.cadence), status: item.status })), nextOnlyAddons: addons.filter((item) => item.subscription_id === subscription.id) };
+    }),
+    currentDate: localDateAt(),
+    deliveryHistory: [...deliveryHistory.map((delivery) => ({ ...delivery, items: historyItems.filter((item) => item.delivery_order_id === delivery.id) })), ...skips.map((skip) => ({ ...skip, status: "skipped", items: [] }))].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 50),
     addonProducts,
+    oneTimeDeliveries: [...new Set(oneTimeItems.map((item) => item.delivery_date))].map((date) => ({ date, items: oneTimeItems.filter((item) => item.delivery_date === date) })),
     orders,
     credits,
   };

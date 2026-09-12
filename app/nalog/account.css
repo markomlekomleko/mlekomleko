@@ -1,0 +1,107 @@
+.account-dashboard { padding-block: 2.5rem 5rem; }
+.account-dashboard :is(h1,h2,h3,p) { margin-top: 0; }
+.account-dashboard h1 { font-size: clamp(2rem, 4vw, 3.5rem); line-height: 1.1; }
+.account-dashboard h2 { font-size: clamp(1.3rem, 2.4vw, 1.8rem); line-height: 1.25; }
+.account-dashboard h3 { font-size: 1.15rem; }
+.account-welcome { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.account-welcome p:last-child { color: var(--ink-soft); margin-bottom: 0; }
+.account-nav { display: flex; flex-wrap: wrap; gap: .4rem 1.8rem; padding: 1.4rem 0; margin-bottom: 1rem; border-bottom: 1px solid #d5ded4; }
+.account-nav a { font-weight: 650; text-underline-offset: .35em; padding-block: .6rem; }
+.account-main-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 1.6rem; align-items: start; }
+.account-dashboard .card { padding: clamp(1.2rem, 3vw, 2rem); min-width: 0; }
+.account-subscription { overflow: hidden; border-top: 5px solid #345c42; }
+.account-delivery-header, .account-section-heading, .account-history-title { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.account-delivery-header h2 { max-width: 27ch; margin-bottom: .8rem; }
+.account-status { flex-shrink: 0; border-radius: 30px; background: #e6efdf; color: #294735; padding: .45rem .8rem; font-size: .8rem; font-weight: 650; }
+.account-status.is-paused { background: #f4e8c8; color: #60480e; }
+.account-cutoff { font-size: .86rem; line-height: 1.6; color: var(--ink-soft); }
+.account-quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin: 1.3rem 0 1.8rem; }
+.account-quick-actions .button { display: flex; flex-direction: column; align-items: start; gap: .4rem; border-color: #b9c9b7; border-radius: 12px; padding: 1rem; text-align: left; white-space: normal; }
+.account-quick-actions small { font-size: .78rem; font-weight: 400; }
+.account-basket-heading { margin: 1.5rem 0 .25rem; }
+.account-basket-heading h3 { margin-bottom: .3rem; }
+.account-basket-heading p { font-size: .85rem; color: var(--ink-soft); }
+.account-product { padding: 1.25rem 0; border-top: 1px solid #dce3d8; }
+.account-product-title { display: flex; flex-direction: column; gap: .25rem; }
+.account-product-title > strong { font-size: 1.15rem; }
+.account-product-title :is(span,small) { font-size: .82rem; color: var(--ink-soft); }
+.account-product-controls { display: grid; grid-template-columns: 150px minmax(135px, 1fr) auto; gap: 1rem; align-items: end; margin-top: 1rem; }
+.account-product-controls .field { margin: 0; gap: .4rem; }
+.account-product-controls .field > span, .account-quantity-field > span { display: block; font-size: .78rem; margin-bottom: .35rem; font-weight: 600; }
+.account-stepper { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; border: 1px solid #abbda6; border-radius: 8px; overflow: hidden; height: 46px; }
+.account-stepper button { border: 0; color: var(--ink); background: #eff3e9; font-size: 1.4rem; cursor: pointer; }
+.account-stepper input { min-width: 0; width: 100%; border: 0; border-radius: 0; padding: 0; text-align: center; appearance: textfield; -moz-appearance: textfield; background: white; }
+.account-stepper input::-webkit-inner-spin-button, .account-stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.account-dashboard select, .account-dashboard input[type=date] { min-height: 46px; min-width: 0; max-width: 100%; }
+.account-dashboard button:disabled { opacity: .45; cursor: not-allowed; }
+.account-dashboard :is(button,input,select,a,summary):focus-visible { outline: 3px solid #426e35; outline-offset: 3px; }
+.account-product-price { text-align: right; padding-bottom: .15rem; }
+.account-product-price small { display: block; font-size: .68rem; font-weight: 400; max-width: 15ch; }
+.account-remove { margin-top: .9rem; font-size: .78rem; color: var(--ink-soft); min-height: 32px; }
+.account-draft, .account-confirm, .account-pause-info { background: #edf2e5; border: 1px solid #cbd6c2; border-radius: 12px; padding: 1.15rem; margin-block: 1rem; }
+.account-draft p, .account-confirm p, .account-pause-info p { line-height: 1.65; font-size: .9rem; }
+.account-confirm { scroll-margin-top: 120px; }
+.account-subtotal { display: flex; justify-content: space-between; align-items: start; gap: 1rem; padding: 1rem 0; border-top: 1px solid #dce3d8; font-size: .9rem; }
+.account-subtotal small { display: block; color: var(--ink-soft); font-size: .73rem; max-width: 42ch; margin-top: .3rem; }
+.account-subtotal strong { white-space: nowrap; }
+.account-dashboard details summary { cursor: pointer; font-weight: 650; padding-block: .65rem; min-height: 44px; }
+.account-dashboard details[open] summary { margin-bottom: 1rem; }
+.account-extras { border-top: 1px solid #dce3d8; padding-block: .5rem; font-size: .85rem; }
+.account-dashboard .next-addon-picker { padding: 0; background: transparent; border: 0; }
+.account-card-footer { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; border-top: 1px solid #dce3d8; padding-top: 1rem; font-size: .8rem; }
+.account-card-footer :is(a,button) { padding-block: .5rem; }
+.account-side { display: grid; gap: 1.5rem; }
+.account-side .card h2 { font-size: 1.25rem; }
+.account-side p { line-height: 1.6; }
+.account-help { padding: .5rem 1rem; }
+.account-help p { font-size: .86rem; color: var(--ink-soft); }
+.account-history, .account-settings, #moje-dostave { scroll-margin-top: 120px; }
+.account-section-heading .field { width: 160px; flex-shrink: 0; font-size: .8rem; }
+.account-timeline > li { border-top: 1px solid #dce3d8; padding: 1.2rem 0; }
+.account-history-title { margin-bottom: .7rem; align-items: center; }
+.account-history-title strong { font-size: .95rem; }
+.account-timeline li li, .account-timeline p { font-size: .85rem; color: var(--ink-soft); line-height: 1.7; }
+.account-empty { padding: 1rem 0; line-height: 1.65; }
+.account-empty p { color: var(--ink-soft); font-size: .9rem; margin-top: .5rem; }
+.account-orders-panel summary span { font-size: .85rem; margin-left: .5rem; }
+.account-orders-panel p { font-size: .86rem; line-height: 1.7; }
+.account-settings { display: grid; gap: 1rem; margin-top: 2rem; max-width: calc(100% - 305px); }
+.account-settings > h2 { margin-bottom: 0; }
+.account-settings > .card { padding-block: .65rem; }
+.account-settings details .card { padding: 0; border: 0; box-shadow: none; }
+.account-settings dd { margin: .35rem 0 1rem; overflow-wrap: anywhere; }
+.account-settings > button { justify-self: start; min-height: 44px; }
+.account-feedback:has(.notice) { position: sticky; top: 90px; z-index: 5; }
+.account-feedback .notice { box-shadow: 0 4px 20px #17251f15; }
+@media (max-width: 1050px) {
+  .account-main-grid { grid-template-columns: minmax(0, 1fr); }
+  .account-side { grid-template-columns: 1fr 1fr; }
+  .account-settings { max-width: none; }
+}
+@media (max-width: 560px) {
+  .account-dashboard { padding-top: 1.5rem; }
+  .account-welcome { align-items: start; flex-direction: column; }
+  .account-nav { gap: .3rem 1rem; font-size: .84rem; }
+  .account-delivery-header { flex-direction: column-reverse; gap: .65rem; }
+  .account-delivery-header .account-status { align-self: start; }
+  .account-quick-actions { gap: .5rem; }
+  .account-quick-actions .button { padding: .8rem; font-size: .85rem; }
+  .account-quick-actions small { font-size: .7rem; }
+  .account-product-controls { grid-template-columns: 138px minmax(0, 1fr); gap: .75rem; }
+  .account-product-price { grid-column: 1 / -1; text-align: left; display: flex; gap: .5rem; align-items: baseline; }
+  .account-product-price small { max-width: none; }
+  .account-section-heading { flex-direction: column; }
+  .account-section-heading .field { width: 100%; }
+  .account-history-title { align-items: start; flex-direction: column; gap: .5rem; }
+  .account-side { grid-template-columns: 1fr; }
+  .account-help { display: none; }
+  .account-orders .summary-row { flex-direction: column; align-items: start; gap: .5rem; overflow-wrap: anywhere; }
+  .account-feedback { font-size: .82rem; }
+}
+@media (max-width: 560px) {
+  .account-welcome { flex-direction: row; align-items: center; gap: .6rem; }
+  .account-welcome h1 { font-size: 1.8rem; margin-bottom: .5rem; }
+  .account-welcome p:last-child { font-size: .82rem; }
+  .account-welcome > a { flex-shrink: 0; font-size: .72rem; padding: .75rem; }
+  .account-nav { font-size: .78rem; gap: .3rem .9rem; padding-block: .85rem; }
+}

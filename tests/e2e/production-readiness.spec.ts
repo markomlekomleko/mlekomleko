@@ -77,19 +77,21 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   const replay = await page.request.post("/api/auth/code/verify", { headers: { origin: new URL(page.url()).origin }, data: { challengeId: challenge.challengeId, code: challenge.localDevelopment.code } });
   expect(replay.status()).toBe(401);
   await expect(page.getByRole("heading", { name: /Zdravo, Fiktivni E2E Kupac/ })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Moje porudžbine" })).toBeVisible();
+  await page.getByText("Moje porudžbine", { exact: false }).filter({ has: page.locator("span") }).click();
   await expect(page.locator(".account-orders > li")).toHaveCount(1);
   await expect(page.locator("body")).not.toContainText(/demo|mockup/i);
-  const subscriptionHeading = page.getByRole("heading", { name: /^Pretplata sub_/ }).first();
-  const subscriptionId = (await subscriptionHeading.textContent())!.replace(/^Pretplata\s+/, "");
+  const subscription = page.locator("[data-subscription-id]").first();
+  const subscriptionId = (await subscription.getAttribute("data-subscription-id"))!;
   const csrf = await page.request.patch(`/api/account/subscriptions/${encodeURIComponent(subscriptionId)}`, {
     headers: { "Idempotency-Key": crypto.randomUUID() },
     data: { action: "skip_next", expectedVersion: 1 },
   });
   expect(csrf.status()).toBe(403);
   expect((await csrf.json()).error.code).toBe("CSRF_REJECTED");
-  await page.getByRole("button", { name: "Preskoči sledeću" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Izmena je sačuvana" })).toBeVisible();
+  await page.getByRole("button", { name: "Preskoči sledeću", exact: false }).click();
+  await expect(page.getByRole("region", { name: "Potvrda izmene" })).toContainText("Sledeća redovna dostava biće");
+  await page.getByRole("button", { name: "Potvrdi preskakanje" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Dostava je preskočena" })).toBeVisible();
   const conflict = await page.evaluate(async ({ id }) => {
     const response = await fetch(`/api/account/subscriptions/${encodeURIComponent(id)}`, {
       method: "PATCH",
@@ -101,29 +103,47 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   expect(conflict.status).toBe(409);
   expect(conflict.body.error.code).toBe("SUBSCRIPTION_VERSION_CONFLICT");
   expect(conflict.body.requestId).toMatch(/^[0-9a-f-]{36}$/i);
-  const subscription = page.locator("article.card").filter({ has: page.getByRole("heading", { name: `Pretplata ${subscriptionId}`, exact: true }) });
-  await subscription.getByRole("spinbutton").fill("3");
-  await subscription.getByRole("spinbutton").press("Tab");
-  await expect(subscription.getByRole("spinbutton")).toHaveValue("3");
-  await expect(page.getByRole("status").filter({ hasText: "Izmena je sačuvana" })).toBeVisible();
+  const quantity = subscription.getByRole("spinbutton");
+  const before = Number(await quantity.inputValue());
+  await subscription.getByRole("button", { name: /^Povećaj količinu/ }).click();
+  await expect(quantity).toHaveValue(String(before + 1));
+  // A draft does not silently change the subscription.
+  expect((await (await page.request.get("/api/account")).json()).subscriptions[0].items[0].quantity).toBe(before);
+  await subscription.getByRole("button", { name: "Sačuvaj izmene" }).click();
+  await expect(page.getByRole("status")).toContainText("Izmena je sačuvana");
+  await page.reload();
+  await expect(quantity).toHaveValue(String(before + 1));
+  await subscription.getByRole("button", { name: /^Smanji količinu/ }).click();
+  await subscription.getByRole("button", { name: "Sačuvaj izmene" }).click();
+  await expect(page.getByRole("status")).toContainText("Izmena je sačuvana");
   await subscription.getByRole("combobox").selectOption("biweekly");
-  await expect(subscription.getByRole("combobox")).toHaveValue("biweekly");
-  await expect(page.getByRole("status").filter({ hasText: "Izmena je sačuvana" })).toBeVisible();
+  await subscription.getByRole("button", { name: "Sačuvaj izmene" }).click();
+  await expect(page.getByRole("status")).toContainText("Izmena je sačuvana");
+  await subscription.locator(".account-extras summary").click();
   await subscription.getByRole("region", { name: "Dodajte sledećoj dostavi" }).getByRole("button").first().click();
   await expect(subscription.locator(".next-addon-summary")).toContainText("Dodato samo sledećoj dostavi");
+  await subscription.getByRole("button", { name: /Pauziraj dostave/ }).click();
   const pauseUntil = new Date(Date.now() + 40 * 86400000).toISOString().slice(0, 10);
   await subscription.getByLabel("Pauziraj do").fill(pauseUntil);
+  expect((await (await page.request.get("/api/account")).json()).subscriptions[0].status).toBe("active");
+  await subscription.getByRole("button", { name: "Potvrdi pauzu" }).click();
   await expect(subscription.getByRole("button", { name: "Nastavi pretplatu" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Nema zakazane redovne dostave" })).toBeVisible();
+  await expect(subscription).toContainText("Dostave se zatim nastavljaju automatski");
   await page.reload();
   await expect(subscription.getByRole("button", { name: "Nastavi pretplatu" })).toBeVisible();
   await subscription.getByRole("button", { name: "Nastavi pretplatu" }).click();
-  await expect(subscription.getByLabel("Pauziraj do")).toBeVisible();
-  await subscription.getByRole("button", { name: "Razmišljam o otkazivanju" }).click();
-  await subscription.getByRole("button", { name: "Ipak trajno otkaži" }).click();
-  await expect(subscription.getByRole("spinbutton")).toBeDisabled();
+  await expect(subscription.getByRole("button", { name: /Pauziraj dostave/ })).toBeVisible();
+  await expect(page.locator("#istorija-dostava")).toContainText("Preskočena");
+  await page.getByLabel("Prikaži", { exact: true }).selectOption("delivered");
+  await expect(page.locator("#istorija-dostava")).toContainText("Još nema dostava u ovom prikazu.");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  const axe = await new AxeBuilder({ page }).include(".account-dashboard").analyze();
+  expect(axe.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
+  await subscription.getByRole("button", { name: "Otkaži pretplatu", exact: true }).click();
+  await subscription.getByRole("button", { name: "Potvrdi otkazivanje" }).click();
+  await expect(quantity).toBeDisabled();
   await page.reload();
-  await expect(subscription.getByRole("spinbutton")).toBeDisabled();
+  await expect(quantity).toBeDisabled();
   await page.getByRole("button", { name: "Odjavi se", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Prijavite se bez lozinke." })).toBeVisible();
   expect((await page.request.get("/api/account")).status()).toBe(401);
