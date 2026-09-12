@@ -19,6 +19,12 @@ function shell(subject: string, paragraphs: string[], action?: { label: string; 
 }
 
 export function renderTransactionalMessage(topic: string, data: Record<string, unknown>): TransactionalMessage {
+  if (topic === "auth.code.requested") {
+    return shell(data.purpose === "register" ? "Potvrdite email adresu" : "Vaš kod za prijavu", [
+      `Vaš kod je ${String(data.code)}.`, `Kod važi ${Number(data.minutes)} minuta i može se iskoristiti samo jednom.`,
+      "Ne delite ovaj kod. Ako niste tražili kod, zanemarite ovu poruku.",
+    ]);
+  }
   const name = String(data.fullName ?? "").trim();
   const greeting = name ? `Zdravo, ${name}.` : "Zdravo.";
   const orderNumber = String(data.orderNumber ?? data.order_number ?? data.orderId ?? "").trim();

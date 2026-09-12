@@ -14,6 +14,7 @@ import {
   type Product,
 } from "../lib/frontend";
 import { useAnalytics } from "../components/analytics-provider";
+import { LoginSettings } from "./login-settings";
 
 type Row = Record<string, unknown>;
 
@@ -154,8 +155,8 @@ export function AccountView() {
         <div className="empty-state">
           <p className="eyebrow">Korisnički nalog</p>
           <h1>Prijavite se bez lozinke.</h1>
-          <p className="lead">Poslaćemo vam siguran jednokratni link putem emaila.</p>
-          <a className="button" href="/prijava">Pošalji link za prijavu</a>
+          <p className="lead">Prijavite se jednokratnim kodom putem emaila ili potvrđenog WhatsApp broja.</p>
+          <a className="button" href="/prijava">Prijavi se ili napravi nalog</a>
         </div>
       </div>
     );
@@ -192,6 +193,7 @@ export function AccountView() {
 
       <div className="account-layout" style={{ marginTop: "1rem" }}>
         <div className="form-stack">
+          <LoginSettings />
           <section className="card" aria-labelledby="orders-title">
             <h2 id="orders-title">Moje porudžbine</h2>
             {orders.length ? <ul className="list-clean account-orders">{orders.map((order) => <li key={idOf(order)}>

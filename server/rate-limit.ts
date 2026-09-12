@@ -12,10 +12,19 @@ function clientAddress(request: Request): string {
 }
 
 export async function enforceRateLimit(request: Request, scope: string, limit: number, windowSeconds: number, discriminator = "") {
+  return enforceKeyLimit(`${clientAddress(request)}:${discriminator.trim().toLowerCase().slice(0, 254)}`, scope, limit, windowSeconds);
+}
+
+// Recipient limits must survive IP changes and distributed requests.
+export async function enforceIdentityRateLimit(identity: string, scope: string, limit: number, windowSeconds: number) {
+  return enforceKeyLimit(identity.trim().toLowerCase(), scope, limit, windowSeconds);
+}
+
+async function enforceKeyLimit(identity: string, scope: string, limit: number, windowSeconds: number) {
   const now = new Date();
   const nowIso = now.toISOString();
   const expiresAt = new Date(now.getTime() + windowSeconds * 1_000).toISOString();
-  const keyHash = await sha256(`${scope}:${clientAddress(request)}:${discriminator.trim().toLowerCase().slice(0, 254)}`);
+  const keyHash = await sha256(`${scope}:${identity}`);
   const result = await first<RateLimitRow>(
     `INSERT INTO rate_limits (key_hash, scope, window_started_at, request_count, expires_at)
      VALUES (?, ?, ?, 1, ?)

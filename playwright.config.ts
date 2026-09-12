@@ -30,6 +30,7 @@ export default defineConfig({
       POSTGRES_URL_NON_POOLING: "",
       POSTGRES_SCHEMA: "",
       APP_ENV: "local",
+      AUTH_MODE: "local",
       APP_ORIGIN: "http://localhost:4173",
       NEXT_PUBLIC_SITE_URL: "http://localhost:4173",
       ADMIN_EMAIL: "admin@example.test",
