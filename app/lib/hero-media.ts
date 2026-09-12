@@ -41,8 +41,11 @@ export const heroMedia: HeroMedia | null = {
     video: "/media/hero/hero-desktop.mp4",
     poster: "/media/hero/poster-desktop.webp",
     endFrame: "/media/hero/end-desktop.webp",
-    width: 3840,
-    height: 2160,
+    // 1080p rather than the 4K master: a seek costs roughly one frame decode, so the
+    // export resolution sets the scrub's frame ceiling. See the encoding note in
+    // public/media/hero/manifest.json for the measurements.
+    width: 1920,
+    height: 1080,
     durationSeconds: 8.04,
     fps: 24,
     alt,

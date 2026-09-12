@@ -109,27 +109,43 @@ nisu u repozitorijumu. U `public/media/hero/` su optimizovane web verzije:
 
 | Fajl | Rezolucija | Veličina | Budžet iz plana |
 | --- | --- | --- | --- |
-| `hero-desktop.mp4` | 3840×2160 | 7,74 MB | do 5 MB, prekoračeno uz obrazloženje |
+| `hero-desktop.mp4` | 1920×1080 | 4,08 MB | do 5 MB |
 | `hero-mobile.mp4` | 720×1280 | 1,45 MB | do 2,5 MB |
 | `poster-desktop.webp` | 2560×1440 | 206 KB | do 250 KB |
 | `poster-mobile.webp` | 720×1280 | 27 KB | do 150 KB |
 | `end-desktop.webp` | 2560×1440 | 83 KB | — |
 | `end-mobile.webp` | 720×1280 | 21 KB | — |
 
-Desktop klip prelazi početnih 5 MB iz plana. Odeljak 10 plana to izričito dopušta ako
-kvalitet ili traženje pozicije traže više, uz dokumentovanu odluku, pa je granica u
-`tests/hero-media.test.mjs` podignuta na 9 MB. Odbačene alternative: crf 26 daje 12,5 MB
-za dobitak SSIM od 0,002, a crf 33 spušta na 5,5 MB ali pojačava stepenice u prelivima
-mleka. Klip se učitava samo od 768 px naviše; mobilni korisnici i dalje dobijaju 1,45 MB.
+### Zašto je desktop izvoz 1080p, a ne 4K
 
-Poster i završni kadar su ponovo izvučeni iz 4K mastera na 2560×1440. Puna 4K rezolucija
-bi probila budžet od 250 KB, a poster je LCP element.
+Rezolucija izvoza određuje koliko je skrol gladak. Scena se pomera tako što se traži
+pozicija u klipu, a jedno traženje košta otprilike jedno dekodiranje frejma, pa veći
+frejm znači ređe osvežavanje. Mereno u Chrome-u, 60 uzastopnih traženja po frejmu:
+
+| Izvoz | Medijana traženja | Plafon scene | Veličina |
+| --- | --- | --- | --- |
+| 3840×2160, crf 30 | 50 ms | 20 fps | 7,74 MB |
+| 2560×1440, crf 30 | 23 ms | 43 fps | 4,05 MB |
+| 1920×1080, crf 30 | 14 ms | 72 fps | 2,67 MB |
+| **1920×1080, crf 26** | **14 ms** | **72 fps** | **4,08 MB** |
+
+4K klip je bio ograničen na 20 frejmova u sekundi bez obzira na to koliko glatko skrol
+stiže do JavaScript-a, i to se videlo kao stepenice. Gušći ključni kadrovi tu ne pomažu:
+na 2560×1440 svaki izvoz ispod `-g 3` staje na 14,7 ms, jer ostaje cena dekodiranja
+jednog frejma. Protok takođe skoro ne utiče, pa je crf spušten sa 30 na 26 — isto
+traženje pozicije, bolji kvalitet, i klip je ponovo unutar budžeta od 5 MB iz plana.
+
+Klip se učitava samo od 768 px naviše; mobilni korisnici i dalje dobijaju 1,45 MB.
+
+Poster i završni kadar ostaju na 2560×1440, izvučeni iz 4K mastera — to su mirne slike,
+bez troška traženja pozicije. Puna 4K rezolucija bi probila budžet od 250 KB, a poster
+je LCP element.
 
 Komanda za desktop izvoz, sa gustim ključnim kadrovima radi traženja pozicije pri skrolu:
 
 ```
-ffmpeg -i <4k-master> -an \
-  -c:v libx264 -profile:v high -pix_fmt yuv420p -crf 30 \
+ffmpeg -i <4k-master> -an -vf scale=1920:1080:flags=lanczos \
+  -c:v libx264 -profile:v high -pix_fmt yuv420p -crf 26 \
   -preset slow -g 6 -keyint_min 6 -sc_threshold 0 -tune fastdecode -movflags +faststart
 ```
 

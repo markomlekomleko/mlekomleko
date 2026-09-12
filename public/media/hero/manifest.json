@@ -25,16 +25,16 @@
     "video": "/media/hero/hero-desktop.mp4",
     "poster": "/media/hero/poster-desktop.webp",
     "endFrame": "/media/hero/end-desktop.webp",
-    "width": 3840,
-    "height": 2160,
+    "width": 1920,
+    "height": 1080,
     "durationSeconds": 8.04,
     "fps": 24,
     "codec": "h264",
     "audio": false,
-    "videoBytes": 8111333,
+    "videoBytes": 4276087,
     "posterBytes": 210490,
     "endFrameBytes": 85448,
-    "masterResolution": "3840x2160 (AI upscale of the 1920x1080 master)",
+    "masterResolution": "3840x2160 (AI upscale of the 1920x1080 master), izvezeno na 1920x1080",
     "posterResolution": "2560x1440"
   },
   "mobile": {
@@ -53,7 +53,7 @@
     "masterResolution": "1080x1920"
   },
   "encoding": {
-    "note": "Kljucni kadar na svakih 0,25 s radi trazenja pozicije pri skrolu, faststart, bez audio zapisa. Desktop je 3840x2160 na 24 fps: master je AI uvecan sa 1920x1080 na 4K, pa je ranija interpolacija na 48 fps uklonjena. Mereno u Chromium-u, 4K klip trazi poziciju za 67 ms po frejmu, dakle 15 puta u sekundi, a spor skrol kroz svih 193 frejma trazi oko 48. Scena je ostrija u mirovanju ali vidno stepenasta tokom skrola; 48 fps zato ne bi prikazalo nijedan frejm vise. Prakticni plafon je 2560x1440, gde je mereno 49 trazenja u sekundi. Desktop izvoz je 7,74 MB, iznad pocetnog budzeta od 5 MB iz plana, sto plan izricito dozvoljava uz dokumentovanu odluku. Detalji u docs/higgsfield-generation-log.md. Mobilna varijanta nije menjana.",
-    "command": "desktop: ffmpeg -i <4k-master> -an -c:v libx264 -profile:v high -pix_fmt yuv420p -crf 30 -preset slow -g 6 -keyint_min 6 -sc_threshold 0 -tune fastdecode -movflags +faststart | poster i end frejm: scale=2560:1440:flags=lanczos, libwebp -quality 82 | mobile: nepromenjeno, ffmpeg -i <master> -an -vf scale=720:1280:flags=lanczos -c:v libx264 -profile:v high -pix_fmt yuv420p -crf 27 -preset slow -g 6 -keyint_min 6 -sc_threshold 0 -tune fastdecode -movflags +faststart"
+    "note": "Kljucni kadar na svakih 0,25 s radi trazenja pozicije pri skrolu, faststart, bez audio zapisa. Desktop je 1920x1080 na 24 fps. Raniji izvoz je bio 4K i skrol je bio vidno stepenast: mereno u Chromium-u, trazenje pozicije je trajalo 50 ms po frejmu, sto scenu ogranicava na 20 frejmova u sekundi bez obzira na to koliko glatko skrol stize do JavaScript-a. Trosak trazenja odredjuje rezolucija, ne protok: na 2560x1440 mereno je 23 ms, a na 1920x1080 14 ms, dakle plafon od 72 frejma u sekundi. Gustina kljucnih kadrova ispod g=3 ne donosi nista jer ostaje cena dekodiranja jednog frejma. Zato je izabrano 1920x1080 uz crf 26 umesto 30: isto trazenje pozicije, bolji kvalitet, i 4,08 MB je ponovo unutar pocetnog budzeta od 5 MB iz plana. Detalji u docs/higgsfield-generation-log.md. Mobilna varijanta nije menjana.",
+    "command": "desktop: ffmpeg -i <4k-master> -an -vf scale=1920:1080:flags=lanczos -c:v libx264 -profile:v high -pix_fmt yuv420p -crf 26 -preset slow -g 6 -keyint_min 6 -sc_threshold 0 -tune fastdecode -movflags +faststart | poster i end frejm: scale=2560:1440:flags=lanczos, libwebp -quality 82 | mobile: nepromenjeno, ffmpeg -i <master> -an -vf scale=720:1280:flags=lanczos -c:v libx264 -profile:v high -pix_fmt yuv420p -crf 27 -preset slow -g 6 -keyint_min 6 -sc_threshold 0 -tune fastdecode -movflags +faststart"
   }
 }
