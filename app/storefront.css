@@ -126,7 +126,8 @@ body { font-size: 1rem; -webkit-font-smoothing: antialiased; }
 .breadcrumbs { display: flex; flex-wrap: wrap; gap: .5rem; font-size: .75rem; }
 .product-detail-page .breadcrumbs { margin-bottom: 1.5rem; }
 .product-detail { grid-template-columns: 1.12fr 1fr; gap: clamp(2rem, 5vw, 5rem); }
-.product-visual-column { position: sticky; top: 110px; min-width: 0; }
+/* Clears the sticky announcement bar + header stack, not the header alone. */
+.product-visual-column { position: sticky; top: var(--header-stack); min-width: 0; }
 .product-detail-media { border-radius: 6px; }
 .product-detail-media > img { height: auto; aspect-ratio: 1; object-fit: cover; }
 .product-quick-facts { grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem; }
@@ -214,7 +215,7 @@ body { font-size: 1rem; -webkit-font-smoothing: antialiased; }
   .delivery-checker { gap: 1.5rem; }
   .product-grid, .featured-grid { gap: 1.5rem; }
   .product-detail { gap: 2rem; grid-template-columns: 1fr 1fr; }
-  .product-visual-column { top: 95px; }
+  .product-visual-column { top: var(--header-stack); }
   .purchase-panel .radio-group { grid-template-columns: 1fr; }
   .farm-story { gap: 2rem; }
   .farm-copy .lead { font-size: .92rem; }

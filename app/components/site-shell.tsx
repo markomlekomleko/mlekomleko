@@ -34,7 +34,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   }, [menuOpen]);
 
   return (
-    <>
+    <div className="site-header-stack">
       {settings.announcementEnabled && settings.announcementText ? (
         <aside className="announcement-bar" aria-label="Važno obaveštenje">
           <a href={settings.announcementUrl} target={isVideoAnnouncement ? "_blank" : undefined} rel={isVideoAnnouncement ? "noreferrer" : undefined}>
@@ -80,7 +80,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
           </button>
         </div>
       </header>
-    </>
+    </div>
   );
 }
 

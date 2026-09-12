@@ -19,8 +19,9 @@ export type HeroVariant = {
       controller reads the decoded `duration` off the element itself. */
   durationSeconds: number;
   /** Source frame rate. The controller seeks on this grid, so it never asks the
-      decoder for two positions that resolve to the same frame. Desktop is exported
-      at 48 fps because there the scene is spread over 160svh of scroll. */
+      decoder for two positions that resolve to the same frame. Both variants stay at
+      the 24 fps of the master: on each one it is seek throughput, not source frame
+      rate, that limits how many distinct frames a scroll can show. */
   fps: number;
   alt: string;
 };
@@ -40,10 +41,10 @@ export const heroMedia: HeroMedia | null = {
     video: "/media/hero/hero-desktop.mp4",
     poster: "/media/hero/poster-desktop.webp",
     endFrame: "/media/hero/end-desktop.webp",
-    width: 1440,
-    height: 810,
-    durationSeconds: 7.98,
-    fps: 48,
+    width: 3840,
+    height: 2160,
+    durationSeconds: 8.04,
+    fps: 24,
     alt,
   },
   mobile: {

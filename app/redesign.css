@@ -22,11 +22,12 @@
   --muted: #58655d;
   --success: #1f6b4d;
   --radius: 16px;
-  /* Announcement bar plus sticky header; the hero copy clears this once pinned. */
-  --header-stack: 98px;
+  /* Announcement bar plus sticky header; the hero copy clears this once pinned, and
+     other sticky columns (cart summary, product gallery) use it as their own offset. */
+  --header-stack: 101px;
 }
 
-@media (min-width: 768px) { :root { --header-stack: 110px; } }
+@media (min-width: 768px) { :root { --header-stack: 113px; } }
 
 body {
   background: var(--milk);
@@ -394,6 +395,8 @@ textarea,
   z-index: 2;
   display: grid;
   align-content: start;
+  justify-items: center;
+  text-align: center;
   padding-block: calc(var(--header-stack) + 3vh) 8vh;
   background: linear-gradient(
     180deg,
@@ -416,6 +419,9 @@ textarea,
 }
 
 .scene-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   align-self: start;
   opacity: var(--hero-intro-o);
   transform: translate3d(0, calc(var(--hero-intro-y) * 1px), 0);
@@ -442,6 +448,7 @@ textarea,
 .scene-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.75rem 1.25rem;
   align-items: center;
 }
@@ -469,6 +476,7 @@ textarea,
 .scene-rhythm {
   align-self: start;
   display: grid;
+  justify-items: center;
   gap: 0.4rem;
   margin: 0;
   opacity: var(--hero-rhythm-o);
@@ -496,6 +504,8 @@ textarea,
 @media (min-width: 768px) {
   .scene-copy {
     align-content: center;
+    justify-items: start;
+    text-align: left;
     padding-block: 0;
     background: linear-gradient(
       90deg,
@@ -505,11 +515,19 @@ textarea,
     );
   }
 
+  .scene-intro {
+    align-items: flex-start;
+  }
+
+  .scene-actions { justify-content: flex-start; }
+
   .scene-intro,
   .scene-rhythm {
     align-self: center;
     max-width: 34vw;
   }
+
+  .scene-rhythm { justify-items: start; }
 
   .scene-lead { font-size: 1.125rem; }
 }

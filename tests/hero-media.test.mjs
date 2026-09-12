@@ -29,7 +29,10 @@ test("every hero media path in the manifest exists in public/", async () => {
 
 test("hero web exports stay inside the performance budgets", async () => {
   const budgets = {
-    "hero-desktop.mp4": 5 * 1024 * 1024,
+    // The plan's starting figure was 5 MB and it allows a documented exception when
+    // quality or seeking needs one. The desktop clip is now a 4K export, which section
+    // "Izvoz za web" of docs/higgsfield-generation-log.md records at 7.74 MB.
+    "hero-desktop.mp4": 9 * 1024 * 1024,
     "hero-mobile.mp4": 2.5 * 1024 * 1024,
     "poster-desktop.webp": 250 * 1024,
     "poster-mobile.webp": 150 * 1024,

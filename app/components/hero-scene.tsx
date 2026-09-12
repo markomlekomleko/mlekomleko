@@ -23,12 +23,13 @@ function setVar(element: HTMLElement, name: string, value: number) {
  * Scroll-linked introduction.
  *
  * The scene is pinned with `position: sticky` so the browser keeps its own scrolling,
- * and a single requestAnimationFrame loop writes the smoothed progress onto CSS custom
+ * and a single requestAnimationFrame loop writes the scroll progress onto CSS custom
  * properties and drives the clip. No React state is updated per frame.
  *
- * Smoothness comes from two separate things, and they are tuned separately:
- * the CSS layer eases at 60 Hz, while the clip can only ever show whole source
- * frames, so its seeks are quantised onto the source frame grid.
+ * The scene sits exactly on the scroll position, with no easing between the two.
+ * An ease here reads as the hero trailing the reader's finger and only catching up
+ * once they stop. The clip can only ever show whole source frames, so its seeks are
+ * quantised onto the source frame grid.
  */
 export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
   const sectionRef = useRef<HTMLElement>(null);
@@ -58,9 +59,6 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const wide = matchMedia("(min-width: 768px)");
     let frame = 0;
-    let last = 0;
-    let target = 0;
-    let current = 0;
     let pinHeight = 0;
     let running = false;
     let visible = false;
@@ -147,30 +145,23 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
       }
     };
 
-    const tick = (now: number) => {
-      const dt = last ? Math.min(0.1, (now - last) / 1000) : 1 / 60;
-      last = now;
-      // Reading the track here rather than in the scroll handler keeps it to one
-      // layout read per painted frame, however many scroll events arrived.
-      target = readProgress();
-      // Time-based easing keeps the same feel on 60 Hz and 120 Hz screens.
-      const tau = wide.matches ? 0.3 : 0.2;
-      current += (target - current) * (1 - Math.exp(-dt / tau));
-      // Snap out of the exponential tail instead of creeping for another half second.
-      if (Math.abs(target - current) < 0.0006) current = target;
-      paint(current);
-      if (current !== target && visible) {
-        frame = requestAnimationFrame(tick);
-      } else {
-        running = false;
-        frame = 0;
-      }
+    // Reading the track here rather than in the scroll handler keeps it to one
+    // layout read per painted frame, however many scroll events arrived.
+    const render = () => {
+      paint(readProgress());
+    };
+
+    const tick = () => {
+      render();
+      // Nothing is left settling once the frame is painted, because the scene is
+      // already on the scroll position. The next scroll event asks for the next frame.
+      running = false;
+      frame = 0;
     };
 
     const request = () => {
       if (running || !visible) return;
       running = true;
-      last = 0;
       frame = requestAnimationFrame(tick);
     };
 
@@ -180,9 +171,7 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
 
     const onResize = () => {
       measure();
-      target = readProgress();
-      current = target;
-      paint(current);
+      render();
     };
 
     const observer = new IntersectionObserver(
@@ -195,11 +184,8 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
           cancelAnimationFrame(frame);
           frame = 0;
           running = false;
-          // Park the scene on the frame the reader left it on. Only `tick` reads the
-          // track now, so take a fresh reading rather than trusting the last one.
-          target = readProgress();
-          current = target;
-          paint(current);
+          // Park the scene on the frame the reader left it on.
+          render();
         }
       },
       { rootMargin: "120px 0px" },
@@ -207,9 +193,7 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
 
     applyEnvironment();
     measure();
-    target = readProgress();
-    current = target;
-    paint(current);
+    render();
     observer.observe(section);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
