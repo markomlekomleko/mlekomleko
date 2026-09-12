@@ -25,11 +25,11 @@
     "endFrame": "/media/hero/end-desktop.webp",
     "width": 1440,
     "height": 810,
-    "durationSeconds": 8.04,
-    "fps": 24,
+    "durationSeconds": 7.98,
+    "fps": 48,
     "codec": "h264",
     "audio": false,
-    "videoBytes": 2457157,
+    "videoBytes": 2692429,
     "posterBytes": 61666,
     "endFrameBytes": 27108,
     "masterResolution": "1920x1080"
@@ -50,7 +50,7 @@
     "masterResolution": "1080x1920"
   },
   "encoding": {
-    "note": "Kljucni kadar na svakih 6 frejmova (0,25 s) radi trazenja pozicije pri skrolu, faststart, bez audio zapisa.",
-    "command": "ffmpeg -i <master> -an -vf scale=<w>:<h>:flags=lanczos -c:v libx264 -profile:v high -pix_fmt yuv420p -crf <26|27> -preset slow -g 6 -keyint_min 6 -sc_threshold 0 -tune fastdecode -movflags +faststart"
+    "note": "Kljucni kadar na svakih 0,25 s radi trazenja pozicije pri skrolu, faststart, bez audio zapisa. Desktop izvoz je interpoliran sa 24 na 48 fps: scenu vodi pozicija skrola, a na 160svh putanje 24 fps daje novi frejm tek na svakih 7 px, sto se vidi kao stepenasto pomeranje. Mobilni izvoz ostaje 24 fps - tamo je ogranicenje brzina trazenja pozicije, pa 48 fps ne prikaze nijedan frejm vise, a kosta 147 KB.",
+    "command": "desktop: ffmpeg -i <master> -an -vf minterpolate=fps=48:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1:scd=fdiff:scd_threshold=8 -c:v libx264 -profile:v high -pix_fmt yuv420p -crf 25 -preset slow -g 12 -keyint_min 12 -sc_threshold 0 -tune fastdecode -movflags +faststart | mobile: ffmpeg -i <master> -an -vf scale=720:1280:flags=lanczos -c:v libx264 -profile:v high -pix_fmt yuv420p -crf 27 -preset slow -g 6 -keyint_min 6 -sc_threshold 0 -tune fastdecode -movflags +faststart"
   }
 }

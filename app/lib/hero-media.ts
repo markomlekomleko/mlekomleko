@@ -15,8 +15,13 @@ export type HeroVariant = {
   endFrame: string | null;
   width: number;
   height: number;
-  /** Source duration in seconds; the scroll controller maps progress onto it. */
+  /** Source duration in seconds. Documentation for the export; at runtime the
+      controller reads the decoded `duration` off the element itself. */
   durationSeconds: number;
+  /** Source frame rate. The controller seeks on this grid, so it never asks the
+      decoder for two positions that resolve to the same frame. Desktop is exported
+      at 48 fps because there the scene is spread over 160svh of scroll. */
+  fps: number;
   alt: string;
 };
 
@@ -37,7 +42,8 @@ export const heroMedia: HeroMedia | null = {
     endFrame: "/media/hero/end-desktop.webp",
     width: 1440,
     height: 810,
-    durationSeconds: 8.04,
+    durationSeconds: 7.98,
+    fps: 48,
     alt,
   },
   mobile: {
@@ -47,6 +53,7 @@ export const heroMedia: HeroMedia | null = {
     width: 720,
     height: 1280,
     durationSeconds: 8.04,
+    fps: 24,
     alt,
   },
 };
