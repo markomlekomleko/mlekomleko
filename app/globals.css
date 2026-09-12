@@ -4,23 +4,27 @@
    Legacy variable names are kept and remapped so every existing route inherits the new brand. */
 :root {
   --milk: #f7f3e9;
-  --cobalt: #2146db;
-  --cobalt-dark: #1834ab;
-  --cobalt-wash: #e7ebfb;
+  /* The accent is the teal of the logo mark (#357f94), deepened a step: the raw
+     logo value reads at 4.11:1 on the cream ground, under the 4.5:1 floor, and it
+     carries small text (eyebrows, step numbers, links). Deepened it clears both
+     directions — 4.91:1 as text on cream, 5.44:1 behind white button labels. */
+  --cobalt: #2f7184;
+  --cobalt-dark: #255a6a;
+  --cobalt-wash: #e4eef1;
   --butter: #f2d36a;
   --brand-teal: #2f7184;
 
   --ink: #17251f;
   --ink-soft: #40514a;
-  --forest: #2146db;
+  --forest: #2f7184;
   --forest-dark: #17251f;
-  --leaf: #e7ebfb;
+  --leaf: #e4eef1;
   --cream: #f7f3e9;
   --wash: #efe9db;
   --paper: #ffffff;
   --white: #ffffff;
-  --orange: #2146db;
-  --orange-dark: #1834ab;
+  --orange: #2f7184;
+  --orange-dark: #255a6a;
   --yellow: #f2d36a;
   --line: #e0d8c6;
   --muted: #58655d;
@@ -276,7 +280,7 @@ td select { min-width: 125px; min-height: 38px; padding-block: .4rem; }
 .footer-links { display: grid; gap: .45rem; }
 .footer-links a, .footer-cookie-button { color: var(--muted); }
 .footer-links a:hover, .footer-cookie-button:hover { color: var(--forest); }
-.footer-cookie-button { width: fit-content; min-height: 44px; padding: 0; border: 0; background: transparent; text-align: left; text-decoration: underline; }
+.footer-cookie-button { width: fit-content; min-height: 44px; padding: 0; border: 0; background: transparent; text-align: left; text-decoration: none; }
 .consent-banner { position: fixed; z-index: 100; right: 1rem; bottom: 1rem; display: grid; width: min(500px, calc(100% - 2rem)); gap: 1rem; padding: 1.1rem; border: 1px solid var(--line); border-radius: 16px; background: white; box-shadow: 0 24px 70px rgba(24,51,42,.2); }
 .consent-banner p { margin: .25rem 0 0; color: var(--muted); font-size: .84rem; }
 

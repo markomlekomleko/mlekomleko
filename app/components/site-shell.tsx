@@ -48,11 +48,11 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
           <Link className="brand" href="/" aria-label={`${settings.storeName} - početna`}>
             <Image
               className="brand-logo brand-logo-header"
-              src="/images/mleko-i-mleko-logo.png"
+              src="/images/mleko-i-mleko-logo-mark.png"
               alt=""
-              width={76}
-              height={76}
-              sizes="76px"
+              width={120}
+              height={120}
+              sizes="60px"
             />
             <span className="brand-name">{settings.storeName}</span>
           </Link>
@@ -92,11 +92,11 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
           <Link className="brand footer-brand" href="/" aria-label={`${storeName} - početna`}>
             <Image
               className="brand-logo brand-logo-footer"
-              src="/images/mleko-i-mleko-logo.png"
+              src="/images/mleko-i-mleko-logo-mark.png"
               alt=""
-              width={82}
-              height={82}
-              sizes="82px"
+              width={140}
+              height={140}
+              sizes="70px"
             />
             <span>{storeName}</span>
           </Link>

@@ -11,13 +11,13 @@
 :root {
   --ink: #17251f;
   --ink-soft: #40514a;
-  --forest: #2146db;
+  --forest: #2f7184;
   --forest-dark: #17251f;
-  --leaf: #e7ebfb;
+  --leaf: #e4eef1;
   --cream: #f7f3e9;
   --paper: #ffffff;
-  --orange: #2146db;
-  --orange-dark: #1834ab;
+  --orange: #2f7184;
+  --orange-dark: #255a6a;
   --line: #e0d8c6;
   --muted: #58655d;
   --success: #1f6b4d;
@@ -163,8 +163,30 @@ textarea,
   background: var(--paper);
 }
 
+/* Nav links react with colour and a small rise. No underline and no filled box:
+   a rule under the word competes with the headline type on this page. */
+.main-nav a,
+.header-actions a {
+  position: relative;
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.22s cubic-bezier(0.22, 0.7, 0.25, 1);
+}
+
 .main-nav a:hover,
-.header-actions a:hover { background: var(--wash); }
+.main-nav a:focus-visible,
+.header-actions a:hover,
+.header-actions a:focus-visible {
+  background: transparent;
+  color: var(--cobalt);
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .main-nav a:hover,
+  .header-actions a:hover { transform: translateY(-1px); }
+}
 
 /* --------------------------------------------------------------- header */
 
@@ -178,13 +200,13 @@ textarea,
 }
 
 .nav-shell { min-height: 64px; }
-.brand-logo-header { width: 44px; height: 44px; }
+.brand-logo-header { width: 50px; height: 50px; }
 .announcement-bar,
 .delivery-bar { min-height: 34px; font-size: 0.75rem; }
 
 @media (min-width: 768px) {
   .nav-shell { min-height: 76px; }
-  .brand-logo-header { width: 52px; height: 52px; }
+  .brand-logo-header { width: 60px; height: 60px; }
 }
 
 .brand-name {
@@ -207,8 +229,64 @@ textarea,
   font-weight: 800;
 }
 
+.cart-link {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
 .cart-link:hover { background: var(--wash); }
 .cart-count { background: var(--cobalt); }
+
+/* ------------------------------------------------------- mobile menu panel */
+
+@media (max-width: 860px) {
+  /* The panel keeps its box and animates; `display` is not a transitionable property,
+     so visibility carries the hiding and keeps the links out of the tab order. */
+  .main-nav {
+    display: grid;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-10px) scale(0.99);
+    transform-origin: top center;
+    pointer-events: none;
+    border-radius: 0 0 18px 18px;
+    transition:
+      opacity 0.22s ease,
+      transform 0.3s cubic-bezier(0.22, 0.7, 0.25, 1),
+      visibility 0s linear 0.3s;
+  }
+
+  .main-nav.is-open {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+    transition-delay: 0s;
+  }
+
+  /* A full-width row reads better with a soft wash than with a left-anchored rule. */
+  .main-nav a { padding-inline: 0.75rem; border-radius: 10px; }
+  .main-nav a:hover,
+  .main-nav a:focus-visible { background: var(--wash); }
+  .main-nav a:active { background: var(--cobalt-wash); color: var(--cobalt-dark); }
+
+  /* Rows arrive just behind the panel, fast enough that the menu still feels instant. */
+  .main-nav.is-open a { animation: nav-row-in 0.3s cubic-bezier(0.22, 0.7, 0.25, 1) both; }
+  .main-nav.is-open a:nth-child(2) { animation-delay: 0.03s; }
+  .main-nav.is-open a:nth-child(3) { animation-delay: 0.06s; }
+  .main-nav.is-open a:nth-child(4) { animation-delay: 0.09s; }
+  .main-nav.is-open a:nth-child(5) { animation-delay: 0.12s; }
+  .main-nav.is-open a:nth-child(6) { animation-delay: 0.15s; }
+
+  .mobile-menu-button { border-radius: 999px; transition: background-color 0.2s ease; }
+  .mobile-menu-button:hover,
+  .mobile-menu-button:focus-visible { background: var(--wash); }
+  .menu-lines > span { transition: transform 0.32s cubic-bezier(0.22, 0.7, 0.25, 1); }
+}
+
+@keyframes nav-row-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 /* ------------------------------------------------------------------ hero */
 
@@ -319,9 +397,9 @@ textarea,
   padding-block: calc(var(--header-stack) + 3vh) 8vh;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--milk) 92%, transparent) 0%,
-    color-mix(in srgb, var(--milk) 72%, transparent) 42%,
-    color-mix(in srgb, var(--milk) 0%, transparent) 72%
+    color-mix(in srgb, var(--milk) 52%, transparent) 0%,
+    color-mix(in srgb, var(--milk) 24%, transparent) 40%,
+    color-mix(in srgb, var(--milk) 0%, transparent) 62%
   );
   pointer-events: none;
 }
@@ -459,9 +537,28 @@ textarea,
 .home > section { padding-block: 48px; }
 .home > section + section { border-top: 1px solid var(--line); }
 .hero + section { border-top: 0; }
+/* The hero is a full-bleed pinned scene, not a padded content section. */
+.home > .hero { padding-block: 0; }
 
-@media (min-width: 768px) { .home > section { padding-block: 72px; } }
-@media (min-width: 1200px) { .home > section { padding-block: 96px; } }
+/* Standalone pages (FAQ, Kontakt, Uslovi kupovine, prodavnica, nalog, korpa …) render
+   `.page-shell` as the only wrapper straight under <main>, with no section of its own
+   to carry the padding `.page-shell` gives up above. Without this, an opened <details>
+   or a longer cart pushes the last element flush against the footer's top border.
+   `:where(main)` keeps this at .page-shell's own specificity (0,1,0): it must still lose
+   to .store-page/.product-detail-page's own padding-block further down the file, and it
+   must not touch the home page's per-section .page-shell wrappers, which `.home > section`
+   already pads — matched here by the plain `>` combinator, not by specificity. */
+:where(main) > .page-shell { padding-block: 48px; }
+
+@media (min-width: 768px) {
+  .home > section { padding-block: 72px; }
+  :where(main) > .page-shell { padding-block: 72px; }
+}
+
+@media (min-width: 1200px) {
+  .home > section { padding-block: 96px; }
+  :where(main) > .page-shell { padding-block: 96px; }
+}
 
 .section-head {
   max-width: 46ch;
@@ -599,7 +696,7 @@ textarea,
 }
 
 .configurator-title a { text-decoration: none; }
-.configurator-title a:hover { text-decoration: underline; }
+.configurator-title a:hover { color: var(--cobalt); text-decoration: none; }
 
 .configurator-note {
   margin: 0;
@@ -1028,7 +1125,7 @@ textarea,
 }
 
 .drawer-item-head a { text-decoration: none; }
-.drawer-item-head a:hover { text-decoration: underline; }
+.drawer-item-head a:hover { color: var(--cobalt); text-decoration: none; }
 .drawer-item-meta { margin: 0; color: var(--muted); font-size: 0.82rem; }
 
 .drawer-item-controls {
@@ -1192,8 +1289,13 @@ body:has(.buy-bar[data-visible="true"]) .site-footer {
 }
 
 .cross-sell-section { margin-top: 3rem; border-bottom: 0; }
-.delivery-checker { border-radius: var(--photo-radius); background: var(--paper); }
+.delivery-checker { border-radius: var(--photo-radius); background: var(--paper); padding-inline: 1.6rem; }
+
+@media (min-width: 768px) {
+  .delivery-checker { padding-inline: 2rem; }
+}
 .site-footer { background: var(--wash); }
+.brand-logo-footer { width: 70px; height: 70px; }
 .consent-banner { border-radius: var(--photo-radius); }
 .tab[aria-pressed="true"] { border-color: var(--cobalt); background: var(--cobalt); }
 .product-image { background: var(--wash); }
@@ -1213,3 +1315,132 @@ body:has(.buy-bar[data-visible="true"]) .site-footer {
 
 /* Anchors must clear the sticky header when the offer is jumped to. */
 [id] { scroll-margin-top: 5.5rem; }
+
+/* ------------------------------------------------- hover micro-interactions */
+/* One easing and one pair of durations across every control, so the storefront
+   reacts as a single system rather than a set of unrelated effects. */
+
+/* Selection chips: quantity, purchase type, cadence, catalog filters. */
+.choice-row button,
+.tab,
+.quantity-presets button {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.24s ease,
+    transform 0.24s cubic-bezier(0.22, 0.7, 0.25, 1);
+}
+
+/* Every lift sits behind `hover: hover`: on a touch screen the hover state sticks
+   after a tap, and a chip left floating reads as a rendering bug. */
+@media (hover: hover) {
+  .choice-row button:hover:not(:disabled),
+  .tab:hover:not(:disabled),
+  .quantity-presets button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 14px rgba(23, 37, 31, 0.08);
+  }
+}
+
+/* A press should read as a press, not as a repaint. */
+.choice-row button:active:not(:disabled),
+.tab:active:not(:disabled),
+.quantity-presets button:active:not(:disabled),
+.button:active,
+.cart-link:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: none;
+  transition-duration: 0.08s;
+}
+
+.choice-row button[aria-pressed="true"],
+.tab[aria-pressed="true"],
+.quantity-presets button[aria-pressed="true"] {
+  box-shadow: 0 4px 14px rgba(47, 113, 132, 0.26);
+}
+
+/* A chosen chip keeps its own glow under the pointer; the neutral hover shadow
+   would otherwise outrank it and read as a dark ring around the cobalt. */
+@media (hover: hover) {
+  .choice-row button[aria-pressed="true"]:hover:not(:disabled),
+  .tab[aria-pressed="true"]:hover:not(:disabled),
+  .quantity-presets button[aria-pressed="true"]:hover:not(:disabled) {
+    box-shadow: 0 7px 18px rgba(47, 113, 132, 0.34);
+  }
+}
+
+/* Primary actions lift slightly so the pointer has something to land on. */
+.button {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.24s ease,
+    transform 0.24s cubic-bezier(0.22, 0.7, 0.25, 1);
+}
+
+@media (hover: hover) {
+  .button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(23, 37, 31, 0.18);
+  }
+}
+
+/* Product cards: the card rises and the photograph creeps in behind its own crop. */
+.configurator,
+.product-card,
+.bundle-card {
+  transition:
+    transform 0.28s cubic-bezier(0.22, 0.7, 0.25, 1),
+    border-color 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+.configurator-media img { transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
+
+@media (hover: hover) {
+  .configurator:hover,
+  .product-card:hover,
+  .bundle-card:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--ink) 22%, var(--line));
+    box-shadow: 0 16px 34px rgba(23, 37, 31, 0.1);
+  }
+
+  .configurator:hover .configurator-media img { transform: scale(1.04); }
+}
+
+/* Text links and footer columns. Hover deepens the colour rather than drawing a
+   rule under the words. */
+.text-link,
+.text-button,
+.scene-secondary,
+.configurator-title a,
+.drawer-item-head a { transition: color 0.2s ease; }
+
+.text-link:hover,
+.text-button:hover {
+  color: var(--cobalt-dark);
+  text-decoration: none;
+}
+
+.footer-links a,
+.footer-cookie-button {
+  transition: color 0.2s ease, transform 0.2s cubic-bezier(0.22, 0.7, 0.25, 1);
+}
+
+/* FAQ rows: the plus turns on the shared easing and the question warms up. */
+.faq-list summary { transition: color 0.2s ease; }
+.faq-list summary:hover { color: var(--cobalt); }
+.faq-list summary span { transition: transform 0.28s cubic-bezier(0.22, 0.7, 0.25, 1); }
+
+.icon-button {
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+@media (hover: hover) {
+  .footer-links a:hover,
+  .footer-cookie-button:hover { transform: translateX(3px); }
+
+  .icon-button:hover { border-color: var(--ink); transform: translateY(-1px); }
+}

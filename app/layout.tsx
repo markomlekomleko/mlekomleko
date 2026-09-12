@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Geist } from "next/font/google";
+import { Geist, Vollkorn } from "next/font/google";
 import { CartProvider } from "./components/cart-provider";
 import { CartDrawer } from "./components/cart-drawer";
 import { AnalyticsProvider } from "./components/analytics-provider";
@@ -20,10 +20,9 @@ const geist = Geist({
   subsets: ["latin", "latin-ext"],
 });
 
-const fraunces = Fraunces({
+const vollkorn = Vollkorn({
   variable: "--font-editorial",
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500"],
   style: ["normal", "italic"],
   display: "swap",
 });
@@ -91,7 +90,7 @@ export default async function RootLayout({
   };
   return (
     <html lang="sr-Latn" data-scroll-behavior="smooth">
-      <body className={`${geist.variable} ${fraunces.variable}`}>
+      <body className={`${geist.variable} ${vollkorn.variable}`}>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
