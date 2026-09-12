@@ -61,7 +61,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
             <a href="/kako-funkcionise">Kako dostavljamo</a>
             <a href="/farme">Naše poreklo</a>
             <a className="nav-support" href="/faq">Česta pitanja</a>
-            <a className="nav-support" href="/kontakt">Kontakt</a>
+            <a href="/kontakt">Kontakt</a>
             <a className="mobile-account" href="/nalog">Moj nalog</a>
           </nav>
           <div className="header-actions">

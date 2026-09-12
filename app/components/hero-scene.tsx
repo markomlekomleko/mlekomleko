@@ -6,7 +6,6 @@ import type { HeroMedia, HeroVariant } from "../lib/hero-media";
 type HeroSceneProps = {
   media: HeroMedia | null;
   offerHref: string;
-  deliveryHref: string;
 };
 
 /** 0 below `from`, 1 above `to`, smoothly eased between. */
@@ -31,7 +30,7 @@ function setVar(element: HTMLElement, name: string, value: number) {
  * once they stop. The clip can only ever show whole source frames, so its seeks are
  * quantised onto the source frame grid.
  */
-export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
+export function HeroScene({ media, offerHref }: HeroSceneProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const pinRef = useRef<HTMLDivElement>(null);
@@ -43,6 +42,7 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
   // The <video> mounts a render after the effect runs, so the effect cannot add its
   // own `seeked` listener. React attaches one that calls through this box instead.
   const onSeekedRef = useRef<() => void>(() => {});
+  const onVideoLoadedRef = useRef<() => void>(() => {});
 
   const active: HeroVariant | null = media
     ? variant === "desktop"
@@ -60,6 +60,7 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
     const wide = matchMedia("(min-width: 768px)");
     let frame = 0;
     let pinHeight = 0;
+    let pinTop = 0;
     let running = false;
     let visible = false;
     // Frame grid of the source clip. Asking the decoder for two positions inside the
@@ -87,7 +88,12 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
       setVariant(desktop ? "desktop" : "mobile");
     };
 
+    const header = document.querySelector<HTMLElement>(".site-header-stack");
     const measure = () => {
+      // The header is already sticky. Pin directly beneath it from the first pixel
+      // of scrolling instead of letting the hero travel up behind it first.
+      pinTop = header?.getBoundingClientRect().height ?? 0;
+      section.style.setProperty("--hero-header-height", `${pinTop}px`);
       pinHeight = pinRef.current?.offsetHeight ?? window.innerHeight;
     };
 
@@ -96,8 +102,8 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
       if (!track) return 0;
       const rect = track.getBoundingClientRect();
       const travel = rect.height - pinHeight;
-      if (travel <= 0) return rect.top <= 0 ? 1 : 0;
-      return Math.min(1, Math.max(0, -rect.top / travel));
+      if (travel <= 0) return rect.top <= pinTop ? 1 : 0;
+      return Math.min(1, Math.max(0, (pinTop - rect.top) / travel));
     };
 
     /**
@@ -126,10 +132,8 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
       setVar(section, "--hero-p", progress);
       const intro = 1 - ramp(progress, 0.14, 0.44);
       setVar(section, "--hero-intro-o", intro);
-      setVar(section, "--hero-intro-y", (1 - intro) * -26);
       const rhythm = ramp(progress, 0.5, 0.62) * (1 - ramp(progress, 0.84, 0.96));
       setVar(section, "--hero-rhythm-o", rhythm);
-      setVar(section, "--hero-rhythm-y", (1 - rhythm) * 18);
       setVar(section, "--hero-fold", ramp(progress, 0.8, 1));
       const video = videoRef.current;
       // `duration` is the only precondition worth testing. `readyState` drops back to
@@ -173,6 +177,10 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
       measure();
       render();
     };
+    onVideoLoadedRef.current = onResize;
+    const resizeObserver = new ResizeObserver(onResize);
+    if (header) resizeObserver.observe(header);
+    if (pinRef.current) resizeObserver.observe(pinRef.current);
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -203,6 +211,8 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
     return () => {
       if (frame) cancelAnimationFrame(frame);
       observer.disconnect();
+      resizeObserver.disconnect();
+      onVideoLoadedRef.current = () => {};
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       reduced.removeEventListener("change", applyEnvironment);
@@ -263,7 +273,10 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
                   preload="auto"
                   aria-hidden="true"
                   tabIndex={-1}
-                  onLoadedData={() => setVideoReady(true)}
+                  onLoadedData={() => {
+                    setVideoReady(true);
+                    onVideoLoadedRef.current();
+                  }}
                   onSeeked={() => onSeekedRef.current()}
                   onError={() => {
                     setVideoReady(false);
@@ -286,9 +299,6 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
                 <div className="scene-actions">
                   <a className="button" href={offerHref}>
                     Izaberi svoje mleko
-                  </a>
-                  <a className="scene-secondary" href={deliveryHref}>
-                    Proveri dostavu
                   </a>
                 </div>
                 <p className="scene-hint" aria-hidden="true">

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { DeliveryChecker } from "./components/delivery-checker";
 import { BundleOffers } from "./components/bundle-offers";
 import { HeroScene } from "./components/hero-scene";
 import { ProductConfigurator } from "./components/product-configurator";
@@ -26,7 +25,7 @@ export default async function HomePage() {
 
   return (
     <div className="home">
-      <HeroScene media={heroMedia} offerHref="#izaberite-mleko" deliveryHref="#proveri-dostavu" />
+      <HeroScene media={heroMedia} offerHref="#izaberite-mleko" />
 
       <section id="izaberite-mleko" className="offer" aria-labelledby="offer-title">
         <div className="page-shell">
@@ -75,13 +74,6 @@ export default async function HomePage() {
               <p>Od druge dostave preuzimamo čiste korišćene flaše i donosimo pune.</p>
             </li>
           </ol>
-          <div id="proveri-dostavu" className="steps-delivery">
-            <DeliveryChecker
-              title={settings.serviceAreaTitle}
-              note={settings.serviceAreaNote}
-              delivery={delivery}
-            />
-          </div>
         </div>
       </section>
 
