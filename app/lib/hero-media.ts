@@ -15,8 +15,14 @@ export type HeroVariant = {
   endFrame: string | null;
   width: number;
   height: number;
-  /** Source duration in seconds; the scroll controller maps progress onto it. */
+  /** Source duration in seconds. Documentation for the export; at runtime the
+      controller reads the decoded `duration` off the element itself. */
   durationSeconds: number;
+  /** Source frame rate. The controller seeks on this grid, so it never asks the
+      decoder for two positions that resolve to the same frame. Both variants stay at
+      the 24 fps of the master: on each one it is seek throughput, not source frame
+      rate, that limits how many distinct frames a scroll can show. */
+  fps: number;
   alt: string;
 };
 
@@ -35,9 +41,13 @@ export const heroMedia: HeroMedia | null = {
     video: "/media/hero/hero-desktop.mp4",
     poster: "/media/hero/poster-desktop.webp",
     endFrame: "/media/hero/end-desktop.webp",
-    width: 1440,
-    height: 810,
+    // 1080p rather than the 4K master: a seek costs roughly one frame decode, so the
+    // export resolution sets the scrub's frame ceiling. See the encoding note in
+    // public/media/hero/manifest.json for the measurements.
+    width: 1920,
+    height: 1080,
     durationSeconds: 8.04,
+    fps: 24,
     alt,
   },
   mobile: {
@@ -47,6 +57,7 @@ export const heroMedia: HeroMedia | null = {
     width: 720,
     height: 1280,
     durationSeconds: 8.04,
+    fps: 24,
     alt,
   },
 };

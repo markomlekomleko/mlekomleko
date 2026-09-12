@@ -22,11 +22,12 @@
   --muted: #58655d;
   --success: #1f6b4d;
   --radius: 16px;
-  /* Announcement bar plus sticky header; the hero copy clears this once pinned. */
-  --header-stack: 98px;
+  /* Announcement bar plus sticky header; the hero copy clears this once pinned, and
+     other sticky columns (cart summary, product gallery) use it as their own offset. */
+  --header-stack: 101px;
 }
 
-@media (min-width: 768px) { :root { --header-stack: 110px; } }
+@media (min-width: 768px) { :root { --header-stack: 113px; } }
 
 body {
   background: var(--milk);
@@ -293,11 +294,10 @@ textarea,
 .hero {
   --hero-p: 0;
   --hero-intro-o: 1;
-  --hero-intro-y: 0;
   --hero-rhythm-o: 0;
-  --hero-rhythm-y: 18;
   --hero-fold: 0;
   --hero-scroll: 85svh;
+  --hero-header-height: var(--header-stack);
   position: relative;
   background: var(--milk);
 }
@@ -307,8 +307,8 @@ textarea,
 }
 
 .scene-track {
-  height: calc(100vh + var(--hero-scroll));
-  height: calc(100svh + var(--hero-scroll));
+  height: calc(100vh - var(--hero-header-height) + var(--hero-scroll));
+  height: calc(100svh - var(--hero-header-height) + var(--hero-scroll));
 }
 
 .hero[data-mode="static"] .scene-track {
@@ -317,11 +317,11 @@ textarea,
 
 .scene-pin {
   position: sticky;
-  top: 0;
+  top: var(--hero-header-height);
   display: grid;
   overflow: hidden;
-  height: 100vh;
-  height: 100svh;
+  height: calc(100vh - var(--hero-header-height));
+  height: calc(100svh - var(--hero-header-height));
 }
 
 .hero[data-mode="static"] .scene-pin {
@@ -386,20 +386,21 @@ textarea,
 
 .hero[data-video="ready"] .scene-video { opacity: 1; }
 
-/* A readable gradient rather than a flat scrim, so the milk stays bright. */
-/* The copy sits in the top band on a phone: that is the quiet zone of the vertical
-   frame, and it stays clear of the sticky header once the scene is pinned. */
+/* Both copy phases share the centre of the visible hero below the header.
+   Only their opacity changes during scrolling; their positions stay fixed. */
 .scene-copy {
   position: relative;
   z-index: 2;
   display: grid;
-  align-content: start;
-  padding-block: calc(var(--header-stack) + 3vh) 8vh;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--milk) 52%, transparent) 0%,
-    color-mix(in srgb, var(--milk) 24%, transparent) 40%,
-    color-mix(in srgb, var(--milk) 0%, transparent) 62%
+  align-content: center;
+  justify-items: center;
+  text-align: center;
+  padding-block: 1.5rem;
+  background: radial-gradient(
+    ellipse at center,
+    color-mix(in srgb, var(--milk) 86%, transparent) 0%,
+    color-mix(in srgb, var(--milk) 60%, transparent) 38%,
+    color-mix(in srgb, var(--milk) 8%, transparent) 78%
   );
   pointer-events: none;
 }
@@ -407,6 +408,7 @@ textarea,
 .scene-copy-shell {
   display: grid;
   grid-template-areas: "stack";
+  place-items: center;
 }
 
 .scene-intro,
@@ -416,10 +418,12 @@ textarea,
 }
 
 .scene-intro {
-  align-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  align-self: center;
   opacity: var(--hero-intro-o);
-  transform: translate3d(0, calc(var(--hero-intro-y) * 1px), 0);
-  will-change: opacity, transform;
+  will-change: opacity;
 }
 
 .hero[data-mode="static"] .scene-intro {
@@ -442,18 +446,9 @@ textarea,
 .scene-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.75rem 1.25rem;
   align-items: center;
-}
-
-.scene-secondary {
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  color: var(--ink);
-  font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 4px;
 }
 
 .scene-hint {
@@ -467,12 +462,12 @@ textarea,
 }
 
 .scene-rhythm {
-  align-self: start;
+  align-self: center;
   display: grid;
+  justify-items: center;
   gap: 0.4rem;
   margin: 0;
   opacity: var(--hero-rhythm-o);
-  transform: translate3d(0, calc(var(--hero-rhythm-y) * 1px), 0);
   pointer-events: none;
 }
 
@@ -494,23 +489,12 @@ textarea,
 .hero[data-mode="static"] .scene-rhythm { display: none; }
 
 @media (min-width: 768px) {
-  .scene-copy {
-    align-content: center;
-    padding-block: 0;
-    background: linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--milk) 88%, transparent) 0%,
-      color-mix(in srgb, var(--milk) 66%, transparent) 40%,
-      color-mix(in srgb, var(--milk) 0%, transparent) 62%
-    );
-  }
-
   .scene-intro,
   .scene-rhythm {
-    align-self: center;
-    max-width: 34vw;
+    max-width: 48rem;
   }
-
+  .scene-intro h1 { max-width: 13ch; }
+  .scene-lead { max-width: 38ch; }
   .scene-lead { font-size: 1.125rem; }
 }
 

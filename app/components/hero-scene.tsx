@@ -6,7 +6,6 @@ import type { HeroMedia, HeroVariant } from "../lib/hero-media";
 type HeroSceneProps = {
   media: HeroMedia | null;
   offerHref: string;
-  deliveryHref: string;
 };
 
 /** 0 below `from`, 1 above `to`, smoothly eased between. */
@@ -23,10 +22,15 @@ function setVar(element: HTMLElement, name: string, value: number) {
  * Scroll-linked introduction.
  *
  * The scene is pinned with `position: sticky` so the browser keeps its own scrolling,
- * and a single requestAnimationFrame loop writes the smoothed progress onto CSS custom
- * properties and the video's `currentTime`. No React state is updated per frame.
+ * and a single requestAnimationFrame loop writes the scroll progress onto CSS custom
+ * properties and drives the clip. No React state is updated per frame.
+ *
+ * The scene sits exactly on the scroll position, with no easing between the two.
+ * An ease here reads as the hero trailing the reader's finger and only catching up
+ * once they stop. The clip can only ever show whole source frames, so its seeks are
+ * quantised onto the source frame grid.
  */
-export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
+export function HeroScene({ media, offerHref }: HeroSceneProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const pinRef = useRef<HTMLDivElement>(null);
@@ -35,6 +39,10 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
   const [mode, setMode] = useState<"static" | "scroll">(media ? "scroll" : "static");
   const [videoReady, setVideoReady] = useState(false);
   const [showEndFrame, setShowEndFrame] = useState(false);
+  // The <video> mounts a render after the effect runs, so the effect cannot add its
+  // own `seeked` listener. React attaches one that calls through this box instead.
+  const onSeekedRef = useRef<() => void>(() => {});
+  const onVideoLoadedRef = useRef<() => void>(() => {});
 
   const active: HeroVariant | null = media
     ? variant === "desktop"
@@ -51,12 +59,16 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const wide = matchMedia("(min-width: 768px)");
     let frame = 0;
-    let last = 0;
-    let target = 0;
-    let current = 0;
     let pinHeight = 0;
+    let pinTop = 0;
     let running = false;
     let visible = false;
+    // Frame grid of the source clip. Asking the decoder for two positions inside the
+    // same frame costs a seek and shows nothing, so the controller works in frame
+    // indices and only issues a seek when the index actually changes.
+    let fps = 24;
+    let shownFrame = -1;
+    let wantedFrame = -1;
 
     const applyEnvironment = () => {
       if (reduced.matches || !media) {
@@ -67,10 +79,21 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
       }
       setMode("scroll");
       setShowEndFrame(false);
-      setVariant(wide.matches ? "desktop" : "mobile");
+      const desktop = wide.matches;
+      fps = (desktop ? media.desktop.fps : media.mobile.fps) || 24;
+      // A different variant is a different source file: the decoder restarts at 0,
+      // so nothing about the old clip's position carries over.
+      shownFrame = -1;
+      wantedFrame = -1;
+      setVariant(desktop ? "desktop" : "mobile");
     };
 
+    const header = document.querySelector<HTMLElement>(".site-header-stack");
     const measure = () => {
+      // The header is already sticky. Pin directly beneath it from the first pixel
+      // of scrolling instead of letting the hero travel up behind it first.
+      pinTop = header?.getBoundingClientRect().height ?? 0;
+      section.style.setProperty("--hero-header-height", `${pinTop}px`);
       pinHeight = pinRef.current?.offsetHeight ?? window.innerHeight;
     };
 
@@ -79,80 +102,98 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
       if (!track) return 0;
       const rect = track.getBoundingClientRect();
       const travel = rect.height - pinHeight;
-      if (travel <= 0) return rect.top <= 0 ? 1 : 0;
-      return Math.min(1, Math.max(0, -rect.top / travel));
+      if (travel <= 0) return rect.top <= pinTop ? 1 : 0;
+      return Math.min(1, Math.max(0, (pinTop - rect.top) / travel));
     };
+
+    /**
+     * Move the decoder onto `wantedFrame`.
+     *
+     * Seeking to the centre of the frame's interval keeps the request off the frame
+     * boundary, where rounding would land a frame early or late. Requests are never
+     * queued behind one another: a seek issued while another is running replaces it,
+     * which is what keeps a slow decoder from working through stale positions.
+     */
+    const seekTo = (index: number) => {
+      const video = videoRef.current;
+      if (!video || index < 0 || index === shownFrame) return;
+      shownFrame = index;
+      video.currentTime = (index + 0.5) / fps;
+    };
+
+    // A decoder that ignored a request made mid-seek would otherwise sit on the
+    // frame before the one the reader stopped at.
+    const onSeeked = () => {
+      if (wantedFrame !== shownFrame) seekTo(wantedFrame);
+    };
+    onSeekedRef.current = onSeeked;
 
     const paint = (progress: number) => {
       setVar(section, "--hero-p", progress);
       const intro = 1 - ramp(progress, 0.14, 0.44);
       setVar(section, "--hero-intro-o", intro);
-      setVar(section, "--hero-intro-y", (1 - intro) * -26);
       const rhythm = ramp(progress, 0.5, 0.62) * (1 - ramp(progress, 0.84, 0.96));
       setVar(section, "--hero-rhythm-o", rhythm);
-      setVar(section, "--hero-rhythm-y", (1 - rhythm) * 18);
       setVar(section, "--hero-fold", ramp(progress, 0.8, 1));
       const video = videoRef.current;
-      // Never queue a new seek while the decoder is still serving the previous one:
-      // a backlog of stale positions is what makes scrubbing stutter on slow phones.
-      if (video && !video.seeking && video.readyState >= 2 && Number.isFinite(video.duration)) {
-        const time = progress * Math.max(0, video.duration - 0.05);
-        if (Math.abs(video.currentTime - time) > 0.02) video.currentTime = time;
+      // `duration` is the only precondition worth testing. `readyState` drops back to
+      // HAVE_METADATA for the length of every seek, so gating on it here would skip
+      // the next two frames' worth of updates and turn the scrub into a slideshow.
+      if (video && Number.isFinite(video.duration) && video.duration > 0) {
+        const lastFrame = Math.max(0, Math.round(video.duration * fps) - 1);
+        const next = Math.min(lastFrame, Math.max(0, Math.round(progress * lastFrame)));
+        if (next !== wantedFrame) {
+          wantedFrame = next;
+          seekTo(next);
+        }
       }
     };
 
-    const tick = (now: number) => {
-      const dt = last ? Math.min(0.1, (now - last) / 1000) : 0.016;
-      last = now;
-      // Time-based easing keeps the same feel on 60 Hz and 120 Hz screens.
-      const tau = wide.matches ? 0.3 : 0.2;
-      current += (target - current) * (1 - Math.exp(-dt / tau));
-      paint(current);
-      const settling = Math.abs(target - current) > 0.0004;
-      // Keep the loop alive one more frame while a seek is still pending, so the
-      // clip always lands on the position the reader stopped at.
-      const catchingUp = videoRef.current?.seeking === true;
-      if ((settling || catchingUp) && visible) {
-        frame = requestAnimationFrame(tick);
-      } else {
-        current = target;
-        paint(current);
-        running = false;
-        frame = 0;
-      }
+    // Reading the track here rather than in the scroll handler keeps it to one
+    // layout read per painted frame, however many scroll events arrived.
+    const render = () => {
+      paint(readProgress());
+    };
+
+    const tick = () => {
+      render();
+      // Nothing is left settling once the frame is painted, because the scene is
+      // already on the scroll position. The next scroll event asks for the next frame.
+      running = false;
+      frame = 0;
     };
 
     const request = () => {
       if (running || !visible) return;
       running = true;
-      last = 0;
       frame = requestAnimationFrame(tick);
     };
 
     const onScroll = () => {
-      target = readProgress();
       request();
     };
 
     const onResize = () => {
       measure();
-      target = readProgress();
-      current = target;
-      paint(current);
+      render();
     };
+    onVideoLoadedRef.current = onResize;
+    const resizeObserver = new ResizeObserver(onResize);
+    if (header) resizeObserver.observe(header);
+    if (pinRef.current) resizeObserver.observe(pinRef.current);
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         visible = entry.isIntersecting;
         if (visible) {
           measure();
-          onScroll();
+          request();
         } else if (frame) {
           cancelAnimationFrame(frame);
           frame = 0;
           running = false;
           // Park the scene on the frame the reader left it on.
-          paint(target);
+          render();
         }
       },
       { rootMargin: "120px 0px" },
@@ -160,9 +201,7 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
 
     applyEnvironment();
     measure();
-    target = readProgress();
-    current = target;
-    paint(current);
+    render();
     observer.observe(section);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
@@ -172,6 +211,8 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
     return () => {
       if (frame) cancelAnimationFrame(frame);
       observer.disconnect();
+      resizeObserver.disconnect();
+      onVideoLoadedRef.current = () => {};
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       reduced.removeEventListener("change", applyEnvironment);
@@ -232,7 +273,11 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
                   preload="auto"
                   aria-hidden="true"
                   tabIndex={-1}
-                  onLoadedData={() => setVideoReady(true)}
+                  onLoadedData={() => {
+                    setVideoReady(true);
+                    onVideoLoadedRef.current();
+                  }}
+                  onSeeked={() => onSeekedRef.current()}
                   onError={() => {
                     setVideoReady(false);
                     setMode("static");
@@ -254,9 +299,6 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
                 <div className="scene-actions">
                   <a className="button" href={offerHref}>
                     Izaberi svoje mleko
-                  </a>
-                  <a className="scene-secondary" href={deliveryHref}>
-                    Proveri dostavu
                   </a>
                 </div>
                 <p className="scene-hint" aria-hidden="true">

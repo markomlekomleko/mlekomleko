@@ -15,24 +15,27 @@
       "refMobileEnd": "b8c0bd78-36a4-42c1-a048-df737826dad9",
       "videoDesktopRejected": "5d65567a-c8b6-4216-81a3-8080bf2efb15",
       "videoDesktopAccepted": "bed6a83c-9f5c-428f-a03e-1811a626dfc7",
-      "videoMobileAccepted": "a8283b4b-954c-42d9-8673-fca848b3c1c7"
+      "videoMobileAccepted": "a8283b4b-954c-42d9-8673-fca848b3c1c7",
+      "videoDesktopUpscaled4k": "b1ddc652-0782-48c9-9a0e-265e4bb04c65"
     },
-    "rejectionReason": "Prva desktop generacija je pokazala drugu flasu koja sipa mleko oko 2 s i zatim nestaje do 4 s. To je prekid kontinuiteta objekata po H11, pa je uradjena jedna ciljana izmena."
+    "rejectionReason": "Prva desktop generacija je pokazala drugu flasu koja sipa mleko oko 2 s i zatim nestaje do 4 s. To je prekid kontinuiteta objekata po H11, pa je uradjena jedna ciljana izmena.",
+    "upscaleModel": "bytedance_video_upscale (preset aigc, 4k, 24 fps)"
   },
   "desktop": {
     "video": "/media/hero/hero-desktop.mp4",
     "poster": "/media/hero/poster-desktop.webp",
     "endFrame": "/media/hero/end-desktop.webp",
-    "width": 1440,
-    "height": 810,
+    "width": 1920,
+    "height": 1080,
     "durationSeconds": 8.04,
     "fps": 24,
     "codec": "h264",
     "audio": false,
-    "videoBytes": 2457157,
-    "posterBytes": 61666,
-    "endFrameBytes": 27108,
-    "masterResolution": "1920x1080"
+    "videoBytes": 4276087,
+    "posterBytes": 210490,
+    "endFrameBytes": 85448,
+    "masterResolution": "3840x2160 (AI upscale of the 1920x1080 master), izvezeno na 1920x1080",
+    "posterResolution": "2560x1440"
   },
   "mobile": {
     "video": "/media/hero/hero-mobile.mp4",
@@ -50,7 +53,7 @@
     "masterResolution": "1080x1920"
   },
   "encoding": {
-    "note": "Kljucni kadar na svakih 6 frejmova (0,25 s) radi trazenja pozicije pri skrolu, faststart, bez audio zapisa.",
-    "command": "ffmpeg -i <master> -an -vf scale=<w>:<h>:flags=lanczos -c:v libx264 -profile:v high -pix_fmt yuv420p -crf <26|27> -preset slow -g 6 -keyint_min 6 -sc_threshold 0 -tune fastdecode -movflags +faststart"
+    "note": "Kljucni kadar na svakih 0,25 s radi trazenja pozicije pri skrolu, faststart, bez audio zapisa. Desktop je 1920x1080 na 24 fps. Raniji izvoz je bio 4K i skrol je bio vidno stepenast: mereno u Chromium-u, trazenje pozicije je trajalo 50 ms po frejmu, sto scenu ogranicava na 20 frejmova u sekundi bez obzira na to koliko glatko skrol stize do JavaScript-a. Trosak trazenja odredjuje rezolucija, ne protok: na 2560x1440 mereno je 23 ms, a na 1920x1080 14 ms, dakle plafon od 72 frejma u sekundi. Gustina kljucnih kadrova ispod g=3 ne donosi nista jer ostaje cena dekodiranja jednog frejma. Zato je izabrano 1920x1080 uz crf 26 umesto 30: isto trazenje pozicije, bolji kvalitet, i 4,08 MB je ponovo unutar pocetnog budzeta od 5 MB iz plana. Detalji u docs/higgsfield-generation-log.md. Mobilna varijanta nije menjana.",
+    "command": "desktop: ffmpeg -i <4k-master> -an -vf scale=1920:1080:flags=lanczos -c:v libx264 -profile:v high -pix_fmt yuv420p -crf 26 -preset slow -g 6 -keyint_min 6 -sc_threshold 0 -tune fastdecode -movflags +faststart | poster i end frejm: scale=2560:1440:flags=lanczos, libwebp -quality 82 | mobile: nepromenjeno, ffmpeg -i <master> -an -vf scale=720:1280:flags=lanczos -c:v libx264 -profile:v high -pix_fmt yuv420p -crf 27 -preset slow -g 6 -keyint_min 6 -sc_threshold 0 -tune fastdecode -movflags +faststart"
   }
 }

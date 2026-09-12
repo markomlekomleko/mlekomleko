@@ -63,10 +63,13 @@ code { border-radius: 6px; background: var(--cream); color: var(--forest-dark); 
 .small-text { font-size: .86rem; }
 .muted { color: var(--muted); }
 
+/* The bar and the header stick together as one unit, so the announcement never
+   scrolls out of view before the header does. */
+.site-header-stack { position: sticky; z-index: 30; top: 0; }
 .announcement-bar { padding: .58rem 1rem; background: var(--forest-dark); color: white; text-align: center; }
 .announcement-bar a { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: .65rem; text-decoration: none; }
 .announcement-bar strong { color: var(--yellow); font-size: .88rem; }
-.site-header { position: sticky; z-index: 30; top: 0; border-bottom: 1px solid rgba(24, 51, 42, .11); background: rgba(255, 253, 248, .94); backdrop-filter: blur(18px); }
+.site-header { border-bottom: 1px solid rgba(24, 51, 42, .11); background: rgba(255, 253, 248, .94); backdrop-filter: blur(18px); }
 .nav-shell { display: flex; min-height: 74px; align-items: center; justify-content: space-between; gap: 1rem; }
 .brand { display: inline-flex; flex: 0 0 auto; align-items: center; gap: .55rem; font-weight: 850; letter-spacing: -.04em; text-decoration: none; }
 .brand-logo { display: block; aspect-ratio: 1; object-fit: contain; }
@@ -372,7 +375,7 @@ td select { min-width: 125px; min-height: 38px; padding-block: .4rem; }
 .farm-disclosure p { margin: 0; color: var(--ink-soft); }
 
 /* Admin */
-body:has(.admin-app, .admin-access) .announcement-bar, body:has(.admin-app, .admin-access) .site-header, body:has(.admin-app, .admin-access) .site-footer { display: none; }
+body:has(.admin-app, .admin-access) .site-header-stack, body:has(.admin-app, .admin-access) .site-footer { display: none; }
 .admin-app { display: grid; min-height: 100vh; background: #f4f5f3; color: #202822; }
 .admin-sidebar { position: fixed; z-index: 50; inset: 0 auto 0 0; display: flex; width: 232px; flex-direction: column; padding: 1rem .75rem; background: #1b1f1c; color: white; }
 .admin-brand { display: flex; align-items: center; gap: .65rem; padding: .4rem .5rem 1.2rem; text-decoration: none; }
@@ -449,7 +452,8 @@ body:has(.admin-app, .admin-access) .announcement-bar, body:has(.admin-app, .adm
 @media (min-width: 900px) {
   .hero-grid { grid-template-columns: 1.03fr .97fr; }
   .product-detail, .checkout-layout, .account-layout { grid-template-columns: minmax(0, 1.45fr) minmax(330px, .75fr); }
-  .cart-summary { position: sticky; top: 92px; }
+  /* Clears the sticky announcement bar + header stack, not the header alone. */
+  .cart-summary { position: sticky; top: var(--header-stack); }
   .product-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .featured-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .cart-item { grid-template-columns: minmax(170px, 1.2fr) repeat(3, minmax(120px, .7fr)) minmax(110px, auto); }

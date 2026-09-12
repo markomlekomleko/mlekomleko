@@ -34,7 +34,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   }, [menuOpen]);
 
   return (
-    <>
+    <div className="site-header-stack">
       {settings.announcementEnabled && settings.announcementText ? (
         <aside className="announcement-bar" aria-label="Važno obaveštenje">
           <a href={settings.announcementUrl} target={isVideoAnnouncement ? "_blank" : undefined} rel={isVideoAnnouncement ? "noreferrer" : undefined}>
@@ -61,7 +61,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
             <a href="/kako-funkcionise">Kako dostavljamo</a>
             <a href="/farme">Naše poreklo</a>
             <a className="nav-support" href="/faq">Česta pitanja</a>
-            <a className="nav-support" href="/kontakt">Kontakt</a>
+            <a href="/kontakt">Kontakt</a>
             <a className="mobile-account" href="/nalog">Moj nalog</a>
           </nav>
           <div className="header-actions">
@@ -80,7 +80,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
           </button>
         </div>
       </header>
-    </>
+    </div>
   );
 }
 

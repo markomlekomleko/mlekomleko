@@ -1,0 +1,41 @@
+.contact-page { padding-block: clamp(2.5rem, 6vw, 5.5rem) 4rem; }
+.contact-heading { max-width: 880px; margin-bottom: clamp(2rem, 5vw, 4rem); }
+.contact-heading h1 { max-width: 15ch; margin-block: 1rem; font-size: clamp(3rem, 7vw, 6rem); }
+.contact-heading .lead { max-width: 49ch; margin-bottom: 0; }
+.contact-layout { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); align-items: start; gap: clamp(2rem, 6vw, 6rem); }
+.contact-details { display: grid; gap: 2rem; padding-top: .5rem; }
+.contact-details section + section { padding-top: 2rem; border-top: 1px solid var(--line); }
+.contact-details h2 { max-width: 22ch; margin: 0 0 .8rem; font-size: 1.6rem; }
+.contact-details p { color: var(--ink-soft); font-size: .95rem; }
+.contact-phone > a { display: flex; align-items: center; justify-content: space-between; gap: 1rem; color: var(--ink); font-size: clamp(1.65rem, 3vw, 2.4rem); font-weight: 500; letter-spacing: -.04em; text-decoration: none; }
+.contact-phone > a:hover { color: var(--forest); }
+.contact-phone > a span { font-size: 1.5rem; color: var(--forest); }
+.contact-social > div { display: flex; flex-wrap: wrap; gap: 1.5rem; }
+.contact-form-panel { min-width: 0; padding: clamp(1.25rem, 3vw, 2.5rem); border: 1px solid var(--line); border-radius: 24px; background: var(--paper); }
+.contact-form-panel > h2 { margin: 0; font-size: clamp(2rem, 4vw, 3rem); }
+.contact-form-intro { margin: .75rem 0 1.8rem; color: var(--ink-soft); font-size: .95rem; }
+.contact-form { display: grid; gap: 1.25rem; }
+.contact-form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.contact-form .field { min-width: 0; }
+.contact-form input, .contact-form select, .contact-form textarea { min-width: 0; font-size: 16px; background: var(--milk); }
+.contact-form textarea { min-height: 160px; }
+.contact-form .field small { color: var(--muted); font-weight: 400; }
+.contact-privacy { margin: 0; color: var(--muted); font-size: .78rem; line-height: 1.6; }
+.contact-privacy a { text-underline-offset: 3px; }
+.contact-submit { width: 100%; display: flex; justify-content: space-between; }
+.contact-submit:disabled { cursor: wait; opacity: .65; }
+.contact-form-error { margin: 0; padding: 1rem; border-radius: 10px; background: #fff1ec; color: #843322; font-size: .9rem; }
+.contact-trap { display: none; }
+.contact-success { padding-block: 2rem; }
+.contact-success-mark { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 50%; background: var(--leaf); color: var(--forest); font-size: 1.5rem; }
+.contact-success h3 { margin-top: 1.5rem; }
+.contact-success p { color: var(--ink-soft); }
+.contact-faq { margin: 3rem 0 0; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
+@media (max-width: 860px) {
+  .contact-layout { grid-template-columns: minmax(0, 1fr); }
+  .contact-form-panel { grid-row: 1; }
+  .contact-details { gap: 1.5rem; }
+}
+@media (max-width: 540px) {
+  .contact-form-row { grid-template-columns: minmax(0, 1fr); }
+}
