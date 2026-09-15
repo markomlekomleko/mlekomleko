@@ -3,7 +3,7 @@ const browser = await chromium.launch({ channel: "chrome" });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
 await page.goto("http://localhost:3000", { waitUntil: "domcontentloaded" });
 const accept = page.locator("button", { hasText: "Dozvoli sve" });
-if (await accept.count()) { try { await accept.first().click({ timeout: 3000 }); } catch {} }
+if (await accept.count()) { try { await accept.first().click({ timeout: 3000 }); } catch { /* Consent may already be dismissed. */ } }
 await page.waitForTimeout(800);
 
 // check computed transition actually registered on the element BEFORE click

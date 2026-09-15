@@ -84,9 +84,10 @@ pristupa preko localhost adrese. `ADMIN_SECRET` nije produkciona admin prijava.
 bazi. Poziva istu poslovnu logiku kao stari Worker: projekciju dostave, podsetnike,
 obračun prvog dana meseca i outbox retry. HEAD zahtevi ne izvršavaju poslove.
 
-Raspored još nije aktiviran. U `vercel.json` treba dodati `crons` sa putanjom
-`/api/jobs/scheduled` i odgovarajućim UTC rasporedom nakon izbora naloga/plana. Pro
-omogućava češće izvršavanje; dnevni raspored na Hobby nije zamena za česte retry-e.
+`vercel.json` koristi Hobby-kompatibilan dnevni raspored `0 8 * * *` za
+`/api/jobs/scheduled`. Slanje oba kanala završava se u istom pozivu. Hobby može
+kasniti do 59 minuta. Pro omogućava češće izvršavanje; dnevni raspored nije zamena
+za česte retry-e. `CRON_SECRET` i stvarni servisi za slanje moraju biti podešeni.
 Poslovni datumi se i dalje računaju u `Europe/Belgrade`.
 Vercel šalje podešeni `CRON_SECRET` u Authorization headeru
 ([dokumentacija](https://vercel.com/docs/cron-jobs/manage-cron-jobs)).

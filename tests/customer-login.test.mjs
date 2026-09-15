@@ -219,7 +219,7 @@ test('utility jobs require separate consent, use a static account button, and re
   ok(await api('/api/account/login-settings', { notifications: true }, { cookie, method: 'PATCH' }));
   event('with-consent'); ok(await jobs()); ok(await jobs());
   assert.equal(sent.length, 1);
-  event('before-opt-out'); ok(await jobs());
+  database.raw.prepare("INSERT INTO outbox (id,topic,aggregate_type,aggregate_id,payload_json,available_at,idempotency_key) VALUES ('before-opt-out','whatsapp.account_update','order','test-order',?,?,'before-opt-out')").run(JSON.stringify({sourceTopic:'email.order_confirmation.requested',customerId}),new Date().toISOString());
   ok(await api('/api/account/login-settings', { notifications: false }, { cookie, method: 'PATCH' }));
   ok(await jobs()); assert.equal(sent.length, 1);
   assert.equal(database.raw.prepare("SELECT COUNT(*) n FROM outbox WHERE topic='whatsapp.account_update' AND external_id LIKE 'suppressed:%'").get().n, 1);

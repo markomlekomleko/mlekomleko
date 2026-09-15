@@ -245,7 +245,11 @@ async function processRows(candidates: OutboxRow[]) {
 export async function processOutbox(rawLimit = 25) {
   const limit = Math.min(100, Math.max(1, Math.trunc(rawLimit)));
   const now = new Date().toISOString();
-  return processRows(await all<OutboxRow>("SELECT * FROM outbox WHERE status = 'pending' AND available_at <= ? ORDER BY created_at, id LIMIT ?", now, limit));
+  const initial = await processRows(await all<OutboxRow>("SELECT * FROM outbox WHERE status = 'pending' AND available_at <= ? ORDER BY created_at, id LIMIT ?", now, limit));
+  // Email dispatch creates independent WhatsApp jobs. Drain them in this invocation,
+  // so a daily scheduler sends both reminders on the intended day.
+  const whatsapp = await processRows(await all<OutboxRow>("SELECT * FROM outbox WHERE status = 'pending' AND topic = 'whatsapp.account_update' AND available_at <= ? ORDER BY created_at, id LIMIT ?", now, limit));
+  return { attempted: initial.attempted + whatsapp.attempted, results: [...initial.results, ...whatsapp.results] };
 }
 
 export async function processOutboxFor(aggregateType: string, aggregateId: string) {

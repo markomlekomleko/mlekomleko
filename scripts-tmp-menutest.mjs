@@ -7,7 +7,7 @@ page.on("console", (msg) => logs.push(`[console:${msg.type()}] ${msg.text()}`));
 page.on("pageerror", (err) => logs.push(`[pageerror] ${err.message}`));
 await page.goto("http://localhost:3000", { waitUntil: "domcontentloaded" });
 const accept = page.locator("button", { hasText: "Dozvoli sve" });
-if (await accept.count()) { try { await accept.first().click({ timeout: 3000 }); } catch {} }
+if (await accept.count()) { try { await accept.first().click({ timeout: 3000 }); } catch { /* Consent may already be dismissed. */ } }
 await page.waitForTimeout(800);
 
 const before = await page.locator(".main-nav").evaluate((el) => ({

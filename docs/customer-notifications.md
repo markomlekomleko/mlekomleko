@@ -13,7 +13,7 @@
 
 Podrazumevani dani dostave su utorak i petak. Nedeljna ili dvonedeljna pretplata zadržava dan i ritam svoje prve dostave; dostupnost dva dana ne znači dve automatske dostave nedeljno. Obračun uključuje oba dana, filtrirana prema ritmu kupca.
 
-`/api/jobs/scheduled` se poziva na 10 minuta. Ponedeljkom/četvrtkom od 09:00 do 21:00 po vremenu Beograda priprema i šalje podsetnike za sutra. Ponovljeni pozivi koriste isti ključ prema izvornoj porudžbini/pretplati i datumu. Provera ne zavisi od privremenog ID-a liste dostave, koji se menja pri regenerisanju.
+`/api/jobs/scheduled` se poziva jednom dnevno u 08:00 UTC, u skladu sa Hobby planom. To je 09:00 zimi / 10:00 leti u Beogradu; Hobby može kasniti do 59 minuta. Ponedeljkom/četvrtkom priprema i šalje podsetnike za sutra. Oba kanala obrađuju se u istom pozivu. Ponovljeni pozivi koriste isti ključ prema izvornoj porudžbini/pretplati i datumu. Provera ne zavisi od privremenog ID-a liste dostave, koji se menja pri regenerisanju.
 
 Primer: „Poštovani, vaša sledeća isporuka je sutra, u utorak (15. septembar 2026).” Sadržaj uključuje stavke i link do naloga. Odložena poruka se ne šalje ako više nije dan pre dostave ili je dostava u međuvremenu uklonjena.
 
@@ -30,7 +30,7 @@ Ovo je pripremljeno u kodu; lokalni testovi ne dokazuju prijem u stvarnom inboxu
    > Poštovani, {{1}} Detalje možete pregledati na svom nalogu.
 
    Parametar sadrži konkretnu promenu, npr. „Vaša sledeća isporuka je preskočena. Preskočena isporuka: 15. septembar 2026. Sledeća dostava: 22. septembar 2026.” Naziv dugmeta: „Upravljaj dostavama”. Stari šablon bez parametara nije kompatibilan: napraviti i odobriti novi naziv, pa ga upisati u promenljivu okruženja. Autentikacioni šablon ostaje odvojen.
-4. Deploy uključuje raspored iz `vercel.json`; za interval od 10 minuta potreban je plan koji podržava učestale cron pozive ili spoljni scheduler sa istom Bearer autentikacijom. Lokalni `next dev` ne izvršava cron sam.
+4. Deploy uključuje dnevni raspored iz `vercel.json`. Izmene kupca šalju se odmah kroz API; automatski ponovni pokušaji neuspelih poruka izvršavaju se dnevno. Za češće retry-e potreban je Pro ili spoljni scheduler sa istom Bearer autentikacijom. Lokalni `next dev` ne izvršava cron sam.
 5. Posle podešavanja proveriti stvarni prijem na namenskoj test adresi i broju, uz saglasnost vlasnika. Status „sent” ovde znači da je servis prihvatio zahtev; ne znači potvrđen prijem/čitanje poruke.
 
 Izvori: [Infobip šabloni i parametri](https://www.infobip.com/docs/tutorials/send-whatsapp-template-messages), [Vercel cron konfiguracija i tajna](https://vercel.com/docs/cron-jobs/manage-cron-jobs).

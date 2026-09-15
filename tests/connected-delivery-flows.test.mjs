@@ -88,7 +88,9 @@ for (const [action, expected] of [['skip_next','Vaša sledeća isporuka je presk
 for(const [date,day,previous] of [['2026-09-15','u utorak','2026-09-14'],['2026-09-18','u petak','2026-09-17']]) {
  test(`${day}: cron generates tomorrow after cutoff and sends one reminder per channel across regeneration`,async()=>{
   await create(date,[line(),line('prod_jogurt_1l','one_time')]); optIn(); sent=[];
-  at(previous+'T10:00:00Z'); await jobs(); await jobs();
+  at(previous+'T10:00:00Z'); await jobs();
+  assert.equal(whatsapps().length,2, 'Both channels must finish in one daily run');
+  await jobs();
   const reminders=emails().filter(m=>m.subject==='Podsetnik za sutrašnju dostavu');
   assert.equal(reminders.length,2); // separate one-time and recurring delivery entries
   assert.ok(reminders.every(m=>m.text.includes('sutra, '+day)&&m.text.includes('/nalog')));
@@ -159,8 +161,14 @@ test('replayed mutation does not duplicate confirmations, and rejected mutation 
 });
 test('queued WhatsApp reminder respects opt-out and yesterday reminder is suppressed',async()=>{
  await create(); optIn(); at('2026-09-14T10:00:00Z'); sent=[];
- await jobs(); // email queues a distinct WhatsApp job
- database.raw.exec('UPDATE customer_credentials SET whatsapp_notifications_at=NULL');
+ const originalMock=globalThis.fetch;
+ globalThis.fetch=async (...args)=>{
+   const response=await originalMock(...args);
+   // Revoke after email accepted, before the separately queued WhatsApp is dispatched.
+   database.raw.exec('UPDATE customer_credentials SET whatsapp_notifications_at=NULL');
+   return response;
+ };
+ await jobs();
  await process(); assert.equal(whatsapps().length,0);
  assert.equal(one("SELECT COUNT(*) n FROM outbox WHERE topic='whatsapp.account_update' AND external_id LIKE 'suppressed:%'").n,1);
  // A delayed reminder is never delivered as "tomorrow" on the delivery date.
