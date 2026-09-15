@@ -87,12 +87,12 @@ export function HeroScene({ media, offerHref }: HeroSceneProps) {
       playback.move(step, true);
       const from = window.scrollY;
       const to = Math.max(0, origin + (next === 0 ? 0 : next === 1 ? travel : track.offsetHeight));
-      const duration = next === 2 ? 850 : 650;
+      const duration = next === 2 ? 1050 : 800;
       const started = performance.now();
       transitionUntil = started + duration;
       const tick = (now: number) => {
         const t = Math.min(1, (now - started) / duration);
-        const eased = t * t * (3 - 2 * t);
+        const eased = t * t * t * (t * (t * 6 - 15) + 10);
         window.scrollTo({ top: from + (to - from) * eased, behavior: "instant" });
         if (t < 1) scrollFrame = requestAnimationFrame(tick);
         else scrollFrame = 0;

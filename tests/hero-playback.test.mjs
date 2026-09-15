@@ -34,6 +34,33 @@ function setup(initial = video()) {
 }
 const settle = async () => { await Promise.resolve(); await Promise.resolve(); };
 
+test('each segment accelerates and settles without seeking through intermediate frames', async () => {
+  const clip = video();
+  const { player, tick } = setup(clip);
+  for (const step of [1, 2]) {
+    const start = clip.currentTime;
+    const end = step === 1 ? clip.duration * 0.65 : clip.duration - 0.025;
+    player.move(step, true);
+    assert.equal(clip.playbackRate, 1);
+    await settle();
+    const rates = [];
+    for (const progress of [0.02, 0.06, 0.5, 0.92, 0.98]) {
+      const time = start + (end - start) * progress;
+      clip.currentTime = time;
+      tick();
+      assert.equal(clip.currentTime, time, 'easing changes playback speed, never the current frame');
+      assert.equal(clip.paused, false);
+      rates.push(clip.playbackRate);
+    }
+    assert.ok(rates[0] < rates[1] && rates[1] < rates[2]);
+    assert.ok(rates[2] > rates[3] && rates[3] > rates[4]);
+    assert.ok(rates.every((rate) => rate >= 1 && rate <= 4));
+    clip.currentTime = end;
+    tick();
+    assert.equal(clip.paused, true);
+  }
+});
+
 test('a swipe starts loading/playback even before mobile metadata exists', async () => {
   const clip = video(false);
   let resolvePlay;

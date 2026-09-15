@@ -66,7 +66,15 @@ export function createHeroPlayback(options: PlaybackOptions) {
 
     const token = generation;
     attempting = true;
-    video.playbackRate = Math.max(1, Math.min(8, (target - video.currentTime) / (step === 1 ? 1.2 : 0.8)));
+    const start = video.currentTime;
+    const cruiseRate = Math.max(1, Math.min(4, (target - start) / (step === 1 ? 1.35 : 0.9)));
+    const ease = (value: number) => {
+      const t = Math.max(0, Math.min(1, value));
+      return t * t * (3 - 2 * t);
+    };
+    // Ease native playback into and out of each segment without seeking between
+    // frames. A positive minimum keeps short segments and mobile retries moving.
+    video.playbackRate = 1;
     const tick = () => {
       if (disposed || token !== generation) return;
       reportReady(video);
@@ -76,7 +84,12 @@ export function createHeroPlayback(options: PlaybackOptions) {
         seek(video, end);
         attempting = false;
         frame = 0;
-      } else frame = request(tick);
+      } else {
+        const progress = (video.currentTime - start) / Math.max(0.025, end - start);
+        const envelope = ease(progress / 0.12) * ease((1 - progress) / 0.18);
+        video.playbackRate = 1 + (cruiseRate - 1) * envelope;
+        frame = request(tick);
+      }
     };
 
     // Call play now, even with HAVE_NOTHING: it starts loading on mobile. Keeping
