@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ApiError, fetchJson, formatDate, formatMoney, normalizeProduct, statusLabel } from "../lib/frontend";
 import { useAnalytics } from "../components/analytics-provider";
 import { LoginSettings } from "./login-settings";
+import { LoginForm } from "../prijava/login-form";
 import { SubscriptionCard, type Subscription } from "./subscription-card";
 import "./account.css";
 
@@ -72,7 +73,7 @@ export function AccountView() {
     catch { setError("Odjava nije uspela. Pokušajte ponovo."); }
   }
   if (loading) return <div className="page-shell"><p className="loading-state" role="status">Učitavamo vaš nalog…</p></div>;
-  if (!authenticated) return <div className="page-shell narrow"><div className="empty-state"><p className="eyebrow">Korisnički nalog</p><h1>Prijavite se bez lozinke.</h1><p className="lead">Prijavite se jednokratnim kodom putem emaila ili potvrđenog WhatsApp broja.</p><a className="button" href="/prijava">Prijavi se ili napravi nalog</a></div></div>;
+  if (!authenticated) return <LoginForm />;
   if (!account) return <div className="page-shell narrow"><div className="notice error" role="alert"><h1>Nalog nije učitan.</h1><p>{error}</p><button className="button secondary" onClick={() => void loadAccount()}>Pokušaj ponovo</button></div></div>;
   const { customer } = account;
   const subscriptions = [...account.subscriptions].sort((a, b) => Number(a.status === "cancelled") - Number(b.status === "cancelled") || a.nextDeliveryDate.localeCompare(b.nextDeliveryDate));

@@ -10,7 +10,7 @@ import styles from "../market.module.css";
 const navigation = [
   { label: "Kako dostavljamo", links: [["Kako funkcioniše", "/kako-funkcionise"], ["Dostava", "/dostava"], ["Česta pitanja", "/faq"]] },
   { label: "Mleko", links: [["Prodavnica", "/prodavnica"], ["Gde kupiti", "/gde-kupiti"]] },
-  { label: "Naše poreklo", links: [["Naše farme", "/farme"], ["Kontakt", "/kontakt"]] },
+  { label: "Naše poreklo", links: [["Naše farme", "/farme"]] },
 ];
 
 export function MarketHeader({ storeName }: { storeName: string }) {
@@ -54,6 +54,7 @@ export function MarketHeader({ storeName }: { storeName: string }) {
           <summary>{group.label}<span className={styles.chevron} /></summary>
           <div className={styles.dropdown}>{group.links.map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}</div>
         </details>)}
+        <Link className={styles.navLink} href="/kontakt">Kontakt</Link>
       </nav>
       <Link className={styles.account} href="/nalog" aria-label="Moj nalog">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" /></svg>
@@ -62,6 +63,7 @@ export function MarketHeader({ storeName }: { storeName: string }) {
       {ready && count > 0 ? <button className={`${styles.button} ${styles.headerButton}`} onClick={openDrawer}>Korpa ({count})</button> : <Link className={`${styles.button} ${styles.headerButton}`} href="/#izaberite-mleko">Izaberi mleko</Link>}
       {visible && <nav id="market-mobile-nav" className={styles.mobileNavigation} aria-label="Mobilna navigacija">
         {navigation.flatMap((group) => group.links).map(([label, href]) => <Link href={href} key={href} onClick={() => setMenuOpen(false)}>{label}</Link>)}
+        <Link href="/kontakt" onClick={() => setMenuOpen(false)}>Kontakt</Link>
         <button onClick={() => { setMenuOpen(false); openDrawer(); }}>Korpa{ready && count > 0 ? ` (${count})` : ""}</button>
       </nav>}
     </header>

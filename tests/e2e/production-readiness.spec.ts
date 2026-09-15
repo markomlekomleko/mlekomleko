@@ -145,10 +145,10 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   await page.reload();
   await expect(quantity).toBeDisabled();
   await page.getByRole("button", { name: "Odjavi se", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Prijavite se bez lozinke." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Prijavite se kodom" })).toBeVisible();
   expect((await page.request.get("/api/account")).status()).toBe(401);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Prijavite se bez lozinke." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Prijavite se kodom" })).toBeVisible();
 
 });
 

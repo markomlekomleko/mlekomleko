@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 test("register without an order, verify email, and keep authentication out of browser storage", async ({ page }) => {
-  await page.goto("/prijava");
+  await page.goto("/nalog");
+  await expect(page.getByRole("heading", { name: "Prijavite se kodom" })).toBeVisible();
   const consent = page.getByRole("button", { name: "Samo neophodno" });
   if (await consent.isVisible()) await consent.click();
   await page.getByRole("button", { name: "Napravi nalog", exact: true }).click();
@@ -19,6 +20,6 @@ test("register without an order, verify email, and keep authentication out of br
   expect(await page.evaluate(() => document.cookie)).not.toContain("mm_session");
   expect(await page.evaluate(() => window.localStorage.getItem("mleko-i-mleko-session"))).toBeNull();
   await page.getByRole("button", { name: "Odjavi se", exact: true }).click();
-  await expect(page.getByRole("link", { name: "Prijavi se ili napravi nalog" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Prijavite se kodom" })).toBeVisible();
   await page.screenshot({ path: `test-results/login-${test.info().project.name}.png`, fullPage: true });
 });

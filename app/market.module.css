@@ -124,6 +124,8 @@
 .brandLogo { display: block; width: 64px; height: 64px; object-fit: contain; }
 .footer .brandLogo { width: 104px; height: 104px; }
 .navigation { display: flex; align-items: center; gap: 30px; margin-left: auto; }
+.navLink { padding: 14px 0; color: inherit; font-weight: 800; text-decoration: none; }
+.navLink:hover { text-decoration: underline; }
 .navGroup { position: relative; }
 .navGroup summary { display: flex; align-items: center; gap: 10px; padding: 14px 0; list-style: none; font-weight: 800; cursor: pointer; }
 .navGroup summary::-webkit-details-marker { display: none; }
