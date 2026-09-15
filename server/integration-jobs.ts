@@ -1,10 +1,10 @@
 import { env } from "@/server/runtime";
 import { readIntegrationConfig, publicIntegrationStatus } from "../integrations/config.mjs";
 import { DomainError, assertDomain } from "./domain";
-import { renderTransactionalMessage } from "./notifications";
+import { renderTransactionalMessage, renderWhatsAppUpdate } from "./notifications";
 import { enqueueOnce } from "./outbox";
 import { all, batch, first, run } from "./sql";
-import { assertLocalDate } from "./time";
+import { addLocalDays, assertLocalDate, localDateAt } from "./time";
 import { sha256 } from "./crypto";
 import { sendEmailMessage, sendWhatsAppTemplate } from "./messaging";
 
@@ -48,15 +48,20 @@ function messageData(order: OrderRow, items: OrderItemRow[], payload: Record<str
   return { ...payload, fullName: order.full_name, email: order.email, orderId: order.id, orderNumber: order.order_number, deliveryDate: order.delivery_date, totalMinor: order.total_minor, items };
 }
 
-async function sendEmail(row: OutboxRow, payload: Record<string, unknown>): Promise<string> {
-  let data = payload;
+async function notificationData(row: OutboxRow, payload: Record<string, unknown>) {
+  let data: Record<string, unknown> = { ...payload, accountUrl: `${runtimeEnv().APP_ORIGIN ?? "http://localhost:3000"}/nalog` };
   if (row.aggregate_type === "order") {
     const { order, items } = await orderData(row.aggregate_id);
-    data = messageData(order, items, payload);
+    data = { ...messageData(order, items, data), ...payload };
   } else if (row.aggregate_type === "subscription") {
     const subscription = await first<Record<string, unknown>>("SELECT s.next_delivery_date, c.full_name, c.email, d.cutoff_at FROM subscriptions s JOIN customers c ON c.id = s.customer_id LEFT JOIN deliveries d ON d.delivery_date = s.next_delivery_date WHERE s.id = ?", row.aggregate_id);
-    if (subscription) data = { ...payload, fullName: subscription.full_name, email: subscription.email, deliveryDate: subscription.next_delivery_date, cutoffAt: payload.cutoffAt ?? subscription.cutoff_at, accountUrl: `${runtimeEnv().APP_ORIGIN ?? "http://localhost:3000"}/nalog` };
+    if (subscription) data = { ...data, fullName: subscription.full_name, email: subscription.email, deliveryDate: "deliveryDate" in payload ? payload.deliveryDate : "nextDeliveryDate" in payload ? payload.nextDeliveryDate : subscription.next_delivery_date, cutoffAt: "cutoffAt" in payload ? payload.cutoffAt : subscription.cutoff_at, accountUrl: `${runtimeEnv().APP_ORIGIN ?? "http://localhost:3000"}/nalog` };
   }
+  return data;
+}
+
+async function sendEmail(row: OutboxRow, payload: Record<string, unknown>): Promise<string> {
+  const data = await notificationData(row, payload);
   const recipient = String(data.email ?? "").trim();
   if (!recipient) throw new IntegrationError("EMAIL_RECIPIENT_MISSING", "Email događaj nema primaoca.");
   const message = renderTransactionalMessage(row.topic, data);
@@ -68,25 +73,27 @@ async function sendEmail(row: OutboxRow, payload: Record<string, unknown>): Prom
   return sendEmailMessage(recipient, message, row.idempotency_key ?? row.id);
 }
 
-async function queueWhatsAppUpdate(row: OutboxRow) {
+async function queueWhatsAppUpdate(row: OutboxRow, payload: Record<string, unknown>) {
   // Separate job: an email failure must not block WhatsApp, or cause an email resend.
   const tables: Record<string, string> = { order: "orders", subscription: "subscriptions", delivery_order: "delivery_orders" };
   const table = tables[row.aggregate_type];
-  if (!table || !runtimeEnv().WHATSAPP_UPDATE_TEMPLATE || runtimeEnv().WHATSAPP_MODE !== "provider") return;
-  if (!["email.order_confirmation.requested", "email.delivery_reminder.requested", "email.invoice.requested", "email.receipt.requested"].includes(row.topic) && !row.topic.startsWith("subscription.")) return;
+  if (!table || runtimeEnv().WHATSAPP_MODE !== "provider") return;
+  if (!["email.order_confirmation.requested", "email.delivery_reminder.requested", "email.invoice.requested", "email.receipt.requested", "email.order_updated.requested", "payment.method_required"].includes(row.topic) && !row.topic.startsWith("subscription.")) return;
   const recipient = await first<Record<string, unknown>>(`SELECT a.customer_id FROM customer_credentials a JOIN ${table} x ON x.customer_id = a.customer_id
     WHERE x.id = ? AND a.whatsapp_verified_at IS NOT NULL AND a.whatsapp_consent_at IS NOT NULL AND a.whatsapp_notifications_at IS NOT NULL`, row.aggregate_id);
   if (!recipient) return;
   await batch([enqueueOnce("whatsapp.account_update", row.aggregate_type, row.aggregate_id,
-    { sourceTopic: row.topic, customerId: recipient.customer_id }, `whatsapp:${row.id}`)]);
+    { ...payload, sourceTopic: row.topic, customerId: recipient.customer_id }, `whatsapp:${row.id}`)]);
 }
 
 async function sendWhatsAppUpdate(row: OutboxRow, payload: Record<string, unknown>) {
   // Recheck consent at send time so queued jobs cannot bypass an opt-out.
   const recipient = await first<Record<string, unknown>>("SELECT whatsapp_phone FROM customer_credentials WHERE customer_id = ? AND whatsapp_verified_at IS NOT NULL AND whatsapp_consent_at IS NOT NULL AND whatsapp_notifications_at IS NOT NULL", String(payload.customerId ?? ""));
   if (!recipient) return `suppressed:${row.id}`;
-  // Fixed utility template with a static /nalog button; no authentication token in the URL.
-  return sendWhatsAppTemplate(String(recipient.whatsapp_phone), runtimeEnv().WHATSAPP_UPDATE_TEMPLATE ?? "", [], row.id);
+  const sourceTopic = String(payload.sourceTopic);
+  if (sourceTopic === "email.delivery_reminder.requested" && !await reminderStillDue(row, payload)) return `suppressed:${row.id}`;
+  const data = await notificationData(row, payload);
+  return sendWhatsAppTemplate(String(recipient.whatsapp_phone), runtimeEnv().WHATSAPP_UPDATE_TEMPLATE ?? "", [renderWhatsAppUpdate(sourceTopic, data)], row.id);
 }
 
 function integerEnv(name: keyof RuntimeEnv): number | null {
@@ -196,7 +203,8 @@ async function dispatch(row: OutboxRow): Promise<string> {
   if (row.topic === "analytics.purchase") return sendPurchaseAnalytics(row, payload);
   if (row.topic === "fiscal.receipt.requested") return (await issueFiscalReceipt(row)).externalId;
   if (isEmailTopic(row.topic)) {
-    await queueWhatsAppUpdate(row);
+    if (row.topic === "email.delivery_reminder.requested" && !await reminderStillDue(row, payload)) return `suppressed:${row.id}`;
+    await queueWhatsAppUpdate(row, payload);
     return sendEmail(row, payload);
   }
   return `internal:${row.topic}:${row.aggregate_id}`;
@@ -242,7 +250,9 @@ export async function processOutbox(rawLimit = 25) {
 
 export async function processOutboxFor(aggregateType: string, aggregateId: string) {
   const now = new Date().toISOString();
-  return processRows(await all<OutboxRow>("SELECT * FROM outbox WHERE status = 'pending' AND aggregate_type = ? AND aggregate_id = ? AND available_at <= ? ORDER BY created_at, id LIMIT 25", aggregateType, aggregateId, now));
+  const result = await processRows(await all<OutboxRow>("SELECT * FROM outbox WHERE status = 'pending' AND aggregate_type = ? AND aggregate_id = ? AND available_at <= ? ORDER BY created_at, id LIMIT 25", aggregateType, aggregateId, now));
+  await processRows(await all<OutboxRow>("SELECT * FROM outbox WHERE status = 'pending' AND topic = 'whatsapp.account_update' AND aggregate_type = ? AND aggregate_id = ? AND available_at <= ? ORDER BY created_at, id LIMIT 25", aggregateType, aggregateId, now));
+  return result;
 }
 
 export async function retryFailedOutbox() {
@@ -250,18 +260,29 @@ export async function retryFailedOutbox() {
   return { requeued: Number(result.meta?.changes ?? 0) };
 }
 
+async function reminderStillDue(row: OutboxRow, payload: Record<string, unknown>) {
+  if (String(payload.deliveryDate) !== addLocalDays(localDateAt(), 1)) return false;
+  const sourceType = String(payload.sourceType ?? "");
+  const column = sourceType === "subscription" ? "subscription_id" : sourceType === "order" ? "source_order_id" : "id";
+  const sourceId = String(payload.sourceId ?? row.aggregate_id);
+  return Boolean(await first<Record<string, unknown>>(`SELECT dor.id FROM delivery_orders dor JOIN deliveries d ON d.id = dor.delivery_id LEFT JOIN orders o ON o.id = dor.source_order_id WHERE dor.${column} = ? AND d.delivery_date = ? AND dor.status IN ('planned', 'locked') AND (o.id IS NULL OR (o.fulfillment_status IN ('planned', 'locked') AND (o.payment_method = 'cash' OR o.payment_status = 'paid')))`, sourceId, String(payload.deliveryDate)));
+}
+
 export async function queueDeliveryReminders(rawDate: unknown) {
   const date = assertLocalDate(rawDate);
-  const rows = await all<Record<string, unknown>>("SELECT dor.id, dor.note, dor.customer_snapshot_json, c.email, c.full_name, di.product_name, di.quantity FROM delivery_orders dor JOIN deliveries d ON d.id = dor.delivery_id JOIN customers c ON c.id = dor.customer_id LEFT JOIN delivery_items di ON di.delivery_order_id = dor.id WHERE d.delivery_date = ? AND dor.status != 'cancelled' ORDER BY dor.id, di.product_name", date);
-  const grouped = new Map<string, { email: string; fullName: string; note: unknown; items: Array<{ product_name: unknown; quantity: unknown }> }>();
+  // Never send "tomorrow" for a different date, including a delayed retry.
+  if (date !== addLocalDays(localDateAt(), 1)) return { date, queued: 0 };
+  const rows = await all<Record<string, unknown>>("SELECT dor.id, dor.source_order_id, dor.subscription_id, dor.note, c.email, c.full_name, di.product_name, di.quantity FROM delivery_orders dor JOIN deliveries d ON d.id = dor.delivery_id JOIN customers c ON c.id = dor.customer_id LEFT JOIN delivery_items di ON di.delivery_order_id = dor.id WHERE d.delivery_date = ? AND dor.status IN ('planned', 'locked') ORDER BY dor.id, di.product_name", date);
+  const grouped = new Map<string, { sourceType: string; sourceId: string; email: string; fullName: string; note: unknown; items: Array<{ product_name: unknown; quantity: unknown }> }>();
   for (const value of rows) {
     const key = String(value.id);
-    const current = grouped.get(key) ?? { email: String(value.email), fullName: String(value.full_name), note: value.note, items: [] };
+    const current = grouped.get(key) ?? { sourceType: value.subscription_id ? "subscription" : "order", sourceId: String(value.subscription_id ?? value.source_order_id), email: String(value.email), fullName: String(value.full_name), note: value.note, items: [] };
     if (value.product_name) current.items.push({ product_name: value.product_name, quantity: value.quantity });
     grouped.set(key, current);
   }
   if (!grouped.size) return { date, queued: 0 };
-  await batch([...grouped].map(([id, value]) => enqueueOnce("email.delivery_reminder.requested", "delivery_order", id, { ...value, deliveryDate: date }, `delivery-reminder:${id}:${date}:v1`)));
+  // Projection IDs change on regeneration; source + date is the stable delivery identity.
+  await batch([...grouped.values()].map((value) => enqueueOnce("email.delivery_reminder.requested", value.sourceType, value.sourceId, { ...value, deliveryDate: date }, `delivery-reminder:${value.sourceType}:${value.sourceId}:${date}:v2`)));
   return { date, queued: grouped.size };
 }
 

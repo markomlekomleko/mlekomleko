@@ -205,7 +205,9 @@ test('utility jobs require separate consent, use a static account button, and re
     if (url.includes('/whatsapp/')) {
       const message = JSON.parse(init.body).messages[0]; sent.push(message);
       assert.equal(message.content.templateName, 'mm_account_update');
-      assert.deepEqual(message.content.templateData, { body: { placeholders: [] } });
+      assert.equal(message.content.templateData.body.placeholders.length, 1);
+      assert.match(message.content.templateData.body.placeholders[0], /Porudžbina MM-TEST je primljena/);
+      assert.equal(message.content.templateData.buttons, undefined);
       return accepted(message.messageId);
     }
     return accepted();

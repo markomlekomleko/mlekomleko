@@ -1,0 +1,183 @@
+@font-face {
+  font-family: "Market Grotesk";
+  src: url("/fonts/market/grotesk-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Market Grotesk";
+  src: url("/fonts/market/grotesk-bold-serbian.woff2") format("woff2");
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Shared with the homepage, including pages loaded by client-side navigation.
+   The body scope keeps route-specific legacy styles from restoring the old brand. */
+body.market-theme {
+  --font-geist: "Market Grotesk";
+  --font-editorial: "Market Grotesk";
+  --milk: #fff9ea;
+  --cream: #fff9ea;
+  --paper: #fff;
+  --wash: #f1ecd4;
+  --ink: #2d2d2d;
+  --ink-soft: #56574e;
+  --muted: #66645d;
+  --line: #dcd6c6;
+  --forest: #547945;
+  --forest-dark: #2d2d2d;
+  --leaf: #d7e1b8;
+  --cobalt: #547945;
+  --cobalt-dark: #405d34;
+  --cobalt-wash: #d7e1b8;
+  --brand-teal: #547945;
+  --orange: #547945;
+  --orange-dark: #405d34;
+  --yellow: #efc85e;
+  --butter: #efc85e;
+  --radius: 16px;
+  --control-radius: 5px;
+  --photo-radius: 24px;
+  --shadow: none;
+  --header-stack: 90px;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: "Market Grotesk", Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+body.market-theme :is(h1, h2, h3, h4) {
+  font-family: "Market Grotesk", Arial, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.2;
+  color: var(--ink);
+}
+body.market-theme h1:not(:where([data-market-home] *)) { max-width: 22ch; font-size: 50px; }
+body.market-theme h2:not(:where([data-market-home] *)) { max-width: 28ch; font-size: 36px; }
+body.market-theme h3:not(:where([data-market-home] *)) { font-size: 20px; }
+body.market-theme :is(h1, h2) em { font-style: normal; }
+body.market-theme :is(button, input, select, textarea) { font-family: inherit; }
+body.market-theme :focus-visible { outline: 3px solid #4c7040; outline-offset: 4px; }
+
+/* One spacing rhythm for store, informational, legal and account pages. */
+.market-theme main > .page-shell { padding-block: 60px 80px; max-width: 1280px; }
+.market-theme main > .page-shell.narrow { max-width: 840px; }
+.market-theme :is(.page-heading, .contact-heading, .store-page > .section-head) { margin-bottom: 40px; }
+.market-theme .store-page > .section-head { display: block; max-width: none; text-align: center; }
+.market-theme .store-page > .section-head :is(h1, p) { margin-inline: auto; }
+.market-theme .lead { font-size: 20px; line-height: 1.5; }
+.market-theme .eyebrow { color: var(--forest); font-weight: 800; }
+.market-theme .section { padding-block: 48px; }
+.market-theme .farm-page-hero { padding-top: 0; }
+
+/* Buttons and selected choices use the same yellow as the homepage. */
+.market-theme .button {
+  min-height: 52px;
+  padding: 14px 24px;
+  border: 2px solid var(--ink);
+  border-radius: 5px;
+  background: var(--yellow);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 2px #ffffff3b;
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1.25;
+  letter-spacing: 0;
+  text-align: center;
+  transform: none;
+}
+.market-theme .button:hover { background: #e5b84c; color: var(--ink); border-color: var(--ink); transform: none; }
+.market-theme .button:is(.secondary, .light) { background: white; color: var(--ink); }
+.market-theme .button:is(.secondary, .light):hover { background: var(--wash); }
+.market-theme .button.danger { background: white; border-color: var(--danger); color: var(--danger); }
+.market-theme .button.small { min-height: 44px; padding: 10px 16px; font-size: 14px; }
+.market-theme :is(.choice-row, .quantity-presets) button,
+.market-theme .tab { border-radius: 5px; box-shadow: none; font-weight: 800; }
+.market-theme :is(.choice-row, .quantity-presets) button[aria-pressed="true"],
+.market-theme .tab[aria-pressed="true"] { background: var(--yellow); border-color: var(--ink); color: var(--ink); box-shadow: none; }
+.market-theme :is(.text-link, .text-button) { color: var(--forest); }
+
+/* Reuse the homepage product surfaces throughout the buying flow. */
+.market-theme :is(.card, .configurator, .bundle-card, .summary-card, .purchase-panel, .contact-form-panel, .admin-panel, .admin-access-card, .consent-banner) {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: none;
+  transform: none;
+}
+.market-theme .card { padding: 28px; }
+.market-theme :is(.card, .contact-details) h2 { font-size: 26px; }
+.market-theme .configurator-title { font-size: 24px; }
+.market-theme .configurator-panel h1.configurator-title { font-size: clamp(30px, 3vw, 40px); }
+.market-theme .configurator-note { font-size: 16px; }
+.market-theme .offer-grid[data-count="1"] { grid-template-columns: minmax(0, 1fr); max-width: 1000px; margin-inline: auto; }
+.market-theme :is(.farm-media img, .product-detail-media) { border-radius: 24px; }
+.market-theme .farm-page-hero .farm-media img { aspect-ratio: 1; }
+.market-theme :is(.delivery-checker, .farm-route) { background: var(--leaf); color: var(--ink); border: 0; border-radius: 16px; }
+.market-theme .delivery-checker { padding: 28px; }
+.market-theme .delivery-checker h2 { font-size: 26px; }
+.market-theme .farm-route :is(.eyebrow, li span) { color: var(--ink-soft); }
+.market-theme .farm-route li { border-color: #aebf95; }
+.market-theme .farm-profile-grid .card { background: var(--leaf); }
+.market-theme :is(.secure-note, .delivery-summary, .next-delivery, .saving-callout, .order-bump, .drawer-offer) { background: var(--leaf); color: var(--ink); border-radius: 8px; }
+.market-theme .order-bump button { background: var(--yellow); color: var(--ink); }
+.market-theme .summary-total { color: var(--ink); }
+.market-theme :is(.cart-drawer-panel, .cart-drawer-foot, .buy-bar) { background: var(--cream); }
+.market-theme .cart-drawer-head h2 { font-size: 24px; }
+
+/* Forms, accordions and notices keep their behavior and semantic status colors. */
+.market-theme :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  border-color: var(--line);
+  border-radius: 5px;
+  background: white;
+  color: var(--ink);
+  font-size: 16px;
+  box-shadow: none;
+}
+.market-theme :is(input[type="checkbox"], input[type="radio"]) { accent-color: var(--forest); }
+.market-theme .radio-card { border-radius: 8px; }
+.market-theme .radio-card:has(input:checked) { background: var(--leaf); border-color: var(--forest); box-shadow: none; }
+.market-theme .details-list details { padding-block: 22px; border-bottom: 2px solid #e2dfd5; }
+.market-theme .details-list summary { display: flex; align-items: center; justify-content: space-between; gap: 24px; list-style: none; font-size: 20px; font-weight: 800; }
+.market-theme .details-list summary::-webkit-details-marker { display: none; }
+.market-theme .details-list summary::after { content: "+"; flex: 0 0 24px; color: #686760; font-size: 28px; line-height: 1; text-align: center; }
+.market-theme .details-list details[open] > summary::after { content: "−"; }
+.market-theme .details-list p { color: var(--muted); }
+.market-theme :is(.empty-state, .loading-state) { background: var(--wash); border-radius: 16px; }
+
+/* Account and administration share the brand, with compact working controls. */
+.market-theme .account-dashboard h1 { font-size: 40px; }
+.market-theme .account-dashboard h2 { font-size: 26px; }
+.market-theme .account-dashboard h3 { font-size: 20px; }
+.market-theme .account-subscription { border-top: 5px solid #b0c471; }
+.market-theme :is(.account-draft, .account-confirm, .account-pause-info) { background: var(--leaf); border-color: var(--line); }
+.market-theme .account-stepper { border-color: var(--line); border-radius: 5px; }
+.market-theme .account-stepper button { background: var(--wash); }
+.market-theme .admin-app { background: var(--cream); color: var(--ink); }
+.market-theme .admin-access { background: var(--cream); min-height: calc(100svh - var(--header-stack)); }
+.market-theme .admin-sidebar { top: var(--header-stack); background: var(--wash); color: var(--ink); z-index: 30; border-right: 1px solid var(--line); }
+.market-theme .admin-sidebar nav button { color: var(--ink); border-radius: 5px; }
+.market-theme .admin-sidebar nav button:is(:hover, .active) { background: var(--yellow); color: var(--ink); }
+.market-theme .admin-sidebar nav button span { color: var(--forest); }
+.market-theme .admin-store-link { color: var(--ink); border-color: var(--line); }
+.market-theme .admin-editor { background: white; border-color: var(--forest); }
+.market-theme :is(.admin-topbar, .admin-access-card) h1 { font-size: 30px; }
+.market-theme .admin-app h2 { font-size: 24px; }
+.market-theme .admin-app h3 { font-size: 18px; }
+
+@media (max-width: 1000px) {
+  body.market-theme { --header-stack: 80px; }
+}
+@media (max-width: 767px) {
+  body.market-theme h1:not(:where([data-market-home] *)) { font-size: 40px; }
+  body.market-theme h2:not(:where([data-market-home] *)) { font-size: 30px; }
+  .market-theme main > .page-shell { padding-block: 40px 60px; }
+  .market-theme .lead { font-size: 18px; }
+  .market-theme .card { padding: 22px; }
+  .market-theme :is(.card, .contact-details, .delivery-checker) h2 { font-size: 24px; }
+  .market-theme .account-dashboard h1 { font-size: 30px; }
+}

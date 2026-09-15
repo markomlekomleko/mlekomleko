@@ -169,9 +169,11 @@ export function ProductConfigurator({
       <div className="configurator-body">
         <div className="configurator-head">
           <p className="configurator-category">{product.category}</p>
-          <h3 className="configurator-title">
-            <a href={href}>{product.name}</a>
-          </h3>
+          {layout === "panel" ? <h1 className="configurator-title">{product.name}</h1> : (
+            <h3 className="configurator-title">
+              <a href={href}>{product.name}</a>
+            </h3>
+          )}
           <p className="configurator-note">{product.shortDescription}</p>
           <p className="configurator-price">
             <strong>{formatMoney(unitPrice)}</strong>

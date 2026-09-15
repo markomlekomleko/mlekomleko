@@ -182,7 +182,7 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
   assert.match(html, /Izaberi svoje mleko/);
   assert.match(html, /href="\/prodavnica"/);
   assert.match(html, /href="\/nalog"/);
-  assert.match(html, /<img[^>]+(?:src|srcSet)="[^"]*mleko-i-mleko-logo(?:\.|%2E)png/i);
+  assert.match(html, /<img[^>]+(?:src|srcSet)="[^"]*mleko-i-mleko-logo-mark(?:\.|%2E)png/i);
   assert.match(html, /class="skip-link"[^>]*href="#glavni-sadrzaj"/);
   assert.match(html, /<main id="glavni-sadrzaj">/);
   assert.match(html, /<link rel="canonical" href="http:\/\/localhost:3000"/);
@@ -206,7 +206,7 @@ test("public catalog and product content are present in server-rendered HTML", a
 
   assert.equal(storeResponse.status, 200);
   const storeHtml = await storeResponse.text();
-  assert.match(storeHtml, /<h1[^>]*>Izaberite mleko i količinu\.<\/h1>/);
+  assert.match(storeHtml, /<h1[^>]*>Izaberi svoje mleko<\/h1>/);
   assert.match(storeHtml, /href="\/proizvodi\/kravlje-mleko"/);
   assert.match(storeHtml, /Kravlje mleko/);
   assert.doesNotMatch(storeHtml, /Učitavamo proizvode/);

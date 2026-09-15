@@ -93,9 +93,18 @@ export async function listCustomers() {
 }
 
 export async function listSubscriptions() {
-  return all<Record<string, unknown>>(
-    "SELECT s.*, c.full_name, c.email, COUNT(si.id) AS item_count FROM subscriptions s JOIN customers c ON c.id = s.customer_id LEFT JOIN subscription_items si ON si.subscription_id = s.id AND si.status = 'active' GROUP BY s.id, c.full_name, c.email ORDER BY s.created_at DESC LIMIT 500",
-  );
+  const subscriptions = await all<Record<string, unknown>>("SELECT s.*, c.full_name, c.email FROM subscriptions s JOIN customers c ON c.id = s.customer_id ORDER BY s.created_at DESC LIMIT 500");
+  if (!subscriptions.length) return [];
+  const placeholders = subscriptions.map(() => "?").join(",");
+  const ids = subscriptions.map((subscription) => String(subscription.id));
+  const [items, skips] = await Promise.all([
+    all<Record<string, unknown>>(`SELECT si.*, p.name AS product_name FROM subscription_items si JOIN products p ON p.id = si.product_id WHERE si.subscription_id IN (${placeholders}) AND si.status = 'active'`, ...ids),
+    all<Record<string, unknown>>(`SELECT subscription_id, delivery_date FROM subscription_skips WHERE subscription_id IN (${placeholders}) ORDER BY delivery_date DESC`, ...ids),
+  ]);
+  return subscriptions.map((subscription) => {
+    const activeItems = items.filter((item) => item.subscription_id === subscription.id);
+    return { ...subscription, item_count: activeItems.length, items: activeItems, skips: skips.filter((skip) => skip.subscription_id === subscription.id) };
+  });
 }
 
 export async function listOrders(params = new URLSearchParams()) {
@@ -147,7 +156,7 @@ export async function updateOrder(input: Record<string, unknown>) {
     const currentItems = await all<Record<string, unknown>>("SELECT product_id, quantity FROM order_items WHERE order_id = ?", id);
     const replacement = input.items ?? currentItems.map((item) => ({ productId: item.product_id, quantity: item.quantity }));
     assertDomain(Array.isArray(replacement) && replacement.every((item) => item && typeof item === "object" && !Array.isArray(item)), "VALIDATION_ERROR", "Stavke porudžbine nisu ispravne.", 422);
-    const quote = await quoteCart({ items: replacement.map((item) => ({ ...item, purchaseType: "one_time" })), deliveryDate: before.delivery_date, postalCode, promoCode: before.promo_code });
+    const quote = await quoteCart({ items: replacement.map((item) => ({ ...item, purchaseType: "one_time" })), deliveryDate: before.delivery_date, city, postalCode, promoCode: before.promo_code });
     assertDomain(quote.serviceable !== false, "DELIVERY_AREA_UNAVAILABLE", "Adresa nije u zoni dostave.", 422);
     if (input.items !== undefined) {
       statements.push({ sql: "DELETE FROM order_items WHERE order_id = ?", bindings: [id] });
@@ -165,8 +174,9 @@ export async function updateOrder(input: Record<string, unknown>) {
     statements.push(enqueue("email.receipt.requested", "order", id, { orderId: id }));
     statements.push(purchaseAnalyticsEvent(id, String(before.order_number ?? id), "admin-payment-confirmation"));
   }
+  if (editingDelivery || paymentStatus !== before.payment_status || fulfillmentStatus !== before.fulfillment_status || customerNote !== before.customer_note) statements.push(enqueue("email.order_updated.requested", "order", id, { ...after, deliveryDate: before.delivery_date, detailsChanged: editingDelivery }));
   await batch(statements);
-  if (editingDelivery) {
+  if (editingDelivery || fulfillmentStatus !== before.fulfillment_status) {
     const delivery = await first<Record<string, unknown>>("SELECT id FROM deliveries WHERE delivery_date = ? AND status = 'open'", String(before.delivery_date));
     if (delivery) await generateDelivery(String(before.delivery_date), `admin-order:${id}:${crypto.randomUUID()}`);
   }
@@ -232,6 +242,7 @@ export async function updateSettings(input: Record<string, unknown>) {
     ...booleanSettings,
     "deliveryLocalTime",
     "servicePostalCodes",
+    "deliveryWeekdays",
   ]);
   const entries = Object.entries(input);
   assertDomain(
@@ -240,9 +251,12 @@ export async function updateSettings(input: Record<string, unknown>) {
     "Poslato je nepoznato podešavanje.",
     422,
   );
-  const normalized: Record<string, string | number | boolean | string[]> = {};
+  const normalized: Record<string, string | number | boolean | string[] | number[]> = {};
   for (const [key, value] of entries) {
-    if (numericSettings.has(key)) {
+    if (key === "deliveryWeekdays") {
+      assertDomain(Array.isArray(value) && value.length > 0 && value.every((day) => Number.isInteger(day) && day >= 0 && day <= 6), "VALIDATION_ERROR", "Izaberite dane dostave.", 422);
+      normalized[key] = [...new Set(value as number[])].sort();
+    } else if (numericSettings.has(key)) {
       normalized[key] = nonNegativeInt(value, key, numericSettings.get(key));
     } else if (booleanSettings.has(key)) {
       normalized[key] = value === true || value === 1 || value === "1" || value === "true";

@@ -51,7 +51,7 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
   }
 
   const settings = await getBusinessSettings();
-  const deliveryDates = weekdayDates(month, settings.deliveryWeekday);
+  const deliveryDates = settings.deliveryWeekdays.flatMap((day) => weekdayDates(month, day)).sort();
   const subscriptions = await all<BillingSubscription>("SELECT s.*, c.source_json FROM subscriptions s JOIN customers c ON c.id = s.customer_id WHERE s.status IN ('active', 'paused') AND substr(s.started_at, 1, 7) <= ? ORDER BY s.id", month);
   const results: Array<Record<string, unknown>> = [];
   for (const subscription of subscriptions) {

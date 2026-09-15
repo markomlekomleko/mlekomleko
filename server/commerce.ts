@@ -1,3 +1,4 @@
+import { deliveryAddressError, normalizeDeliveryCity } from "../app/lib/delivery-area";
 import { randomToken, sha256, stableJsonHash } from "./crypto";
 import { DomainError, assertDomain, emailAddress, enumValue, optionalString, positiveInt, rejectCardData, requiredString } from "./domain";
 import { localPaymentGateway } from "./integrations";
@@ -142,7 +143,7 @@ export async function quoteCart(input: Record<string, unknown>) {
   const items = parseCheckoutItems(input.items);
   const settings = await getBusinessSettings();
   const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow()).deliveryDate : assertLocalDate(input.deliveryDate);
-  assertDomain(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay() === settings.deliveryWeekday, "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
+  assertDomain(settings.deliveryWeekdays.includes(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay()), "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
   assertBeforeCutoff(cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime));
   const productIds = [...new Set(items.map((item) => item.productId))];
   const rows = await all<ProductRow>(`SELECT * FROM products WHERE id IN (${sqlPlaceholders(productIds.length)}) AND is_active = 1`, ...productIds);
@@ -163,7 +164,10 @@ export async function quoteCart(input: Record<string, unknown>) {
     ? settings.deliveryFeeMinor * deliveryOccurrences
     : 0;
   const postalCode = optionalString(input.postalCode, "postalCode", 20);
-  const serviceable = postalCode ? isServiceablePostalCode(settings, postalCode) : undefined;
+  const city = optionalString(input.city, "city", 100);
+  const serviceable = postalCode
+    ? isServiceablePostalCode(settings, postalCode) && (!city || deliveryAddressError(city, postalCode) === null)
+    : city ? normalizeDeliveryCity(city) !== null : undefined;
   const recommendedRows = await all<ProductRow>(
     `SELECT * FROM products WHERE is_active = 1 ${productIds.length ? `AND id NOT IN (${sqlPlaceholders(productIds.length)})` : ""} ORDER BY (price_minor - cost_minor - packaging_cost_minor) DESC, is_featured DESC, sort_order ASC LIMIT 3`,
     ...productIds,
@@ -223,9 +227,12 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   if (paymentToken) assertDomain(!/^\d{12,19}$/.test(paymentToken.replace(/[ -]/g, "")), "CARD_DATA_REJECTED", "paymentToken looks like raw card data and was rejected.", 422);
 
   const settings = await getBusinessSettings();
+  const addressError = deliveryAddressError(customer.city, customer.postalCode);
+  assertDomain(!addressError, "DELIVERY_AREA_UNAVAILABLE", addressError ?? "Adresa nije u zoni dostave.", 422, { field: "customer.postalCode" });
+  customer.city = normalizeDeliveryCity(customer.city)!;
   assertDomain(isServiceablePostalCode(settings, customer.postalCode), "DELIVERY_AREA_UNAVAILABLE", "Dostava trenutno nije dostupna za uneti poštanski broj.", 422, { field: "customer.postalCode" });
   const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow()).deliveryDate : assertLocalDate(input.deliveryDate);
-  assertDomain(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay() === settings.deliveryWeekday, "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
+  assertDomain(settings.deliveryWeekdays.includes(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay()), "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
   const cutoffAt = cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime);
   assertBeforeCutoff(cutoffAt);
 
@@ -317,6 +324,8 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
     if (promo) await resolvePromo(promoCode, subtotalMinor);
     throw error;
   }
+  const openDelivery = await first<Record<string, unknown>>("SELECT id FROM deliveries WHERE delivery_date = ? AND status = 'open'", deliveryDate);
+  if (openDelivery) await generateDelivery(deliveryDate, `checkout-refresh:${orderId}`);
   return { status: 201, body: response };
 }
 
@@ -556,11 +565,11 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
     }
   } else if (action === "resume") {
     const settings = await getBusinessSettings();
-    let resumeDate = subscription.next_delivery_date > localDateAt() ? subscription.next_delivery_date : nextWeekday(new Date(), settings.deliveryWeekday);
+    let resumeDate = subscription.next_delivery_date > localDateAt() ? subscription.next_delivery_date : nextWeekday(new Date(), new Date(`${activeItems[0]?.cadence_anchor_date ?? subscription.next_delivery_date}T12:00:00Z`).getUTCDay());
     for (let attempts = 0; attempts < 12; attempts += 1) {
       const delivery = await first<{ cutoff_at: string; locked_at: string | null } & Record<string, unknown>>("SELECT cutoff_at, locked_at FROM deliveries WHERE delivery_date = ?", resumeDate);
       const cutoffAt = delivery?.cutoff_at ?? cutoffForDelivery(resumeDate, settings.cutoffHours, settings.deliveryLocalTime);
-      if (!delivery?.locked_at && Date.now() < Date.parse(cutoffAt)) break;
+      if (!delivery?.locked_at && Date.now() < Date.parse(cutoffAt) && activeItems.some((item) => isCadenceDue(item.cadence_anchor_date, resumeDate, item.cadence))) break;
       resumeDate = addLocalDays(resumeDate, 7);
     }
     resultingNextDeliveryDate = resumeDate;
@@ -585,7 +594,7 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
   const notificationSettings = await getBusinessSettings();
   const notificationDelivery = action === "cancel" ? null : await first<{ cutoff_at: string } & Record<string, unknown>>("SELECT cutoff_at FROM deliveries WHERE delivery_date = ?", resultingNextDeliveryDate);
   const notificationCutoffAt = action === "cancel" ? null : notificationDelivery?.cutoff_at ?? cutoffForDelivery(resultingNextDeliveryDate, notificationSettings.cutoffHours, notificationSettings.deliveryLocalTime);
-  statements.push(enqueue(`subscription.${action}`, "subscription", subscriptionId, { customerId, nextDeliveryDate: resultingNextDeliveryDate, cutoffAt: notificationCutoffAt, adjustmentMinor, addonOrder }));
+  statements.push(enqueue(`subscription.${action}`, "subscription", subscriptionId, { customerId, nextDeliveryDate: action === "cancel" ? null : resultingNextDeliveryDate, previousDeliveryDate: subscription.next_delivery_date, pauseUntil: input.pauseUntil, quantity: input.quantity, cadence: input.cadence, cutoffAt: notificationCutoffAt, adjustmentMinor, addonOrder }));
   try {
     await batch(statements);
   } catch (error) {
@@ -597,9 +606,7 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
   }
   // Open projections are operational read models, so refresh them immediately after an accepted pre-cutoff mutation.
   // Locked snapshots are never regenerated. A distinct key makes each accepted mutation a new idempotent generation run.
-  for (const date of new Set([subscription.next_delivery_date, resultingNextDeliveryDate])) {
-    const openDelivery = await first<Record<string, unknown>>("SELECT id FROM deliveries WHERE delivery_date = ? AND status = 'open'", date);
-    if (openDelivery) await generateDelivery(date, `account-refresh:${subscriptionId}:${date}:${now}`);
-  }
+  const openDeliveries = await all<{ delivery_date: string } & Record<string, unknown>>("SELECT delivery_date FROM deliveries WHERE status = 'open' AND delivery_date >= ?", localDateAt());
+  for (const { delivery_date: date } of openDeliveries) await generateDelivery(date, `account-refresh:${subscriptionId}:${date}:${mutationKey}`);
   return { ...response, account: await getAccount(customerId) };
 }

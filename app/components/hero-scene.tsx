@@ -2,34 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { HeroMedia, HeroVariant } from "../lib/hero-media";
+import { createHeroPlayback } from "../lib/hero-playback";
 
 type HeroSceneProps = {
   media: HeroMedia | null;
   offerHref: string;
 };
 
-/** 0 below `from`, 1 above `to`, smoothly eased between. */
-function ramp(value: number, from: number, to: number) {
-  const t = Math.min(1, Math.max(0, (value - from) / (to - from)));
-  return t * t * (3 - 2 * t);
-}
-
-function setVar(element: HTMLElement, name: string, value: number) {
-  element.style.setProperty(name, value.toFixed(4));
-}
-
-/**
- * Scroll-linked introduction.
- *
- * The scene is pinned with `position: sticky` so the browser keeps its own scrolling,
- * and a single requestAnimationFrame loop writes the scroll progress onto CSS custom
- * properties and drives the clip. No React state is updated per frame.
- *
- * The scene sits exactly on the scroll position, with no easing between the two.
- * An ease here reads as the hero trailing the reader's finger and only catching up
- * once they stop. The clip can only ever show whole source frames, so its seeks are
- * quantised onto the source frame grid.
- */
+/** Two deliberate gestures, with timed playback rather than scroll scrubbing. */
 export function HeroScene({ media, offerHref }: HeroSceneProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -39,10 +19,8 @@ export function HeroScene({ media, offerHref }: HeroSceneProps) {
   const [mode, setMode] = useState<"static" | "scroll">(media ? "scroll" : "static");
   const [videoReady, setVideoReady] = useState(false);
   const [showEndFrame, setShowEndFrame] = useState(false);
-  // The <video> mounts a render after the effect runs, so the effect cannot add its
-  // own `seeked` listener. React attaches one that calls through this box instead.
-  const onSeekedRef = useRef<() => void>(() => {});
   const onVideoLoadedRef = useRef<() => void>(() => {});
+  const onVideoErrorRef = useRef<() => void>(() => {});
 
   const active: HeroVariant | null = media
     ? variant === "desktop"
@@ -54,167 +32,202 @@ export function HeroScene({ media, offerHref }: HeroSceneProps) {
 
   useEffect(() => {
     const section = sectionRef.current;
-    if (!section) return;
+    const track = trackRef.current;
+    const pin = pinRef.current;
+    if (!section || !track || !pin) return;
 
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     const wide = matchMedia("(min-width: 768px)");
-    let frame = 0;
-    let pinHeight = 0;
-    let pinTop = 0;
-    let running = false;
-    let visible = false;
-    // Frame grid of the source clip. Asking the decoder for two positions inside the
-    // same frame costs a seek and shows nothing, so the controller works in frame
-    // indices and only issues a seek when the index actually changes.
-    let fps = 24;
-    let shownFrame = -1;
-    let wantedFrame = -1;
+    const header = document.querySelector<HTMLElement>("[data-hero-header], .site-header-stack");
+    let enabled = Boolean(media) && !reduced.matches;
+    let step: 0 | 1 | 2 = 0;
+    let headerHeight = 0;
+    let origin = 0;
+    let travel = 0;
+    let scrollFrame = 0;
+    let transitionUntil = 0;
+    let lastWheel = -Infinity;
+    let wheelDistance = 0;
+    let touchY = 0;
+    let touchX = 0;
+    let touchConsumed = false;
 
-    const applyEnvironment = () => {
-      if (reduced.matches || !media) {
-        setMode("static");
-        setShowEndFrame(Boolean(media));
-        setVariant(null);
+    const measure = () => {
+      headerHeight = header?.getBoundingClientRect().height ?? 0;
+      section.style.setProperty("--hero-header-height", `${headerHeight}px`);
+      origin = window.scrollY + track.getBoundingClientRect().top - headerHeight;
+      travel = Math.max(0, track.offsetHeight - pin.offsetHeight);
+    };
+
+    const playback = createHeroPlayback({
+      video: () => videoRef.current,
+      duration: () => (wide.matches ? media?.desktop.durationSeconds : media?.mobile.durationSeconds) ?? 8.04,
+      onReady: () => setVideoReady(true),
+    });
+    const cancelScroll = () => {
+      cancelAnimationFrame(scrollFrame);
+      scrollFrame = 0;
+    };
+
+    const setStep = (next: 0 | 1 | 2) => {
+      step = next;
+      section.dataset.step = String(next);
+      section.style.setProperty("--hero-p", String(next === 0 ? 0 : next === 1 ? 0.65 : 1));
+      section.style.setProperty("--hero-intro-o", next === 0 ? "1" : "0");
+      section.style.setProperty("--hero-rhythm-o", next === 1 ? "1" : "0");
+      const intro = section.querySelector<HTMLElement>(".scene-intro");
+      if (intro) intro.inert = next !== 0;
+      section.querySelector(".scene-rhythm")?.setAttribute("aria-hidden", String(next !== 1));
+    };
+
+    const moveToStep = (next: 0 | 1 | 2) => {
+      cancelScroll();
+      measure();
+      setStep(next);
+      playback.move(step, true);
+      const from = window.scrollY;
+      const to = Math.max(0, origin + (next === 0 ? 0 : next === 1 ? travel : track.offsetHeight));
+      const duration = next === 2 ? 850 : 650;
+      const started = performance.now();
+      transitionUntil = started + duration;
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - started) / duration);
+        const eased = t * t * (3 - 2 * t);
+        window.scrollTo({ top: from + (to - from) * eased, behavior: "instant" });
+        if (t < 1) scrollFrame = requestAnimationFrame(tick);
+        else scrollFrame = 0;
+      };
+      scrollFrame = requestAnimationFrame(tick);
+    };
+
+    const canHandle = (target: EventTarget | null) => {
+      if (!enabled || !section.contains(target as Node)) return false;
+      if (target instanceof Element && target.closest("input, select, textarea, [contenteditable=true]")) return false;
+      const rect = pin.getBoundingClientRect();
+      return rect.bottom > headerHeight + pin.offsetHeight * 0.5 && rect.top <= headerHeight + 2;
+    };
+
+    const onWheel = (event: WheelEvent) => {
+      if (event.ctrlKey || event.metaKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || !canHandle(event.target)) return;
+      const now = performance.now();
+      const freshGesture = now - lastWheel > 180;
+      lastWheel = now;
+      if (step === 2 && !scrollFrame) return;
+      if (step === 0 && event.deltaY < 0 && !scrollFrame) return;
+      if (!event.cancelable) return;
+      event.preventDefault();
+      if (now < transitionUntil || (!freshGesture && wheelDistance === 0)) return;
+      if (freshGesture) wheelDistance = 0;
+      wheelDistance += event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? pin.offsetHeight : 1);
+      if (Math.abs(wheelDistance) < 12) return;
+      const direction = Math.sign(wheelDistance);
+      wheelDistance = 0;
+      moveToStep(direction > 0 ? (step === 0 ? 1 : 2) : 0);
+    };
+
+    const onTouchStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) return;
+      touchY = event.touches[0].clientY;
+      touchX = event.touches[0].clientX;
+      touchConsumed = false;
+    };
+    const onTouchMove = (event: TouchEvent) => {
+      if (event.touches.length !== 1 || !canHandle(event.target)) return;
+      const dy = touchY - event.touches[0].clientY;
+      const dx = touchX - event.touches[0].clientX;
+      if (Math.abs(dx) > Math.abs(dy) || (step === 2 && !scrollFrame) || (step === 0 && dy < 0 && !scrollFrame)) return;
+      if (!event.cancelable) return;
+      event.preventDefault();
+      if (touchConsumed || performance.now() < transitionUntil || Math.abs(dy) < 24) return;
+      touchConsumed = true;
+      moveToStep(dy > 0 ? (step === 0 ? 1 : 2) : 0);
+    };
+    const onTouchEnd = (event: TouchEvent) => {
+      // Safari can require playback directly from touchend, not touchmove or a
+      // later metadata callback. Retry the same segment, without skipping a step.
+      playback.retry();
+      if (touchConsumed && event.cancelable) event.preventDefault();
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Tab" || event.key === "End" || event.key === "Home" || event.key === "Escape") {
+        cancelScroll();
         return;
       }
-      setMode("scroll");
-      setShowEndFrame(false);
-      const desktop = wide.matches;
-      fps = (desktop ? media.desktop.fps : media.mobile.fps) || 24;
-      // A different variant is a different source file: the decoder restarts at 0,
-      // so nothing about the old clip's position carries over.
-      shownFrame = -1;
-      wantedFrame = -1;
-      setVariant(desktop ? "desktop" : "mobile");
+      const target = event.target;
+      if (!enabled || event.ctrlKey || event.metaKey || event.altKey ||
+          (target instanceof Element && target.closest("a, button, input, select, textarea, [contenteditable=true], [role=dialog]"))) return;
+      const direction = event.key === "ArrowDown" || event.key === "PageDown" || (event.key === " " && !event.shiftKey) ? 1
+        : event.key === "ArrowUp" || event.key === "PageUp" || (event.key === " " && event.shiftKey) ? -1 : 0;
+      if (!direction || !canHandle(section) || (step === 2 && !scrollFrame) || (step === 0 && direction < 0)) return;
+      event.preventDefault();
+      if (event.repeat || performance.now() < transitionUntil) return;
+      moveToStep(direction > 0 ? (step === 0 ? 1 : 2) : 0);
     };
 
-    const header = document.querySelector<HTMLElement>(".site-header-stack");
-    const measure = () => {
-      // The header is already sticky. Pin directly beneath it from the first pixel
-      // of scrolling instead of letting the hero travel up behind it first.
-      pinTop = header?.getBoundingClientRect().height ?? 0;
-      section.style.setProperty("--hero-header-height", `${pinTop}px`);
-      pinHeight = pinRef.current?.offsetHeight ?? window.innerHeight;
-    };
-
-    const readProgress = () => {
-      const track = trackRef.current;
-      if (!track) return 0;
-      const rect = track.getBoundingClientRect();
-      const travel = rect.height - pinHeight;
-      if (travel <= 0) return rect.top <= pinTop ? 1 : 0;
-      return Math.min(1, Math.max(0, (pinTop - rect.top) / travel));
-    };
-
-    /**
-     * Move the decoder onto `wantedFrame`.
-     *
-     * Seeking to the centre of the frame's interval keeps the request off the frame
-     * boundary, where rounding would land a frame early or late. Requests are never
-     * queued behind one another: a seek issued while another is running replaces it,
-     * which is what keeps a slow decoder from working through stale positions.
-     */
-    const seekTo = (index: number) => {
-      const video = videoRef.current;
-      if (!video || index < 0 || index === shownFrame) return;
-      shownFrame = index;
-      video.currentTime = (index + 0.5) / fps;
-    };
-
-    // A decoder that ignored a request made mid-seek would otherwise sit on the
-    // frame before the one the reader stopped at.
-    const onSeeked = () => {
-      if (wantedFrame !== shownFrame) seekTo(wantedFrame);
-    };
-    onSeekedRef.current = onSeeked;
-
-    const paint = (progress: number) => {
-      setVar(section, "--hero-p", progress);
-      const intro = 1 - ramp(progress, 0.14, 0.44);
-      setVar(section, "--hero-intro-o", intro);
-      const rhythm = ramp(progress, 0.5, 0.62) * (1 - ramp(progress, 0.84, 0.96));
-      setVar(section, "--hero-rhythm-o", rhythm);
-      setVar(section, "--hero-fold", ramp(progress, 0.8, 1));
-      const video = videoRef.current;
-      // `duration` is the only precondition worth testing. `readyState` drops back to
-      // HAVE_METADATA for the length of every seek, so gating on it here would skip
-      // the next two frames' worth of updates and turn the scrub into a slideshow.
-      if (video && Number.isFinite(video.duration) && video.duration > 0) {
-        const lastFrame = Math.max(0, Math.round(video.duration * fps) - 1);
-        const next = Math.min(lastFrame, Math.max(0, Math.round(progress * lastFrame)));
-        if (next !== wantedFrame) {
-          wantedFrame = next;
-          seekTo(next);
-        }
-      }
-    };
-
-    // Reading the track here rather than in the scroll handler keeps it to one
-    // layout read per painted frame, however many scroll events arrived.
-    const render = () => {
-      paint(readProgress());
-    };
-
-    const tick = () => {
-      render();
-      // Nothing is left settling once the frame is painted, because the scene is
-      // already on the scroll position. The next scroll event asks for the next frame.
-      running = false;
-      frame = 0;
-    };
-
-    const request = () => {
-      if (running || !visible) return;
-      running = true;
-      frame = requestAnimationFrame(tick);
-    };
-
+    // Scrollbar dragging, anchor links and browser scroll restoration retain native
+    // navigation. Re-entering from below restores the second scene without a trap.
     const onScroll = () => {
-      request();
+      if (!enabled || scrollFrame) return;
+      const offset = window.scrollY - origin;
+      const next = offset <= 8 ? 0 : offset > travel + pin.offsetHeight * 0.35 ? 2 : 1;
+      if (next !== step) { setStep(next); playback.move(step, next > 0); }
     };
-
-    const onResize = () => {
+    const onClick = (event: MouseEvent) => {
+      if (event.target instanceof Element && event.target.closest("a[href]")) cancelScroll();
+    };
+    // Mobile browser toolbars resize the viewport during a swipe. Re-measure
+    // without cancelling the gesture animation or resetting its playback step.
+    const onResize = () => { measure(); onScroll(); };
+    const applyEnvironment = () => {
+      cancelScroll();
+      playback.stop();
+      enabled = Boolean(media) && !reduced.matches;
+      setMode(enabled ? "scroll" : "static");
+      setShowEndFrame(!enabled && Boolean(media));
+      const selected = wide.matches ? media?.desktop : media?.mobile;
+      const video = videoRef.current;
+      setVideoReady(Boolean(enabled && video && video.readyState >= 2 && video.getAttribute("src") === selected?.video));
+      setVariant(enabled ? (wide.matches ? "desktop" : "mobile") : null);
+      if (!enabled) setStep(0);
       measure();
-      render();
     };
-    onVideoLoadedRef.current = onResize;
-    const resizeObserver = new ResizeObserver(onResize);
-    if (header) resizeObserver.observe(header);
-    if (pinRef.current) resizeObserver.observe(pinRef.current);
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        visible = entry.isIntersecting;
-        if (visible) {
-          measure();
-          request();
-        } else if (frame) {
-          cancelAnimationFrame(frame);
-          frame = 0;
-          running = false;
-          // Park the scene on the frame the reader left it on.
-          render();
-        }
-      },
-      { rootMargin: "120px 0px" },
-    );
+    onVideoLoadedRef.current = () => { measure(); onScroll(); playback.ready(); };
+    onVideoErrorRef.current = () => {
+      enabled = false;
+      cancelScroll();
+      playback.stop();
+      setStep(0);
+    };
 
     applyEnvironment();
-    measure();
-    render();
-    observer.observe(section);
+    const resizeObserver = new ResizeObserver(onResize);
+    if (header) resizeObserver.observe(header);
+    resizeObserver.observe(pin);
+    section.addEventListener("wheel", onWheel, { passive: false });
+    section.addEventListener("touchstart", onTouchStart, { passive: true });
+    section.addEventListener("touchmove", onTouchMove, { passive: false });
+    section.addEventListener("touchend", onTouchEnd, { passive: false });
+    window.addEventListener("keydown", onKey);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
+    window.addEventListener("click", onClick);
     reduced.addEventListener("change", applyEnvironment);
     wide.addEventListener("change", applyEnvironment);
 
     return () => {
-      if (frame) cancelAnimationFrame(frame);
-      observer.disconnect();
+      cancelScroll();
+      playback.dispose();
       resizeObserver.disconnect();
       onVideoLoadedRef.current = () => {};
+      onVideoErrorRef.current = () => {};
+      section.removeEventListener("wheel", onWheel);
+      section.removeEventListener("touchstart", onTouchStart);
+      section.removeEventListener("touchmove", onTouchMove);
+      section.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("keydown", onKey);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("click", onClick);
       reduced.removeEventListener("change", applyEnvironment);
       wide.removeEventListener("change", applyEnvironment);
     };
@@ -263,9 +276,11 @@ export function HeroScene({ media, offerHref }: HeroSceneProps) {
               )}
               {active?.video && mode === "scroll" ? (
                 <video
+                  key={active.video}
                   ref={videoRef}
                   className="scene-video"
                   src={active.video}
+                  poster={active.poster}
                   width={active.width}
                   height={active.height}
                   muted
@@ -273,12 +288,12 @@ export function HeroScene({ media, offerHref }: HeroSceneProps) {
                   preload="auto"
                   aria-hidden="true"
                   tabIndex={-1}
-                  onLoadedData={() => {
-                    setVideoReady(true);
-                    onVideoLoadedRef.current();
-                  }}
-                  onSeeked={() => onSeekedRef.current()}
+                  onLoadedMetadata={() => onVideoLoadedRef.current()}
+                  onLoadedData={() => onVideoLoadedRef.current()}
+                  onCanPlay={() => onVideoLoadedRef.current()}
+                  onPlaying={() => setVideoReady(true)}
                   onError={() => {
+                    onVideoErrorRef.current();
                     setVideoReady(false);
                     setMode("static");
                     setShowEndFrame(true);

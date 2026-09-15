@@ -220,3 +220,58 @@ test('Resend login sends a usable single-use link without exposing it in the pro
   }
  }
 });
+
+test('subscription skip removes the next delivery and preserves the following occurrence', async () => {
+ const order=await create(); const id=order.subscription.id;
+ await delivery('2027-01-01');
+ const cookie=session(),key=randomUUID(),expectedVersion=scalar('SELECT version FROM subscriptions WHERE id=?',id);
+ const request={action:'skip_next',expectedVersion};
+ const first=expectStatus(await api('/api/account/subscriptions/'+id,request,{cookie,key,method:'PATCH'}));
+ const replay=expectStatus(await api('/api/account/subscriptions/'+id,request,{cookie,key,method:'PATCH'}));
+ assert.equal(first.version,replay.version);
+ assert.equal(scalar('SELECT COUNT(*) FROM subscription_skips WHERE subscription_id=?',id),1);
+ assert.equal((await delivery('2027-01-01')).preparation.length,0);
+ assert.equal((await delivery('2027-01-08')).preparation[0].total_quantity,3);
+ assert.equal(scalar('SELECT next_delivery_date FROM subscriptions WHERE id=?',id),'2027-01-08');
+});
+
+test('dated pause excludes all deliveries and billing during the pause then automatically resumes', async () => {
+ const order=await create(); const id=order.subscription.id;
+ await delivery('2027-01-01');
+ expectStatus(await mutate(id,'pause',{pauseUntil:'2027-03-01'}));
+ assert.equal(scalar('SELECT next_delivery_date FROM subscriptions WHERE id=?',id),'2027-03-05');
+ for(const date of ['2027-01-01','2027-01-08','2027-02-05','2027-02-26']) {
+  assert.equal((await delivery(date)).orders.length,0,date);
+ }
+ expectStatus(await api('/api/jobs/billing',{month:'2027-02'},{admin:true}));
+ assert.equal(scalar("SELECT COUNT(*) FROM orders WHERE subscription_id=? AND substr(delivery_date,1,7)='2027-02'",id),0);
+ expectStatus(await api('/api/jobs/billing',{month:'2027-03'},{admin:true}));
+ assert.equal(scalar("SELECT subtotal_minor FROM orders WHERE subscription_id=? AND substr(delivery_date,1,7)='2027-03'",id),300000);
+ assert.equal((await delivery('2027-03-05')).preparation[0].total_quantity,3);
+ at('2027-03-04T07:00:00Z');
+ expectStatus(await api('/api/admin/deliveries',{action:'lock',date:'2027-03-05'},{admin:true}));
+ assert.equal(scalar('SELECT status FROM subscriptions WHERE id=?',id),'active');
+ assert.equal(scalar('SELECT pause_until FROM subscriptions WHERE id=?',id),null);
+ assert.equal(scalar('SELECT next_delivery_date FROM subscriptions WHERE id=?',id),'2027-03-12');
+});
+
+test('dated pause retains a biweekly delivery rhythm across the month boundary', async () => {
+ const order=await create({},[line('prod_kravlje_1l',3,'subscription','biweekly')]); const id=order.subscription.id;
+ expectStatus(await mutate(id,'pause',{pauseUntil:'2027-02-01'}));
+ assert.equal(scalar('SELECT next_delivery_date FROM subscriptions WHERE id=?',id),'2027-02-12');
+ assert.equal((await delivery('2027-02-05')).preparation.length,0);
+ assert.equal((await delivery('2027-02-12')).preparation[0].total_quantity,3);
+ expectStatus(await api('/api/jobs/billing',{month:'2027-02'},{admin:true}));
+ assert.equal(scalar("SELECT subtotal_minor FROM orders WHERE subscription_id=? AND substr(delivery_date,1,7)='2027-02'",id),150000);
+});
+
+test('invalid and post-cutoff pauses leave the subscription and delivery unchanged', async () => {
+ const order=await create(); const id=order.subscription.id;
+ for(const pauseUntil of ['2027-01-01','2027-02-30']) expectStatus(await mutate(id,'pause',{pauseUntil}),422);
+ at('2026-12-31T07:00:00Z');
+ expectStatus(await mutate(id,'pause',{pauseUntil:'2027-02-01'}),409);
+ assert.equal(scalar('SELECT status FROM subscriptions WHERE id=?',id),'active');
+ assert.equal(scalar('SELECT next_delivery_date FROM subscriptions WHERE id=?',id),'2027-01-01');
+ assert.equal(scalar('SELECT COUNT(*) FROM subscription_mutation_versions'),0);
+ assert.equal((await delivery('2027-01-01')).preparation[0].total_quantity,3);
+});

@@ -1,10 +1,12 @@
 import { all } from "./sql";
+import { deliveryCityForPostalCode } from "../app/lib/delivery-area";
 import { addLocalDays, cutoffForDelivery, nextWeekday, occurrenceDatesInMonth } from "./time";
 
 export interface BusinessSettings {
   timezone: "Europe/Belgrade";
   currency: "RSD";
   deliveryWeekday: number;
+  deliveryWeekdays: number[];
   deliveryLocalTime: string;
   cutoffHours: number;
   storeName: string;
@@ -39,6 +41,7 @@ const defaults: BusinessSettings = {
   timezone: "Europe/Belgrade",
   currency: "RSD",
   deliveryWeekday: 5,
+  deliveryWeekdays: [2, 5],
   deliveryLocalTime: "08:00",
   cutoffHours: 24,
   storeName: "Mleko i Mleko",
@@ -81,6 +84,7 @@ export async function getBusinessSettings(): Promise<BusinessSettings> {
     ...defaults,
     ...values,
     servicePostalCodes,
+    deliveryWeekdays: Array.isArray(values.deliveryWeekdays) && values.deliveryWeekdays.length && values.deliveryWeekdays.every((day: unknown) => Number.isInteger(day) && Number(day) >= 0 && Number(day) <= 6) ? values.deliveryWeekdays : defaults.deliveryWeekdays,
     timezone: "Europe/Belgrade",
     currency: "RSD",
   } as BusinessSettings;
@@ -88,12 +92,13 @@ export async function getBusinessSettings(): Promise<BusinessSettings> {
 
 export async function getNextDeliveryWindow(now = new Date()) {
   const settings = await getBusinessSettings();
-  let deliveryDate = nextWeekday(now, settings.deliveryWeekday);
-  let cutoffAt = cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime);
-  if (now.getTime() >= Date.parse(cutoffAt)) {
-    deliveryDate = addLocalDays(deliveryDate, 7);
-    cutoffAt = cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime);
-  }
+  const candidates = settings.deliveryWeekdays.map((weekday) => {
+    let date = nextWeekday(now, weekday);
+    while (now.getTime() >= Date.parse(cutoffForDelivery(date, settings.cutoffHours, settings.deliveryLocalTime))) date = addLocalDays(date, 7);
+    return date;
+  }).sort();
+  const deliveryDate = candidates[0];
+  const cutoffAt = cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime);
   return {
     deliveryDate,
     billingMonth: deliveryDate.slice(0, 7),
@@ -109,7 +114,10 @@ export async function getNextDeliveryWindow(now = new Date()) {
 
 export function isServiceablePostalCode(settings: BusinessSettings, postalCode: string) {
   const normalized = postalCode.trim();
-  if (!/^\d{5}$/.test(normalized)) return false;
+  if (!deliveryCityForPostalCode(normalized)) return false;
   if (settings.servicePostalCodes.length === 0) return true;
-  return settings.servicePostalCodes.some((entry) => normalized.startsWith(entry.replace(/\*$/, "")));
+  return settings.servicePostalCodes.some((entry) => {
+    const prefix = entry.trim().replace(/\*$/, "");
+    return /^\d{1,5}$/.test(prefix) && normalized.startsWith(prefix);
+  });
 }

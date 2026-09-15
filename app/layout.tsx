@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Vollkorn } from "next/font/google";
 import { CartProvider } from "./components/cart-provider";
 import { CartDrawer } from "./components/cart-drawer";
 import { AnalyticsProvider } from "./components/analytics-provider";
@@ -11,21 +10,10 @@ import "./storefront.css";
 import "./pastoral.css";
 import "./conversion.css";
 import "./redesign.css";
+import "./market-theme.css";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-
-const geist = Geist({
-  variable: "--font-geist",
-  subsets: ["latin", "latin-ext"],
-});
-
-const vollkorn = Vollkorn({
-  variable: "--font-editorial",
-  subsets: ["latin", "latin-ext"],
-  style: ["normal", "italic"],
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
@@ -90,7 +78,7 @@ export default async function RootLayout({
   };
   return (
     <html lang="sr-Latn" data-scroll-behavior="smooth">
-      <body className={`${geist.variable} ${vollkorn.variable}`}>
+      <body className="market-theme">
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
