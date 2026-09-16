@@ -15,9 +15,12 @@ export type HeaderSettings = {
 
 export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   const pathname = usePathname();
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return null;
   return <MarketHeader key={pathname} storeName={settings.storeName} />;
 }
 
 export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string }) {
+  const pathname = usePathname();
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return null;
   return <MarketFooter storeName={storeName} />;
 }

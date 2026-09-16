@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import { CartProvider } from "./components/cart-provider";
-import { CartDrawer } from "./components/cart-drawer";
-import { AnalyticsProvider } from "./components/analytics-provider";
-import { SiteFooter, SiteHeader } from "./components/site-shell";
+import { ApplicationShell } from "./components/application-shell";
 import { absoluteUrl, canonicalUrl, getSiteUrl, serializeJsonLd } from "./lib/seo";
 import { getStorefront } from "../server/storefront";
 import "./globals.css";
@@ -83,17 +80,7 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
         />
-        <AnalyticsProvider>
-          <CartProvider>
-            <a className="skip-link" href="#glavni-sadrzaj">
-              Preskoči na glavni sadržaj
-            </a>
-            <SiteHeader settings={settings} />
-            <main id="glavni-sadrzaj">{children}</main>
-            <SiteFooter storeName={settings.storeName} />
-            <CartDrawer />
-          </CartProvider>
-        </AnalyticsProvider>
+        <ApplicationShell settings={settings}>{children}</ApplicationShell>
       </body>
     </html>
   );

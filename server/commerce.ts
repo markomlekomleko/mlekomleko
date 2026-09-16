@@ -195,11 +195,11 @@ function orderNumber(hash: string): string {
   return `MM-${new Date().toISOString().slice(0, 10).replaceAll("-", "")}-${hash.slice(0, 8).toUpperCase()}`;
 }
 
-export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw: string | null) {
+export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw: string | null, admin?: { notify: boolean }) {
   rejectCardData(input);
   const idempotencyKey = requiredString(idempotencyKeyRaw ?? input.idempotencyKey, "Idempotency-Key", 200);
   assertDomain(idempotencyKey.length >= 8, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key must contain at least 8 characters.", 422);
-  const requestHash = await stableJsonHash(input);
+  const requestHash = await stableJsonHash(admin ? { input, admin } : input);
   const existing = await first<{ request_hash: string; response_json: string | null; status_code: number | null } & Record<string, unknown>>("SELECT request_hash, response_json, status_code FROM idempotency_keys WHERE namespace = 'checkout' AND key = ?", idempotencyKey);
   if (existing) {
     assertDomain(existing.request_hash === requestHash, "IDEMPOTENCY_CONFLICT", "This Idempotency-Key was already used for a different checkout.", 409);
@@ -234,7 +234,8 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow()).deliveryDate : assertLocalDate(input.deliveryDate);
   assertDomain(settings.deliveryWeekdays.includes(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay()), "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
   const cutoffAt = cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime);
-  assertBeforeCutoff(cutoffAt);
+  const selectedDelivery = await first<Record<string, unknown>>("SELECT status FROM deliveries WHERE delivery_date = ?", deliveryDate);
+  assertBeforeCutoff(cutoffAt, selectedDelivery && selectedDelivery.status !== "open" ? "locked" : null);
 
   const productIds = [...new Set(items.map((item) => item.productId))];
   const productRows = await all<ProductRow>(`SELECT * FROM products WHERE id IN (${sqlPlaceholders(productIds.length)}) AND is_active = 1`, ...productIds);
@@ -269,7 +270,7 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   const paymentFeeMinor = paymentMethod === "card" ? Math.round(totalMinor * settings.paymentFeeBps / 10_000) : 0;
   const estimatedDeliveryCostMinor = settings.estimatedDeliveryCostMinor;
   const attribution = { ...sanitizeAttribution(input.attribution ?? input.source), consent: { analytics: input.analyticsConsent === true } };
-  const eligibleConversionItems = !hasSubscription ? items.filter((item) => Boolean(products.get(item.productId)?.allow_subscription)) : [];
+  const eligibleConversionItems = !admin && !hasSubscription ? items.filter((item) => Boolean(products.get(item.productId)?.allow_subscription)) : [];
   const conversionToken = eligibleConversionItems.length ? randomToken() : null;
   const conversionTokenHash = conversionToken ? await sha256(conversionToken) : null;
   const conversionSavingMinor = eligibleConversionItems.reduce((sum, item) => {
@@ -304,15 +305,15 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
     if (item.purchaseType === "subscription") statements.push({ sql: "INSERT INTO subscription_items (id, subscription_id, product_id, quantity, cadence, cadence_anchor_date, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)", bindings: [crypto.randomUUID(), subscriptionId, product.id, item.quantity, item.cadence, deliveryDate, now, now] });
   }
   if (promo) statements.push({ sql: "UPDATE promo_codes SET times_used = times_used + 1, updated_at = ? WHERE id = ?", bindings: [now, promo.id] });
-  statements.push(audit("system", "checkout", "order.created", "order", orderId, null, response.order));
+  statements.push(audit(admin ? "admin" : "system", admin ? "admin-panel" : "checkout", "order.created", "order", orderId, null, response.order));
   statements.push(enqueue("order.created", "order", orderId, response));
-  statements.push(enqueue("email.order_confirmation.requested", "order", orderId, response));
+  if (!admin || admin.notify) statements.push(enqueue("email.order_confirmation.requested", "order", orderId, response));
   statements.push(enqueue(payment.status === "paid" ? "payment.captured" : "payment.cash_due", "order", orderId, response.order));
   if (payment.status === "paid") {
     statements.push(enqueue("fiscal.receipt.requested", "order", orderId, response.order));
     statements.push(purchaseAnalyticsEvent(orderId, response.order.orderNumber, "checkout-capture"));
   }
-  if (subscriptionId) statements.push(enqueue("subscription.activated", "subscription", subscriptionId, { ...response.subscription, cutoffAt }));
+  if (subscriptionId && (!admin || admin.notify)) statements.push(enqueue("subscription.activated", "subscription", subscriptionId, { ...response.subscription, cutoffAt }));
   if (conversionTokenHash) statements.push({ sql: "INSERT INTO order_conversion_tokens (id, order_id, token_hash, expires_at) VALUES (?, ?, ?, ?)", bindings: [crypto.randomUUID(), orderId, conversionTokenHash, response.subscriptionOffer!.expiresAt] });
   const recoveryCartId = optionalString(input.recoveryCartId, "recoveryCartId", 100);
   if (recoveryCartId) statements.push({ sql: "UPDATE abandoned_carts SET status = 'converted', converted_order_id = ?, updated_at = ? WHERE id = ?", bindings: [orderId, now, recoveryCartId] });
@@ -441,7 +442,7 @@ async function paidThisMonth(subscriptionId: string, date: string): Promise<bool
   return Boolean(await first<Record<string, unknown>>("SELECT id FROM orders WHERE subscription_id = ? AND kind = 'subscription_invoice' AND payment_status = 'paid' AND substr(delivery_date, 1, 7) = ? LIMIT 1", subscriptionId, date.slice(0, 7)));
 }
 
-export async function mutateSubscription(customerId: string, subscriptionId: string, input: Record<string, unknown>, rawKey: string | null) {
+export async function mutateSubscription(customerId: string, subscriptionId: string, input: Record<string, unknown>, rawKey: string | null, actor: "customer" | "admin" = "customer") {
   const mutationKey = requiredString(rawKey ?? input.idempotencyKey, "Idempotency-Key", 200);
   assertDomain(mutationKey.length >= 8, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key must contain at least 8 characters.", 422);
   const requestHash = await stableJsonHash({ customerId, subscriptionId, input });
@@ -590,7 +591,7 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
   if (adjustmentMinor !== 0) statements.push({ sql: "INSERT INTO credits_ledger (id, customer_id, subscription_id, amount_minor, reason, status) VALUES (?, ?, ?, ?, ?, 'open')", bindings: [crypto.randomUUID(), customerId, subscriptionId, adjustmentMinor, `paid_month_${action}`] });
   const response = { subscriptionId, action, version: expectedVersion + 1, adjustmentMinor, currency: "RSD", addonOrder };
   statements.push({ sql: "INSERT INTO idempotency_keys (id, namespace, key, request_hash, response_json, status_code, expires_at) VALUES (?, 'subscription-mutation', ?, ?, ?, 200, ?)", bindings: [crypto.randomUUID(), mutationKey, requestHash, JSON.stringify(response), new Date(Date.now() + 400 * 86_400_000).toISOString()] });
-  statements.push(audit("customer", customerId, `subscription.${action}`, "subscription", subscriptionId, subscription, { ...input, adjustmentMinor }));
+  statements.push(audit(actor, actor === "admin" ? "admin-panel" : customerId, `subscription.${action}`, "subscription", subscriptionId, subscription, { ...input, adjustmentMinor }));
   const notificationSettings = await getBusinessSettings();
   const notificationDelivery = action === "cancel" ? null : await first<{ cutoff_at: string } & Record<string, unknown>>("SELECT cutoff_at FROM deliveries WHERE delivery_date = ?", resultingNextDeliveryDate);
   const notificationCutoffAt = action === "cancel" ? null : notificationDelivery?.cutoff_at ?? cutoffForDelivery(resultingNextDeliveryDate, notificationSettings.cutoffHours, notificationSettings.deliveryLocalTime);

@@ -64,16 +64,13 @@ test("admin requires fresh login on reload and downloads both delivery and indiv
   expect(xlsx.toString()).toContain('0601234567');
 
   await nav.getByRole("button", { name: "Dostave", exact: true }).click();
-  await page.getByLabel("Datum", { exact: true }).fill(order.deliveryDate);
+  await page.getByLabel("Datum dostave", { exact: true }).fill(order.deliveryDate);
   await expect(page.locator(".status-dot")).toHaveText("● Povezano");
-  const generate = page.locator(".inline-controls").getByRole("button", { name: /^(Generiši|Osveži)$/ });
-  await generate.click();
-  await expect(page.getByRole("status").filter({ hasText: "Lista dostave je generisana." })).toBeVisible();
-  const deliveryCsv = await download(page, page.getByRole("button", { name: "CSV za Spoke" }), testInfo, "dostave.csv");
+  const deliveryCsv = await download(page, page.getByRole("button", { name: "Spisak za vozača · CSV" }), testInfo, "dostave.csv");
   expect(deliveryCsv.toString()).toContain('"Address Line 1"');
   expect(deliveryCsv.toString()).toContain('Željko ""Čolić"", QA');
   expect(deliveryCsv.toString()).toContain('3 x');
-  const deliveryXlsx = await download(page, page.getByRole("button", { name: "Excel + priprema" }), testInfo, "dostave.xlsx");
+  const deliveryXlsx = await download(page, page.getByRole("button", { name: "Spisak za pakovanje · Excel" }), testInfo, "dostave.xlsx");
   expect(deliveryXlsx.toString()).toContain('name="Dostave"');
   expect(deliveryXlsx.toString()).toContain('name="Priprema"');
   expect(deliveryXlsx.toString()).toContain('Čačanska 1, ulaz 2');

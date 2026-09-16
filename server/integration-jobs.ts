@@ -63,6 +63,7 @@ async function notificationData(row: OutboxRow, payload: Record<string, unknown>
 async function sendEmail(row: OutboxRow, payload: Record<string, unknown>): Promise<string> {
   const data = await notificationData(row, payload);
   const recipient = String(data.email ?? "").trim();
+  if (recipient.endsWith("@manual.invalid")) return `suppressed:${row.id}`;
   if (!recipient) throw new IntegrationError("EMAIL_RECIPIENT_MISSING", "Email događaj nema primaoca.");
   const message = renderTransactionalMessage(row.topic, data);
   const config = readIntegrationConfig(runtimeEnv() as typeof process.env);
@@ -296,4 +297,14 @@ export async function integrationOperationsStatus() {
   const recentReceipts = await all<Record<string, unknown>>("SELECT fr.*, o.order_number FROM fiscal_receipts fr JOIN orders o ON o.id = fr.order_id ORDER BY fr.updated_at DESC LIMIT 20");
   const failures = await all<Record<string, unknown>>("SELECT id, topic, aggregate_id, attempts, last_error_code, last_error_message, created_at FROM outbox WHERE status = 'failed' ORDER BY created_at DESC LIMIT 20");
   return { config: publicIntegrationStatus(config), outbox, recentReceipts, failures };
+}
+
+
+/** Process only this day's reminder messages, never unrelated payments or receipts. */
+export async function processDeliveryReminders(date: string) {
+  assertLocalDate(date);
+  const now = new Date().toISOString();
+  const email = await processRows(await all<OutboxRow>("SELECT * FROM outbox WHERE status = 'pending' AND topic = 'email.delivery_reminder.requested' AND json_extract(payload_json, '$.deliveryDate') = ? AND available_at <= ? ORDER BY created_at LIMIT 500",date,now));
+  const whatsapp = await processRows(await all<OutboxRow>("SELECT * FROM outbox WHERE status = 'pending' AND topic = 'whatsapp.account_update' AND json_extract(payload_json, '$.sourceTopic') = 'email.delivery_reminder.requested' AND json_extract(payload_json, '$.deliveryDate') = ? AND available_at <= ? ORDER BY created_at LIMIT 500",date,now));
+  return {attempted:email.attempted+whatsapp.attempted,results:[...email.results,...whatsapp.results]};
 }

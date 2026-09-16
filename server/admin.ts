@@ -86,9 +86,12 @@ export async function dashboard() {
   };
 }
 
-export async function listCustomers() {
+export async function listCustomers(params = new URLSearchParams()) {
+  const query = optionalString(params.get("q"), "q", 200);
+  const where = query ? "WHERE (LOWER(c.full_name) LIKE LOWER(?) ESCAPE '!' OR LOWER(c.email) LIKE LOWER(?) ESCAPE '!' OR c.phone LIKE ? ESCAPE '!')" : "";
+  const pattern = query ? `%${query.replace(/[!%_]/g, "!$&")}%` : "";
   return all<Record<string, unknown>>(
-    "SELECT c.*, COUNT(DISTINCT s.id) AS subscription_count, COUNT(DISTINCT o.id) AS order_count, COALESCE(SUM(CASE WHEN o.payment_status = 'paid' THEN o.total_minor ELSE 0 END), 0) AS lifetime_value_minor FROM customers c LEFT JOIN subscriptions s ON s.customer_id = c.id LEFT JOIN orders o ON o.customer_id = c.id GROUP BY c.id ORDER BY c.created_at DESC LIMIT 500",
+    `SELECT c.*, (SELECT COUNT(*) FROM subscriptions s WHERE s.customer_id = c.id) AS subscription_count, (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id) AS order_count, (SELECT COALESCE(SUM(o.total_minor), 0) FROM orders o WHERE o.customer_id = c.id AND o.payment_status = 'paid') AS lifetime_value_minor FROM customers c ${where} ORDER BY c.created_at DESC LIMIT 500`, ...(query ? [pattern,pattern,pattern] : []),
   );
 }
 

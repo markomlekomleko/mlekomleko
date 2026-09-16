@@ -10,7 +10,12 @@ import tseslint from "typescript-eslint";
 const eslintConfig = defineConfig([
   globalIgnores([
     ".next/**",
+    ".data/**",
+    "artifacts/**",
+    "test-results/**",
+    "playwright-report/**",
     ".next-e2e/**",
+    ".next-verify/**",
     "dist/**",
     "out/**",
     "build/**",

@@ -49,6 +49,7 @@ yarn-error.log*
 
 # Isolated browser test server
 /.next-e2e/
+/.next-verify/
 
 # Local visual QA captures
 /output/qa/

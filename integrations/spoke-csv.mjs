@@ -76,7 +76,7 @@ export function buildSpokeCsv(orders, { includeBom = true } = {}) {
       text(address.postalCode).trim(),
       requiredString(customer.fullName, "customer.fullName", index),
       requiredString(customer.phone, "customer.phone", index),
-      requiredString(customer.email, "customer.email", index),
+      text(customer.email).trim(),
       text(order.note).trim(),
       requiredString(order.orderId, "orderId", index),
       itemSummary(order.items, index),

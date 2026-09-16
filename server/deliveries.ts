@@ -1,3 +1,4 @@
+import { contactEmail } from "./customer-contact";
 import { stableJsonHash } from "./crypto";
 import { DomainError, assertDomain, requiredString } from "./domain";
 import { audit, enqueue } from "./outbox";
@@ -23,6 +24,8 @@ interface ItemSnapshotRow extends Record<string, unknown> {
 
 interface DeliveryOrderView extends Record<string, unknown> {
   id: string;
+  customer_id: string;
+  status: string;
   note: string | null;
   source_order_id: string | null;
   subscription_id: string | null;
@@ -49,7 +52,7 @@ export async function listDeliveries(limit = 60) {
   return all<Record<string, unknown>>("SELECT d.*, COUNT(dor.id) AS order_count FROM deliveries d LEFT JOIN delivery_orders dor ON dor.delivery_id = d.id GROUP BY d.id ORDER BY d.delivery_date DESC LIMIT ?", limit);
 }
 
-export async function generateDelivery(rawDate: unknown, rawKey: string | null) {
+export async function generateDelivery(rawDate: unknown, rawKey: string | null, preview = false) {
   const date = assertLocalDate(rawDate);
   const generationKey = requiredString(rawKey, "Idempotency-Key", 200);
   assertDomain(generationKey.length >= 8, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key must contain at least 8 characters.", 422);
@@ -57,7 +60,7 @@ export async function generateDelivery(rawDate: unknown, rawKey: string | null) 
   const now = new Date().toISOString();
   const delivery = await first<DeliveryRow>("SELECT * FROM deliveries WHERE delivery_date = ?", date);
   if (delivery && delivery.status !== "open") return deliveryPayload(date);
-  if (delivery?.generation_key === generationKey) return deliveryPayload(date);
+  if (!preview && delivery?.generation_key === generationKey) return deliveryPayload(date);
   const deliveryId = delivery?.id ?? crypto.randomUUID();
   const cutoffAt = delivery?.cutoff_at ?? cutoffForDelivery(date, settings.cutoffHours, settings.deliveryLocalTime);
 
@@ -81,10 +84,14 @@ export async function generateDelivery(rawDate: unknown, rawKey: string | null) 
   } else {
     statements.push({ sql: "INSERT INTO deliveries (id, delivery_date, cutoff_at, status, generated_at, generation_key) VALUES (?, ?, ?, 'open', ?, ?)", bindings: [deliveryId, date, cutoffAt, now, generationKey] });
   }
+  const previewOrders: Awaited<ReturnType<typeof deliveryPayload>>["orders"] = [];
   const addDeliveryOrder = (source: CustomerSnapshotRow, sourceOrderId: string | null, subscriptionId: string | null, sourceItems: ItemSnapshotRow[]) => {
     if (!sourceItems.length) return;
     const id = crypto.randomUUID();
-    const snapshot = { fullName: source.full_name, email: source.email, phone: source.phone, addressLine1: source.address_line_1, addressLine2: source.address_line_2, city: source.city, postalCode: source.postal_code };
+    const snapshot = { fullName: source.full_name, email: contactEmail(source.email), phone: source.phone, addressLine1: source.address_line_1, addressLine2: source.address_line_2, city: source.city, postalCode: source.postal_code };
+    previewOrders.push({ id, note: source.delivery_note, source_order_id: sourceOrderId, subscription_id: subscriptionId,
+      customer_id: source.customer_id, customer_snapshot_json: JSON.stringify(snapshot), customer_snapshot: snapshot,
+      status: "planned", items: sourceItems.map(item => ({ ...item, delivery_order_id: id })) });
     statements.push({ sql: "INSERT INTO delivery_orders (id, delivery_id, source_order_id, subscription_id, customer_id, customer_snapshot_json, note, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'planned')", bindings: [id, deliveryId, sourceOrderId, subscriptionId, source.customer_id, JSON.stringify(snapshot), source.delivery_note] });
     for (const item of sourceItems) statements.push({ sql: "INSERT INTO delivery_items (id, delivery_order_id, product_id, product_name, unit_label, quantity, unit_price_minor, source_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", bindings: [crypto.randomUUID(), id, item.product_id, item.product_name, item.unit_label, item.quantity, item.unit_price_minor, item.source_type] });
   };
@@ -92,6 +99,15 @@ export async function generateDelivery(rawDate: unknown, rawKey: string | null) 
   for (const source of subscriptionSources) {
     const due = subscriptionItems.filter((item) => item.source_id === source.subscription_id && isCadenceDue(item.cadence_anchor_date, date, item.cadence));
     addDeliveryOrder(source, null, source.subscription_id, [...due, ...addons.filter((item) => item.source_id === source.subscription_id)]);
+  }
+  if (preview) {
+    const totals = new Map<string, Record<string, unknown>>();
+    for (const order of previewOrders) for (const item of order.items) {
+      const key = String(item.product_id);
+      const previous = totals.get(key);
+      totals.set(key, { product_id: key, product_name: item.product_name, unit_label: item.unit_label, total_quantity: Number(previous?.total_quantity ?? 0) + Number(item.quantity) });
+    }
+    return { delivery: delivery ?? { id: deliveryId, delivery_date: date, cutoff_at: cutoffAt, status: "open" as const, generated_at: now, locked_at: null, generation_key: generationKey }, orders: previewOrders, preparation: [...totals.values()] };
   }
   statements.push(audit("system", "delivery-job", delivery ? "delivery.regenerated" : "delivery.generated", "delivery", deliveryId, delivery, { date, cutoffAt }));
   statements.push(enqueue("delivery.generated", "delivery", deliveryId, { date, cutoffAt }));

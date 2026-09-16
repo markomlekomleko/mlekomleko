@@ -5,3 +5,14 @@ import { processOutboxFor } from "../../../../server/integration-jobs";
 
 export function GET(request: Request) { return withRoute(async () => { await requireAdmin(request); return jsonResponse(await listOrders(new URL(request.url).searchParams)); }); }
 export function PATCH(request: Request) { return withRoute(async () => { await requireAdmin(request); const order = await updateOrder(await readJson(request)); await processOutboxFor("order", String(order?.id)); return jsonResponse({ order }); }); }
+
+export function POST(request: Request) {
+  return withRoute(async () => {
+    await requireAdmin(request);
+    const { assertSameOrigin } = await import("@/server/auth");
+    const { manualOrder } = await import("@/server/admin-workspace");
+    assertSameOrigin(request);
+    const result = await manualOrder(await readJson(request), request.headers.get("idempotency-key"));
+    return jsonResponse(result.body, result.status);
+  });
+}

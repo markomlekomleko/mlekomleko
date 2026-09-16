@@ -1,3 +1,4 @@
+import { contactEmail } from "./customer-contact";
 import { all, first, type Row } from "./sql";
 import { assertDomain } from "./domain";
 import { buildXlsx } from "./xlsx";
@@ -21,7 +22,7 @@ export async function orderConfirmation(id: string, format: "csv" | "xlsx") {
     ["Potvrda porudžbine", "Vrednost"],
     ["Broj porudžbine", text(order.order_number)], ["ID porudžbine", id],
     ["Datum porudžbine", text(order.created_at)], ["Prva dostava", text(order.delivery_date)],
-    ["Kupac", text(order.full_name)], ["Email", text(order.email)], ["Telefon", text(order.phone)],
+    ["Kupac", text(order.full_name)], ["Email", contactEmail(order.email)], ["Telefon", text(order.phone)],
     ["Adresa", [order.address_line_1, order.address_line_2].filter(Boolean).join(", ")],
     ["Grad", text(order.city)], ["Poštanski broj", text(order.postal_code)],
     ["Napomena kupca", text(order.customer_note)], ["Način plaćanja", label(order.payment_method)],

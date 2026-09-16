@@ -34,6 +34,8 @@ export function orderFilters(params: URLSearchParams) {
     conditions.push(`${field} = ?`);
     bindings.push(enumValue(params.get(key), key, values));
   }
+  if (params.get("customerId")) { conditions.push("o.customer_id = ?"); bindings.push(params.get("customerId")!); }
+  if (params.get("productId")) { conditions.push("EXISTS (SELECT 1 FROM order_items filter_item WHERE filter_item.order_id = o.id AND filter_item.product_id = ?)"); bindings.push(params.get("productId")!); }
   const query = optionalString(params.get("q")?.trim(), "q", 200);
   if (query) {
     const fields = ["o.order_number", "o.id", "c.full_name", "c.email", "c.phone"];

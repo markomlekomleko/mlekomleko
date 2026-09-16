@@ -106,7 +106,7 @@ class FakeD1Statement {
   async first() {
     queries.push({ method: "first", sql: this.sql, bindings: this.bindings });
     if (/\bFROM deliveries\b/i.test(this.sql)) {
-      return this.bindings[0] === "2099-01-01" ? null : deliveryFixture;
+      return this.bindings[0] === deliveryFixture.delivery_date ? deliveryFixture : null;
     }
     if (/\bFROM products\b/i.test(this.sql)) {
       return this.bindings[0] === "nema-proizvoda" ? null : productFixture;

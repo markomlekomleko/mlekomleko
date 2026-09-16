@@ -12,7 +12,10 @@ async function openAdmin(page: Page) {
 }
 
 async function adminTab(page: Page, name: string) {
-  await page.getByRole("navigation", { name: "Administracija" }).getByRole("button", { name, exact: true }).click();
+  if (["Proizvodi", "Paketi", "Popusti", "Sadržaj sajta"].includes(name)) {
+    await page.getByRole("navigation", { name: "Administracija" }).getByRole("button", { name: "Podešavanja", exact: true }).click();
+    await page.getByRole("navigation", { name: "Podešavanja prodavnice" }).getByRole("button", { name, exact: true }).click();
+  } else await page.getByRole("navigation", { name: "Administracija" }).getByRole("button", { name, exact: true }).click();
   await expect(page.locator(".admin-topbar h1")).toHaveText(name);
 }
 
@@ -30,7 +33,7 @@ test("every public destination and admin tab is connected without development la
     await assertNoDevelopmentLabels(page);
   }
   await openAdmin(page);
-  for (const name of ["Pregled", "Zarada", "Porudžbine", "Proizvodi", "Paketi", "Kupci", "Pretplate", "Dostave", "Popusti", "Sadržaj sajta", "Podešavanja"]) {
+  for (const name of ["Pregled", "Porudžbine", "Proizvodi", "Paketi", "Kupci", "Dostave", "Popusti", "Sadržaj sajta", "Podešavanja"]) {
     await adminTab(page, name);
     await assertNoDevelopmentLabels(page);
     await expect(page.locator(".notice.error")).toHaveCount(0);
@@ -211,6 +214,7 @@ test("order period and combined filters survive a status update and reset", asyn
   await openAdmin(page);
   await adminTab(page, "Porudžbine");
   await page.getByLabel("Pretraga porudžbina").fill(email);
+  await page.getByText("Još filtera", { exact: true }).click();
   await page.getByLabel("Period prema").selectOption("delivery");
   await page.getByLabel("Datum od", { exact: true }).fill(order.deliveryDate);
   await page.getByLabel("Datum do", { exact: true }).fill(order.deliveryDate);
