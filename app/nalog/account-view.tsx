@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { ApiError, fetchJson, formatDate, formatMoney, normalizeProduct, statusLabel } from "../lib/frontend";
 import { useAnalytics } from "../components/analytics-provider";
 import { LoginSettings } from "./login-settings";
@@ -78,9 +80,26 @@ export function AccountView() {
   const { customer } = account;
   const subscriptions = [...account.subscriptions].sort((a, b) => Number(a.status === "cancelled") - Number(b.status === "cancelled") || a.nextDeliveryDate.localeCompare(b.nextDeliveryDate));
   const history = (account.deliveryHistory ?? []).filter(delivery => historyFilter === "all" || (historyFilter === "delivered" ? ["delivered", "completed"].includes(delivery.status) : delivery.status === "skipped"));
-  return <div className="page-shell account-dashboard">
-    <header className="account-welcome"><div><p className="eyebrow">Moj nalog</p><h1>Zdravo, {customer.fullName || "kupče"}.</h1><p>Vaše mleko, u ritmu koji vam odgovara.</p></div><a className="button secondary small" href="/prodavnica">Dodaj proizvod</a></header>
-    <nav className="account-nav" aria-label="Navigacija naloga"><a href="#moje-dostave">Moje dostave</a><a href="#istorija-dostava">Istorija dostava</a><a href="#podesavanja-naloga">Podešavanja</a></nav>
+  return <div className="account-dashboard">
+      <aside className="account-sidebar" aria-label="Meni naloga">
+        <Link className="account-brand" href="/">
+          <Image src="/images/mleko-i-mleko-logo.png" alt="" width={42} height={42} />
+          <strong>Mleko i Mleko</strong>
+        </Link>
+        <p className="account-sidebar-label">Moj nalog</p>
+        <nav className="account-nav" aria-label="Navigacija naloga">
+          <a href="#moje-dostave">Moje dostave</a>
+          <a href="#istorija-dostava">Istorija dostava</a>
+          <a href="#podesavanja-naloga">Podešavanja</a>
+        </nav>
+        <div className="account-sidebar-footer">
+          <a href="/prodavnica">← Nazad u prodavnicu</a>
+          <a href="/kontakt">Pomoć i kontakt</a>
+          <button disabled={busy} onClick={() => void signOut()}>Odjavi se</button>
+        </div>
+      </aside>
+    <div className="account-content">
+    <header className="account-welcome"><div><p className="eyebrow">Moj nalog</p><h1>Zdravo, {customer.fullName || "kupče"}.</h1><p>Pregled dostava, porudžbina i podešavanja naloga.</p></div><a className="button secondary small" href="/prodavnica">Dodaj proizvod</a></header>
     <div className="account-feedback">{notice && <p className="notice success" role="status">{notice}</p>}{error && <p className="notice error" role="alert">{error}</p>}</div>
     <div className="account-main-grid"><div className="form-stack" id="moje-dostave">
       {(account.deliveryHistory ?? []).filter(delivery => delivery.status === "locked" && delivery.date >= account.currentDate).map(delivery => <section className="card" key={delivery.id}><p className="eyebrow">Dostava u pripremi</p><h2>{formatDate(delivery.date)}</h2><p>Ova dostava je već zaključana. Izmene redovne dostave ispod važe za naredne termine.</p><ul className="list-clean">{delivery.items.map((item, index) => <li key={index}>{item.quantity} × {item.product_name} · {item.unit_label}</li>)}</ul></section>)}
@@ -91,7 +110,8 @@ export function AccountView() {
         <p className="small-text muted">Prikazujemo poslednjih 50 evidentiranih dostava i preskakanja.</p>
       </section>
       <details className="card account-orders-panel"><summary>Moje porudžbine <span>{account.orders.length}</span></summary><p>Mesečni obračuni i jednokratne kupovine. Jedna mesečna porudžbina može obuhvatiti više dostava.</p><ul className="list-clean account-orders">{account.orders.map(order => <li key={label(order.id)}><div className="summary-row"><strong>{label(order.order_number)}</strong><strong>{formatMoney(Number(order.total_minor) / 100)}</strong></div><p>{order.kind === "subscription_invoice" ? "Početak obračunatog perioda" : "Termin dostave"}: {formatDate(label(order.delivery_date))}</p><p>Plaćanje: {statusLabel(label(order.payment_status))} · {deliveryStatus(label(order.fulfillment_status))}</p></li>)}</ul>{!account.orders.length && <p>Još nema porudžbina.</p>}</details>
-    </div><aside className="account-side"><section className="card"><p className="eyebrow">Stižemo na adresu</p><h2>{customer.addressLine1 || "Adresa za dostavu"}</h2><p>{[customer.addressLine2, customer.postalCode, customer.city].filter(Boolean).join(", ")}</p><p className="small-text">Promenu adrese ili dogovor oko dostave rešavamo preko kontakta.</p><a href="/kontakt">Javite nam se →</a></section><section className="account-help"><h3>Šta vam danas odgovara?</h3><p><strong>Treba vam više ili manje?</strong><br />Podesite količinu sa − / + i sačuvajte.</p><p><strong>Imate još mleka?</strong><br />Preskočite samo sledeći termin.</p><p><strong>Putujete?</strong><br />Pauzirajte do datuma povratka.</p></section></aside></div>
-    <section className="account-settings" id="podesavanja-naloga" aria-labelledby="settings-title"><h2 id="settings-title">Podaci i obaveštenja</h2><details className="card"><summary>Prijava, email i WhatsApp</summary><LoginSettings /></details><details className="card"><summary>Moji kontakt podaci</summary><dl><dt>Email</dt><dd>{customer.email}</dd><dt>Telefon</dt><dd>{customer.phone || "Nije unet"}</dd></dl><a href="/kontakt">Zatraži izmenu podataka</a></details><button className="text-button" disabled={busy} onClick={() => void signOut()}>Odjavi se</button></section>
+    </div><aside className="account-side" aria-label="Informacije o dostavi"><section className="card"><p className="eyebrow">Stižemo na adresu</p><h2>{customer.addressLine1 || "Adresa za dostavu"}</h2><p>{[customer.addressLine2, customer.postalCode, customer.city].filter(Boolean).join(", ")}</p><p className="small-text">Promenu adrese ili dogovor oko dostave rešavamo preko kontakta.</p><a href="/kontakt">Javite nam se →</a></section><section className="account-help"><h3>Šta vam danas odgovara?</h3><p><strong>Treba vam više ili manje?</strong><br />Podesite količinu sa − / + i sačuvajte.</p><p><strong>Imate još mleka?</strong><br />Preskočite samo sledeći termin.</p><p><strong>Putujete?</strong><br />Pauzirajte do datuma povratka.</p></section></aside></div>
+    <section className="account-settings" id="podesavanja-naloga" aria-labelledby="settings-title"><h2 id="settings-title">Podaci i obaveštenja</h2><details className="card"><summary>Prijava, email i WhatsApp</summary><LoginSettings /></details><details className="card"><summary>Moji kontakt podaci</summary><dl><dt>Email</dt><dd>{customer.email}</dd><dt>Telefon</dt><dd>{customer.phone || "Nije unet"}</dd></dl><a href="/kontakt">Zatraži izmenu podataka</a></details></section>
+    </div>
   </div>;
 }
