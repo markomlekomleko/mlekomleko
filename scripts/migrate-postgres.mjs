@@ -23,7 +23,7 @@ export async function migratePostgres({ url = postgresUrl(process.env, true), sc
     for (const name of (await readdir(directory)).filter(name => name.endsWith('.sql')).sort()) {
       const sql = await readFile(new URL(name, directory), 'utf8');
       const checksum = createHash('sha256').update(sql).digest('hex');
-      for (const match of sql.matchAll(/CREATE TABLE "([a-z_]+)"/g)) tables.add(match[1]);
+      for (const match of sql.matchAll(/CREATE TABLE\s+(?:"([a-z_]+)"|([a-z_]+))\s*\(/gi)) tables.add(match[1] ?? match[2]);
       if (applied.has(name)) {
         if (applied.get(name) !== checksum) throw new Error(`Previously applied PostgreSQL migration changed: ${name}`);
         continue;

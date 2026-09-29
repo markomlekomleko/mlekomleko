@@ -9,7 +9,7 @@ type HeroSceneProps = {
   offerHref: string;
 };
 
-/** Two deliberate gestures, with timed playback rather than scroll scrubbing. */
+/** Two story steps, with timed playback rather than scroll scrubbing. */
 export function HeroScene({ media, offerHref }: HeroSceneProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -108,7 +108,7 @@ export function HeroScene({ media, offerHref }: HeroSceneProps) {
     };
 
     const onWheel = (event: WheelEvent) => {
-      if (event.ctrlKey || event.metaKey || Math.abs(event.deltaX) > Math.abs(event.deltaY) || !canHandle(event.target)) return;
+      if (event.ctrlKey || event.metaKey || event.deltaY === 0 || Math.abs(event.deltaX) > Math.abs(event.deltaY) || !canHandle(event.target)) return;
       const now = performance.now();
       const freshGesture = now - lastWheel > 180;
       lastWheel = now;
@@ -116,7 +116,9 @@ export function HeroScene({ media, offerHref }: HeroSceneProps) {
       if (step === 0 && event.deltaY < 0 && !scrollFrame) return;
       if (!event.cancelable) return;
       event.preventDefault();
-      if (now < transitionUntil || (!freshGesture && wheelDistance === 0)) return;
+      // Suppress input only while moving. Requiring a pause between wheel events
+      // traps continuous trackpad scrolling on the second scene indefinitely.
+      if (now < transitionUntil) return;
       if (freshGesture) wheelDistance = 0;
       wheelDistance += event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? pin.offsetHeight : 1);
       if (Math.abs(wheelDistance) < 12) return;
