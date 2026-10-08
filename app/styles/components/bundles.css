@@ -1,0 +1,123 @@
+/* Owner: W-offer — bundle offers */
+
+.bundle-card { position: relative; min-width: 0; flex-direction: column; }
+.bundle-card h3 { font-size: 1.38rem; }
+.bundle-card > .muted { min-height: 4.5em; }
+.bundle-price strong { color: var(--forest-dark); }
+.bundle-price small { margin-top: .3rem; font-weight: 750; }
+
+@media (min-width: 660px) {
+  .bundle-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .bundle-card > .muted { min-height: auto; }
+}
+
+/* Surfaces that used to sit on a white page need their own ground now. */
+.bundle-card {
+  background: var(--paper);
+}
+
+/* Grid and flex children default to a min-content floor, which pushes the page wider
+   than the viewport once the reader enlarges text. Everything in the offer opts out
+   and wraps instead (acceptance UI-03). */
+.bundle-grid > * {
+  min-width: 0;
+}
+
+.bundles { margin-top: 3rem; }
+.bundles .section-head { margin-bottom: 1.25rem; }
+
+.bundles h3 {
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+}
+
+.bundle-grid { display: grid; gap: 1rem; }
+
+@media (min-width: 900px) {
+  .bundle-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.bundle-card {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--photo-radius);
+}
+
+.bundle-flag {
+  width: fit-content;
+  margin: 0;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: var(--butter);
+  color: var(--ink);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bundle-card h4 {
+  margin: 0;
+  font-family: var(--font-editorial), Georgia, serif;
+  font-size: 1.4rem;
+  font-weight: 400;
+}
+
+.bundle-card ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.85rem 0;
+  border-block: 1px solid var(--line);
+  list-style: none;
+}
+
+.bundle-card li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+
+.bundle-card li small { color: var(--muted); text-align: right; }
+
+.bundle-price { display: grid; gap: 0.15rem; margin: 0; }
+.bundle-price strong { font-size: 1.45rem; letter-spacing: -0.02em; }
+.bundle-price span { color: var(--muted); font-size: 0.8rem; }
+.bundle-price small { color: var(--muted); font-size: 0.75rem; }
+
+.bundle-preview {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  padding: 0.85rem;
+  border-radius: var(--control-radius);
+  background: var(--cobalt-wash);
+}
+
+.bundle-preview p { margin: 0; font-size: 0.88rem; }
+.bundle-preview .button { width: 100%; }
+
+/* Product cards: the card rises and the photograph creeps in behind its own crop. */
+.bundle-card {
+  transition:
+    transform 0.28s cubic-bezier(0.22, 0.7, 0.25, 1),
+    border-color 0.28s ease,
+    box-shadow 0.28s ease;
+}
+
+@media (hover: hover) {
+  .bundle-card:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--ink) 22%, var(--line));
+    box-shadow: 0 16px 34px rgba(23, 37, 31, 0.1);
+  }
+}

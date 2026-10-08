@@ -2,6 +2,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import baseConfig from "../../playwright.config";
 import {
   collectCls,
   collectDigest,
@@ -250,10 +251,10 @@ type Opened = {
 };
 
 /** Navigate and prepare a page for capture. */
-async function openPage(page: Page, url: string, options: { home: boolean }): Promise<Opened> {
+async function openPage(page: Page, url: string, options: { home: boolean; cls?: boolean }): Promise<Opened> {
   const response = await page.goto(url, { waitUntil: "load" });
   // CLS is read before any interaction so the consent click cannot mask shifts.
-  const cls = options.home ? await page.evaluate(collectCls, 3_000) : null;
+  const cls = (options.cls ?? options.home) ? await page.evaluate(collectCls, 3_000) : null;
   await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
   await acceptConsent(page);
   await parkPointer(page);
@@ -316,6 +317,95 @@ async function resolveProductPath(page: Page) {
   const match = /href="\/proizvodi\/([^"#?/]+)"/.exec(html);
   return `/proizvodi/${match ? match[1] : FALLBACK_PRODUCT}`;
 }
+
+/**
+ * Bring an interacted page back to a fixed resting state before a digest: no focused
+ * control (a clicked button or a typed-in field would otherwise keep :focus styles),
+ * no hover, media settled, a known scroll position and motion frozen again.
+ */
+async function steady(page: Page, options: { y?: number | "bottom"; blur?: boolean } = {}) {
+  if (options.blur ?? true) {
+    await page.evaluate(() => {
+      const active = document.activeElement;
+      if (active instanceof HTMLElement && active !== document.body) active.blur();
+    });
+  }
+  await parkPointer(page);
+  await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+  await page.evaluate(settleImages, 10_000);
+  await page.evaluate(freezeAnimations);
+  await page.waitForTimeout(400);
+  const y =
+    options.y === "bottom"
+      ? await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)
+      : (options.y ?? 0);
+  await scrollToY(page, y);
+  await page.evaluate(freezeAnimations);
+  await waitFrames(page);
+  await waitFrames(page);
+}
+
+type StateOptions = {
+  /** Also write a full-page shot. Only for a test's last state: it can resize the page. */
+  full?: boolean;
+  /** Run axe. Only for a test's last state: it may scroll the document. */
+  axe?: boolean;
+};
+
+/** Digest first, then the optional parts, so a digest-only run follows the same path. */
+async function captureState(
+  page: Page,
+  testInfo: TestInfo,
+  name: string,
+  meta: Record<string, unknown>,
+  options: StateOptions = {},
+) {
+  await writeDigest(page, testInfo, `state--${name}`, { state: name, ...meta });
+  const metrics: Record<string, unknown> = { state: name, ...meta };
+  if (METRICS) Object.assign(metrics, await page.evaluate(collectPageMetrics));
+  if (SHOTS) {
+    await viewportShot(page, projectDir(testInfo, "states", `${name}.png`));
+    if (options.full) await fullShot(page, projectDir(testInfo, "states", `${name}--full.png`));
+  }
+  if (METRICS) {
+    if (options.axe) metrics.axe = await axeBlocking(page);
+    await recordMetrics(testInfo, page, "states", name, metrics);
+  }
+}
+
+async function addFirstProductToCart(page: Page) {
+  const card = page.locator(".configurator").first();
+  await card.getByRole("button", { name: "4 L", exact: true }).click();
+  await card.locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
+  await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "true");
+  await expect(page.locator(".drawer-item")).toHaveCount(1);
+}
+
+const ADMIN_TABS = [
+  { id: "pregled", label: "Pregled" },
+  { id: "zarada", label: "Zarada" },
+  { id: "porudzbine", label: "Porudžbine" },
+  { id: "proizvodi", label: "Proizvodi" },
+  { id: "paketi", label: "Paketi" },
+  { id: "kupci", label: "Kupci" },
+  { id: "pretplate", label: "Pretplate" },
+  { id: "dostave", label: "Dostave" },
+  { id: "popusti", label: "Popusti" },
+  { id: "sadrzaj", label: "Sadržaj sajta" },
+  { id: "podesavanja", label: "Podešavanja" },
+];
+
+// The admin dashboard derives its default dates from the browser clock; pinning it keeps
+// the admin captures identical on every day the tool runs.
+const ADMIN_CLOCK = new Date("2026-10-08T10:00:00+02:00");
+
+// The credentials the test server is started with (playwright.config.ts webServer env).
+const baseServerEnv = (Array.isArray(baseConfig.webServer) ? baseConfig.webServer[0] : baseConfig.webServer)?.env ?? {};
+const ADMIN_EMAIL = baseServerEnv.ADMIN_EMAIL ?? "";
+const ADMIN_PASSWORD = baseServerEnv.ADMIN_PASSWORD ?? "";
+
+const VALID_POSTAL_CODE = "11000";
+const INVALID_POSTAL_CODE = "99999";
 
 // ---------------------------------------------------------------------------
 // Captures
@@ -487,4 +577,107 @@ test("state hero-scroll", async ({ page }, testInfo) => {
       if (home) home.heroScrub = heroScrub;
     });
   }
+});
+
+test("state consent-banner", async ({ page }, testInfo) => {
+  // A fresh context has no stored decision, so the banner is up; it is captured as is.
+  await page.goto("/", { waitUntil: "load" });
+  await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+  await expect(page.locator(".consent-banner")).toBeVisible();
+  await parkPointer(page);
+  await settle(page, { hero: true });
+  await expect(page.locator(".consent-banner")).toBeVisible();
+  await captureState(page, testInfo, "consent-banner", { route: "/" }, { axe: true });
+});
+
+test("state admin tabs", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === "tablet-768", "Admin states are captured at desktop and phone widths only");
+  test.skip(!ADMIN_EMAIL || !ADMIN_PASSWORD, "playwright.config.ts webServer env has no admin credentials");
+  await page.clock.setFixedTime(ADMIN_CLOCK);
+  await openPage(page, "/admin", { home: false });
+  await page.getByLabel("Email", { exact: true }).fill(ADMIN_EMAIL);
+  await page.getByLabel("Lozinka", { exact: true }).fill(ADMIN_PASSWORD);
+  await page.getByRole("button", { name: "Prijavi se", exact: true }).click();
+  await expect(page.locator(".status-dot")).toHaveText("● Povezano");
+  const navigation = page.getByRole("navigation", { name: "Administracija" });
+  for (const [index, tab] of ADMIN_TABS.entries()) {
+    await navigation.getByRole("button", { name: tab.label, exact: true }).click();
+    await expect(page.locator(".admin-topbar h1")).toHaveText(tab.label);
+    await expect(page.locator(".status-dot")).toHaveText("● Povezano");
+    await expect(page.locator(".admin-main .loading-state")).toHaveCount(0);
+    await steady(page);
+    await expect(page.locator(".admin-main .loading-state")).toHaveCount(0);
+    const last = index === ADMIN_TABS.length - 1;
+    await captureState(page, testInfo, `admin-${tab.id}`, { route: "/admin", tab: tab.label }, { axe: last });
+  }
+});
+
+test("state checkout-item", async ({ page }, testInfo) => {
+  await openPage(page, "/", { home: true, cls: false });
+  await addFirstProductToCart(page);
+  await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => undefined);
+  const opened = await openPage(page, "/checkout", { home: false });
+  await expect(page.locator(".checkout-layout")).toBeVisible();
+  await expect(page.locator("main")).toContainText("Domaće kravlje mleko");
+  await steady(page);
+  await captureState(page, testInfo, "checkout-item", { route: "/checkout", finalUrl: opened.finalUrl }, { full: true, axe: true });
+});
+
+test("state delivery-checker results", async ({ page }, testInfo) => {
+  await openPage(page, "/", { home: true, cls: false });
+  const checker = page.locator("#proveri-dostavu");
+  const input = checker.getByRole("textbox", { name: "Poštanski broj" });
+  const submit = checker.locator('button[type="submit"]');
+  const result = checker.locator(".check-result");
+
+  await input.fill(VALID_POSTAL_CODE);
+  await submit.click();
+  await expect(result).toHaveClass(/\bsuccess\b/);
+  await expect(result).toContainText(VALID_POSTAL_CODE);
+  await expect(submit).toBeEnabled();
+  await steady(page);
+  await captureState(page, testInfo, "delivery-valid", { route: "/", postalCode: VALID_POSTAL_CODE });
+
+  await input.fill(INVALID_POSTAL_CODE);
+  await submit.click();
+  await expect(result).toHaveClass(/\berror\b/);
+  await expect(result).toContainText(INVALID_POSTAL_CODE);
+  await expect(submit).toBeEnabled();
+  await steady(page);
+  await captureState(page, testInfo, "delivery-invalid", { route: "/", postalCode: INVALID_POSTAL_CODE }, { axe: true });
+});
+
+test("state faq-open", async ({ page }, testInfo) => {
+  await openPage(page, "/", { home: true, cls: false });
+  const first = page.locator(".faq .faq-list details").first();
+  await first.locator("summary").click();
+  await expect(first).toHaveAttribute("open", "");
+  await steady(page);
+  await captureState(page, testInfo, "faq-open", { route: "/" }, { axe: true });
+});
+
+test("state buy-bar", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390", "The purchase bar only exists on phones");
+  const url = await resolveProductPath(page);
+  await openPage(page, url, { home: false });
+  // The bar shows once the real purchase button has scrolled away. Its observer only
+  // reports crossings, so the page passes the purchase area before jumping to the end.
+  await page.locator(".product-buy-column .next-delivery").scrollIntoViewIfNeeded();
+  await waitFrames(page);
+  await scrollToY(page, await page.evaluate(() => document.documentElement.scrollHeight));
+  await expect(page.locator(".buy-bar")).toHaveAttribute("data-visible", "true");
+  await steady(page, { y: "bottom" });
+  await expect(page.locator(".buy-bar")).toHaveAttribute("data-visible", "true");
+  await captureState(page, testInfo, "buy-bar", { route: url, scroll: "bottom" }, { axe: true });
+});
+
+test("state configurator-subscription", async ({ page }, testInfo) => {
+  await openPage(page, "/", { home: true, cls: false });
+  const card = page.locator(".configurator").first();
+  const subscription = card.getByRole("button", { name: "Redovna dostava", exact: true });
+  await subscription.click();
+  await expect(subscription).toHaveAttribute("aria-pressed", "true");
+  await expect(card.locator("legend", { hasText: "Ritam dostave" })).toBeVisible();
+  await steady(page);
+  await captureState(page, testInfo, "configurator-subscription", { route: "/" }, { axe: true });
 });

@@ -1,0 +1,45 @@
+/* Owner: W-story — home origin section */
+
+.origin { padding-block: 0 !important; }
+
+.origin-image img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+@media (min-width: 768px) {
+  .origin-image img { aspect-ratio: 21 / 9; }
+}
+
+.origin-content {
+  display: grid;
+  gap: 1.5rem;
+  padding-block: 48px;
+}
+
+@media (min-width: 900px) {
+  .origin-content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3rem;
+    padding-block: 72px;
+  }
+}
+
+.origin-copy { display: grid; gap: 1rem; justify-items: start; }
+.origin-copy p { margin: 0; color: var(--ink-soft); }
+
+.origin-video {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  min-height: 52px;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: var(--paper);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.origin-video small { display: block; color: var(--cobalt); font-weight: 700; }

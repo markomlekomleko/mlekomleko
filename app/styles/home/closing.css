@@ -1,0 +1,8 @@
+/* Owner: W-story — home closing section */
+
+.closing { background: var(--ink); color: var(--milk); }
+.closing .eyebrow { color: var(--butter); }
+.closing h2 { margin-bottom: 1rem; color: var(--milk); }
+.closing p { max-width: 52ch; color: color-mix(in srgb, var(--milk) 78%, transparent); }
+.closing .button { margin-top: 1.5rem; border-color: var(--milk); background: var(--milk); color: var(--ink); }
+.closing .button:hover { border-color: var(--butter); background: var(--butter); }

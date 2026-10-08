@@ -1,0 +1,53 @@
+/* Owner: W-foundation — design tokens: the single :root (legacy names kept) */
+
+/* Redesign "Jutro počinje ovde." — palette from docs/OPUS-REDIZAJN-PLAN.md section 3.
+   Legacy variable names are kept and remapped so every existing route inherits the new brand. */
+:root {
+  --milk: #f7f3e9;
+  /* The accent is the teal of the logo mark (#357f94), deepened a step: the raw
+     logo value reads at 4.11:1 on the cream ground, under the 4.5:1 floor, and it
+     carries small text (eyebrows, step numbers, links). Deepened it clears both
+     directions — 4.91:1 as text on cream, 5.44:1 behind white button labels. */
+  --cobalt: #2f7184;
+  --cobalt-dark: #255a6a;
+  --cobalt-wash: #e4eef1;
+  --butter: #f2d36a;
+  --brand-teal: #2f7184;
+  --ink: #17251f;
+  --ink-soft: #40514a;
+  --forest: #2f7184;
+  --forest-dark: #17251f;
+  --leaf: #e4eef1;
+  --cream: #f7f3e9;
+  --wash: #efe9db;
+  --paper: #ffffff;
+  --white: #ffffff;
+  --orange: #2f7184;
+  --orange-dark: #255a6a;
+  --yellow: #f2d36a;
+  --line: #e0d8c6;
+  --muted: #58655d;
+  --danger: #a33b33;
+  --success: #1f6b4d;
+  --shadow: 0 12px 32px rgb(37 59 56 / 5%);
+  --radius: 16px;
+  --control-radius: 12px;
+  --photo-radius: 20px;
+  --tap: 52px;
+  /* Announcement bar plus sticky header; the hero copy clears this once pinned, and
+     other sticky columns (cart summary, product gallery) use it as their own offset. */
+  --header-stack: 101px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --photo-radius: 24px;
+    --header-stack: 113px;
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    --photo-radius: 28px;
+  }
+}

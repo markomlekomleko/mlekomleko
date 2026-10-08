@@ -1,0 +1,27 @@
+/* Owner: W-story — home rhythm section */
+
+/* Grid and flex children default to a min-content floor, which pushes the page wider
+   than the viewport once the reader enlarges text. Everything in the offer opts out
+   and wraps instead (acceptance UI-03). */
+.rhythm-grid > * {
+  min-width: 0;
+}
+
+.rhythm-grid { display: grid; gap: 1rem; }
+
+@media (min-width: 768px) {
+  .rhythm-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.rhythm-grid article {
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--photo-radius);
+}
+
+.rhythm-grid h3 { margin: 0; font-size: 1.1rem; }
+.rhythm-grid p { margin: 0; color: var(--ink-soft); font-size: 0.92rem; }
+.rhythm-note { margin: 1.25rem 0 0; color: var(--muted); font-size: 0.88rem; }

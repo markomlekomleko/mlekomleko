@@ -1,0 +1,53 @@
+/* Owner: W-offer — home steps section */
+
+/* City pages (pages/content.css) put .number-card cards inside .steps-grid. Kept here:
+   .steps-grid h3 below overrides its font-size, so it has to stay ahead of that rule. */
+.number-card h3 { font-weight: 500; font-size: 1rem; }
+
+@media (max-width: 600px) {
+  .steps-grid { gap: 1.5rem; }
+}
+
+#proveri-dostavu { scroll-margin-top: 105px; }
+
+/* Grid and flex children default to a min-content floor, which pushes the page wider
+   than the viewport once the reader enlarges text. Everything in the offer opts out
+   and wraps instead (acceptance UI-03). */
+.steps-grid > * {
+  min-width: 0;
+}
+
+.steps-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+@media (min-width: 768px) {
+  .steps-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.steps-grid li {
+  display: grid;
+  gap: 0.4rem;
+  align-content: start;
+  padding: 1.4rem;
+  border-radius: var(--photo-radius);
+  background: var(--paper);
+}
+
+.steps-grid span {
+  color: var(--cobalt);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.steps-grid h3 { margin: 0; font-size: 1.15rem; }
+.steps-grid p { margin: 0; color: var(--ink-soft); font-size: 0.92rem; }
+
+.steps-delivery { margin-top: 2rem; }
+.steps-delivery .delivery-checker { margin-top: 0; border-radius: var(--photo-radius); }
