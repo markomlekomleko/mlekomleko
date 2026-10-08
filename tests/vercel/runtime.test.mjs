@@ -242,7 +242,7 @@ test('the redesigned homepage ships the headline, the poster and purchase naviga
   assert.equal(response.status, 200);
   const html = await response.text();
   // Nothing in the first screen may wait for the hero video to decode.
-  assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Jutro po/);
+  assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Punomasno i ponosno/);
   assert.match(html, /scene-poster/);
   assert.match(html, /href="#izaberite-mleko"/);
   assert.match(html, /Izaberi svoje mleko/);

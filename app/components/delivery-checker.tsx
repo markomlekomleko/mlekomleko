@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { fetchJson, formatDate, type DeliveryWindow } from "../lib/frontend";
 
 type CheckerPayload = {
@@ -13,6 +13,7 @@ export function DeliveryChecker({ title, note, delivery }: { title: string; note
   const [result, setResult] = useState<{ available: boolean; postalCode: string } | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const inputId = useId();
 
   async function check(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,20 +31,22 @@ export function DeliveryChecker({ title, note, delivery }: { title: string; note
 
   return (
     <section className="delivery-checker" aria-labelledby="delivery-check-title">
-      <div>
+      <div className="delivery-checker-copy">
         <p className="eyebrow">Sledeći termin</p>
         <h2 id="delivery-check-title">{title}</h2>
         <p className="muted">{note}</p>
         <p className="delivery-date"><strong>{formatDate(delivery.deliveryDate)}</strong> · od {delivery.deliveryLocalTime}</p>
       </div>
-      <form onSubmit={check}>
-        <label className="field">
-          <span>Poštanski broj</span>
+      <form className="delivery-checker-form" onSubmit={check}>
+        {/* The label names the field only: wrapped around the button too, it would read
+            the field out as "Poštanski broj Proveri". */}
+        <div className="field">
+          <label htmlFor={inputId}>Poštanski broj</label>
           <div className="input-action">
-            <input value={postalCode} onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 5))} inputMode="numeric" pattern="\d{5}" placeholder="11000" required />
+            <input id={inputId} value={postalCode} onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 5))} inputMode="numeric" autoComplete="postal-code" pattern="\d{5}" placeholder="11000" required />
             <button className="button" type="submit" disabled={busy}>{busy ? "Proveravamo…" : "Proveri"}</button>
           </div>
-        </label>
+        </div>
         {result ? (
           <p className={`check-result ${result.available ? "success" : "error"}`} role="status">
             {result.available

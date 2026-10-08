@@ -1,54 +1,9 @@
 /* Owner: W-hero — home hero scene */
 
-.hero-media { position: relative; margin: 0; }
-.hero-media::before { position: absolute; z-index: -1; top: -2rem; right: -4rem; width: 70%; aspect-ratio: 1; border-radius: 50%; background: var(--yellow); content: ""; opacity: .65; }
-.hero-media picture { display: block; }
-.hero-media { min-width: 0; }
-.hero-media::before { display: none; }
-.hero-media picture { overflow: hidden; border-radius: 6px; }
-.hero-media img { width: 100%; height: min(43vw, 565px); aspect-ratio: auto; object-fit: cover; border-radius: 0; box-shadow: none; }
-.hero-media figcaption { display: flex; justify-content: space-between; gap: 1rem; margin-top: .8rem; color: var(--muted); font-size: .7rem; text-align: left; }
-.hero-media figcaption > span:first-child { color: var(--ink); }
-
-@media (max-width: 860px) {
-  .hero-media img { height: 430px; }
-  .hero-media figcaption { flex-wrap: wrap; gap: .2rem; }
-}
-
-@media (max-width: 600px) {
-  .hero-media { grid-row: 3; grid-column: 2; margin: 0; }
-  .hero-media img { height: 194px; object-fit: cover; }
-  .hero-media figcaption { display: none; }
-}
-
-@media (max-width: 359px) {
-  .hero-media img { height: 180px; }
-}
-
-.milk-scene { position: relative; width: 100%; height: 100%; }
-.milk-scene canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity .6s ease; }
-.milk-scene[data-ready='true'] canvas { opacity: 1; }
-.milk-scene-poster { position: absolute; inset: 7% 15% 9%; margin: 0; overflow: hidden; border-radius: 48% 48% 3px 3px; transition: opacity .6s ease; }
-.milk-scene-poster img { width: 100%; height: 100%; object-fit: cover; }
-.milk-scene[data-ready='true'] .milk-scene-poster { opacity: 0; }
-
-@media (prefers-reduced-motion: reduce) {
-  .milk-scene canvas, .milk-scene-poster { transition: none; }
-}
-
-.conversion-hero { position: relative; background: #f5f3e9; }
-.scene-controls { position: absolute; bottom: 20px; left: 16px; z-index: 4; display: flex; gap: 6px; }
-.scene-controls button { display: grid; place-items: center; width: 38px; min-height: 38px; border-radius: 50%; border: 1px solid #7c8a6d; background: #f5f4e9e8; color: #223d33; font-size: .9rem; }
-.scene-controls button:hover { background: white; }
-
-@media (max-width: 760px) {
-  .scene-controls { display: none; }
-}
-
-@media (min-width: 761px) and (max-width: 1100px) {
-  .scene-controls { bottom: 32px; }
-}
-
+/* The scroll engine in HeroScene writes the --hero-* progress values onto .hero every
+   frame; the defaults here are the opening frame, which is also what the server sends.
+   The hero stays at z-index auto and never clips: the marquee band (z-index 3) is
+   pulled up across its last stretch. */
 .hero {
   --hero-p: 0;
   --hero-intro-o: 1;
@@ -57,12 +12,46 @@
   --hero-rhythm-y: 18;
   --hero-fold: 0;
   --hero-scroll: 85svh;
+  /* Width of the copy column. On phones it is the page column; wider, it stops short
+     of the product, whose left edge sits at about 52% of the viewport in the desktop
+     clip's start and end frames (54% on a portrait tablet, where the clip is cropped). */
+  --hero-copy-w: 100%;
+  /* The headline is sized so its longest word fills the copy column. "PUNOMASNO" is
+     7.08em wide in Archivo 900 at full width and 6.15em at the phone width (86),
+     measured from the font with the display tracking; the extra ~4% keeps it off the
+     column edge and covers the metric-matched fallback face. */
+  --hero-title-em: 7.4;
+  --hero-title-max: 4.5rem;
+  /* Same for the sticker: "TI BIRAŠ RITAM," is 8.42em / 7.36em. */
+  --hero-rhythm-em: 8.8;
   position: relative;
-  background: var(--milk);
+  /* Shows only around the folded frame at the end of the scene. */
+  background: var(--brand);
+}
+
+@media (max-width: 480px) {
+  .hero {
+    --hero-title-em: 6.4;
+    --hero-rhythm-em: 7.7;
+  }
 }
 
 @media (min-width: 768px) {
-  .hero { --hero-scroll: 160svh; }
+  .hero {
+    --hero-scroll: 160svh;
+    --hero-copy-w: calc(56vw - 32px);
+    --hero-title-max: 8rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero { --hero-copy-w: calc(51vw - 32px); }
+}
+
+/* From here .page-shell pads by 48px, and past 1360px it centres, so its left edge is
+   50vw - 680px + 48px. */
+@media (min-width: 1200px) {
+  .hero { --hero-copy-w: calc(51vw - max(48px, 50vw - 632px)); }
 }
 
 .scene-track {
@@ -74,6 +63,8 @@
   height: auto;
 }
 
+/* Isolated so the copy's z-index stays inside the hero in every mode, under the band
+   and the sticky header. */
 .scene-pin {
   position: sticky;
   top: 0;
@@ -81,11 +72,13 @@
   overflow: hidden;
   height: 100vh;
   height: 100svh;
+  isolation: isolate;
 }
 
 .hero[data-mode="static"] .scene-pin {
-  position: static;
+  position: relative;
   height: auto;
+  min-height: 78vh;
   min-height: 78svh;
 }
 
@@ -94,21 +87,41 @@
   grid-area: 1 / 1;
 }
 
-.scene-frame {
+/* The frame is laid over the stage, not inside its flow, so the poster file's own
+   9:16 ratio never sets the height of a static hero: the pin's height does. */
+.scene-stage {
   position: relative;
+}
+
+/* The fold: the scene shrinks and tilts onto the orange ground, and its edge is drawn
+   in as it goes. Transform and opacity only. */
+.scene-frame {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
-  height: 100%;
-  border-radius: calc(var(--hero-fold) * 28px);
-  transform: scale(calc(1 - var(--hero-fold) * 0.05));
+  background: var(--bg);
+  transform: scale(calc(1 - var(--hero-fold) * 0.06)) rotate(calc(var(--hero-fold) * -1.5deg));
   transform-origin: 50% 40%;
-  background: var(--wash);
   will-change: transform;
 }
 
+.scene-frame::after {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--ink);
+  content: "";
+  opacity: var(--hero-fold);
+  pointer-events: none;
+}
+
 .hero[data-mode="static"] .scene-frame {
-  height: auto;
-  border-radius: var(--photo-radius);
   transform: none;
+}
+
+/* A static scene is never folded, though the engine still reports progress 1 once the
+   reader is past it. */
+.hero[data-mode="static"] .scene-frame::after {
+  opacity: 0;
 }
 
 .scene-poster,
@@ -127,15 +140,6 @@
   object-position: inherit;
 }
 
-.hero[data-mode="static"] .scene-poster img {
-  height: auto;
-  aspect-ratio: 4 / 5;
-}
-
-@media (min-width: 768px) {
-  .hero[data-mode="static"] .scene-poster img { aspect-ratio: 16 / 9; }
-}
-
 .scene-video {
   position: absolute;
   inset: 0;
@@ -145,24 +149,39 @@
 
 .hero[data-video="ready"] .scene-video { opacity: 1; }
 
-/* A readable gradient rather than a flat scrim, so the milk stays bright. */
-/* The copy sits in the top band on a phone: that is the quiet zone of the vertical
-   frame, and it stays clear of the sticky header once the scene is pinned. */
+/* On a phone the copy sits in the top band, the quiet wall above the glass, and clears
+   the sticky header once the scene is pinned. */
 .scene-copy {
   position: relative;
   z-index: 2;
   display: grid;
   align-content: start;
-  justify-items: center;
-  text-align: center;
   padding-block: calc(var(--header-stack) + 3vh) 8vh;
+  pointer-events: none;
+}
+
+/* A readable gradient rather than a flat scrim, so the milk stays bright. It fades out
+   with the intro, so the clip plays clean once the words have gone. */
+.scene-copy::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--milk) 52%, transparent) 0%,
-    color-mix(in srgb, var(--milk) 24%, transparent) 40%,
-    color-mix(in srgb, var(--milk) 0%, transparent) 62%
+    color-mix(in srgb, var(--bg) 82%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 58%, transparent) 38%,
+    color-mix(in srgb, var(--bg) 0%, transparent) 66%
   );
-  pointer-events: none;
+  content: "";
+  opacity: var(--hero-intro-o);
+}
+
+.hero[data-mode="static"] .scene-copy {
+  padding-block: var(--space-7);
+}
+
+.hero[data-mode="static"] .scene-copy::before {
+  opacity: 1;
 }
 
 .scene-copy-shell {
@@ -176,11 +195,14 @@
   pointer-events: auto;
 }
 
+/* A size container, so the headline can be sized off the column it sits in. */
 .scene-intro {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   align-self: start;
+  max-width: var(--hero-copy-w);
+  container-type: inline-size;
   opacity: var(--hero-intro-o);
   transform: translate3d(0, calc(var(--hero-intro-y) * 1px), 0);
   will-change: opacity, transform;
@@ -191,67 +213,122 @@
   transform: none;
 }
 
+.scene-intro .eyebrow {
+  margin-bottom: var(--space-4);
+  padding: 0.45em 0.7em;
+  background: var(--ink);
+  color: var(--surface);
+  line-height: 1.2;
+}
+
 .scene-intro h1 {
-  margin-bottom: 0.75rem;
+  max-width: none;
+  margin-bottom: var(--space-4);
   color: var(--ink);
+  font-size: min(var(--hero-title-max), calc(100cqi / var(--hero-title-em)));
+  text-wrap: balance;
 }
 
 .scene-lead {
-  max-width: 26ch;
-  margin-bottom: 1.5rem;
-  color: var(--ink-soft);
+  max-width: 34ch;
+  margin-bottom: var(--space-5);
+  color: var(--ink);
   font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.4;
 }
 
+/* Below 1024px the two calls to action share the column and wrap to full-width rows. */
 .scene-actions {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.75rem 1.25rem;
-  align-items: center;
+  align-self: stretch;
+  gap: var(--space-3);
+}
+
+.scene-actions .button {
+  flex: 1 1 auto;
 }
 
 .scene-secondary {
-  min-height: 44px;
   display: inline-flex;
+  flex: 1 1 auto;
   align-items: center;
+  justify-content: center;
+  min-height: var(--tap);
+  padding: 0 24px;
+  border: 1px solid var(--ink);
+  background: var(--surface);
   color: var(--ink);
+  font-family: var(--ff-body);
+  font-size: 0.9375rem;
   font-weight: 700;
-  text-decoration: underline;
-  text-underline-offset: 4px;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.scene-secondary:hover {
+  background: var(--ink);
+  color: var(--surface);
 }
 
 .scene-hint {
-  margin: 1.5rem 0 0;
-  color: var(--ink-soft);
+  display: inline-flex;
+  gap: 0.5em;
+  margin: var(--space-5) 0 0;
+  color: var(--ink);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   opacity: calc(1 - var(--hero-p) * 4);
+  animation: hero-hint-bob 1.6s ease-in-out infinite;
 }
 
+.scene-hint::after { content: "↓"; }
+
+@keyframes hero-hint-bob {
+  50% { transform: translateY(4px); }
+}
+
+/* The shell's motion toggle stops every loop on the page, this one included. */
+:root[data-motion="paused"] .scene-hint { animation-play-state: paused; }
+
+/* The mid-scroll line, as a sticker slapped onto the scene. Its own width is the
+   container its words are sized against. */
 .scene-rhythm {
-  align-self: start;
   display: grid;
-  justify-items: center;
-  gap: 0.4rem;
+  align-self: start;
+  justify-self: start;
+  gap: var(--space-2);
+  width: min(100%, 34rem, var(--hero-copy-w));
   margin: 0;
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--ink);
+  background: var(--brand);
+  color: var(--ink);
+  container-type: inline-size;
   opacity: var(--hero-rhythm-o);
-  transform: translate3d(0, calc(var(--hero-rhythm-y) * 1px), 0);
+  transform: translate3d(0, calc(var(--hero-rhythm-y) * 1px), 0) rotate(-2deg);
   pointer-events: none;
 }
 
 .scene-rhythm strong {
-  font-family: var(--font-editorial), Georgia, serif;
-  font-size: clamp(1.75rem, 7vw, 2.25rem);
-  font-weight: 400;
-  letter-spacing: -0.02em;
+  font-family: var(--ff-display);
+  font-size: min(3.5rem, calc(100cqi / var(--hero-rhythm-em)));
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+  text-transform: uppercase;
+  text-wrap: balance;
+  word-spacing: 0.06em;
 }
 
 .scene-rhythm span {
-  color: var(--ink-soft);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -260,58 +337,151 @@
 .hero[data-mode="static"] .scene-rhythm { display: none; }
 
 @media (min-width: 768px) {
+  /* Centred between the header, which covers the top of the pinned scene, and the
+     bottom of the first screen, which the header pushes the unpinned scene below: the
+     one band where the copy is whole both at load and once pinned. */
   .scene-copy {
     align-content: center;
-    justify-items: start;
-    text-align: left;
-    padding-block: 0;
+    padding-block: var(--header-stack);
+  }
+
+  .scene-copy::before {
     background: linear-gradient(
       90deg,
-      color-mix(in srgb, var(--milk) 88%, transparent) 0%,
-      color-mix(in srgb, var(--milk) 66%, transparent) 40%,
-      color-mix(in srgb, var(--milk) 0%, transparent) 62%
+      color-mix(in srgb, var(--bg) 88%, transparent) 0%,
+      color-mix(in srgb, var(--bg) 70%, transparent) 30%,
+      color-mix(in srgb, var(--bg) 0%, transparent) 56%
     );
   }
-
-  .scene-intro {
-    align-items: flex-start;
-  }
-
-  .scene-actions { justify-content: flex-start; }
 
   .scene-intro,
   .scene-rhythm {
     align-self: center;
-    max-width: 34vw;
   }
-
-  .scene-rhythm { justify-items: start; }
 
   .scene-lead { font-size: 1.125rem; }
 }
 
-/* Short phones: drop the scroll cue first, then tighten the lead, so the headline,
-   the product and the primary action always survive (D05). */
+@media (min-width: 1024px) {
+  .scene-actions .button,
+  .scene-secondary {
+    flex: 0 0 auto;
+  }
+}
+
+/* Short phones: drop the scroll cue first, then tighten the lead and the headline, so
+   the headline, the product and the primary action always survive (D05). */
 @media (max-height: 700px) and (max-width: 767px) {
   .scene-hint { display: none; }
-  .scene-lead { margin-bottom: 1rem; }
-  .scene-intro h1 { font-size: clamp(2.25rem, 9vw, 2.75rem); }
+  .scene-lead { margin-bottom: var(--space-4); }
+  .scene-intro h1 { font-size: min(2.9rem, calc(100cqi / var(--hero-title-em))); }
+}
+
+/* Ambient loop: a full-bleed, unpinned hero with the copy centred over the clip. */
+.hero[data-kind="loop"] .scene-track {
+  height: auto;
+}
+
+.hero[data-kind="loop"] .scene-pin {
+  position: relative;
+  height: auto;
+  min-height: 88vh;
+  min-height: 88svh;
+}
+
+.hero[data-kind="loop"] .scene-copy {
+  align-content: center;
+  padding-block: var(--space-7);
+}
+
+.hero[data-kind="loop"] .scene-copy::before {
+  background: radial-gradient(
+    ellipse at 50% 50%,
+    color-mix(in srgb, var(--bg) 72%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 0%, transparent) 72%
+  );
+  opacity: 1;
+}
+
+.hero[data-kind="loop"] .scene-intro {
+  align-items: center;
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 52rem);
+  max-width: none;
+  text-align: center;
+}
+
+.hero[data-kind="loop"] .scene-lead { max-width: 46ch; }
+
+.hero[data-kind="loop"] .scene-actions { justify-content: center; }
+
+.hero[data-kind="loop"] .scene-actions .button,
+.hero[data-kind="loop"] .scene-secondary {
+  flex: 0 1 auto;
+}
+
+/* Top right: the band covers the bottom edge of the hero. */
+.hero-loop-toggle {
+  position: absolute;
+  z-index: 3;
+  top: var(--space-4);
+  right: var(--space-4);
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.hero-loop-toggle svg { fill: currentColor; }
+
+@media (hover: hover) {
+  .hero-loop-toggle:hover {
+    background: var(--ink);
+    color: var(--surface);
+  }
+}
+
+/* Dark footage: white type over a flat black scrim. White on black is safe at every
+   size; the chip inverts so it still reads as a label. */
+.hero[data-tone="dark"] .scene-copy::before {
+  background: color-mix(in srgb, var(--ink) 40%, transparent);
+}
+
+.hero[data-tone="dark"] .scene-intro h1,
+.hero[data-tone="dark"] .scene-lead,
+.hero[data-tone="dark"] .scene-hint {
+  color: var(--surface);
+}
+
+.hero[data-tone="dark"] .scene-intro .eyebrow {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.hero[data-tone="dark"] :focus-visible {
+  outline-color: var(--surface);
 }
 
 /* Reduced motion and a missing or broken export both land on a static composition
-   with a normal document flow — never an empty pinned gap. */
+   with a normal document flow — never an empty pinned gap. These rules also hold
+   before hydration, while the server markup still says data-mode="scroll". */
 @media (prefers-reduced-motion: reduce) {
   .scene-track { height: auto; }
-  .scene-pin { position: static; height: auto; }
-  .scene-frame { transform: none; border-radius: var(--photo-radius); }
+  .scene-pin { position: relative; height: auto; min-height: 78vh; min-height: 78svh; }
+  .scene-frame { transform: none; }
+  .scene-frame::after { opacity: 0; }
   .scene-video { display: none; }
+  .scene-copy { padding-block: var(--space-7); }
+  .scene-copy::before { opacity: 1; }
+  .scene-hint { animation: none; }
 }
 
 .hero + section { border-top: 0; }
 
 /* The hero is a full-bleed pinned scene, not a padded content section. */
 .home > .hero { padding-block: 0; }
-
-/* Text links and footer columns. Hover deepens the colour rather than drawing a
-   rule under the words. */
-.scene-secondary { transition: color 0.2s ease; }

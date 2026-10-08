@@ -4,50 +4,98 @@
    .steps-grid h3 below overrides its font-size, so it has to stay ahead of that rule. */
 .number-card h3 { font-weight: 500; font-size: 1rem; }
 
-@media (max-width: 600px) {
-  .steps-grid { gap: 1.5rem; }
-}
-
-#proveri-dostavu { scroll-margin-top: 105px; }
-
-/* Grid and flex children default to a min-content floor, which pushes the page wider
-   than the viewport once the reader enlarges text. Everything in the offer opts out
-   and wraps instead (acceptance UI-03). */
-.steps-grid > * {
-  min-width: 0;
-}
-
+/* The shared list frame. The city pages reuse it for their number cards, so only the
+   frame lives at this level; the home look is scoped to `.steps` further down. */
 .steps-grid {
   display: grid;
   gap: 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
-  counter-reset: step;
 }
+
+/* Grid and flex children default to a min-content floor, which pushes the page wider
+   than the viewport once the reader enlarges text. Everything in the offer opts out
+   and wraps instead (acceptance UI-03). */
+.steps-grid > * { min-width: 0; }
 
 @media (min-width: 768px) {
   .steps-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-.steps-grid li {
-  display: grid;
-  gap: 0.4rem;
-  align-content: start;
-  padding: 1.4rem;
-  border-radius: var(--photo-radius);
-  background: var(--paper);
-}
-
-.steps-grid span {
-  color: var(--cobalt);
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.1em;
+@media (max-width: 600px) {
+  .steps-grid { gap: 1.5rem; }
 }
 
 .steps-grid h3 { margin: 0; font-size: 1.15rem; }
-.steps-grid p { margin: 0; color: var(--ink-soft); font-size: 0.92rem; }
+.steps-grid p { margin: 0; color: var(--ink-2); font-size: 0.92rem; }
 
-.steps-delivery { margin-top: 2rem; }
-.steps-delivery .delivery-checker { margin-top: 0; border-radius: var(--photo-radius); }
+/* Home: JM's full-bleed orange feature. Everything on it is black (6.1:1); the top rule
+   comes from `.home > section + section`, the bottom one from the next section's top. */
+.steps {
+  background: var(--brand);
+  color: var(--ink);
+}
+
+.steps .section-head {
+  margin-bottom: var(--space-7);
+  text-align: center;
+}
+
+.steps .section-head h2 {
+  margin-inline: auto;
+  font-size: clamp(2.4rem, 8vw, 6rem);
+  text-wrap: balance;
+}
+
+/* Columns divided by black rules: stacked rows on a phone, three upright columns from
+   768px. Centred like the reference, with a giant numeral as each column's picture. */
+.steps .steps-grid { gap: 0; }
+
+.steps .steps-grid li {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  justify-items: center;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.steps .steps-grid li + li { border-top: 1px solid var(--rule); }
+
+@media (min-width: 768px) {
+  .steps .steps-grid li { padding-block: var(--space-4); }
+
+  .steps .steps-grid li + li {
+    border-top: 0;
+    border-left: 1px solid var(--rule);
+  }
+}
+
+.steps-number {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-family: var(--ff-display);
+  font-size: clamp(4.5rem, 11vw, 9rem);
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+}
+
+.steps .steps-grid h3 {
+  max-width: 18ch;
+  font-size: clamp(1.15rem, 2vw, 1.5rem);
+}
+
+.steps .steps-grid p {
+  max-width: 34ch;
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+/* The checker card sits centred on the orange, like JM's newsletter card on its
+   pattern. */
+.steps-delivery { margin-top: var(--space-8); }
+.steps-delivery .delivery-checker { margin-inline: auto; }

@@ -1,8 +1,13 @@
 /* Owner: W-offer — product configurator card and the offer grid it sits in */
 
+/* One card language for the home offer, /prodavnica and the cross-sell row on
+   /proizvodi: a white square card with a black rule, the photograph behind a 1px
+   divider, the name in the chunky card serif and the price in heavy display type.
+   The product page's buy panel is the same component with layout="panel". */
+
 .offer-grid {
   display: grid;
-  gap: 1rem;
+  gap: var(--space-5);
   /* A single card should not stretch the full page width on a laptop. */
   max-width: 58rem;
 }
@@ -35,15 +40,13 @@
 .configurator-title,
 .configurator-note { overflow-wrap: anywhere; }
 
-.choice-row button { white-space: normal; }
-
+/* No overflow clipping on the card itself: focus rings on the photo link and the chips
+   would be cut off at the card edge. The photo frame clips its own zoom. */
 .configurator {
   display: grid;
-  overflow: hidden;
   min-width: 0;
-  border: 1px solid var(--line);
-  border-radius: var(--photo-radius);
-  background: var(--paper);
+  border: 1px solid var(--rule);
+  background: var(--surface);
 }
 
 /* Catalog photography is square with the bottle upright in the middle. A wide crop of a
@@ -55,9 +58,18 @@
   overflow: hidden;
   aspect-ratio: 1 / 1;
   place-items: stretch;
-  background: var(--wash);
-  color: var(--muted);
+  border-bottom: 1px solid var(--rule);
+  background: var(--alt);
+  color: var(--ink-2);
   text-decoration: none;
+}
+
+.configurator-media > span {
+  place-self: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .configurator-media img {
@@ -65,6 +77,12 @@
   height: 100%;
   object-fit: cover;
   object-position: 50% 50%;
+  transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+/* The photograph creeps in behind its own crop when the pointer is on the link. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .configurator-media:hover img { transform: scale(1.04); }
 }
 
 .configurator-panel .configurator-media { display: none; }
@@ -82,124 +100,174 @@
     aspect-ratio: auto;
     height: 100%;
     min-height: 21rem;
+    border-right: 1px solid var(--rule);
+    border-bottom: 0;
   }
 
   /* The product page hides the photograph here, so it must not reserve the column. */
   .configurator-panel { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* The body is a size container so the name and the price scale with the room the card
+   actually has (a phone column, half a laptop row, the product page's panel) rather than
+   with the viewport. */
 .configurator-body {
   display: grid;
-  gap: 1.25rem;
+  container-type: inline-size;
+  gap: var(--space-5);
   align-content: start;
-  padding: 1.25rem;
+  padding: 20px;
 }
 
 @media (min-width: 768px) {
-  .configurator-body { padding: 1.5rem; gap: 1.5rem; }
+  .configurator-body { padding: var(--space-5); }
 }
 
-.configurator-head { display: grid; gap: 0.35rem; }
+.configurator-head { display: grid; gap: var(--space-2); }
 
 .configurator-category {
   margin: 0;
-  color: var(--muted);
-  font-size: 0.78rem;
+  color: var(--ink-2);
+  font-size: var(--fs-eyebrow);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-.configurator-title {
+/* The chunky serif in capitals is the product-name voice (JM's card names). Fraunces is
+   loaded at 800 only, so the weight is pinned there to avoid a synthesised bold. The
+   floor keeps "DOMAĆE KRAVLJE MLEKO" to two lines in a 390px card. */
+.configurator .configurator-title {
+  max-width: none;
   margin: 0;
-  font-family: var(--font-editorial), Georgia, serif;
-  font-size: 1.6rem;
-  font-weight: 400;
-  letter-spacing: -0.02em;
+  font-family: var(--ff-card);
+  font-size: clamp(1.55rem, 9cqi, 2.25rem);
+  font-weight: 800;
+  font-variation-settings: normal;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
+.configurator-panel .configurator-title { font-size: clamp(1.75rem, 8cqi, 2.6rem); }
+
 .configurator-title a { text-decoration: none; }
-.configurator-title a:hover { color: var(--cobalt); text-decoration: none; }
+
+.configurator-title a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
 
 .configurator-note {
   margin: 0;
-  color: var(--ink-soft);
+  color: var(--ink-2);
   font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .configurator-price {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.35rem;
-  margin: 0.35rem 0 0;
+  gap: 0.2rem 0.4rem;
+  margin: var(--space-2) 0 0;
 }
 
-.configurator-price strong { font-size: 1.5rem; letter-spacing: -0.02em; }
-.configurator-price span { color: var(--muted); font-size: 0.85rem; }
-.configurator-price small { flex-basis: 100%; color: var(--muted); font-size: 0.78rem; }
+.configurator-price strong {
+  font-family: var(--ff-display);
+  font-size: clamp(1.6rem, 8cqi, 2rem);
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 0.92;
+}
+
+.configurator-price span { color: var(--ink-2); font-size: 0.85rem; font-weight: 600; }
+.configurator-price small { flex-basis: 100%; color: var(--ink-2); font-size: 0.78rem; }
 
 .configurator-step {
   display: grid;
-  gap: 0.6rem;
+  gap: var(--space-2);
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
 .configurator-step legend {
+  margin-bottom: 0.55rem;
   padding: 0;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 800;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
+/* Selection chips: quantity, purchase type, cadence. Square, black rule; the chosen one
+   goes solid black with white type (21:1), the strongest "this one" mark on a white
+   card. The global focus ring sits 3px off the chip, so a white gap always separates
+   the black ring from a black chip. */
 .choice-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .choice-row button {
   min-height: 48px;
   flex: 1 1 auto;
   padding: 0.5rem 0.9rem;
-  border: 1px solid var(--line);
-  border-radius: var(--control-radius);
-  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  background: var(--surface);
   color: var(--ink);
-  font-size: 0.92rem;
+  font-size: 0.85rem;
   font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: normal;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.24s cubic-bezier(0.22, 0.7, 0.25, 1);
 }
 
-.choice-row button:hover:not(:disabled) { border-color: var(--ink); }
-
 .choice-row button[aria-pressed="true"] {
-  border-color: var(--cobalt);
-  background: var(--cobalt);
-  color: var(--white);
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
+}
+
+/* Behind `hover: hover`: on a touch screen the hover state sticks after a tap. */
+@media (hover: hover) {
+  .choice-row button:not([aria-pressed="true"], :disabled):hover { background: var(--alt); }
+}
+
+/* A press should read as a press, not as a repaint. */
+.choice-row button:active:not(:disabled) {
+  transform: scale(0.98);
+  transition-duration: 0.08s;
 }
 
 .configurator-custom { display: grid; gap: 0.4rem; }
 .configurator-custom input { max-width: 10rem; }
 
 .configurator-error { margin: 0; color: var(--danger); font-size: 0.85rem; font-weight: 700; }
-.configurator-hint { margin: 0; color: var(--muted); font-size: 0.85rem; }
+.configurator-hint { margin: 0; color: var(--ink-2); font-size: 0.85rem; }
 
 .configurator-blocked {
   margin: 0;
   padding: 0.85rem;
-  border-radius: var(--control-radius);
-  background: var(--wash);
+  border: 1px solid var(--rule);
+  background: var(--alt);
   font-weight: 700;
 }
 
 .configurator-total {
   display: grid;
-  gap: 0.3rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--line);
+  gap: var(--space-1);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--rule);
 }
 
 .configurator-total > p:first-child {
@@ -209,89 +277,40 @@
   gap: 0.25rem 1rem;
   align-items: baseline;
   margin: 0;
-  font-weight: 700;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .configurator-total > p:first-child > * { min-width: 0; }
 
 .configurator-total small {
   display: block;
-  color: var(--muted);
+  margin-top: 0.15rem;
+  color: var(--ink-2);
   font-size: 0.78rem;
   font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
-.configurator-total strong { font-size: 1.25rem; }
-.configurator-occurrences { margin: 0; color: var(--muted); font-size: 0.8rem; }
+.configurator-total strong {
+  font-family: var(--ff-display);
+  font-size: 1.6rem;
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.configurator-occurrences { margin: 0; color: var(--ink-2); font-size: 0.8rem; }
 
 .configurator-actions {
   display: grid;
-  gap: 0.75rem;
+  gap: var(--space-2);
   justify-items: start;
 }
 
+/* Primary black, hover orange (base .button). */
 .configurator-actions .button { width: 100%; }
-
-/* One easing and one pair of durations across every control, so the storefront
-   reacts as a single system rather than a set of unrelated effects. */
-/* Selection chips: quantity, purchase type, cadence, catalog filters. */
-.choice-row button {
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease,
-    box-shadow 0.24s ease,
-    transform 0.24s cubic-bezier(0.22, 0.7, 0.25, 1);
-}
-
-/* Every lift sits behind `hover: hover`: on a touch screen the hover state sticks
-   after a tap, and a chip left floating reads as a rendering bug. */
-@media (hover: hover) {
-  .choice-row button:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 5px 14px rgba(23, 37, 31, 0.08);
-  }
-}
-
-/* A press should read as a press, not as a repaint. */
-.choice-row button:active:not(:disabled) {
-  transform: translateY(0) scale(0.98);
-  box-shadow: none;
-  transition-duration: 0.08s;
-}
-
-.choice-row button[aria-pressed="true"] {
-  box-shadow: 0 4px 14px rgba(47, 113, 132, 0.26);
-}
-
-/* A chosen chip keeps its own glow under the pointer; the neutral hover shadow
-   would otherwise outrank it and read as a dark ring around the cobalt. */
-@media (hover: hover) {
-  .choice-row button[aria-pressed="true"]:hover:not(:disabled) {
-    box-shadow: 0 7px 18px rgba(47, 113, 132, 0.34);
-  }
-}
-
-/* Product cards: the card rises and the photograph creeps in behind its own crop. */
-.configurator {
-  transition:
-    transform 0.28s cubic-bezier(0.22, 0.7, 0.25, 1),
-    border-color 0.28s ease,
-    box-shadow 0.28s ease;
-}
-
-.configurator-media img { transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1); }
-
-@media (hover: hover) {
-  .configurator:hover {
-    transform: translateY(-3px);
-    border-color: color-mix(in srgb, var(--ink) 22%, var(--line));
-    box-shadow: 0 16px 34px rgba(23, 37, 31, 0.1);
-  }
-
-  .configurator:hover .configurator-media img { transform: scale(1.04); }
-}
-
-/* Text links and footer columns. Hover deepens the colour rather than drawing a
-   rule under the words. */
-.configurator-title a { transition: color 0.2s ease; }

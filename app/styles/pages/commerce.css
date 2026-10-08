@@ -119,11 +119,6 @@
 .product-quick-facts { margin-top: .5rem; }
 .product-quick-facts span { padding-block: .5rem; }
 
-@media (min-width: 761px) and (max-height: 800px) {
-  body:has(.product-detail-page) .nav-shell { min-height: 64px; }
-  body:has(.product-detail-page) .delivery-bar { min-height: 28px; padding-block: .25rem; }
-}
-
 @media (max-width: 760px) {
   .product-detail { grid-template-columns: 1fr; }
   .product-visual-column { position: static; }

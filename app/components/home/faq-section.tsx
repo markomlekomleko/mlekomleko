@@ -1,26 +1,31 @@
-import { frequentlyAskedQuestions } from "../../lib/content";
+import { frequentlyAskedQuestions, homeCopy } from "../../lib/content";
 
 export function FaqSection() {
+  const copy = homeCopy.faq;
+
   return (
     <section className="faq" aria-labelledby="faq-home-title">
       <div className="page-shell">
-        <div className="section-head">
-          <p className="eyebrow">05 / Pre prve porudžbine</p>
-          <h2 id="faq-home-title">Sve što treba da znaš.</h2>
+        <div className="section-head faq-head">
+          <p className="eyebrow">{copy.eyebrow}</p>
+          <h2 id="faq-home-title">{copy.title}</h2>
         </div>
         <div className="details-list faq-list">
           {frequentlyAskedQuestions.map(({ question, answer }) => (
             <details key={question}>
               <summary>
-                {question}
-                <span aria-hidden="true">＋</span>
+                <span className="faq-question">{question}</span>
+                <span className="faq-icon" aria-hidden="true" />
               </summary>
-              <p>{answer}</p>
+              <p className="faq-answer">{answer}</p>
             </details>
           ))}
         </div>
         <p className="faq-contact">
-          Nisi našao odgovor? <a className="text-link" href="/kontakt">Piši nam.</a>
+          {copy.contactPrompt}{" "}
+          <a className="text-link" href="/kontakt">
+            {copy.contactLink}
+          </a>
         </p>
       </div>
     </section>

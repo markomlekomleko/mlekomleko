@@ -1,5 +1,8 @@
 import { DeliveryChecker } from "../delivery-checker";
+import { homeCopy } from "../../lib/content";
 import type { DeliveryWindow, StorefrontSettings } from "../../lib/frontend";
+
+const copy = homeCopy.steps;
 
 export function StepsSection({
   settings,
@@ -12,25 +15,21 @@ export function StepsSection({
     <section className="steps" aria-labelledby="steps-title">
       <div className="page-shell">
         <div className="section-head">
-          <p className="eyebrow">02 / Kako stiže do tebe</p>
-          <h2 id="steps-title">Tri koraka, bez komplikovanja.</h2>
+          <p className="eyebrow">{copy.eyebrow}</p>
+          <h2 id="steps-title">{copy.title}</h2>
         </div>
+        {/* The <ol> already numbers the steps for assistive technology; the giant
+            numerals are the visual echo of that order. */}
         <ol className="steps-grid">
-          <li>
-            <span aria-hidden="true">01</span>
-            <h3>Izabereš mleko i ritam.</h3>
-            <p>Kravlje ili kozje, jednokratno ili kao redovna dostava.</p>
-          </li>
-          <li>
-            <span aria-hidden="true">02</span>
-            <h3>Potvrdimo termin.</h3>
-            <p>Sledeći datum dostave i rok za izmene vidiš pre potvrde porudžbine.</p>
-          </li>
-          <li>
-            <span aria-hidden="true">03</span>
-            <h3>Flaša se vraća.</h3>
-            <p>Od druge dostave preuzimamo čiste korišćene flaše i donosimo pune.</p>
-          </li>
+          {copy.items.map((item, index) => (
+            <li key={item.title}>
+              <span className="steps-number" aria-hidden="true">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+            </li>
+          ))}
         </ol>
         <div id="proveri-dostavu" className="steps-delivery">
           <DeliveryChecker

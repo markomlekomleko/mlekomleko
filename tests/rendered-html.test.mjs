@@ -177,8 +177,8 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
     html,
     /<title>Domaće kravlje i kozje mleko na tvojoj adresi \| Mleko i Mleko<\/title>/,
   );
-  assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Jutro počinje ovde\.<\/h1>/);
-  assert.match(html, /Kravlje i kozje mleko u povratnim staklenim flašama/);
+  assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Punomasno i ponosno\.<\/h1>/);
+  assert.match(html, /Sirovo kravlje i kozje mleko u povratnoj flaši/);
   assert.match(html, /Izaberi svoje mleko/);
   assert.match(html, /href="\/prodavnica"/);
   assert.match(html, /href="\/nalog"/);

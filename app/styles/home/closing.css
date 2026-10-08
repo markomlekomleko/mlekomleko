@@ -1,8 +1,61 @@
 /* Owner: W-story — home closing section */
 
-.closing { background: var(--ink); color: var(--milk); }
-.closing .eyebrow { color: var(--butter); }
-.closing h2 { margin-bottom: 1rem; color: var(--milk); }
-.closing p { max-width: 52ch; color: color-mix(in srgb, var(--milk) 78%, transparent); }
-.closing .button { margin-top: 1.5rem; border-color: var(--milk); background: var(--milk); color: var(--ink); }
-.closing .button:hover { border-color: var(--butter); background: var(--butter); }
+/* Orange ground stamped with black brand glyphs (the tile comes from closing-section.tsx
+   as --closing-pattern). The pattern is decorative and never sits behind text: all copy
+   is inside the white card. Denser on phones, as in the reference. */
+.home > .closing {
+  background-color: var(--brand);
+  background-image: var(--closing-pattern, none);
+  background-position: center top;
+  background-size: 180px;
+  color: var(--ink);
+}
+
+@media (min-width: 768px) {
+  .home > .closing { background-size: 228px; }
+}
+
+@media (min-width: 1200px) {
+  .home > .closing { background-size: 264px; }
+}
+
+.closing-card {
+  display: grid;
+  max-width: 880px;
+  justify-items: start;
+  margin-inline: auto;
+  padding: clamp(24px, 4.5vw, 56px);
+  border: 1px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.closing-card .eyebrow { margin-bottom: var(--space-4); }
+
+/* A card heading, so it takes the card face: the chunky serif, which ships at 800 only. */
+.closing-card h2 {
+  max-width: 18ch;
+  margin-bottom: var(--space-4);
+  font-family: var(--ff-card);
+  font-size: clamp(2.1rem, 5.4vw, 4rem);
+  font-variation-settings: normal;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 0.95;
+  text-wrap: balance;
+  word-spacing: normal;
+}
+
+.closing-text {
+  max-width: 56ch;
+  margin: 0 0 var(--space-6);
+  color: var(--ink);
+  font-size: clamp(1rem, 1.4vw, 1.15rem);
+  line-height: 1.5;
+}
+
+.closing-cta { width: 100%; }
+
+@media (min-width: 600px) {
+  .closing-cta { width: auto; }
+}

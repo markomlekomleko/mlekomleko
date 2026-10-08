@@ -1,45 +1,160 @@
 /* Owner: W-story — home origin section */
 
-.origin { padding-block: 0 !important; }
+/* The photo banner and the body strip carry their own spacing. */
+.home > .origin { padding-block: 0; }
+
+/* Full-bleed photo banner. Only display-size white type and controls on a solid ground
+   sit on the picture; everything smaller lives on the strip below it. */
+.origin-banner {
+  position: relative;
+  display: grid;
+  min-height: clamp(380px, 62vw, 620px);
+  isolation: isolate;
+  border-bottom: 1px solid var(--rule);
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.origin-image,
+.origin-banner::after {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+}
 
 .origin-image img {
   width: 100%;
-  aspect-ratio: 4 / 3;
+  height: 100%;
   object-fit: cover;
+  object-position: 50% 58%;
 }
 
-@media (min-width: 768px) {
-  .origin-image img { aspect-ratio: 21 / 9; }
+/* 45% black: white display type stays above 3:1 even over the brightest sky. */
+.origin-banner::after {
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+  content: "";
 }
 
-.origin-content {
+.origin-banner-inner {
   display: grid;
-  gap: 1.5rem;
-  padding-block: 48px;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-5);
+  padding-block: var(--space-8);
+  text-align: center;
+}
+
+.origin-eyebrow {
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.origin-banner h2 {
+  max-width: 16ch;
+  margin: 0;
+  color: var(--surface);
+  font-size: clamp(2.4rem, 7.4vw, 6rem);
+  text-wrap: balance;
+}
+
+.button.origin-cta {
+  border-color: var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.button.origin-cta:not(:disabled):hover {
+  border-color: var(--surface);
+  background: var(--ink);
+  color: var(--surface);
+}
+
+/* The global ring is black, which disappears into the darkened photo. */
+.origin-banner :focus-visible { outline-color: var(--surface); }
+
+.origin-body {
+  display: grid;
+  gap: var(--space-5);
+  align-items: center;
+  justify-items: start;
+  padding-block: var(--space-7);
 }
 
 @media (min-width: 900px) {
-  .origin-content {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 3rem;
-    padding-block: 72px;
+  .origin-body {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-7);
+    padding-block: var(--space-8);
   }
 }
 
-.origin-copy { display: grid; gap: 1rem; justify-items: start; }
-.origin-copy p { margin: 0; color: var(--ink-soft); }
-
-.origin-video {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  min-height: 52px;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--line);
-  border-radius: var(--control-radius);
-  background: var(--paper);
-  font-weight: 700;
-  text-decoration: none;
+.origin-text {
+  max-width: 46ch;
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.125rem, 1.7vw, 1.45rem);
+  font-weight: 500;
+  line-height: 1.4;
 }
 
-.origin-video small { display: block; color: var(--cobalt); font-weight: 700; }
+/* The video link: a square chip with an orange play cell, black on white. */
+.origin-video {
+  display: inline-flex;
+  max-width: 100%;
+  min-height: var(--tap);
+  border: 1px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.origin-video-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: var(--tap);
+  place-items: center;
+  border-right: 1px solid var(--ink);
+  background: var(--brand);
+  color: var(--ink);
+}
+
+.origin-video-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+.origin-video-text {
+  display: grid;
+  min-width: 0;
+  align-content: center;
+  gap: 2px;
+  padding: 8px 16px;
+  font-family: var(--ff-display);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.origin-video-text small {
+  font-family: var(--ff-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-decoration: underline;
+  text-transform: none;
+  text-underline-offset: 3px;
+}
+
+@media (hover: hover) {
+  .origin-video:hover {
+    background: var(--ink);
+    color: var(--surface);
+  }
+}

@@ -311,7 +311,7 @@ export function CartDrawer() {
                       </span>
                     </div>
                     <div className="drawer-offer-actions">
-                      <button type="button" disabled={offerBusy} onClick={() => addOffer(offer)}>
+                      <button type="button" className="button small" disabled={offerBusy} onClick={() => addOffer(offer)}>
                         Dodaj u korpu
                       </button>
                       <button

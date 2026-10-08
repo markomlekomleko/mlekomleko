@@ -85,9 +85,10 @@
   /* Ticker strip and header bar heights, for the shell to build --header-stack from. */
   --ticker-h: 32px;
   --header-h: 64px;
-  /* Announcement bar plus sticky header; the hero copy clears this once pinned, and
-     other sticky columns (cart summary, product gallery) use it as their own offset. */
-  --header-stack: 101px;
+  /* Ticker plus sticky header; the hero copy clears this once pinned, and other sticky
+     columns (cart summary, product gallery) use it as their own offset. shell.css owns
+     the final bar heights. */
+  --header-stack: calc(var(--ticker-h) + var(--header-h));
 }
 
 @media (max-width: 480px) {
@@ -97,8 +98,8 @@
 @media (min-width: 768px) {
   :root {
     --section-y: 80px;
+    --ticker-h: 36px;
     --header-h: 76px;
-    --header-stack: 113px;
   }
 }
 

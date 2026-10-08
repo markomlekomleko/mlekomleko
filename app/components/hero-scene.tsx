@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { HeroMedia, HeroVariant } from "../lib/hero-media";
+import { HeroCopy } from "./hero-copy";
 
 type HeroSceneProps = {
   media: HeroMedia | null;
@@ -222,6 +223,8 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
       className="hero"
       data-mode={mode}
       data-video={videoReady ? "ready" : "poster"}
+      data-kind="scrub"
+      data-tone={media?.tone ?? "light"}
       aria-labelledby="hero-title"
     >
       <div ref={trackRef} className="scene-track">
@@ -275,32 +278,7 @@ export function HeroScene({ media, offerHref, deliveryHref }: HeroSceneProps) {
             </div>
           </div>
 
-          <div className="scene-copy">
-            <div className="page-shell scene-copy-shell">
-              <div className="scene-intro">
-                <p className="eyebrow">Domaće mleko na kućnu adresu</p>
-                <h1 id="hero-title">Jutro počinje ovde.</h1>
-                <p className="scene-lead">
-                  Kravlje i kozje mleko u povratnim staklenim flašama.
-                </p>
-                <div className="scene-actions">
-                  <a className="button" href={offerHref}>
-                    Izaberi svoje mleko
-                  </a>
-                  <a className="scene-secondary" href={deliveryHref}>
-                    Proveri dostavu
-                  </a>
-                </div>
-                <p className="scene-hint" aria-hidden="true">
-                  Skroluj i otkrij
-                </p>
-              </div>
-              <p className="scene-rhythm" aria-hidden="true">
-                <strong>Tvoje mleko. Tvoj ritam.</strong>
-                <span>Kravlje · Kozje</span>
-              </p>
-            </div>
-          </div>
+          <HeroCopy offerHref={offerHref} deliveryHref={deliveryHref} />
         </div>
       </div>
     </section>

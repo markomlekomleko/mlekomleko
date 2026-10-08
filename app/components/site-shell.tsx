@@ -5,6 +5,9 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "./cart-provider";
 import { CookieSettingsButton } from "./analytics-provider";
+import { Marquee } from "./marquee";
+import { MotionToggle } from "./motion-toggle";
+import { shellCopy } from "../lib/content";
 
 export type HeaderSettings = {
   storeName: string;
@@ -23,6 +26,9 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   const isVideoAnnouncement = /(?:tiktok\.com|youtu\.?be)/i.test(settings.announcementUrl);
   // Only one overlay is ever active: the cart takes precedence over the menu.
   const menuVisible = menuOpen && !drawerOpen;
+  // The real delivery days live in settings, so the copy deck never names a weekday.
+  const serviceNote = settings.serviceAreaNote.trim().replace(/\.$/, "");
+  const tickerItems = serviceNote ? [...shellCopy.tickerItems, serviceNote] : [...shellCopy.tickerItems];
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -33,29 +39,33 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
     return () => window.removeEventListener("keydown", dismiss);
   }, [menuOpen]);
 
+  // DOM order is the visual order at every width (menu button, links, logo, actions),
+  // so the tab order never jumps around the bar.
   return (
     <div className="site-header-stack">
-      {settings.announcementEnabled && settings.announcementText ? (
-        <aside className="announcement-bar" aria-label="Važno obaveštenje">
-          <a href={settings.announcementUrl} target={isVideoAnnouncement ? "_blank" : undefined} rel={isVideoAnnouncement ? "noreferrer" : undefined}>
-            <span>{settings.announcementText}</span>
-            <strong>{settings.announcementLinkLabel} →</strong>
+      <aside className="ticker-bar" aria-label="Obaveštenja">
+        <MotionToggle />
+        <Marquee variant="ticker" items={tickerItems} label={settings.storeName} className="ticker-bar-marquee" />
+        {settings.announcementEnabled && settings.announcementText ? (
+          <a
+            className="ticker-pin"
+            href={settings.announcementUrl}
+            target={isVideoAnnouncement ? "_blank" : undefined}
+            rel={isVideoAnnouncement ? "noreferrer" : undefined}
+          >
+            <span className="ticker-pin-text">{settings.announcementText}</span>{" "}
+            <span className="ticker-pin-label">
+              {settings.announcementLinkLabel}
+              <span aria-hidden="true"> →</span>
+            </span>
           </a>
-        </aside>
-      ) : <div className="delivery-bar"><span>Dostava na kućnu adresu</span><span>{settings.serviceAreaNote}</span></div>}
+        ) : null}
+      </aside>
       <header className="site-header">
         <div className="nav-shell">
-          <Link className="brand" href="/" aria-label={`${settings.storeName} - početna`}>
-            <Image
-              className="brand-logo brand-logo-header"
-              src="/images/mleko-i-mleko-logo-mark.png"
-              alt=""
-              width={120}
-              height={120}
-              sizes="60px"
-            />
-            <span className="brand-name">{settings.storeName}</span>
-          </Link>
+          <button ref={menuButton} id="menu-toggle" className="mobile-menu-button" type="button" aria-label="Meni" aria-expanded={menuVisible} aria-controls="glavna-navigacija" onClick={() => setMenuOpen((current) => !current)}>
+            <span className={`menu-lines ${menuVisible ? "is-open" : ""}`} aria-hidden="true"><span /><span /></span>
+          </button>
           <nav id="glavna-navigacija" className={`main-nav ${menuVisible ? "is-open" : ""}`} aria-label="Glavna navigacija">
             <a href="/prodavnica">Mleko</a>
             <a href="/kako-funkcionise">Kako dostavljamo</a>
@@ -64,6 +74,17 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
             <a className="nav-support" href="/kontakt">Kontakt</a>
             <a className="mobile-account" href="/nalog">Moj nalog</a>
           </nav>
+          <Link className="brand" href="/" aria-label={`${settings.storeName} - početna`}>
+            <Image
+              className="brand-logo brand-logo-header"
+              src="/images/mleko-i-mleko-logo-mark.png"
+              alt=""
+              width={120}
+              height={120}
+              sizes="56px"
+            />
+            <span className="brand-name">{settings.storeName}</span>
+          </Link>
           <div className="header-actions">
             <a className="header-account" href="/nalog">Moj nalog</a>
             <button className="cart-link" type="button" onClick={openDrawer} aria-label={ready && count > 0 ? `Korpa, ${count} jedinica` : "Korpa"}>
@@ -75,9 +96,6 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
               ) : null}
             </button>
           </div>
-          <button ref={menuButton} id="menu-toggle" className="mobile-menu-button" type="button" aria-label="Meni" aria-expanded={menuVisible} aria-controls="glavna-navigacija" onClick={() => setMenuOpen((current) => !current)}>
-            <span className={`menu-lines ${menuVisible ? "is-open" : ""}`} aria-hidden="true"><span /><span /></span>
-          </button>
         </div>
       </header>
     </div>
@@ -88,7 +106,7 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
   return (
     <footer className="site-footer">
       <div className="page-shell footer-grid">
-        <div>
+        <div className="footer-brand-col">
           <Link className="brand footer-brand" href="/" aria-label={`${storeName} - početna`}>
             <Image
               className="brand-logo brand-logo-footer"
@@ -96,17 +114,17 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
               alt=""
               width={140}
               height={140}
-              sizes="70px"
+              sizes="88px"
             />
-            <span>{storeName}</span>
           </Link>
-          <p className="muted small-text">
-            Domaće kravlje i kozje mleko u povratnim staklenim flašama.
+          <p className="footer-tagline">{shellCopy.footer.tagline}</p>
+          <p className="footer-contact">
+            <a href="tel:+381605022323">060 502 23 23</a>
+            <a href="https://instagram.com/mleko_i_mleko" target="_blank" rel="noreferrer">Instagram ↗</a>
           </p>
-          <p className="small-text"><a href="tel:+381605022323">060 502 23 23</a> · <a href="https://instagram.com/mleko_i_mleko" target="_blank" rel="noreferrer">Instagram ↗</a></p>
         </div>
-        <nav className="footer-links" aria-label="Istražite">
-          <h2>Istražite</h2>
+        <nav className="footer-links" aria-labelledby="footer-istrazi">
+          <h2 id="footer-istrazi">{shellCopy.footer.exploreTitle}</h2>
           <a href="/prodavnica">Prodavnica</a>
           <a href="/gde-kupiti">Gde kupiti</a>
           <a href="/dostava-mleka/beograd">Dostava Beograd</a>
@@ -115,8 +133,8 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
           <a href="/faq">Česta pitanja</a>
           <a href="/kontakt">Kontakt</a>
         </nav>
-        <nav className="footer-links" aria-label="Korisne informacije">
-          <h2>Korisne informacije</h2>
+        <nav className="footer-links" aria-labelledby="footer-sitna-slova">
+          <h2 id="footer-sitna-slova">{shellCopy.footer.infoTitle}</h2>
           <a href="/uslovi-kupovine">Uslovi kupovine</a>
           <a href="/privatnost">Privatnost i kolačići</a>
           <a href="/dostava">Dostava</a>
@@ -124,6 +142,12 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
           <a href="/pravila-pretplate">Pravila pretplate</a>
           <CookieSettingsButton />
         </nav>
+      </div>
+      {/* Decorative: the brand name is already the logo link's accessible name. */}
+      <div className="footer-bottom">
+        <div className="page-shell footer-wordmark-wrap">
+          <p className="footer-wordmark" aria-hidden="true">{shellCopy.footer.wordmark}</p>
+        </div>
       </div>
     </footer>
   );

@@ -91,7 +91,7 @@ textarea { min-height: 118px; resize: vertical; }
 .tab { flex: 0 0 auto; min-height: 40px; padding: .5rem .75rem; border: 1px solid var(--rule); }
 /* Selected = black frame doubled inside plus blush ground, the same mark for every
    chip and radio card, so "chosen" reads the same way everywhere. */
-.tab[aria-selected="true"], .tab[aria-pressed="true"] { border-color: var(--ink); background: var(--blush); color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.tab[aria-selected="true"], .tab[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--surface); }
 .details-list details { padding: 1rem 0; border-bottom: 1px solid var(--rule); }
 .details-list summary { cursor: pointer; font-weight: 750; }
 .list-clean { display: grid; gap: .7rem; padding: 0; list-style: none; }
@@ -342,7 +342,6 @@ textarea,
 .loading-state { background: var(--surface); }
 
 /* Anchors must clear the sticky header when the offer is jumped to. */
-[id] { scroll-margin-top: 5.5rem; }
 
 /* One easing and one pair of durations across every control, so the storefront
    reacts as a single system rather than a set of unrelated effects. */

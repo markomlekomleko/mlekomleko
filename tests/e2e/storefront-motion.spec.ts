@@ -1,4 +1,13 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
+
+// Which hero is live, read from the manifest source the same way tests/hero-media.test.mjs
+// reads it. Null when no media is exported, which also leaves nothing to scrub.
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const heroKind =
+  /^\s*kind:\s*"([a-z]+)",\s*$/m.exec(readFileSync(path.join(root, "app/lib/hero-media.ts"), "utf8"))?.[1] ?? null;
 
 async function hideConsent(page: import("@playwright/test").Page) {
   await page.addInitScript(() =>
@@ -33,6 +42,7 @@ test("reduced motion shows a static composition and downloads no hero video", as
 });
 
 test("scrolling drives the hero video and always reaches the final frame", async ({ page }) => {
+  test.skip(heroKind !== "scrub", "The hero media is not a scroll scrub");
   test.skip(page.viewportSize()!.width <= 760, "Desktop scroll scene");
   await hideConsent(page);
   await page.goto("/");
