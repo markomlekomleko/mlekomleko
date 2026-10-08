@@ -1,5 +1,157 @@
 /* Owner: W-foundation — every admin-scoped rule */
 
+/* /admin keeps the look it had before the storefront redesign. The admin page also
+   renders the (hidden) header, footer and cart drawer, so the scope is the whole
+   document whenever the admin is on it, not just .admin-app.
+   1. Token values: legacy names get their previous hexes directly (not the aliases), and
+      the semantic names that base.css now reads get the legacy value they replaced. */
+:root:has(.admin-app, .admin-access) {
+  --bg: #f7f3e9;
+  --surface: #ffffff;
+  --alt: #efe9db;
+  --ink: #17251f;
+  --ink-2: #58655d;
+  --rule: #e0d8c6;
+  --blush: #e4eef1;
+  --milk: #f7f3e9;
+  --cobalt: #2f7184;
+  --cobalt-dark: #255a6a;
+  --cobalt-wash: #e4eef1;
+  --butter: #f2d36a;
+  --brand-teal: #2f7184;
+  --ink-soft: #40514a;
+  --forest: #2f7184;
+  --forest-dark: #17251f;
+  --leaf: #e4eef1;
+  --cream: #f7f3e9;
+  --wash: #efe9db;
+  --paper: #ffffff;
+  --white: #ffffff;
+  --orange: #2f7184;
+  --orange-dark: #255a6a;
+  --yellow: #f2d36a;
+  --line: #e0d8c6;
+  --muted: #58655d;
+  --shadow: 0 12px 32px rgb(37 59 56 / 5%);
+  --radius: 16px;
+  --control-radius: 12px;
+  --photo-radius: 20px;
+  --font-editorial: var(--font-vollkorn);
+}
+
+@media (min-width: 768px) {
+  :root:has(.admin-app, .admin-access) { --photo-radius: 24px; }
+}
+
+@media (min-width: 1200px) {
+  :root:has(.admin-app, .admin-access) { --photo-radius: 28px; }
+}
+
+/* 2. Base primitives whose new declarations are not token-driven, restated with their
+   previous values. `:where()` keeps each rule at the specificity of the base rule it
+   undoes, and these sit ahead of the admin rules below so those still win where they
+   did before. Only what the admin page renders is listed (its own UI plus the hidden
+   shell and drawer); `.page-shell h1/h2` is left out because the only match here, the
+   footer's h2, has its family, weight and tracking set by `.footer-links h2`. */
+:where(:root:has(.admin-app, .admin-access)) body { line-height: 1.5; }
+:where(:root:has(.admin-app, .admin-access)) ::selection { background-color: revert; color: revert; }
+:where(:root:has(.admin-app, .admin-access)) a { text-decoration-thickness: auto; text-underline-offset: auto; }
+:where(:root:has(.admin-app, .admin-access)) a:hover { text-decoration-thickness: auto; }
+:where(:root:has(.admin-app, .admin-access)) code { border-radius: 6px; background: var(--cream); color: var(--forest-dark); }
+:where(:root:has(.admin-app, .admin-access)) .skip-link { border-radius: 10px; }
+
+:where(:root:has(.admin-app, .admin-access)) h1,
+:where(:root:has(.admin-app, .admin-access)) h2 {
+  font-family: var(--font-editorial), Georgia, serif;
+  font-weight: 400;
+  font-variation-settings: normal;
+  text-transform: none;
+  word-spacing: normal;
+}
+
+:where(:root:has(.admin-app, .admin-access)) h1 { font-size: clamp(2.75rem, 11vw, 3.5rem); letter-spacing: -0.03em; line-height: 1; }
+:where(:root:has(.admin-app, .admin-access)) h2 { font-size: clamp(1.875rem, 7vw, 2.25rem); letter-spacing: -0.02em; line-height: 1.05; }
+:where(:root:has(.admin-app, .admin-access)) h3 { font-family: inherit; font-size: 1.08rem; font-weight: inherit; line-height: 1.25; text-transform: none; }
+
+@media (min-width: 768px) {
+  :where(:root:has(.admin-app, .admin-access)) h1 { font-size: clamp(4rem, 8vw, 5rem); }
+  :where(:root:has(.admin-app, .admin-access)) h2 { font-size: clamp(2.5rem, 5vw, 3rem); }
+}
+
+@media (min-width: 1200px) {
+  :where(:root:has(.admin-app, .admin-access)) h1 { font-size: clamp(5.5rem, 7vw, 7rem); }
+  :where(:root:has(.admin-app, .admin-access)) h2 { font-size: clamp(3rem, 4vw, 4rem); }
+}
+
+:where(:root:has(.admin-app, .admin-access)) .eyebrow { color: var(--cobalt); font-family: inherit; font-weight: 800; letter-spacing: 0.14em; }
+
+:where(:root:has(.admin-app, .admin-access)) .button {
+  padding: 0.85rem 1.25rem;
+  border-color: var(--orange);
+  border-radius: var(--control-radius);
+  background: var(--orange);
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.24s ease,
+    transform 0.24s cubic-bezier(0.22, 0.7, 0.25, 1);
+}
+
+:where(:root:has(.admin-app, .admin-access)) .button:hover,
+:where(:root:has(.admin-app, .admin-access)) .button:not(:disabled):hover { border-color: var(--orange-dark); background: var(--orange-dark); color: white; }
+:where(:root:has(.admin-app, .admin-access)) .button.danger,
+:where(:root:has(.admin-app, .admin-access)) .button.danger:not(:disabled):hover { border-color: #e2c7c4; background: white; color: var(--danger); }
+:where(:root:has(.admin-app, .admin-access)) .button.secondary:hover,
+:where(:root:has(.admin-app, .admin-access)) .button.secondary:not(:disabled):hover { border-color: #aab8ae; background: var(--ink); color: var(--milk); }
+
+@media (hover: hover) {
+  :where(:root:has(.admin-app, .admin-access)) .button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(23, 37, 31, 0.18);
+  }
+}
+
+:where(:root:has(.admin-app, .admin-access)) .text-link,
+:where(:root:has(.admin-app, .admin-access)) .text-button { color: var(--forest); text-decoration: none; transition: color 0.2s ease; }
+:where(:root:has(.admin-app, .admin-access)) .text-link:hover,
+:where(:root:has(.admin-app, .admin-access)) .text-button:hover { color: var(--cobalt-dark); text-decoration: none; }
+
+:where(:root:has(.admin-app, .admin-access)) :focus-visible { outline-color: var(--cobalt); outline-offset: 2px; }
+:where(:root:has(.admin-app, .admin-access)) input:focus-visible,
+:where(:root:has(.admin-app, .admin-access)) select:focus-visible,
+:where(:root:has(.admin-app, .admin-access)) textarea:focus-visible { outline-offset: 2px; }
+:where(:root:has(.admin-app, .admin-access)) .button:focus-visible,
+:where(:root:has(.admin-app, .admin-access)) .text-link:focus-visible { outline-offset: 6px; }
+
+:where(:root:has(.admin-app, .admin-access)) input,
+:where(:root:has(.admin-app, .admin-access)) select,
+:where(:root:has(.admin-app, .admin-access)) textarea { min-height: 46px; border-color: #b9c6bd; border-radius: 10px; }
+:where(:root:has(.admin-app, .admin-access)) textarea { min-height: 118px; }
+:where(:root:has(.admin-app, .admin-access)) input:focus,
+:where(:root:has(.admin-app, .admin-access)) select:focus,
+:where(:root:has(.admin-app, .admin-access)) textarea:focus { border-color: var(--orange); }
+
+:where(:root:has(.admin-app, .admin-access)) .tag { border: 0 solid; border-radius: 999px; }
+:where(:root:has(.admin-app, .admin-access)) .checkbox-row { border-radius: 10px; }
+:where(:root:has(.admin-app, .admin-access)) .notice,
+:where(:root:has(.admin-app, .admin-access)) .empty-state,
+:where(:root:has(.admin-app, .admin-access)) .loading-state { border-radius: 11px; }
+:where(:root:has(.admin-app, .admin-access)) .loading-state::before { background: var(--orange); }
+
+:where(:root:has(.admin-app, .admin-access)) .icon-button {
+  border-radius: 999px;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+@media (hover: hover) {
+  :where(:root:has(.admin-app, .admin-access)) .icon-button:hover { border-color: var(--ink); background: var(--paper); color: inherit; transform: translateY(-1px); }
+}
+
 .dashboard-grid, .admin-grid-2 { display: grid; gap: 1rem; }
 .admin-stack, .admin-form { display: grid; gap: 1rem; }
 

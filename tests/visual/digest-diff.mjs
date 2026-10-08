@@ -2,11 +2,13 @@
 /**
  * Compare two computed-style digest directories written by tests/visual/capture.spec.ts.
  *
- *   node tests/visual/digest-diff.mjs <dirA> <dirB> [--json out.json]
+ *   node tests/visual/digest-diff.mjs <dirA> <dirB> [--json out.json] [--only <substring>]
  *
  * A directory may be the capture root (containing `digest/`) or the digest folder
  * itself (containing `<project>/<slug>.json`). Prints, per route x viewport, how many
  * elements differ and the first 10 differences, plus elements present on one side only.
+ * `--only` keeps just the captures whose `<project>/<slug>` contains the substring
+ * (repeatable), e.g. `--only admin` for the admin route and every admin tab state.
  * Exits 1 when anything differs, 0 when both digests are identical.
  */
 import { existsSync } from "node:fs";
@@ -17,24 +19,29 @@ const ABSENT = "∅";
 
 function usage(message) {
   if (message) console.error(message);
-  console.error("Usage: node tests/visual/digest-diff.mjs <dirA> <dirB> [--json out.json]");
+  console.error("Usage: node tests/visual/digest-diff.mjs <dirA> <dirB> [--json out.json] [--only <substring>]");
   process.exit(2);
 }
 
 function parseArgs(argv) {
   const positional = [];
   let json = null;
+  const only = [];
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === "--json") {
       json = argv[i + 1];
       if (!json) usage("--json needs a file path");
+      i += 1;
+    } else if (argv[i] === "--only") {
+      if (!argv[i + 1]) usage("--only needs a substring");
+      only.push(argv[i + 1]);
       i += 1;
     } else {
       positional.push(argv[i]);
     }
   }
   if (positional.length !== 2) usage();
-  return { dirA: positional[0], dirB: positional[1], json };
+  return { dirA: positional[0], dirB: positional[1], json, only };
 }
 
 function digestRoot(dir) {
@@ -98,12 +105,14 @@ function compareDigests(a, b) {
 }
 
 async function main() {
-  const { dirA, dirB, json } = parseArgs(process.argv.slice(2));
+  const { dirA, dirB, json, only } = parseArgs(process.argv.slice(2));
   const rootA = digestRoot(dirA);
   const rootB = digestRoot(dirB);
   const filesA = await listDigests(rootA);
   const filesB = await listDigests(rootB);
-  const captures = [...new Set([...filesA.keys(), ...filesB.keys()])].sort();
+  const captures = [...new Set([...filesA.keys(), ...filesB.keys()])]
+    .filter((capture) => only.length === 0 || only.some((part) => capture.includes(part)))
+    .sort();
 
   const report = { a: rootA, b: rootB, totals: { captures: captures.length, differingCaptures: 0, differingElements: 0, differences: 0, onlyInA: 0, onlyInB: 0, missingCaptures: 0 }, captures: [] };
 

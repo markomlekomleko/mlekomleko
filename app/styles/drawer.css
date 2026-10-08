@@ -133,7 +133,7 @@
 
 .drawer-offer > div:first-child { display: grid; gap: 0.2rem; }
 .drawer-offer strong { font-size: 0.98rem; }
-.drawer-offer span { color: var(--ink-soft); font-size: 0.85rem; }
+.drawer-offer span { color: var(--ink); font-size: 0.85rem; }
 
 .drawer-offer-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
 

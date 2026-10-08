@@ -1,1 +1,130 @@
-/* Owner: W-foundation — marquee band (empty for now) */
+/* Owner: W-foundation — marquee primitive (ticker strip and display band) */
+
+/* Every class here starts with `marquee`: Tailwind v4 scans the markup for utility
+   names, and a bare `flex` or `hidden` on these elements would pull utilities in. */
+
+.marquee {
+  position: relative;
+  overflow: hidden;
+}
+
+/* The one still copy that assistive technology reads; the moving tracks are hidden. */
+.marquee-sr {
+  position: absolute;
+  overflow: hidden;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.marquee-viewport {
+  overflow: hidden;
+}
+
+/* Two identical tracks side by side: moving the rail by exactly half its width puts the
+   second track where the first began, so the loop has no visible seam. */
+.marquee-rail {
+  display: flex;
+  width: max-content;
+  animation: marquee-x var(--marquee-duration, 40s) linear infinite;
+}
+
+.marquee-track {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.marquee-item,
+.marquee-sep {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* Separators are glyphs or small marks; they sit on the text's optical centre. */
+.marquee-sep {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marquee-sep > svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+
+@keyframes marquee-x {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+/* Reading or tabbing into it holds it still. */
+.marquee:hover .marquee-rail,
+.marquee:focus-within .marquee-rail,
+:root[data-motion="paused"] .marquee-rail {
+  animation-play-state: paused;
+}
+
+/* Ticker: the thin informational strip above the header. White on teal is 5.5:1. */
+.marquee--ticker {
+  height: var(--ticker-h);
+  border-bottom: 1px solid var(--ink);
+  background: var(--teal);
+  color: #fff;
+  font-family: var(--ff-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.marquee--ticker .marquee-viewport,
+.marquee--ticker .marquee-rail,
+.marquee--ticker .marquee-track {
+  height: 100%;
+}
+
+.marquee--ticker .marquee-sep {
+  padding-inline: 1.25em;
+}
+
+/* Band: the loud display strip between sections. Black on orange is 6.1:1. */
+.marquee--band {
+  padding-block: 14px;
+  border-block: 1px solid var(--ink);
+  background: var(--brand);
+  color: var(--ink);
+  font-family: var(--ff-display);
+  font-size: clamp(1.75rem, 4.5vw, 3.5rem);
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  text-transform: uppercase;
+  word-spacing: 0.06em;
+}
+
+.marquee--band .marquee-sep {
+  width: 1em;
+  height: 1em;
+  margin-inline: 0.4em;
+}
+
+/* No motion: the strip stays exactly where it is, clipped, with one copy showing. */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-rail {
+    animation: none !important;
+    transform: none;
+  }
+
+  .marquee-track + .marquee-track {
+    display: none;
+  }
+}

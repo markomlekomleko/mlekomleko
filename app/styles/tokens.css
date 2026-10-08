@@ -1,53 +1,107 @@
 /* Owner: W-foundation — design tokens: the single :root (legacy names kept) */
 
-/* Redesign "Jutro počinje ovde." — palette from docs/OPUS-REDIZAJN-PLAN.md section 3.
-   Legacy variable names are kept and remapped so every existing route inherits the new brand. */
+/* Juicy Marbles–style system: one warm off-white ground, black ink and rules, square
+   corners, flat surfaces, and a single loud orange used as a ground for black type.
+   Semantic names first; every legacy name below is an alias onto them, so partials
+   that still say --cobalt or --milk inherit the new look without being touched.
+   /admin rebinds the legacy values in admin.css and keeps its old look. */
 :root {
-  --milk: #f7f3e9;
-  /* The accent is the teal of the logo mark (#357f94), deepened a step: the raw
-     logo value reads at 4.11:1 on the cream ground, under the 4.5:1 floor, and it
-     carries small text (eyebrows, step numbers, links). Deepened it clears both
-     directions — 4.91:1 as text on cream, 5.44:1 behind white button labels. */
-  --cobalt: #2f7184;
-  --cobalt-dark: #255a6a;
-  --cobalt-wash: #e4eef1;
-  --butter: #f2d36a;
-  --brand-teal: #2f7184;
-  --ink: #17251f;
-  --ink-soft: #40514a;
-  --forest: #2f7184;
-  --forest-dark: #17251f;
-  --leaf: #e4eef1;
-  --cream: #f7f3e9;
-  --wash: #efe9db;
-  --paper: #ffffff;
-  --white: #ffffff;
-  --orange: #2f7184;
-  --orange-dark: #255a6a;
-  --yellow: #f2d36a;
-  --line: #e0d8c6;
-  --muted: #58655d;
+  /* Colour. Contrast (WCAG, computed) decides what may sit on what:
+     black on --brand 6.1:1, so orange is a ground for black type; white on --brand is
+     only 3.4:1 (large display type only); --brand as text on --bg is 3.1:1 (never body
+     text or links); black on --brand-dark is 4.2:1, so an orange control's hover goes
+     black, never darker orange; black on --go 8.9:1; white on --teal 5.5:1 but black on
+     --teal only 3.8:1, so teal always carries white type. */
+  --bg: #f7f2f0;
+  --surface: #ffffff;
+  --alt: #f2f2f2;
+  --brand: #ff4612;
+  --brand-dark: #cb3a12;
+  --brand-light: #ff7e59;
+  --blush: #f9d0c4;
+  --teal: #2f7184;
+  --go: #66bd15;
+  --ink: #000000;
+  --ink-2: #636160;
+  --rule: #000000;
+  --rule-soft: rgb(0 0 0 / 15%);
   --danger: #a33b33;
   --success: #1f6b4d;
-  --shadow: 0 12px 32px rgb(37 59 56 / 5%);
-  --radius: 16px;
-  --control-radius: 12px;
-  --photo-radius: 20px;
+
+  /* Legacy aliases. */
+  --milk: var(--bg);
+  --cream: var(--bg);
+  --paper: var(--surface);
+  --white: var(--surface);
+  --wash: var(--alt);
+  --cobalt: var(--ink);
+  --cobalt-dark: var(--ink);
+  --forest: var(--ink);
+  --forest-dark: var(--ink);
+  --orange: var(--ink);
+  --orange-dark: var(--ink);
+  --brand-teal: var(--teal);
+  --cobalt-wash: var(--blush);
+  --leaf: var(--blush);
+  --butter: var(--go);
+  --yellow: var(--go);
+  --ink-soft: var(--ink-2);
+  --muted: var(--ink-2);
+  --line: var(--rule);
+  --shadow: none;
+  --radius: 0;
+  --control-radius: 0;
+  --photo-radius: 0;
   --tap: 52px;
+
+  /* Type. The next/font variables live on <html>, the same element as this :root, so
+     these stacks resolve here; declared on <body> they would be empty at :root. */
+  --ff-display: var(--font-display), "Arial Black", Arial, sans-serif;
+  --ff-card: var(--font-card), Georgia, serif;
+  --ff-body: var(--font-geist), Arial, sans-serif;
+  /* The serif used to be Vollkorn; card and product names now get Fraunces. Vollkorn
+     stays bound only inside the admin scope (admin.css). */
+  --font-editorial: var(--ff-card);
+  --fs-h1: clamp(2.6rem, 10.5vw, 6.5rem);
+  --fs-h2: clamp(2.1rem, 7vw, 4.25rem);
+  --fs-h3: clamp(1.15rem, 2.4vw, 1.5rem);
+  --fs-eyebrow: 0.75rem;
+  /* Archivo's width axis: full width by default, condensed on phones so long Serbian
+     words still fit a 390px line in heavy uppercase. */
+  --display-wdth: 100;
+
+  /* Spacing. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --section-y: 56px;
+
+  /* Ticker strip and header bar heights, for the shell to build --header-stack from. */
+  --ticker-h: 32px;
+  --header-h: 64px;
   /* Announcement bar plus sticky header; the hero copy clears this once pinned, and
      other sticky columns (cart summary, product gallery) use it as their own offset. */
   --header-stack: 101px;
 }
 
+@media (max-width: 480px) {
+  :root { --display-wdth: 86; }
+}
+
 @media (min-width: 768px) {
   :root {
-    --photo-radius: 24px;
+    --section-y: 80px;
+    --header-h: 76px;
     --header-stack: 113px;
   }
 }
 
 @media (min-width: 1200px) {
-  :root {
-    --photo-radius: 28px;
-  }
+  :root { --section-y: 112px; }
 }
