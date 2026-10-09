@@ -3576,5 +3576,17 @@ export const catalog: Record<string, readonly [string, string]> = {
   "Poruka nije poslata. Pozovi nas ako se problem ponovi.": [
     "The message was not sent. Call us if the problem persists.",
     "Сообщение не отправлено. Позвоните нам, если проблема повторится."
+  ],
+  "komada": [
+    "units",
+    "шт."
+  ],
+  "(Beograd).": [
+    "(Belgrade time).",
+    "(по времени Белграда)."
+  ],
+  "(opciono)": [
+    "(optional)",
+    "(необязательно)"
   ]
 };

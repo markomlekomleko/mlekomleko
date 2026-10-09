@@ -1,6 +1,8 @@
 "use client";
 
 import { useLocalize, useLocale } from "@/app/lib/i18n/client";
+import { translate } from "../lib/i18n/translate";
+import { intlLocales } from "../lib/i18n/routing";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAnalytics } from "./analytics-provider";
@@ -315,7 +317,7 @@ export function CartDrawer() {
                 {offer ? (
                   <div className="drawer-offer">
                     <div>
-                      <strong>Probaj i {offer.name.toLocaleLowerCase("sr-Latn")}.</strong>
+                      <strong>Probaj i {translate(offer.name, locale).toLocaleLowerCase(intlLocales[locale])}.</strong>
                       <span>
                         Dodaj {quantityLabel(1, offer.unit)} samo ovoj dostavi. +{formatMoney(offer.priceRsd, locale)}
                       </span>

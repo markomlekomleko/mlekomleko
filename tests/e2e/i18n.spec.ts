@@ -55,6 +55,7 @@ test("switching language preserves the page, query and basket on every viewport"
     expect(brand!.x + brand!.width).toBeLessThanOrEqual(actions!.x);
     await page.locator(".cart-link").click();
     await expect(page.locator(".cart-drawer-foot .button")).toHaveAttribute("href", localizedPath("/checkout", locale));
+    await expect(page.locator(".drawer-offer strong")).toHaveText(`${translate("Probaj i", locale)} ${translate("Domaće kozje mleko", locale).toLocaleLowerCase()}.`);
     await page.keyboard.press("Escape");
   }
   expect(errors).toEqual([]);
