@@ -1,3 +1,4 @@
+import { formatDate } from "../../app/lib/frontend";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
@@ -75,8 +76,13 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   const calendar = page.getByRole("region", { name: "Kalendar dostave" });
   await expect(calendar.locator(".calendar-grid button:disabled").first()).toBeDisabled();
   await calendar.getByRole("button", { name: "Sledeći mesec" }).click();
-  const quoteResponse = page.waitForResponse(response => response.url().endsWith("/api/cart") && response.request().method() === "POST");
-  await calendar.locator(".calendar-grid button:not(:disabled)").first().click();
+  const dateButton = calendar.locator(".calendar-grid button:not(:disabled)").first();
+  const dateLabel = await dateButton.getAttribute("aria-label");
+  // A quote for the preceding weekday selection may still be in flight.
+  const quoteResponse = page.waitForResponse(response => response.url().endsWith("/api/cart")
+    && response.request().method() === "POST"
+    && formatDate(response.request().postDataJSON().deliveryDate) === dateLabel);
+  await dateButton.click();
   const selectedQuote = await (await quoteResponse).json();
   expect(new Date(`${selectedQuote.deliveryDate}T12:00:00Z`).getUTCDay()).toBe(5);
   for (const line of selectedQuote.lines) expect(line.deliveryDates[0]).toBe(selectedQuote.deliveryDate);

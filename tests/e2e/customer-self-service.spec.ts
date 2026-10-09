@@ -153,11 +153,13 @@ test("admin edits an existing one-time order using the same server quote", async
   });
   const storefront = await (await page.request.get("/api/storefront")).json();
   const product = storefront.products[0];
-  const deliveryDate = new Date(
+  const earliestDate = new Date(
     Date.parse(storefront.delivery.deliveryDate + "T12:00:00Z") + 35 * 86400000,
-  )
-    .toISOString()
-    .slice(0, 10);
+  ).toISOString().slice(0, 10);
+  // Earlier admin scenarios can close routes; use a genuinely open future date.
+  const schedule = await (await page.request.get("/api/delivery-options?city=Beograd&postalCode=11000")).json();
+  const deliveryDate = schedule.dates.find((date: string) => date >= earliestDate);
+  expect(deliveryDate).toBeTruthy();
   const response = await page.request.post("/api/checkout", {
     headers: { Origin: origin, "Idempotency-Key": crypto.randomUUID() },
     data: {
