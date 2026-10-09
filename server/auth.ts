@@ -1,3 +1,4 @@
+import { actorContext, authorizeStaff, verifyStaffPassword, type StaffRole } from "./staff";
 import { env } from "@/server/runtime";
 import { constantTimeEqual, randomToken, sha256 } from "./crypto";
 import { DomainError, assertDomain, emailAddress } from "./domain";
@@ -141,14 +142,16 @@ export async function loginAdmin(request: Request, input: Record<string, unknown
   const [nameMatches, passwordMatches] = await Promise.all([
     constantTimeEqual(username, credentials.username), constantTimeEqual(password, credentials.password),
   ]);
-  assertDomain(nameMatches && passwordMatches, "ADMIN_FORBIDDEN", "Email ili lozinka nisu ispravni.", 403);
+  const staff = !(nameMatches && passwordMatches) ? await first<Record<string, unknown>>("SELECT * FROM admin_users WHERE email = ? AND is_active = 1", username) : null;
+  const staffValid = staff && verifyStaffPassword(password, String(staff.password_hash));
+  assertDomain((nameMatches && passwordMatches) || staffValid, "ADMIN_FORBIDDEN", "Email ili lozinka nisu ispravni.", 403);
   const sessionToken = randomToken();
   const expiresAt = new Date(Date.now() + 8 * 60 * 60_000).toISOString();
   await batch([
     { sql: "DELETE FROM admin_sessions WHERE expires_at <= ? OR revoked_at IS NOT NULL", bindings: [new Date().toISOString()] },
-    { sql: "INSERT INTO admin_sessions (token_hash, credential_hash, expires_at) VALUES (?, ?, ?)", bindings: [await sha256(sessionToken), await credentialFingerprint(credentials), expiresAt] },
+    { sql: "INSERT INTO admin_sessions (token_hash, credential_hash, expires_at, admin_user_id) VALUES (?, ?, ?, ?)", bindings: [await sha256(sessionToken), staffValid ? await sha256(String(staff.password_hash)) : await credentialFingerprint(credentials), expiresAt, staffValid ? String(staff.id) : null] },
   ]);
-  return { authenticated: true, configured: true, mode: "password" as const, sessionToken, expiresAt };
+  return { authenticated: true, configured: true, mode: "password" as const, role: staffValid ? staff.role : "owner", sessionToken, expiresAt };
 }
 
 export async function logoutAdmin(request: Request) {
@@ -168,9 +171,15 @@ export async function requireAdmin(request: Request): Promise<void> {
   if (!credentials) throw new DomainError("ADMIN_NOT_CONFIGURED", "Postavite ADMIN_EMAIL i ADMIN_PASSWORD (najmanje 10 znakova) na serveru.", 503);
   const token = adminToken(request);
   assertDomain(token, "ADMIN_FORBIDDEN", "Prijavite se email adresom i lozinkom.", 403);
-  const session = await first<Record<string, unknown>>("SELECT credential_hash, expires_at, revoked_at FROM admin_sessions WHERE token_hash = ?", await sha256(token));
+  const session = await first<Record<string, unknown>>("SELECT credential_hash, expires_at, revoked_at, admin_user_id FROM admin_sessions WHERE token_hash = ?", await sha256(token));
+  const staff = session?.admin_user_id ? await first<Record<string, unknown>>("SELECT * FROM admin_users WHERE id = ? AND is_active = 1",String(session.admin_user_id)) : null;
+  const fingerprint = session?.admin_user_id ? staff ? await sha256(String(staff.password_hash)) : null : await credentialFingerprint(credentials);
   assertDomain(session && !session.revoked_at && Date.parse(String(session.expires_at)) > Date.now()
-    && session.credential_hash === await credentialFingerprint(credentials), "ADMIN_FORBIDDEN", "Prijava je istekla. Prijavite se ponovo.", 403);
+    && session.credential_hash === fingerprint, "ADMIN_FORBIDDEN", "Prijava je istekla. Prijavite se ponovo.", 403);
+  const role = (staff?.role ?? "owner") as StaffRole;
+  authorizeStaff(role, request);
+  const context = actorContext.getStore();
+  if (context) { context.id = String(staff?.email ?? credentials.username); context.role = role; }
 }
 
 export async function adminAccess(request: Request) {
@@ -178,7 +187,7 @@ export async function adminAccess(request: Request) {
   const mode = legacyAdminAccess() ? "key" as const : "password" as const;
   if (!request.headers.has("authorization") && !request.headers.has("x-admin-secret")) return { authenticated: false, configured, mode };
   await requireAdmin(request);
-  return { authenticated: true, configured, mode };
+  return { authenticated: true, configured, mode, role: actorContext.getStore()?.role ?? "owner" };
 }
 
 export async function revokeSession(token: string): Promise<void> {

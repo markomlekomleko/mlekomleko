@@ -32,20 +32,22 @@ test("reduced motion shows a static composition and downloads no hero video", as
   await expect(page.locator(".scene-actions .button")).toBeVisible();
 });
 
-test("scrolling drives the hero video and always reaches the final frame", async ({ page }) => {
+test("native scrolling advances both hero story steps and reaches the final frame", async ({ page }) => {
   await hideConsent(page);
   await page.goto("/", { waitUntil: "networkidle" });
   await expect(page.locator(".hero")).toHaveAttribute("data-video", "ready", { timeout: 20_000 });
   const geometry = await page.evaluate(() => {
     const track = document.querySelector(".scene-track")!.getBoundingClientRect();
     const pin = document.querySelector(".scene-pin")!.getBoundingClientRect();
-    return { top: track.top + window.scrollY - pin.top, travel: track.height - pin.height };
+    return { top: track.top + window.scrollY - pin.top, travel: track.height - pin.height, pinHeight: pin.height };
   });
   expect(geometry.travel).toBeGreaterThan(200);
 
   const sample = async (fraction: number) => {
-    await page.evaluate((y) => window.scrollTo(0, y), Math.round(geometry.top + geometry.travel * fraction));
-    await page.waitForTimeout(900);
+    await page.evaluate((y) => window.scrollTo(0, y), Math.round(geometry.top + geometry.travel * fraction + (fraction === 1 ? geometry.pinHeight * 0.5 : 0)));
+    await expect.poll(() => page.locator(".hero").evaluate(element => Number(getComputedStyle(element).getPropertyValue("--hero-p")))).toBe(fraction === 0 ? 0 : fraction === 1 ? 1 : 0.65);
+    if (fraction === 1) await expect.poll(() => page.locator(".scene-video").evaluate((video: HTMLVideoElement) => video.currentTime / video.duration), { timeout: 10000 }).toBeGreaterThan(0.98);
+    else await page.waitForTimeout(1200);
     return page.evaluate(() => ({
       progress: Number(getComputedStyle(document.querySelector(".hero")!).getPropertyValue("--hero-p")),
       time: (document.querySelector(".scene-video") as HTMLVideoElement).currentTime,
@@ -74,7 +76,7 @@ test("hero stays centred and advances on the first scroll beneath the header", a
   const geometry = await page.evaluate(() => {
     const pin = document.querySelector(".scene-pin")!.getBoundingClientRect();
     const intro = document.querySelector(".scene-intro")!.getBoundingClientRect();
-    const header = document.querySelector(".site-header-stack")!.getBoundingClientRect();
+    const header = document.querySelector("[data-hero-header]")!.getBoundingClientRect();
     return {
       top: pin.top, centre: pin.top + pin.height / 2,
       introX: intro.x + intro.width / 2, introY: intro.y + intro.height / 2,
@@ -93,7 +95,9 @@ test("hero stays centred and advances on the first scroll beneath the header", a
     introY: (() => { const rect = document.querySelector(".scene-intro")!.getBoundingClientRect(); return rect.y + rect.height / 2; })(),
   }));
   expect(after.top).toBeCloseTo(geometry.top, 0);
-  expect(after.introY).toBeCloseTo(geometry.introY, 0);
+  // The outgoing title intentionally moves up 12px while fading; the pinned scene stays centred.
+  expect(after.introY).toBeLessThanOrEqual(geometry.introY + 0.5);
+  expect(after.introY).toBeGreaterThanOrEqual(geometry.introY - 12.5);
   await page.evaluate((top) => window.scrollTo({ top, behavior: "instant" }), geometry.travel * 0.7);
   await expect.poll(() => page.locator(".scene-rhythm").evaluate((element) => Number(getComputedStyle(element).opacity))).toBeGreaterThan(0.99);
   const rhythm = await page.locator(".scene-rhythm").boundingBox();
@@ -108,5 +112,5 @@ test("a failed hero export still leaves a usable poster and a working offer link
   await page.waitForTimeout(1500);
   await expect(page.locator(".hero")).toHaveAttribute("data-mode", "static");
   await page.locator(".scene-actions .button").click();
-  await expect(page.locator("#offer-title")).toBeInViewport();
+  await expect(page.locator("#products-title")).toBeInViewport();
 });

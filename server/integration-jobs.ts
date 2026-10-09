@@ -1,3 +1,7 @@
+import { queueSmsUpdate, deliverSms } from "./sms-updates";
+import { issueFiscomm, receiptOperation } from "./fiscomm";
+import { dispatchPurchaseAnalytics } from "./marketing-purchase";
+import { issueFiscalReceipt } from "./fiscal-receipts";
 import { env } from "@/server/runtime";
 import { readIntegrationConfig, publicIntegrationStatus } from "../integrations/config.mjs";
 import { DomainError, assertDomain } from "./domain";
@@ -5,7 +9,6 @@ import { renderTransactionalMessage, renderWhatsAppUpdate } from "./notification
 import { enqueueOnce } from "./outbox";
 import { all, batch, first, run } from "./sql";
 import { addLocalDays, assertLocalDate, localDateAt } from "./time";
-import { sha256 } from "./crypto";
 import { sendEmailMessage, sendWhatsAppTemplate } from "./messaging";
 
 interface OutboxRow extends Record<string, unknown> {
@@ -69,9 +72,17 @@ async function sendEmail(row: OutboxRow, payload: Record<string, unknown>): Prom
   const config = readIntegrationConfig(runtimeEnv() as typeof process.env);
   if (config.integrations.email.mode === "console") {
     if (config.appEnvironment === "production") throw new IntegrationError("EMAIL_NOT_CONFIGURED", "Slanje emaila nije povezano. Podesite servis za transakcione poruke.");
+    await run("INSERT INTO message_deliveries(id,outbox_id,channel,recipient,subject,provider,provider_reference,status) VALUES(?,?,'email',?,?,'console',?,'simulated') ON CONFLICT(id) DO NOTHING", row.id,row.id,recipient,message.subject,`console:${row.id}`);
     return `console:${row.id}`;
   }
-  return sendEmailMessage(recipient, message, row.idempotency_key ?? row.id);
+  await run("INSERT INTO message_deliveries(id,outbox_id,channel,recipient,subject,provider,status) VALUES(?,?,'email',?, ?,?,'queued') ON CONFLICT(id) DO NOTHING",row.id,row.id,recipient,message.subject,runtimeEnv().EMAIL_PROVIDER ?? '');
+  try {
+    const reference = await sendEmailMessage(recipient, message, row.idempotency_key ?? row.id);
+    await run("UPDATE message_deliveries SET provider_reference=?,status='accepted',last_error=NULL,updated_at=? WHERE id=?",reference,new Date().toISOString(),row.id);
+    return reference;
+  } catch(error) {
+    await run("UPDATE message_deliveries SET status='failed',last_error=?,updated_at=? WHERE id=?",error instanceof DomainError ? error.code : 'MESSAGE_SEND_FAILED',new Date().toISOString(),row.id);throw error;
+  }
 }
 
 async function queueWhatsAppUpdate(row: OutboxRow, payload: Record<string, unknown>) {
@@ -79,7 +90,7 @@ async function queueWhatsAppUpdate(row: OutboxRow, payload: Record<string, unkno
   const tables: Record<string, string> = { order: "orders", subscription: "subscriptions", delivery_order: "delivery_orders" };
   const table = tables[row.aggregate_type];
   if (!table || runtimeEnv().WHATSAPP_MODE !== "provider") return;
-  if (!["email.order_confirmation.requested", "email.delivery_reminder.requested", "email.invoice.requested", "email.receipt.requested", "email.order_updated.requested", "payment.method_required"].includes(row.topic) && !row.topic.startsWith("subscription.")) return;
+  if (!["email.order_confirmation.requested", "email.delivery_reminder.requested", "email.delivery_deadline.requested", "email.invoice.requested", "email.receipt.requested", "email.order_updated.requested", "payment.method_required"].includes(row.topic) && !row.topic.startsWith("subscription.")) return;
   const recipient = await first<Record<string, unknown>>(`SELECT a.customer_id FROM customer_credentials a JOIN ${table} x ON x.customer_id = a.customer_id
     WHERE x.id = ? AND a.whatsapp_verified_at IS NOT NULL AND a.whatsapp_consent_at IS NOT NULL AND a.whatsapp_notifications_at IS NOT NULL`, row.aggregate_id);
   if (!recipient) return;
@@ -92,120 +103,32 @@ async function sendWhatsAppUpdate(row: OutboxRow, payload: Record<string, unknow
   const recipient = await first<Record<string, unknown>>("SELECT whatsapp_phone FROM customer_credentials WHERE customer_id = ? AND whatsapp_verified_at IS NOT NULL AND whatsapp_consent_at IS NOT NULL AND whatsapp_notifications_at IS NOT NULL", String(payload.customerId ?? ""));
   if (!recipient) return `suppressed:${row.id}`;
   const sourceTopic = String(payload.sourceTopic);
-  if (sourceTopic === "email.delivery_reminder.requested" && !await reminderStillDue(row, payload)) return `suppressed:${row.id}`;
+  if (["email.delivery_reminder.requested", "email.delivery_deadline.requested"].includes(sourceTopic) && !await reminderStillDue(row, payload)) return `suppressed:${row.id}`;
   const data = await notificationData(row, payload);
   return sendWhatsAppTemplate(String(recipient.whatsapp_phone), runtimeEnv().WHATSAPP_UPDATE_TEMPLATE ?? "", [renderWhatsAppUpdate(sourceTopic, data)], row.id);
 }
 
-function integerEnv(name: keyof RuntimeEnv): number | null {
-  const raw = runtimeEnv()[name];
-  if (!raw) return null;
-  const parsed = Number(raw);
-  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
-}
-
-async function issueFiscalReceipt(row: OutboxRow): Promise<{ externalId: string; status: "issued" | "skipped" }> {
-  const { order, items } = await orderData(row.aggregate_id);
-  const operationKey = `receipt:${order.id}:sale`;
-  const receiptId = crypto.randomUUID();
-  await run("INSERT INTO fiscal_receipts (id, order_id, operation_key, kind, status, provider) VALUES (?, ?, ?, 'normal', 'pending', 'badi') ON CONFLICT(operation_key) DO NOTHING", receiptId, order.id, operationKey);
-  const currentReceipt = await first<{ id: string; status: string; provider_reference: string | null } & Record<string, unknown>>("SELECT id, status, provider_reference FROM fiscal_receipts WHERE operation_key = ?", operationKey);
-  if (currentReceipt?.status === "issued" || currentReceipt?.status === "skipped") return { externalId: currentReceipt.provider_reference ?? `${currentReceipt.status}:${order.id}`, status: currentReceipt.status } as { externalId: string; status: "issued" | "skipped" };
-  assertDomain(order.payment_status === "paid", "PAYMENT_NOT_CAPTURED", "Fiskalni račun se izdaje tek kada je uplata evidentirana.", 409);
-  const config = readIntegrationConfig(runtimeEnv() as typeof process.env);
-  const mode = config.integrations.fiscalization.mode;
-  const now = new Date().toISOString();
-  if (order.total_minor === 0) {
-    await run("UPDATE fiscal_receipts SET status = 'skipped', provider_reference = ?, attempts = attempts + 1, updated_at = ? WHERE operation_key = ?", `zero-amount:${order.id}`, now, operationKey);
-    return { externalId: `zero-amount:${order.id}`, status: "skipped" };
-  }
-  if (mode === "disabled") {
-    await run("UPDATE fiscal_receipts SET status = 'skipped', provider_reference = ?, attempts = attempts + 1, updated_at = ? WHERE operation_key = ?", `disabled:${order.id}`, now, operationKey);
-    return { externalId: `disabled:${order.id}`, status: "skipped" };
-  }
-  if (mode === "mock") {
-    if (config.appEnvironment === "production") throw new IntegrationError("FISCAL_NOT_CONFIGURED", "Fiskalizacija nije povezana. Podesite Badi produkcioni pristup.");
-    const invoiceNumber = `MOCK-${order.order_number}`;
-    await run("UPDATE fiscal_receipts SET status = 'issued', provider_reference = ?, invoice_number = ?, attempts = attempts + 1, issued_at = ?, updated_at = ?, last_error_code = NULL, last_error_message = NULL WHERE operation_key = ?", `badi-mock:${order.id}`, invoiceNumber, now, now, operationKey);
-    return { externalId: `badi-mock:${order.id}`, status: "issued" };
-  }
-  if (!items.length) throw new IntegrationError("FISCAL_ITEMS_MISSING", "Porudžbina nema stavke za fiskalizaciju.");
-  const missing = items.filter((item) => !item.badi_sku);
-  if (missing.length) throw new IntegrationError("BADI_SKU_MISSING", `Nedostaje Badi SKU za: ${missing.map((item) => item.product_name).join(", ")}.`);
-  const originalItemsMinor = items.reduce((sum, item) => sum + item.line_total_minor, 0);
-  const productTargetMinor = order.total_minor - order.delivery_fee_minor;
-  const badiItems = items.map((item) => ({ sku: item.badi_sku, quantity: item.unit_price_minor > 0 ? item.line_total_minor / item.unit_price_minor : item.quantity, unitPrice: item.unit_price_minor / 100 }));
-  if (productTargetMinor > originalItemsMinor) {
-    const sku = integerEnv("BADI_ADJUSTMENT_SKU");
-    if (!sku) throw new IntegrationError("BADI_ADJUSTMENT_SKU_MISSING", "Za doplatu/korekciju je potreban BADI_ADJUSTMENT_SKU.");
-    badiItems.push({ sku, quantity: 1, unitPrice: (productTargetMinor - originalItemsMinor) / 100 });
-  }
-  if (order.delivery_fee_minor > 0) {
-    const sku = integerEnv("BADI_DELIVERY_SKU");
-    if (!sku) throw new IntegrationError("BADI_DELIVERY_SKU_MISSING", "Za fiskalizaciju dostave je potreban BADI_DELIVERY_SKU.");
-    badiItems.push({ sku, quantity: 1, unitPrice: order.delivery_fee_minor / 100 });
-  }
-  const discount = productTargetMinor < originalItemsMinor && originalItemsMinor > 0 ? (originalItemsMinor - productTargetMinor) * 100 / originalItemsMinor : 0;
-  const requestBody: Record<string, unknown> = {
-    invoiceType: "normal", transactionType: "sale",
-    payments: { cash: order.payment_method === "cash" ? order.total_minor / 100 : 0, card: order.payment_method === "card" ? order.total_minor / 100 : 0, check: 0, mobilemoney: 0, wiretransfer: 0, voucher: 0, other: 0 },
-    items: badiItems, discount, additionalText: `Mleko i Mleko · ${order.order_number}`,
-    receiptDelivery: { thermalPrinter: false, a4Printer: false, email: order.email, pdf: true, base64pdf: false },
-  };
-  if (mode !== "local") requestBody.clientId = runtimeEnv().BADI_CLIENT_ID;
-  const headers: Record<string, string> = { "content-type": "application/json" };
-  if (mode !== "local") headers.authorization = `Basic ${btoa(`${runtimeEnv().BADI_API_KEY ?? ""}:${runtimeEnv().BADI_API_SECRET ?? ""}`)}`;
-  const response = await fetch(`${config.integrations.fiscalization.baseUrl}${config.integrations.fiscalization.receiptPath}`, { method: "POST", headers, body: JSON.stringify(requestBody) });
-  const body = await response.json().catch(() => ({})) as Record<string, unknown>;
-  if (!response.ok) throw new IntegrationError(`BADI_HTTP_${response.status}`, String(body.message ?? body.error ?? "Badi je odbio račun."));
-  const invoiceNumber = String(body.invoiceNumber ?? body.invoice_number ?? body.requestId ?? "");
-  const externalId = invoiceNumber || `badi:${row.id}`;
-  const pdfUrl = typeof body.pdfUrl === "string" ? body.pdfUrl : typeof body.pdf === "string" && body.pdf.startsWith("http") ? body.pdf : null;
-  await run("UPDATE fiscal_receipts SET status = 'issued', provider_reference = ?, invoice_number = ?, pdf_url = ?, attempts = attempts + 1, issued_at = ?, updated_at = ?, last_error_code = NULL, last_error_message = NULL WHERE operation_key = ?", externalId, invoiceNumber || null, pdfUrl, now, now, operationKey);
-  return { externalId, status: "issued" };
-}
 
 function isEmailTopic(topic: string) {
   return topic.startsWith("email.") || topic === "auth.magic_link.requested" || topic.startsWith("subscription.") || topic === "payment.method_required";
 }
 
-async function sendPurchaseAnalytics(row: OutboxRow, payload: Record<string, unknown>): Promise<string> {
-  const { order } = await orderData(row.aggregate_id);
-  let source: Record<string, unknown> = {};
-  try { source = JSON.parse(order.source_json || "{}") as Record<string, unknown>; } catch { /* Invalid legacy attribution is treated as denied. */ }
-  const consent = source.consent && typeof source.consent === "object" ? source.consent as Record<string, unknown> : {};
-  if (consent.analytics !== true) return `analytics-consent-denied:${order.id}`;
-  const eventId = String(payload.eventId ?? `purchase:${order.id}`).slice(0, 120);
-  const transactionId = String(payload.transactionId ?? order.order_number).slice(0, 120);
-  const properties = { eventId, transactionId, valueMinor: order.total_minor, currency: "RSD", paymentMethod: order.payment_method, source: String(payload.source ?? "payment-confirmation").slice(0, 80) };
-  await run(
-    "INSERT INTO analytics_events (id, event_name, anonymous_id, session_id, order_id, path, properties_json) VALUES (?, 'purchase', ?, ?, ?, '/checkout', ?) ON CONFLICT(id) DO NOTHING",
-    eventId, `server:${(await sha256(order.customer_id)).slice(0, 24)}`, `order:${order.id}`, order.id, JSON.stringify(properties),
-  );
-  const current = runtimeEnv();
-  const measurementId = current.GA4_MEASUREMENT_ID ?? current.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
-  if (measurementId && current.GA4_API_SECRET) {
-    const response = await fetch(`https://www.google-analytics.com/mp/collect?measurement_id=${encodeURIComponent(measurementId)}&api_secret=${encodeURIComponent(current.GA4_API_SECRET)}`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        client_id: `server.${(await sha256(order.customer_id)).slice(0, 24)}`,
-        events: [{ name: "purchase", params: { transaction_id: transactionId, value: order.total_minor / 100, currency: "RSD", shipping: order.delivery_fee_minor / 100, event_id: eventId, engagement_time_msec: 1 } }],
-      }),
-    });
-    if (!response.ok) throw new IntegrationError(`GA4_HTTP_${response.status}`, "GA4 Measurement Protocol je odbio purchase događaj.");
-  }
-  return eventId;
+async function sendPurchaseAnalytics(row: OutboxRow, payload: Record<string, unknown>) {
+  const { order, items } = await orderData(row.aggregate_id);
+  return dispatchPurchaseAnalytics(order, items, String(payload.eventId ?? `purchase:${order.id}`).slice(0, 120), String(payload.transactionId ?? order.order_number).slice(0, 120));
 }
 
 async function dispatch(row: OutboxRow): Promise<string> {
   const payload = JSON.parse(row.payload_json) as Record<string, unknown>;
   if (row.topic === "whatsapp.account_update") return sendWhatsAppUpdate(row, payload);
   if (row.topic === "analytics.purchase") return sendPurchaseAnalytics(row, payload);
+  if (row.topic === "sms.account_update") return deliverSms(row, payload);
+  if (row.topic === "fiscal.final.requested") return (await issueFiscomm(row.aggregate_id, true)).externalId;
   if (row.topic === "fiscal.receipt.requested") return (await issueFiscalReceipt(row)).externalId;
   if (isEmailTopic(row.topic)) {
-    if (row.topic === "email.delivery_reminder.requested" && !await reminderStillDue(row, payload)) return `suppressed:${row.id}`;
+    if (["email.delivery_reminder.requested", "email.delivery_deadline.requested"].includes(row.topic) && !await reminderStillDue(row, payload)) return `suppressed:${row.id}`;
     await queueWhatsAppUpdate(row, payload);
+  await queueSmsUpdate(row, payload);
     return sendEmail(row, payload);
   }
   return `internal:${row.topic}:${row.aggregate_id}`;
@@ -213,6 +136,7 @@ async function dispatch(row: OutboxRow): Promise<string> {
 
 function errorDetails(error: unknown): { code: string; message: string } {
   if (error instanceof IntegrationError) return { code: error.code, message: error.message.slice(0, 500) };
+  if (error instanceof Error && "code" in error && typeof error.code === "string" && error.code.startsWith("FISCAL_")) return {code: error.code, message: error.message};
   if (error instanceof DomainError) return { code: error.code, message: error.message.slice(0, 500) };
   return { code: "INTEGRATION_ERROR", message: error instanceof Error ? error.message.slice(0, 500) : "Nepoznata greška integracije." };
 }
@@ -233,10 +157,13 @@ async function processRows(candidates: OutboxRow[]) {
       const attempts = row.attempts + 1;
       // Badi does not document a provider idempotency key. An ambiguous fiscal failure
       // therefore needs reconciliation before an explicit admin retry, or it could create a duplicate receipt.
-      const terminal = row.topic === "fiscal.receipt.requested" || attempts >= 5;
+      const fiscal = row.topic.startsWith("fiscal.");
+      const operation = fiscal ? await receiptOperation(row.aggregate_id, row.topic === "fiscal.final.requested") : null;
+      const safeToRetry = ["FISCAL_NOT_CONFIGURED", "FISCAL_TAX_LABEL_MISSING", "ADVANCE_NOT_ISSUED", "FISCOMM_CONNECTION_FAILED"].includes(details.code);
+      const terminal = fiscal ? !safeToRetry : attempts >= 5;
       const retryAt = new Date(Date.now() + Math.min(60, 2 ** attempts) * 60_000).toISOString();
       await run("UPDATE outbox SET status = ?, available_at = ?, last_error_code = ?, last_error_message = ? WHERE id = ?", terminal ? "failed" : "pending", retryAt, details.code, details.message, row.id);
-      if (row.topic === "fiscal.receipt.requested") await run("UPDATE fiscal_receipts SET status = ?, attempts = attempts + 1, last_error_code = ?, last_error_message = ?, updated_at = ? WHERE operation_key = ?", terminal ? "failed" : "pending", details.code, details.message, new Date().toISOString(), `receipt:${row.aggregate_id}:sale`);
+      if (operation) await run("UPDATE fiscal_receipts SET status = ?, attempts = attempts + 1, last_error_code = ?, last_error_message = ?, updated_at = ? WHERE operation_key = ?", terminal ? "failed" : "pending", details.code, details.message, new Date().toISOString(), operation.key);
       results.push({ id: row.id, topic: row.topic, status: terminal ? "failed" : "retry", ...details });
     }
   }
@@ -261,22 +188,29 @@ export async function processOutboxFor(aggregateType: string, aggregateId: strin
 }
 
 export async function retryFailedOutbox() {
-  const result = await run("UPDATE outbox SET status = 'pending', attempts = 0, available_at = ?, last_error_code = NULL, last_error_message = NULL WHERE status = 'failed'", new Date().toISOString());
+  const result = await run("UPDATE outbox SET status = 'pending', attempts = 0, available_at = ?, last_error_code = NULL, last_error_message = NULL WHERE status = 'failed' AND topic NOT LIKE 'fiscal.%'", new Date().toISOString());
   return { requeued: Number(result.meta?.changes ?? 0) };
 }
 
 async function reminderStillDue(row: OutboxRow, payload: Record<string, unknown>) {
-  if (String(payload.deliveryDate) !== addLocalDays(localDateAt(), 1)) return false;
+  if (payload.reminderPhase === "deadline") {
+    const delivery = await first<Record<string, unknown>>("SELECT cutoff_at, status FROM deliveries WHERE delivery_date = ?", String(payload.deliveryDate));
+    if (!delivery || delivery.status !== "open" || String(delivery.cutoff_at) !== payload.cutoffAt || Date.now() >= Date.parse(String(delivery.cutoff_at))) return false;
+  } else if (String(payload.deliveryDate) !== addLocalDays(localDateAt(), 1)) return false;
   const sourceType = String(payload.sourceType ?? "");
   const column = sourceType === "subscription" ? "subscription_id" : sourceType === "order" ? "source_order_id" : "id";
   const sourceId = String(payload.sourceId ?? row.aggregate_id);
   return Boolean(await first<Record<string, unknown>>(`SELECT dor.id FROM delivery_orders dor JOIN deliveries d ON d.id = dor.delivery_id LEFT JOIN orders o ON o.id = dor.source_order_id WHERE dor.${column} = ? AND d.delivery_date = ? AND dor.status IN ('planned', 'locked') AND (o.id IS NULL OR (o.fulfillment_status IN ('planned', 'locked') AND (o.payment_method = 'cash' OR o.payment_status = 'paid')))`, sourceId, String(payload.deliveryDate)));
 }
 
-export async function queueDeliveryReminders(rawDate: unknown) {
+export async function queueDeliveryReminders(rawDate: unknown, phase: "tomorrow" | "deadline" = "tomorrow") {
   const date = assertLocalDate(rawDate);
   // Never send "tomorrow" for a different date, including a delayed retry.
-  if (date !== addLocalDays(localDateAt(), 1)) return { date, queued: 0 };
+  if (phase === "tomorrow" && date !== addLocalDays(localDateAt(), 1)) return { date, queued: 0 };
+  const delivery = await first<Record<string, unknown>>("SELECT cutoff_at, status FROM deliveries WHERE delivery_date = ?", date);
+  if (!delivery) return { date, queued: 0 };
+  const cutoffAt = String(delivery.cutoff_at);
+  if (phase === "deadline" && (delivery.status !== "open" || Date.parse(cutoffAt) <= Date.now() || Date.parse(cutoffAt) > Date.now() + 24 * 60 * 60 * 1000)) return { date, queued: 0 };
   const rows = await all<Record<string, unknown>>("SELECT dor.id, dor.source_order_id, dor.subscription_id, dor.note, c.email, c.full_name, di.product_name, di.quantity FROM delivery_orders dor JOIN deliveries d ON d.id = dor.delivery_id JOIN customers c ON c.id = dor.customer_id LEFT JOIN delivery_items di ON di.delivery_order_id = dor.id WHERE d.delivery_date = ? AND dor.status IN ('planned', 'locked') ORDER BY dor.id, di.product_name", date);
   const grouped = new Map<string, { sourceType: string; sourceId: string; email: string; fullName: string; note: unknown; items: Array<{ product_name: unknown; quantity: unknown }> }>();
   for (const value of rows) {
@@ -287,7 +221,7 @@ export async function queueDeliveryReminders(rawDate: unknown) {
   }
   if (!grouped.size) return { date, queued: 0 };
   // Projection IDs change on regeneration; source + date is the stable delivery identity.
-  await batch([...grouped.values()].map((value) => enqueueOnce("email.delivery_reminder.requested", value.sourceType, value.sourceId, { ...value, deliveryDate: date }, `delivery-reminder:${value.sourceType}:${value.sourceId}:${date}:v2`)));
+  await batch([...grouped.values()].map((value) => enqueueOnce(phase === "deadline" ? "email.delivery_deadline.requested" : "email.delivery_reminder.requested", value.sourceType, value.sourceId, { ...value, deliveryDate: date, cutoffAt, reminderPhase: phase }, `delivery-reminder:${value.sourceType}:${value.sourceId}:${date}:${phase === "deadline" ? cutoffAt : "v2"}`)));
   return { date, queued: grouped.size };
 }
 
@@ -307,4 +241,11 @@ export async function processDeliveryReminders(date: string) {
   const email = await processRows(await all<OutboxRow>("SELECT * FROM outbox WHERE status = 'pending' AND topic = 'email.delivery_reminder.requested' AND json_extract(payload_json, '$.deliveryDate') = ? AND available_at <= ? ORDER BY created_at LIMIT 500",date,now));
   const whatsapp = await processRows(await all<OutboxRow>("SELECT * FROM outbox WHERE status = 'pending' AND topic = 'whatsapp.account_update' AND json_extract(payload_json, '$.sourceTopic') = 'email.delivery_reminder.requested' AND json_extract(payload_json, '$.deliveryDate') = ? AND available_at <= ? ORDER BY created_at LIMIT 500",date,now));
   return {attempted:email.attempted+whatsapp.attempted,results:[...email.results,...whatsapp.results]};
+}
+
+export async function resendFiscalDocument(id: string) {
+  const receipt = await first<Record<string,unknown>>("SELECT * FROM fiscal_receipts WHERE id=? AND status='issued'",id);
+  assertDomain(receipt,"RECEIPT_NOT_ISSUED","Najpre mora biti izdat račun.",409);
+  await batch([enqueueOnce("email.fiscal_document.requested","order",String(receipt.order_id),{invoiceNumber:receipt.invoice_number,documentKind:receipt.kind,documentUrl:receipt.pdf_url ?? receipt.verification_url},`resend:${id}:${crypto.randomUUID()}`)]);
+  return {queued:true};
 }

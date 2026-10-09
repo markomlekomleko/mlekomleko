@@ -10,9 +10,11 @@ const eventNames = new Set([
   "add_to_cart",
   "view_cart",
   "begin_checkout",
+  "checkout_clicked",
   "add_payment_info",
   "order_created",
   "subscription_selected",
+  "subscription_activated",
   "delivery_cadence_selected",
   "postcode_checked",
   "promo_applied",
@@ -33,7 +35,7 @@ const eventNames = new Set([
 const forbiddenKey = /(email|phone|address|full.?name|first.?name|last.?name|postal.?code|note)/i;
 
 function cleanProperties(value: unknown, depth = 0): unknown {
-  if (depth > 3 || value == null) return null;
+  if (depth > 5 || value == null) return null;
   if (typeof value === "string") return value.slice(0, 240);
   if (typeof value === "number" || typeof value === "boolean") return value;
   if (Array.isArray(value)) return value.slice(0, 30).map((item) => cleanProperties(item, depth + 1));
@@ -52,7 +54,7 @@ export async function recordAnalyticsEvent(input: Record<string, unknown>) {
   assertDomain(eventNames.has(eventName), "VALIDATION_ERROR", "Unknown analytics event.", 422);
   const anonymousId = requiredString(input.anonymousId, "anonymousId", 120);
   const sessionId = requiredString(input.sessionId, "sessionId", 120);
-  const path = requiredString(input.path, "path", 300);
+  const path = requiredString(input.path, "path", 300).split(/[?#]/, 1)[0];
   assertDomain(path.startsWith("/"), "VALIDATION_ERROR", "Analytics path must be local.", 422);
   const orderId = typeof input.orderId === "string" ? input.orderId.slice(0, 120) : null;
   const properties = cleanProperties(input.properties ?? {});

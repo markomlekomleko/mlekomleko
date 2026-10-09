@@ -31,7 +31,14 @@ export function CustomersPanel({
   onNew: (customer: Row) => void;
   onChanged: () => void;
 }) {
-  const [found, setFound] = useState<Row[] | null>(null);
+  const [found, setFound] = useState<{
+    customers: Row[];
+    total: number;
+    page: number;
+    pageSize: number;
+  } | null>(null);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(""),
     [filter, setFilter] = useState("all"),
     [account, setAccount] = useState<Row | null>(null),
@@ -56,34 +63,40 @@ export function CustomersPanel({
     return () => controller.abort();
   }, [request, selectedId, revision, subscriptions]);
   useEffect(() => {
-    if (!search) return;
     const controller = new AbortController();
     const timer = setTimeout(() => {
-      void request<{ customers: Row[] }>(
-        `/api/admin/customers?q=${encodeURIComponent(search)}`,
-        { signal: controller.signal },
-      )
-        .then((v) => setFound(v.customers))
-        .catch((e) => {
-          if (!controller.signal.aborted) setError(e.message);
+      setLoading(true);
+      const query = new URLSearchParams({
+        q: search,
+        status: filter === "all" ? "" : filter,
+        page: String(page),
+        pageSize: "50",
+      });
+      void request<{
+        customers: Row[];
+        total: number;
+        page: number;
+        pageSize: number;
+      }>(`/api/admin/customers?${query}`, { signal: controller.signal })
+        .then((value) => {
+          if (!controller.signal.aborted) {
+            setFound(value);
+            setError("");
+          }
+        })
+        .catch((cause) => {
+          if (!controller.signal.aborted) setError(cause.message);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setLoading(false);
         });
     }, 200);
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [request, search]);
-  const matches = (search ? (found ?? customers) : customers).filter(
-    (c) =>
-      [c.full_name, c.phone, email(c.email)]
-        .join(" ")
-        .toLowerCase()
-        .includes(search.toLowerCase()) &&
-      (filter === "all" ||
-        subscriptions.some(
-          (s) => s.customer_id === c.id && s.status === filter,
-        )),
-  );
+  }, [request, search, filter, page, revision, customers]);
+  const matches = found?.customers ?? [];
   const customer = obj(account?.customer);
   async function saveContact(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -112,7 +125,9 @@ export function CustomersPanel({
             <p className="eyebrow">LJUDI ZBOG KOJIH SMO TU</p>
             <h2>Kupci i njihove dostave</h2>
           </div>
-          <span className="work-badge">{customers.length} kupaca</span>
+          <span className="work-badge">
+            {found?.total ?? customers.length} kupaca
+          </span>
         </div>
         <div className="form-grid">
           <label className="field">
@@ -121,12 +136,21 @@ export function CustomersPanel({
               type="search"
               placeholder="Ime, telefon ili email"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
             />
           </label>
           <label className="field">
             <span>Redovna dostava</span>
-            <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+            <select
+              value={filter}
+              onChange={(e) => {
+                setFilter(e.target.value);
+                setPage(1);
+              }}
+            >
               <option value="all">Svi kupci</option>
               <option value="active">Aktivna</option>
               <option value="paused">Pauzirana</option>
@@ -135,9 +159,15 @@ export function CustomersPanel({
           </label>
         </div>
         <p className="work-hint">
-          Prikaz do 500 rezultata. Pretraga obuhvata sve kupce.
+          Pretraga i status obuhvataju sve kupce. Prikazujemo 50 po stranici.
         </p>
       </div>
+      {error && !selectedId ? (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      ) : null}
+      {loading ? <p role="status">Učitavamo kupce…</p> : null}
       {matches.length ? (
         <div className="work-customer-grid">
           {matches.map((c) => (
@@ -169,9 +199,30 @@ export function CustomersPanel({
             </button>
           ))}
         </div>
-      ) : (
+      ) : !loading ? (
         <Empty title="Nema kupaca za ovu pretragu" />
-      )}
+      ) : null}
+      {found && found.total > found.pageSize ? (
+        <nav className="button-row" aria-label="Stranice kupaca">
+          <button
+            className="button secondary small"
+            disabled={loading || page <= 1}
+            onClick={() => setPage((value) => value - 1)}
+          >
+            Prethodna stranica kupaca
+          </button>
+          <span>
+            Stranica {found.page} od {Math.ceil(found.total / found.pageSize)}
+          </span>
+          <button
+            className="button secondary small"
+            disabled={loading || page * found.pageSize >= found.total}
+            onClick={() => setPage((value) => value + 1)}
+          >
+            Sledeća stranica kupaca
+          </button>
+        </nav>
+      ) : null}
       {selectedId ? (
         <Dialog
           title={str(customer.full_name, "Podaci kupca")}
@@ -445,6 +496,7 @@ function SubscriptionControl({
                 <input
                   type="date"
                   min={plusDays(str(s.nextDeliveryDate), 1)}
+                  max={str(s.maxPauseUntil)}
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                 />

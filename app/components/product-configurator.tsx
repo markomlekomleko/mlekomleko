@@ -106,6 +106,8 @@ export function ProductConfigurator({
       cadence: purchaseType === "subscription" ? cadence : null,
       quantity,
       valueRsd: perDelivery,
+      currency: "RSD",
+      items: [{ item_id: product.id, item_name: product.name, price: unitPrice, quantity }],
       amountBasis: "per_delivery",
     });
     openDrawer();
@@ -188,7 +190,7 @@ export function ProductConfigurator({
           </p>
         ) : (
           <>
-            <fieldset className="configurator-step">
+            <fieldset className="configurator-step" disabled={!ready}>
               <legend>Količina po dostavi</legend>
               <div className="choice-row">
                 {presets.map((value) => (
@@ -235,7 +237,7 @@ export function ProductConfigurator({
               ) : null}
             </fieldset>
 
-            <fieldset className="configurator-step">
+            <fieldset className="configurator-step" disabled={!ready}>
               <legend>Način kupovine</legend>
               <div className="choice-row">
                 <button
@@ -260,7 +262,7 @@ export function ProductConfigurator({
             </fieldset>
 
             {purchaseType === "subscription" ? (
-              <fieldset className="configurator-step">
+              <fieldset className="configurator-step" disabled={!ready}>
                 <legend>Ritam dostave</legend>
                 <div className="choice-row">
                   {(["weekly", "biweekly"] as const).map((value) => (
@@ -293,7 +295,7 @@ export function ProductConfigurator({
               </p>
               {purchaseType === "subscription" && occurrences > 1 ? (
                 <p className="configurator-occurrences">
-                  {occurrences} dostave do kraja meseca. Ukupan obračun sa dostavom vidiš u korpi.
+                  {occurrences} dostave u plaćenom paketu. Ukupan obračun sa dostavom vidiš u korpi.
                 </p>
               ) : (
                 <p className="configurator-occurrences">Dostava se obračunava u korpi.</p>

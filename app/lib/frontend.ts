@@ -2,6 +2,7 @@ export type PurchaseType = "one_time" | "subscription";
 export type DeliveryCadence = "weekly" | "biweekly";
 
 export type Product = {
+  gallery?: string[]; ingredients?: string; allergens?: string; nutrition?: Record<string,string>; inventoryEnabled?: boolean; salePriceMinor?: number | null; saleSubscriptionPriceMinor?: number | null; saleStartsAt?: string | null; saleEndsAt?: string | null;
   id: string;
   slug: string;
   name: string;
@@ -12,6 +13,7 @@ export type Product = {
   priceRsd: number;
   costRsd?: number;
   packagingCostRsd?: number;
+  fiscalTaxLabel?: string | null;
   badiSku?: number | null;
   subscriptionPriceRsd: number;
   compareAtPriceRsd: number | null;
@@ -90,6 +92,7 @@ export type DeliveryWindow = {
 };
 
 export type CartQuote = {
+  deliverySlots?: {id:string;label:string;capacity:number}[]; minimumOrderMinor?: number; minimumOrderMet?: boolean;
   lines: Array<{
     productId: string;
     productName: string;
@@ -207,11 +210,13 @@ export function normalizeProduct(value: unknown): Product {
     priceRsd,
     costRsd: costMinor / 100,
     packagingCostRsd: packagingCostMinor / 100,
+    fiscalTaxLabel: textValue(item.fiscalTaxLabel, item.fiscal_tax_label) || null,
     badiSku: numberValue(item.badiSku, item.badi_sku) || null,
     subscriptionPriceRsd:
       directSubscriptionPrice || minorSubscriptionPrice / 100 || priceRsd,
     compareAtPriceRsd: compareAtMinor > 0 ? compareAtMinor / 100 : null,
     imageUrl: textValue(item.imageUrl, item.image_url),
+    gallery: Array.isArray(item.gallery) ? item.gallery.filter((x): x is string => typeof x === "string") : [], ingredients: textValue(item.ingredients), allergens: textValue(item.allergens), nutrition: item.nutrition && typeof item.nutrition === "object" ? item.nutrition as Record<string,string> : {}, inventoryEnabled: Boolean(item.inventoryEnabled), salePriceMinor: item.salePriceMinor == null ? null : Number(item.salePriceMinor), saleSubscriptionPriceMinor: item.saleSubscriptionPriceMinor == null ? null : Number(item.saleSubscriptionPriceMinor), saleStartsAt: typeof item.saleStartsAt === "string" ? item.saleStartsAt : null, saleEndsAt: typeof item.saleEndsAt === "string" ? item.saleEndsAt : null,
     imageAlt: textValue(item.imageAlt, item.image_alt, `Fotografija proizvoda ${name}`),
     badge: textValue(item.badge),
     origin: textValue(item.origin),
@@ -261,7 +266,7 @@ export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> 
     ...init,
     headers: {
       Accept: "application/json",
-      ...(init?.body ? { "Content-Type": "application/json" } : {}),
+      ...(init?.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
       ...init?.headers,
     },
   });

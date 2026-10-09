@@ -53,3 +53,8 @@ yarn-error.log*
 
 # Local visual QA captures
 /output/qa/
+/output/playwright/
+/.playwright-cli/
+
+# Isolated Next.js verification builds
+/.next-*/

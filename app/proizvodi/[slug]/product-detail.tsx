@@ -18,7 +18,7 @@ export function ProductDetail({
   delivery: DeliveryWindow;
   recommendations: Product[];
 }) {
-  const { track } = useAnalytics();
+  const { consent, track } = useAnalytics();
   const sentinel = useRef<HTMLDivElement>(null);
   const addToCart = useRef<() => void>(() => {});
   const trackedProduct = useRef("");
@@ -34,10 +34,10 @@ export function ProductDetail({
   }).format(new Date(delivery.cutoffAt));
 
   useEffect(() => {
-    if (trackedProduct.current === product.id) return;
+    if ((!consent?.analytics && !consent?.marketing) || trackedProduct.current === product.id) return;
     trackedProduct.current = product.id;
-    track("view_item", { productId: product.id, productName: product.name });
-  }, [product, track]);
+    track("view_item", { productId: product.id, productName: product.name, currency: "RSD", value: product.priceRsd, items: [{ item_id: product.id, item_name: product.name, price: product.priceRsd }] });
+  }, [product, track, consent]);
 
   // The buy bar only appears once the real purchase button has scrolled away.
   useEffect(() => {
@@ -76,6 +76,8 @@ export function ProductDetail({
               <div className="product-placeholder">Fotografija uskoro</div>
             )}
           </div>
+          {product.gallery?.length ? <div className="product-gallery" style={{display:"flex",gap:12,overflowX:"auto"}}>{product.gallery.map((url,i)=><img key={`${url}-${i}`} src={url} alt={`${product.name} — fotografija ${i+2}`} width={180} height={180} loading="lazy" style={{objectFit:"contain",borderRadius:16}} />)}</div> : null}
+          {product.ingredients || product.allergens || Object.keys(product.nutrition ?? {}).length ? <section className="admin-panel"><h2>Deklaracija</h2>{product.ingredients?<p>Sastojci: {product.ingredients}</p>:null}{product.allergens?<p><strong>Alergeni: {product.allergens}</strong></p>:null}{Object.keys(product.nutrition??{}).length?<table><caption>Nutritivne vrednosti na 100 ml/g</caption><tbody>{Object.entries(product.nutrition??{}).map(([key,value])=><tr key={key}><th>{key}</th><td>{value}</td></tr>)}</tbody></table>:null}</section>:null}
           <div className="product-quick-facts">
             <span>
               <strong>Pakovanje</strong>

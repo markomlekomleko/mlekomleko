@@ -1,3 +1,7 @@
+import { reserveInventory, releaseInventory } from "./inventory";
+import { validatePolicy } from "./service-policy";
+import { promoRules } from "./promotions";
+import { shippingSnapshot } from "./address-snapshot";
 import { DomainError, assertDomain, enumValue, nonNegativeInt, optionalString, requiredString } from "./domain";
 import { orderFilters } from "./order-filters";
 import { audit, enqueue } from "./outbox";
@@ -5,8 +9,11 @@ import { all, batch, first, type SqlValue } from "./sql";
 import { getBusinessSettings } from "./settings";
 import { purchaseAnalyticsEvent } from "./analytics";
 import { quoteCart } from "./commerce";
-import { generateDelivery } from "./deliveries";
-import { assertBeforeCutoff, cutoffForDelivery } from "./time";
+import { generateDelivery, lockOverdueDeliveries } from "./deliveries";
+import { cutoffForDelivery } from "./time";
+import { assertDeliveryEditable } from "./delivery-cutoff";
+import { mutationGuard } from "./mutation-guard";
+import { activatePaidPackage } from "./packages";
 
 export async function dashboard() {
   const [counts, revenue, nextDeliveries, preparation, funnel, topProducts, orderStates, profitBase, retention, postalProfit, channelProfit] = await Promise.all([
@@ -86,33 +93,60 @@ export async function dashboard() {
   };
 }
 
+function directoryPage(params: URLSearchParams) {
+  const page = Number(params.get("page") || 1), pageSize = Number(params.get("pageSize") || 50);
+  assertDomain(Number.isInteger(page) && page >= 1 && page <= 1000000 && Number.isInteger(pageSize) && pageSize >= 1 && pageSize <= 100, "VALIDATION_ERROR", "Stranica ili broj rezultata nije ispravan.", 422);
+  return { page, pageSize };
+}
 export async function listCustomers(params = new URLSearchParams()) {
+  const { page, pageSize } = directoryPage(params);
   const query = optionalString(params.get("q"), "q", 200);
-  const where = query ? "WHERE (LOWER(c.full_name) LIKE LOWER(?) ESCAPE '!' OR LOWER(c.email) LIKE LOWER(?) ESCAPE '!' OR c.phone LIKE ? ESCAPE '!')" : "";
-  const pattern = query ? `%${query.replace(/[!%_]/g, "!$&")}%` : "";
-  return all<Record<string, unknown>>(
-    `SELECT c.*, (SELECT COUNT(*) FROM subscriptions s WHERE s.customer_id = c.id) AS subscription_count, (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id) AS order_count, (SELECT COALESCE(SUM(o.total_minor), 0) FROM orders o WHERE o.customer_id = c.id AND o.payment_status = 'paid') AS lifetime_value_minor FROM customers c ${where} ORDER BY c.created_at DESC LIMIT 500`, ...(query ? [pattern,pattern,pattern] : []),
-  );
+  const status = params.get("status");
+  assertDomain(!status || ["active", "paused", "cancelled"].includes(status), "VALIDATION_ERROR", "Nepoznat status pretplate.", 422);
+  const conditions: string[] = [], bindings: SqlValue[] = [];
+  if (query) {
+    conditions.push("(LOWER(c.full_name) LIKE LOWER(?) ESCAPE '!' OR LOWER(c.email) LIKE LOWER(?) ESCAPE '!' OR c.phone LIKE ? ESCAPE '!')");
+    const pattern = `%${query.replace(/[!%_]/g, "!$&")}%`;
+    bindings.push(pattern, pattern, pattern);
+  }
+  if (status) { conditions.push("EXISTS (SELECT 1 FROM subscriptions fs WHERE fs.customer_id = c.id AND fs.status = ?)"); bindings.push(status); }
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  const [customers, count] = await Promise.all([
+    all<Record<string, unknown>>(`SELECT c.*, (SELECT COUNT(*) FROM subscriptions s WHERE s.customer_id = c.id) AS subscription_count, (SELECT COUNT(*) FROM orders o WHERE o.customer_id = c.id) AS order_count, (SELECT COALESCE(SUM(o.total_minor), 0) FROM orders o WHERE o.customer_id = c.id AND o.payment_status = 'paid') AS lifetime_value_minor FROM customers c ${where} ORDER BY c.created_at DESC, c.id DESC LIMIT ? OFFSET ?`, ...bindings, pageSize, (page - 1) * pageSize),
+    first<Record<string, unknown>>(`SELECT COUNT(*) AS total FROM customers c ${where}`, ...bindings),
+  ]);
+  return { customers, total: Number(count?.total || 0), page, pageSize };
 }
 
-export async function listSubscriptions() {
-  const subscriptions = await all<Record<string, unknown>>("SELECT s.*, c.full_name, c.email FROM subscriptions s JOIN customers c ON c.id = s.customer_id ORDER BY s.created_at DESC LIMIT 500");
-  if (!subscriptions.length) return [];
+export async function listSubscriptions(params = new URLSearchParams()) {
+  const { page, pageSize } = directoryPage(params);
+  const status = params.get("status"), customerId = optionalString(params.get("customerId"), "customerId", 100);
+  assertDomain(!status || ["active", "paused", "cancelled"].includes(status), "VALIDATION_ERROR", "Nepoznat status pretplate.", 422);
+  const conditions: string[] = [], bindings: SqlValue[] = [];
+  if (status) { conditions.push("s.status = ?"); bindings.push(status); }
+  if (customerId) { conditions.push("s.customer_id = ?"); bindings.push(customerId); }
+  const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+  const [subscriptions, count] = await Promise.all([
+    all<Record<string, unknown>>(`SELECT s.*, c.full_name, c.email FROM subscriptions s JOIN customers c ON c.id = s.customer_id ${where} ORDER BY s.created_at DESC, s.id DESC LIMIT ? OFFSET ?`, ...bindings, pageSize, (page - 1) * pageSize),
+    first<Record<string, unknown>>(`SELECT COUNT(*) AS total FROM subscriptions s ${where}`, ...bindings),
+  ]);
+  const paging = { total: Number(count?.total || 0), page, pageSize };
+  if (!subscriptions.length) return { subscriptions: [], ...paging };
   const placeholders = subscriptions.map(() => "?").join(",");
   const ids = subscriptions.map((subscription) => String(subscription.id));
   const [items, skips] = await Promise.all([
     all<Record<string, unknown>>(`SELECT si.*, p.name AS product_name FROM subscription_items si JOIN products p ON p.id = si.product_id WHERE si.subscription_id IN (${placeholders}) AND si.status = 'active'`, ...ids),
     all<Record<string, unknown>>(`SELECT subscription_id, delivery_date FROM subscription_skips WHERE subscription_id IN (${placeholders}) ORDER BY delivery_date DESC`, ...ids),
   ]);
-  return subscriptions.map((subscription) => {
+  return { ...paging, subscriptions: subscriptions.map((subscription) => {
     const activeItems = items.filter((item) => item.subscription_id === subscription.id);
     return { ...subscription, item_count: activeItems.length, items: activeItems, skips: skips.filter((skip) => skip.subscription_id === subscription.id) };
-  });
+  }) };
 }
 
 export async function listOrders(params = new URLSearchParams()) {
   const { where, bindings, orderBy, page, pageSize } = orderFilters(params);
-  const from = "FROM orders o JOIN customers c ON c.id = o.customer_id LEFT JOIN fiscal_receipts fr ON fr.order_id = o.id AND fr.operation_key = 'receipt:' || o.id || ':sale'";
+  const from = "FROM orders o JOIN customers c ON c.id = o.customer_id LEFT JOIN fiscal_receipts fr ON fr.order_id = o.id AND fr.id = (SELECT fx.id FROM fiscal_receipts fx WHERE fx.order_id = o.id AND fx.kind != 'refund' ORDER BY CASE WHEN fx.kind = 'final' THEN 0 WHEN fx.kind = 'advance' THEN 1 ELSE 2 END LIMIT 1)";
   const [orders, count] = await Promise.all([
     all<Record<string, unknown>>(`SELECT o.*, c.full_name, c.email, c.phone, fr.status AS fiscal_status, fr.invoice_number ${from} ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`, ...bindings, pageSize, (page - 1) * pageSize),
     first<Record<string, unknown>>(`SELECT COUNT(*) AS total ${from} ${where}`, ...bindings),
@@ -120,48 +154,62 @@ export async function listOrders(params = new URLSearchParams()) {
   return { orders, total: Number(count?.total ?? 0), page, pageSize };
 }
 
-export async function updateOrder(input: Record<string, unknown>) {
+export async function updateOrder(input: Record<string, unknown>, actor: { type: "admin" | "customer"; id: string } = { type: "admin", id: "local-admin" }) {
   const id = requiredString(input.id, "id", 100);
   const before = await first<Record<string, unknown>>("SELECT * FROM orders WHERE id = ?", id);
   if (!before) throw new DomainError("ORDER_NOT_FOUND", "Porudžbina nije pronađena.", 404);
+  assertDomain(actor.type !== "customer" || before.customer_id === actor.id, "ORDER_NOT_FOUND", "Porudžbina nije pronađena.", 404);
+  if (input.expectedUpdatedAt !== undefined) assertDomain(input.expectedUpdatedAt === before.updated_at, "ORDER_VERSION_CONFLICT", "Porudžbina je u međuvremenu promenjena. Osvežite podatke.", 409);
+  if (actor.type === "customer") assertDomain(before.kind === "one_time" && before.payment_status === "pending" && before.fulfillment_status === "planned" && input.paymentStatus === undefined && (input.fulfillmentStatus === undefined || input.fulfillmentStatus === "cancelled"), "ORDER_NOT_EDITABLE", "Ovu porudžbinu nije moguće samostalno menjati.", 409);
   const paymentStatus = input.paymentStatus === undefined
     ? String(before.payment_status)
     : enumValue(input.paymentStatus, "paymentStatus", ["pending", "paid", "failed", "refunded"] as const);
   const fulfillmentStatus = input.fulfillmentStatus === undefined
     ? String(before.fulfillment_status)
     : enumValue(input.fulfillmentStatus, "fulfillmentStatus", ["planned", "locked", "delivered", "cancelled"] as const);
+  const packageOrder = await first<Record<string, unknown>>("SELECT status FROM subscription_packages WHERE order_id = ?", id);
+  if (packageOrder) {
+    assertDomain(paymentStatus === before.payment_status || (before.payment_status !== "paid" && paymentStatus === "paid"), "PACKAGE_PAYMENT_IMMUTABLE", "Za povraćaj uplaćenog paketa potrebna je zasebna refundacija sa fiskalnim dokumentom.", 409);
+    assertDomain(fulfillmentStatus === before.fulfillment_status, "PACKAGE_DELIVERY_MANAGED", "Isporuke paketa potvrđujete pojedinačno u odeljku Dostave.", 409);
+  }
   const customerNote = input.customerNote === undefined
     ? (typeof before.customer_note === "string" ? before.customer_note : null)
     : optionalString(input.customerNote, "customerNote", 500);
+  const editingDelivery = input.items !== undefined || input.customer !== undefined;
+  const changingContents = editingDelivery || customerNote !== before.customer_note || (fulfillmentStatus !== before.fulfillment_status && ["cancelled", "planned"].includes(fulfillmentStatus));
+  if (changingContents) await assertDeliveryEditable(String(before.delivery_date));
   const after = { paymentStatus, fulfillmentStatus, customerNote };
   const statements: Array<{ sql: string; bindings?: SqlValue[] }> = [
     {
       sql: "UPDATE orders SET payment_status = ?, fulfillment_status = ?, customer_note = ?, updated_at = ? WHERE id = ?",
-      bindings: [paymentStatus, fulfillmentStatus, customerNote ?? null, new Date().toISOString(), id],
+      bindings: [paymentStatus, fulfillmentStatus, customerNote ?? null, new Date(Math.max(Date.now(), Date.parse(String(before.updated_at)) + 1)).toISOString(), id],
     },
-    audit("admin", "local-admin", "order.updated", "order", id, before, after),
+    audit(actor.type, actor.id, "order.updated", "order", id, before, after),
     enqueue("order.updated", "order", id, after),
   ];
-  const editingDelivery = input.items !== undefined || input.customer !== undefined;
+  if (fulfillmentStatus === "cancelled" && before.fulfillment_status !== "cancelled") statements.push(...releaseInventory(id));
   if (editingDelivery) {
+    if (input.customer !== undefined) await lockOverdueDeliveries(String(before.customer_id));
     assertDomain(before.kind === "one_time" && before.payment_status === "pending" && paymentStatus === "pending" && before.fulfillment_status === "planned" && fulfillmentStatus === "planned", "ORDER_NOT_EDITABLE", "Stavke i adresu možete menjati samo pre naplate i zaključavanja jednokratne porudžbine.", 409);
-    const settings = await getBusinessSettings();
-    const delivery = await first<Record<string, unknown>>("SELECT * FROM deliveries WHERE delivery_date = ?", String(before.delivery_date));
-    assertBeforeCutoff(cutoffForDelivery(String(before.delivery_date), settings.cutoffHours, settings.deliveryLocalTime), delivery?.status && delivery.status !== "open" ? "locked" : null);
     const customer = await first<Record<string, unknown>>("SELECT * FROM customers WHERE id = ?", String(before.customer_id));
     assertDomain(customer, "CUSTOMER_NOT_FOUND", "Kupac nije pronađen.", 404);
     const address = input.customer === undefined ? {} : input.customer;
     assertDomain(address && typeof address === "object" && !Array.isArray(address), "VALIDATION_ERROR", "Adresa nije ispravna.", 422);
     const fields = address as Record<string, unknown>;
-    const street = fields.addressLine1 === undefined ? String(customer.address_line_1) : requiredString(fields.addressLine1, "addressLine1", 200);
-    const city = fields.city === undefined ? String(customer.city) : requiredString(fields.city, "city", 100);
-    const postalCode = fields.postalCode === undefined ? String(customer.postal_code) : requiredString(fields.postalCode, "postalCode", 5);
+    const savedShipping = shippingSnapshot({ ...customer, shipping_json: before.shipping_json });
+    const street = fields.addressLine1 === undefined ? String(savedShipping.addressLine1) : requiredString(fields.addressLine1, "addressLine1", 200);
+    const city = fields.city === undefined ? String(savedShipping.city) : requiredString(fields.city, "city", 100);
+    const postalCode = fields.postalCode === undefined ? String(savedShipping.postalCode) : requiredString(fields.postalCode, "postalCode", 5);
     const currentItems = await all<Record<string, unknown>>("SELECT product_id, quantity FROM order_items WHERE order_id = ?", id);
     const replacement = input.items ?? currentItems.map((item) => ({ productId: item.product_id, quantity: item.quantity }));
     assertDomain(Array.isArray(replacement) && replacement.every((item) => item && typeof item === "object" && !Array.isArray(item)), "VALIDATION_ERROR", "Stavke porudžbine nisu ispravne.", 422);
     const quote = await quoteCart({ items: replacement.map((item) => ({ ...item, purchaseType: "one_time" })), deliveryDate: before.delivery_date, city, postalCode, promoCode: before.promo_code });
     assertDomain(quote.serviceable !== false, "DELIVERY_AREA_UNAVAILABLE", "Adresa nije u zoni dostave.", 422);
     if (input.items !== undefined) {
+      assertDomain(!await first("SELECT di.id FROM delivery_items di JOIN delivery_orders dor ON dor.id=di.delivery_order_id JOIN order_items oi ON oi.id=di.order_item_id WHERE oi.order_id=? AND dor.status='delivered' LIMIT 1",id),"ORDER_PARTIALLY_DELIVERED","Već delimično isporučena porudžbina zahteva zasebnu korekciju.",409);
+      statements.push(...releaseInventory(id));
+      statements.push(...await reserveInventory(id,quote.lines.map(line=>({productId:line.productId,quantity:line.quantity,lastDate:String(before.delivery_date)})),true));
+      statements.push({sql:"UPDATE delivery_items SET order_item_id=NULL WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id=?) AND delivery_order_id IN (SELECT id FROM delivery_orders WHERE status='planned')",bindings:[id]});
       statements.push({ sql: "DELETE FROM order_items WHERE order_id = ?", bindings: [id] });
       for (const line of quote.lines) statements.push({
         sql: "INSERT INTO order_items (id, order_id, product_id, product_name, unit_label, quantity, unit_price_minor, unit_cost_minor, unit_packaging_cost_minor, total_cost_minor, line_total_minor, purchase_type, cadence) SELECT ?, ?, id, name, unit_label, ?, ?, cost_minor, packaging_cost_minor, (cost_minor + packaging_cost_minor) * ?, ?, 'one_time', NULL FROM products WHERE id = ?",
@@ -169,19 +217,30 @@ export async function updateOrder(input: Record<string, unknown>) {
       });
       statements.push({ sql: "UPDATE orders SET subtotal_minor = ?, discount_minor = ?, delivery_fee_minor = ?, total_minor = ? WHERE id = ?", bindings: [quote.subtotalMinor, quote.discountMinor, quote.deliveryFeeMinor, quote.totalMinor, id] });
     }
-    if (input.customer !== undefined) statements.push({ sql: "UPDATE customers SET address_line_1 = ?, city = ?, postal_code = ?, updated_at = ? WHERE id = ?", bindings: [street, city, postalCode, new Date().toISOString(), String(before.customer_id)] });
-    statements.push(audit("admin", "local-admin", "order.delivery_updated", "order", id, { items: currentItems, address: { street: customer.address_line_1, city: customer.city, postalCode: customer.postal_code } }, { items: quote.lines, address: { street, city, postalCode } }));
+    if (input.customer !== undefined) statements.push({ sql: "UPDATE orders SET shipping_json = ? WHERE id = ?", bindings: [JSON.stringify({ ...savedShipping, addressLine1: street, city, postalCode }), id] });
+    statements.push(audit(actor.type, actor.id, "order.delivery_updated", "order", id, { items: currentItems, address: { street: customer.address_line_1, city: customer.city, postalCode: customer.postal_code } }, { items: quote.lines, address: { street, city, postalCode } }));
   }
+  const activation = paymentStatus === "paid" && before.payment_status !== "paid" ? await activatePaidPackage(id) : null;
+  if (activation) statements.push(...activation.statements);
   if (paymentStatus === "paid" && before.payment_status !== "paid") {
     statements.push(enqueue("fiscal.receipt.requested", "order", id, { orderId: id, source: "admin-payment-confirmation" }));
     statements.push(enqueue("email.receipt.requested", "order", id, { orderId: id }));
     statements.push(purchaseAnalyticsEvent(id, String(before.order_number ?? id), "admin-payment-confirmation"));
   }
-  if (editingDelivery || paymentStatus !== before.payment_status || fulfillmentStatus !== before.fulfillment_status || customerNote !== before.customer_note) statements.push(enqueue("email.order_updated.requested", "order", id, { ...after, deliveryDate: before.delivery_date, detailsChanged: editingDelivery }));
-  await batch(statements);
-  if (editingDelivery || fulfillmentStatus !== before.fulfillment_status) {
-    const delivery = await first<Record<string, unknown>>("SELECT id FROM deliveries WHERE delivery_date = ? AND status = 'open'", String(before.delivery_date));
-    if (delivery) await generateDelivery(String(before.delivery_date), `admin-order:${id}:${crypto.randomUUID()}`);
+  if (editingDelivery || paymentStatus !== before.payment_status || fulfillmentStatus !== before.fulfillment_status || customerNote !== before.customer_note) statements.push(enqueue("email.order_updated.requested", "order", id, { ...after, deliveryDate: activation?.date ?? before.delivery_date, detailsChanged: editingDelivery }));
+  if (changingContents) await assertDeliveryEditable(String(before.delivery_date));
+  if (changingContents || paymentStatus !== before.payment_status) statements.push({ sql: "UPDATE deliveries SET generation_key = ? WHERE delivery_date = ? AND status = 'open'", bindings: [`changed:${crypto.randomUUID()}`, String(before.delivery_date)] });
+  const guard = mutationGuard("EXISTS (SELECT 1 FROM orders WHERE id = ? AND updated_at = ? AND fulfillment_status = ? AND payment_status = ?)", [id, String(before.updated_at), String(before.fulfillment_status), String(before.payment_status)]);
+  try { await batch([guard.check, ...statements, guard.cleanup]); }
+  catch (error) {
+    const current = await first<Record<string, unknown>>("SELECT updated_at, fulfillment_status, payment_status FROM orders WHERE id = ?", id);
+    if (current && (current.updated_at !== before.updated_at || current.fulfillment_status !== before.fulfillment_status || current.payment_status !== before.payment_status)) throw new DomainError("ORDER_VERSION_CONFLICT", "Porudžbina je u međuvremenu promenjena. Osvežite podatke.", 409);
+    throw error;
+  }
+  if (editingDelivery || fulfillmentStatus !== before.fulfillment_status || paymentStatus !== before.payment_status) {
+    const date = activation?.date ?? String(before.delivery_date);
+    const delivery = await first<Record<string, unknown>>("SELECT id FROM deliveries WHERE delivery_date = ? AND status = 'open'", date);
+    if (delivery) await generateDelivery(date, `admin-order:${id}:${crypto.randomUUID()}`);
   }
   return first<Record<string, unknown>>("SELECT * FROM orders WHERE id = ?", id);
 }
@@ -245,7 +304,7 @@ export async function updateSettings(input: Record<string, unknown>) {
     ...booleanSettings,
     "deliveryLocalTime",
     "servicePostalCodes",
-    "deliveryWeekdays",
+    "deliveryWeekdays", "minimumOrderMinor", "holidays", "serviceRegions", "deliverySlots",
   ]);
   const entries = Object.entries(input);
   assertDomain(
@@ -254,9 +313,10 @@ export async function updateSettings(input: Record<string, unknown>) {
     "Poslato je nepoznato podešavanje.",
     422,
   );
-  const normalized: Record<string, string | number | boolean | string[] | number[]> = {};
+  const normalized: Record<string, unknown> = {};
   for (const [key, value] of entries) {
-    if (key === "deliveryWeekdays") {
+    if (["minimumOrderMinor", "holidays", "serviceRegions", "deliverySlots"].includes(key)) { normalized[key] = validatePolicy(key,value);
+    } else if (key === "deliveryWeekdays") {
       assertDomain(Array.isArray(value) && value.length > 0 && value.every((day) => Number.isInteger(day) && day >= 0 && day <= 6), "VALIDATION_ERROR", "Izaberite dane dostave.", 422);
       normalized[key] = [...new Set(value as number[])].sort();
     } else if (numericSettings.has(key)) {
@@ -277,13 +337,42 @@ export async function updateSettings(input: Record<string, unknown>) {
       normalized[key] = urlSettings.has(key) ? safeLink(parsed, key) : parsed;
     }
   }
+  const changingDeadline = normalized.cutoffHours !== undefined || normalized.deliveryLocalTime !== undefined;
+  // Preserve deliveries that have already crossed the old deadline before changing the policy.
+  if (changingDeadline || normalized.holidays !== undefined) await lockOverdueDeliveries();
   const now = new Date().toISOString();
   const statements: Array<{ sql: string; bindings?: SqlValue[] }> = Object.entries(normalized).map(([key, value]) => ({
     sql: "INSERT INTO settings (key, value_json, updated_at) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json, updated_at=excluded.updated_at",
     bindings: [key, JSON.stringify(value), now],
   }));
+  if (Array.isArray(normalized.holidays)) {
+    const { addLocalDays, isCadenceDue } = await import("./time");
+    const { packageSchedule } = await import("./packages");
+    const settings = { ...await getBusinessSettings(), ...normalized } as Awaited<ReturnType<typeof getBusinessSettings>>;
+    const orders = await all<Record<string,unknown>>("SELECT * FROM orders WHERE fulfillment_status='planned'");
+    for (const order of orders) if (settings.holidays.includes(String(order.delivery_date))) {
+      let date = addLocalDays(String(order.delivery_date),1);
+      while(settings.holidays.includes(date) || !settings.deliveryWeekdays.includes(new Date(`${date}T12:00:00Z`).getUTCDay())) date=addLocalDays(date,1);
+      const guard=mutationGuard("EXISTS(SELECT 1 FROM orders WHERE id=? AND updated_at=? AND fulfillment_status='planned')",[String(order.id),String(order.updated_at)]);
+      statements.push(guard.check,{sql:'UPDATE orders SET delivery_date=?,updated_at=? WHERE id=?',bindings:[date,now,String(order.id)]},enqueue('email.order_updated.requested','order',String(order.id),{deliveryDate:date,reason:'holiday'}),guard.cleanup);
+    }
+    const subscriptions = await all<Record<string,unknown>>("SELECT * FROM subscriptions WHERE status!='cancelled'");
+    for (const sub of subscriptions) if (settings.holidays.includes(String(sub.next_delivery_date))) {
+      const schedule=await packageSchedule(String(sub.id));let date=addLocalDays(String(sub.next_delivery_date),7);
+      while(settings.holidays.includes(date) || (schedule.length && !schedule.some(item=>isCadenceDue(item.cadence_anchor_date,date,item.cadence))))date=addLocalDays(date,7);
+      const guard=mutationGuard('EXISTS(SELECT 1 FROM subscriptions WHERE id=? AND version=?)',[String(sub.id),Number(sub.version)]);
+      statements.push(guard.check,{sql:'UPDATE subscriptions SET next_delivery_date=?,version=version+1,updated_at=? WHERE id=?',bindings:[date,now,String(sub.id)]},{sql:'UPDATE next_delivery_addons SET delivery_date=? WHERE subscription_id=? AND consumed_at IS NULL AND cancelled_at IS NULL',bindings:[date,String(sub.id)]},enqueue('email.order_updated.requested','subscription',String(sub.id),{deliveryDate:date,reason:'holiday'}),guard.cleanup);
+    }
+    statements.push({sql:"UPDATE deliveries SET generation_key=? WHERE status='open'",bindings:[`holiday:${crypto.randomUUID()}`]});
+  }
   statements.push(audit("admin", "local-admin", "settings.updated", "settings", "business", await getBusinessSettings(), normalized));
   await batch(statements);
+  if (changingDeadline) {
+    const settings = await getBusinessSettings();
+    const open = await all<{ id: string; delivery_date: string } & Record<string, unknown>>("SELECT id, delivery_date FROM deliveries WHERE status = 'open'");
+    if (open.length) await batch(open.map((delivery) => ({ sql: "UPDATE deliveries SET cutoff_at = ? WHERE id = ? AND status = 'open'", bindings: [cutoffForDelivery(delivery.delivery_date, settings.cutoffHours, settings.deliveryLocalTime), delivery.id] })));
+    await lockOverdueDeliveries();
+  }
   return readSettings();
 }
 
@@ -340,6 +429,7 @@ export async function createPromoCode(input: Record<string, unknown>) {
       sql: "INSERT INTO promo_codes (id, code, description, discount_type, discount_value, minimum_order_minor, usage_limit, times_used, starts_at, ends_at, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?)",
       bindings: [id, code, value.description, discountType, discountValue, value.minimumOrderMinor, usageLimit, value.startsAt, value.endsAt, value.isActive, now, now],
     },
+    { ...promoRules(input), bindings: [...promoRules(input).bindings, id] },
     audit("admin", "local-admin", "promo.created", "promo_code", id, null, value),
   ]);
   return first<PromoCodeRow>("SELECT * FROM promo_codes WHERE id = ?", id);
@@ -367,6 +457,7 @@ export async function updatePromoCode(id: string, input: Record<string, unknown>
       sql: "UPDATE promo_codes SET code = ?, description = ?, discount_type = ?, discount_value = ?, minimum_order_minor = ?, usage_limit = ?, starts_at = ?, ends_at = ?, is_active = ?, updated_at = ? WHERE id = ?",
       bindings: [next.code, next.description, next.discountType, next.discountValue, next.minimumOrderMinor, next.usageLimit, next.startsAt, next.endsAt, next.isActive, new Date().toISOString(), id],
     },
+    { ...promoRules(input, before), bindings: [...promoRules(input, before).bindings, id] },
     audit("admin", "local-admin", "promo.updated", "promo_code", id, before, next),
   ]);
   return first<PromoCodeRow>("SELECT * FROM promo_codes WHERE id = ?", id);
@@ -376,7 +467,7 @@ export async function removePromoCode(id: string) {
   const before = await first<PromoCodeRow>("SELECT * FROM promo_codes WHERE id = ?", id);
   if (!before) throw new DomainError("PROMO_NOT_FOUND", "Promo kod nije pronađen.", 404);
   await batch([
-    { sql: "DELETE FROM promo_codes WHERE id = ?", bindings: [id] },
+    { sql: "UPDATE promo_codes SET is_active = 0 WHERE id = ?", bindings: [id] },
     audit("admin", "local-admin", "promo.deleted", "promo_code", id, before, null),
   ]);
   return { deleted: true };

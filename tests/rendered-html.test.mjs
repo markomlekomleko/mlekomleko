@@ -345,6 +345,7 @@ test("products API maps D1 rows into the public contract", async () => {
   assert.deepEqual(payload, {
     products: [
       {
+        gallery: [], ingredients: "", allergens: "", nutrition: {}, inventoryEnabled: false, salePriceMinor: null, saleSubscriptionPriceMinor: null, saleStartsAt: null, saleEndsAt: null,
         id: "product_milk_1",
         slug: "kravlje-mleko",
         name: "Kravlje mleko",
@@ -447,7 +448,7 @@ test("checkout prices products server-side and stores only allowlisted attributi
     utm_source: "newsletter",
     utm_campaign: "avgust",
     referrer_host: "instagram.com",
-    consent: { analytics: false },
+    consent: { analytics: false, marketing: false },
   });
   assert.doesNotMatch(
     JSON.stringify(attribution),
@@ -638,7 +639,7 @@ test("admin access probe is data-free and production builds never allow localhos
     assert.equal((await wrong.json()).error.code, "ADMIN_FORBIDDEN");
     const accepted = await request("/api/admin/access", { headers: { "x-admin-secret": "test-admin-secret" } });
     assert.equal(accepted.status, 200);
-    assert.deepEqual(await accepted.json(), { authenticated: true, configured: true, mode: "key" });
+    assert.deepEqual(await accepted.json(), { authenticated: true, configured: true, mode: "key", role: "owner" });
     assert.equal(queries.length, 0);
   } finally {
     if (originalMode === undefined) delete env.APP_ENV;

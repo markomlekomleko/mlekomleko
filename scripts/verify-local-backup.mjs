@@ -1,0 +1,16 @@
+import { DatabaseSync } from 'node:sqlite';
+import { mkdirSync, copyFileSync, chmodSync, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+const source=process.argv[2];
+if(!source || !source.endsWith('.sqlite') || !existsSync(source))throw Error('Provide a local existing .sqlite file. Remote databases are never touched.');
+const directory=resolve('.data/backups');mkdirSync(directory,{recursive:true});
+const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+const backup=resolve(directory,`verified-${stamp}.sqlite`),restored=resolve(directory,`restore-check-${stamp}.sqlite`);
+const live=new DatabaseSync(resolve(source),{readOnly:true});
+live.prepare('VACUUM INTO ?').run(backup);live.close();chmodSync(backup,0o600);copyFileSync(backup,restored);chmodSync(restored,0o600);
+const db=new DatabaseSync(restored,{readOnly:true});
+const integrity=db.prepare('PRAGMA integrity_check').all(),foreignKeys=db.prepare('PRAGMA foreign_key_check').all();
+if(integrity.length!==1||Object.values(integrity[0])[0]!=='ok'||foreignKeys.length)throw Error('Restored database failed integrity checks.');
+const tables=db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name").all();
+const counts=Object.fromEntries(tables.map(({name})=>[name,db.prepare(`SELECT COUNT(*) AS n FROM "${name.replaceAll('"','""')}"`).get().n]));
+db.close();console.log(JSON.stringify({verified:true,backup,restored,tableCount:tables.length,counts},null,2));

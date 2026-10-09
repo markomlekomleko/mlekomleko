@@ -1,0 +1,1955 @@
+{
+  "date": "2026-10-09",
+  "tests": {
+    "total": 324,
+    "passed": 324,
+    "failedAssertions": 0,
+    "knownIssues": 0
+  },
+  "cases": [
+    {
+      "name": "account exposes customer-scoped delivery snapshots, skips, cutoff and cadence",
+      "source": "tests/account-dashboard.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "account exposes locked snapshots separately from the advanced subscription",
+      "source": "tests/account-dashboard.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "one-time self-service protects ownership, allowed fields, pricing and cancellation deadline",
+      "source": "tests/account-dashboard.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "one-time cancellation before cutoff removes the order from open preparation",
+      "source": "tests/account-dashboard.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "admin customer and subscription directories paginate beyond 500 and filter before paging",
+      "source": "tests/account-dashboard.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "future calendar projects real weekly and biweekly quantities and removes skipped dates",
+      "source": "tests/account-dashboard.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "renewal item changes preserve purchased snapshots across future deliveries",
+      "source": "tests/account-dashboard.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "weekly and biweekly schedules use the exact remaining dates",
+      "source": "tests/business-calendar.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "calendar arithmetic crosses months without DST drift",
+      "source": "tests/business-calendar.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Belgrade business time handles midnight and both DST offsets",
+      "source": "tests/business-calendar.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "cutoff comparison is open before and locked exactly at or after the instant",
+      "source": "tests/business-calendar.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "customer skip_next reaches admin, delivery preparation, email and opted-in WhatsApp",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "customer pause reaches admin, delivery preparation, email and opted-in WhatsApp",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "customer resume reaches admin, delivery preparation, email and opted-in WhatsApp",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "customer cancel reaches admin, delivery preparation, email and opted-in WhatsApp",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "customer add_item reaches admin, delivery preparation, email and opted-in WhatsApp",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "customer update_item reaches admin, delivery preparation, email and opted-in WhatsApp",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "customer remove_item reaches admin, delivery preparation, email and opted-in WhatsApp",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "customer slow_down reaches admin, delivery preparation, email and opted-in WhatsApp",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "customer add_next_only reaches admin, delivery preparation, email and opted-in WhatsApp",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "u utorak: cron generates tomorrow after cutoff and sends one reminder per channel across regeneration",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "u petak: cron generates tomorrow after cutoff and sends one reminder per channel across regeneration",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "skipped and paused subscriptions never get next-day reminders",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "queued reminder is suppressed after a skip and after its intended day",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "email failure does not block WhatsApp and retries keep original event date",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "creation and admin changes send confirmations and opted-out customers receive no WhatsApp",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Tuesday subscription retains Tuesday cadence and is included in next monthly billing",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "opted-in customer receives one-time order and subscription activation confirmations",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "replayed mutation does not duplicate confirmations, and rejected mutation sends nothing",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "queued WhatsApp reminder respects opt-out and yesterday reminder is suppressed",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "cron does not wake customers at midnight and handles Belgrade daylight saving time",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "one-time purchase conversion activates a subscription and sends both confirmations immediately",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "daily job sends editable reminder before cutoff, deduplicates, then locks at deadline",
+      "source": "tests/connected-delivery-flows.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "contact uses configured recipient and escapes user content in email HTML",
+      "source": "tests/contact.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "contact rejects malformed, spam and cross-origin submissions without sending",
+      "source": "tests/contact.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "contact reports missing configuration and provider failure without a false success",
+      "source": "tests/contact.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "contact limits repeated sends",
+      "source": "tests/contact.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "SEO page permission, CSRF, validation and draft visibility",
+      "source": "tests/content-pages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "concurrent SEO updates keep exactly one version and one audit record",
+      "source": "tests/content-pages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "publish adds canonical, escaped content and sitemap; unpublish removes route",
+      "source": "tests/content-pages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "legacy supplied passwords are validated and email proof is required; sessions work without an order",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "registration claims an existing guest customer without changing delivery details or replacing a password",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "later email login needs only a code; old link issuance is retired in code mode",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "codes expire, lock after five failures, and cannot create two sessions concurrently",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "recipient cooldown works across IP addresses and registration rejects cross-origin requests",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "checkout phone and unknown email cannot be used as WhatsApp login credentials",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "WhatsApp verification belongs to the signed-in account, and disconnect invalidates pending codes",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Infobip email request uses App auth and multipart, with no code exposed to the client",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Infobip WhatsApp code uses the approved authentication template and copy-code URL parameter",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "both-channel login tolerates one provider failure; total failure removes the challenge",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "production rejects local bypass, missing secrets and non-Infobip API hosts without sending",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "utility jobs require separate consent, use a static account button, and recheck opt-out",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "first registration and guest-order onboarding work without a password and preserve verified WhatsApp",
+      "source": "tests/customer-login.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "checkout accepts a matching supported address: Beograd / 11000",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "checkout accepts a matching supported address: Novi Sad / 21000",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "checkout accepts a matching supported address: Novi Beograd / 11070",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "checkout accepts a matching supported address: Zemun / 11080",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "checkout accepts a matching supported address: Petrovaradin / 21132",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "checkout accepts a matching supported address: Београд / 11000",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "checkout accepts a matching supported address:   НОВИ   САД   / 21101",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "quote and checkout reject an unsupported or mismatched address: Niš / 18000",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "quote and checkout reject an unsupported or mismatched address: Niš / 11000",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "quote and checkout reject an unsupported or mismatched address: Smederevo / 11300",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "quote and checkout reject an unsupported or mismatched address: Beograd / 11300",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "quote and checkout reject an unsupported or mismatched address: Novi Sad / 21400",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "quote and checkout reject an unsupported or mismatched address: Novi Sad / 21205",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "quote and checkout reject an unsupported or mismatched address: Beograd / 21000",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "quote and checkout reject an unsupported or mismatched address: Novi Sad / 11000",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "quote and checkout reject an unsupported or mismatched address: Beograd / 11999",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "quote and checkout reject an unsupported or mismatched address: Novi Sad / 2100",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "quote and checkout reject an unsupported or mismatched address: Beograd / 11000x",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "settings cannot expand delivery beyond the two cities: []",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "settings cannot expand delivery beyond the two cities: [&quot;11&quot;,&quot;21&quot;]",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "settings cannot expand delivery beyond the two cities: [&quot;1*&quot;,&quot;2*&quot;]",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "settings cannot expand delivery beyond the two cities: [&quot;18000&quot;,&quot;21400&quot;]",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "an empty setting still accepts the supported cities; an explicit narrower setting remains respected",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "admin address edits cannot bypass the city and postcode match",
+      "source": "tests/delivery-area.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-04: independent mixed-cart monthly total is 5,100 RSD",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-04/T-46: mixed-cart one-time item appears exactly on its first delivery",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-11: checkout replay and concurrent requests create one order",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-03/T-07: invalid quantities, unavailable products and fake prices cannot create orders",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-09/T-34: checkout rejects wrong weekday and invalid postal code",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-17/T-18/T-19: magic link single use and logout revoke actual session",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-22/T-31: actual concurrent mutations keep one version and projection",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-23: add a recurring product without altering existing item cadence",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-25/T-45: next-only addon is consumed once by lock",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-27/T-28/T-29/T-30: skip, pause, resume and terminal cancel update persisted state",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-24: removing the final recurring item cannot leave a billable empty subscription",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-34: exact cutoff is rejected and does not create mutation records",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-37: paid reduction applies to the next package without creating credit",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-35/T-38: monthly billing carries excess credit and stays idempotent",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-51: admin edits open one-time order quantity and shipping address atomically",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "T-73: last promo usage cannot be consumed by two simultaneous orders",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "live checkout rejects simulated cards and unconfigured email login",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Resend login sends a usable single-use link without exposing it in the production response",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "subscription skip removes the next delivery and preserves the following occurrence",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "dated pause excludes all deliveries and billing during the pause then automatically resumes",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "dated pause retains a biweekly delivery rhythm across the month boundary",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "invalid and post-cutoff pauses reject edits and preserve locked goods",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "deadline: exact boundary locks concrete delivery, rejects admin cancellation, and keeps snapshot immutable",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "deadline: admin policy changes recalculate open dates and never reopen locked delivery",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "deadline: account automatically advances future subscription without changing locked goods",
+      "source": "tests/domain-sqlite.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "product discount never reduces delivery and receipt matches paid cents",
+      "source": "tests/fiscal-amounts.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "penny allocations, multiple billing occurrences and fully applied balance stay exact",
+      "source": "tests/fiscal-amounts.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "surcharges require mapped SKU and invalid quantities fail before dispatch",
+      "source": "tests/fiscal-amounts.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "fiscal response persists before receipt projection and replay never issues twice",
+      "source": "tests/fiscal-dispatch.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "timeout or malformed response stays blocked even if operator requeues event",
+      "source": "tests/fiscal-dispatch.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "crash while sending and concurrent attempts cannot double POST",
+      "source": "tests/fiscal-dispatch.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "provider rejection and 5xx do not become issued or silently retry",
+      "source": "tests/fiscal-dispatch.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "readiness never equates populated credentials or mocks with real card availability",
+      "source": "tests/fiscal-dispatch.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "real fiscal handler journals request, validates result and repairs projection without second issue",
+      "source": "tests/fiscal-receipts.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "ambiguous fiscal result cannot reissue through retry button or forced event requeue",
+      "source": "tests/fiscal-receipts.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "simulator payment webhook refuses production even with correct shared secret",
+      "source": "tests/fiscal-receipts.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Fiscomm uses documented nested response, UTF8 tax labels, payment units and frozen journal",
+      "source": "tests/fiscomm.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "missing or foreign tax label blocks issuance before POST, and retry can recover after mapping",
+      "source": "tests/fiscomm.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "timeout is journaled and cannot be retried by the generic retry button",
+      "source": "tests/fiscomm.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "advance-finalize references original PFR and snapshot; saves refund and final independently",
+      "source": "tests/fiscomm.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "unexpected top-level response or amount mismatch is unknown, never issued",
+      "source": "tests/fiscomm.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q193: non-HTTPS document links are discarded before persistence and email",
+      "source": "tests/fiscomm.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q102: company PIB is transmitted in the documented buyer identification field",
+      "source": "tests/fiscomm.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q001: catalog persists name through admin API",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q002: catalog persists description through admin API",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q003: catalog persists imageUrl through admin API",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q005: catalog persists subscriptionPriceMinor through admin API",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q006: catalog persists unitLabel through admin API",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q011: catalog persists priceMinor through admin API",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q012: catalog persists compareAtPriceMinor through admin API",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q125: catalog persists name through admin API",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q133: catalog persists sortOrder through admin API",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q134: catalog persists category through admin API",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q135: catalog persists isFeatured through admin API",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q097: catalog persists fiscalTaxLabel through admin API",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q007 Q114: hidden product disappears and cannot be ordered",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q010 Q115: one-time-only product cannot be subscribed to",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q123: malformed product slug bad slug is rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q123: malformed product slug mleko_1 is rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q123: malformed product slug млеко is rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q124: duplicate product slug is rejected without overwriting original",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q131 Q136: missing photo remains optional and public catalog hides internal costs",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q132: unsafe photo scheme http is rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q132: unsafe photo scheme javascript is rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q137: deleting a purchased product archives it and preserves paid delivery",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q138 Q092: product changes leave audit entries, with shared rather than personal actor identity",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q014 Q015: percent promo has independently verified exact total",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q014 Q015: fixed promo has independently verified exact total",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q116: ineligible promo cannot discount the cart",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q117: ineligible promo cannot discount the cart",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q118: ineligible promo cannot discount the cart",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q016: ineligible promo cannot discount the cart",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q019 Q119 Q120: promo combines with catalog sale, normalizes case and never discounts delivery",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q018: initial promo is not silently renewed on the next package",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q023 Q024 Q025 Q112: cart combination 1 preserves all purchased units",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q023 Q024 Q025 Q112: cart combination 2 preserves all purchased units",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q023 Q024 Q025 Q112: cart combination 3 preserves all purchased units",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q023 Q024 Q025 Q112: cart combination 4 preserves all purchased units",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q023 Q024 Q025 Q112: cart combination 5 preserves all purchased units",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q023 Q024 Q025 Q112: cart combination 6 preserves all purchased units",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q023 Q024 Q025 Q112: cart combination 7 preserves all purchased units",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q021 Q022 Q101: guest checkout uses RSD and rejects missing mandatory contact fields",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q030: manual cash order without email is persisted and included in preparation",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q037: separate checkouts can create independent subscriptions for the same customer",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q106 Q107: invalid item quantity 0 is rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q106 Q107: invalid item quantity -1 is rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q106 Q107: invalid item quantity 1.5 is rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q106 Q107: invalid item quantity 101 is rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q106 Q107: invalid item quantity &quot;2&quot; is rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q106: 100 units is the accepted per-line maximum",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q108: empty and more-than-50-line carts are rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q109 Q110: unknown product, purchase type or cadence cannot create an order",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q111: duplicate cart rows conserve quantities rather than silently dropping a row",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q113: forged browser prices and totals are ignored",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q148 Q149: free shipping boundary is exact and later fee changes preserve purchased invoice",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q151: configured weekend delivery is accepted, an unconfigured weekday is rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q051 Q052 Q053 Q054: preparation totals equal the sum of customer line quantities",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q078: resending an issued receipt queues email without issuing a second fiscal document",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q082 Q083: customer account shows purchased quantity, progress and next date",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q094: admin order search finds name, phone and order number without returning another customer",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q095: dashboard counts paid revenue independently from pending cash orders",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q155 Q156 Q159: completion rejects unprepared and future deliveries, then cannot reverse handover",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q162: failed biweekly delivery retries 14 days later and does not consume entitlement",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q163: skipping mixed rhythms moves only to an actual next cadence date",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q164 Q165: calendar pause clamps January 31 to April 30 and rejects impossible dates",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q166: skipping an unpaid package keeps all entitlements after payment",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q171 Q172: next-only addon follows skip_next and is not duplicated",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q171 Q172: next-only addon follows pause and is not duplicated",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q174: inactive product prevents renewal without charging again",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q176: legacy monthly invoice is not silently charged as a new package",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q177 Q178: another customer and expired sessions cannot access subscription changes",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q184: malformed email is rejected before customer creation",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q188 Q189 Q190: payment webhook authenticates, deduplicates, and protects paid package state",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q192: completed package waits for missing advance rather than issuing a final alone",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q127: uploaded image/png with 2000001 bytes validates content and size",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q129: uploaded image/svg+xml with 24 bytes validates content and size",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q130: uploaded image/png with 25 bytes validates content and size",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q128: uploaded image/png with 84486 bytes validates content and size",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q047: early resume should restore the first editable delivery, not the old pause-end date",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q104: a second guest order should not rewrite an earlier open order delivery address",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q046: extending a paused subscription preserves purchased units",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q126: product description markup is escaped in server rendered HTML",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q093: competing order updates accept only one original version",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q167 Q169 Q170: future configuration merges matching items and cannot restart cancelled renewal or alter paid cadence",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q173: stopping paid-package renewal retains and delivers the purchased next-only addon",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q185: cross-origin customer mutation is rejected without state change",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q186: real admin session rejects wrong password, missing token and expired token",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q187: account, order details and readiness do not expose provider tokens or credentials",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q128: image/jpeg upload round-trips a real catalog asset",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q128: image/webp upload round-trips a real catalog asset",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q085: later checkout cannot rewrite a locked delivery address snapshot",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q004 Q142: gallery and nutrition survive edit and public retrieval",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q013: scheduled product prices start and expire without changing purchased snapshot",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q139: cloned product has independent identity and starts unpublished",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q017 Q122: first-order and per-customer promo limits enforced on checkout",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q121: explicit stacking uses remaining subtotal, forbidden combinations rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q105: minimum order enforced server-side even when client skips quote",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q143 Q144: new city works through checkout and holiday cannot be booked",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q150: slot capacity cannot be exceeded and unlisted slot is rejected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q102 Q103 Q104: billing and shipping snapshots remain distinct across repeated guest purchases",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q084: authenticated profile changes do not rewrite earlier order addresses",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060: partial quantity requires a fifth visit and exactly one final fiscal event",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060: replay with changed partial quantity cannot silently succeed",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q140 Q141: stock reserves FEFO, blocks overselling and consumes only handed units",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q141: expired or short-lived stock cannot cover a prepaid package",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q069: refund request freezes preparation; mock approval returns only remaining net goods",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q069: live refund remains approved until bank and fiscal adapters are connected",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q091 Q092: named staff roles enforce server permissions and record personal actor",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q091: driver may read routes but cannot access customer database or change prices",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060: partial one-time delivery carries only remaining units without another charge",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q046: extending pause cannot reset its three-month maximum",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q143: scheduled holiday is omitted from package dates and consumes no entitlement",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q067: failed payment gets bounded retries and successful retry is idempotent",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q067: declined card retries stop after three attempts",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q090: forged email delivery webhook cannot change message status",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q090: signed email delivery is recorded once; older callbacks cannot downgrade it",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q089: opted-in SMS is a separate durable message and revocation suppresses future SMS",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q096: reconciled historical units reduce remaining quantity without duplicate charge",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q141: expired reservation blocks handover and can be exchanged for valid inventory",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q069: account refund preview is scoped and contains no payment tokens",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060 Q190: conserved units quantity=1 cadence=weekly initialFailure=false",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060 Q190: conserved units quantity=1 cadence=weekly initialFailure=true",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060 Q190: conserved units quantity=1 cadence=biweekly initialFailure=false",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060 Q190: conserved units quantity=1 cadence=biweekly initialFailure=true",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060 Q190: conserved units quantity=2 cadence=weekly initialFailure=false",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060 Q190: conserved units quantity=2 cadence=weekly initialFailure=true",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060 Q190: conserved units quantity=2 cadence=biweekly initialFailure=false",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060 Q190: conserved units quantity=2 cadence=biweekly initialFailure=true",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060 Q190: conserved units quantity=100 cadence=weekly initialFailure=false",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060 Q190: conserved units quantity=100 cadence=weekly initialFailure=true",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060 Q190: conserved units quantity=100 cadence=biweekly initialFailure=false",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Q060 Q190: conserved units quantity=100 cadence=biweekly initialFailure=true",
+      "source": "tests/functional-audit.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "every hero media path in the manifest exists in public/",
+      "source": "tests/hero-media.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "hero web exports stay inside the performance budgets",
+      "source": "tests/hero-media.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "the manifest records whether the hero material is temporary or final",
+      "source": "tests/hero-media.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "each segment accelerates and settles without seeking through intermediate frames",
+      "source": "tests/hero-playback.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "a swipe starts loading/playback even before mobile metadata exists",
+      "source": "tests/hero-playback.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "a Safari policy rejection can be retried directly from touchend",
+      "source": "tests/hero-playback.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "readiness events do not restart or pause a playing segment",
+      "source": "tests/hero-playback.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "the next step cancels an older pending playback callback",
+      "source": "tests/hero-playback.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "late-mounted mobile video resumes the requested segment",
+      "source": "tests/hero-playback.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "switching source pauses the old element and plays the new one",
+      "source": "tests/hero-playback.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "returning to the first step resets the video without autoplay",
+      "source": "tests/hero-playback.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "unmounting prevents pending play promises from starting a frame loop",
+      "source": "tests/hero-playback.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "integration config is local-safe and public status contains no secrets",
+      "source": "tests/integrations.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "payment provider is explicit and production needs a dual latch",
+      "source": "tests/integrations.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "remote integrations require HTTPS while local Badi is loopback-only",
+      "source": "tests/integrations.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "payment contract accepts provider tokens and rejects raw card data",
+      "source": "tests/integrations.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "outbox and integration result contracts preserve idempotency metadata",
+      "source": "tests/integrations.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Spoke CSV is deterministic, UTF-8 friendly and formula-safe",
+      "source": "tests/integrations.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Spoke CSV rejects incomplete stops instead of exporting broken routes",
+      "source": "tests/integrations.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "attribution keeps first touch and updates last touch",
+      "source": "tests/integrations.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "analytics stays denied by default and recursively removes PII",
+      "source": "tests/integrations.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "attribution never persists arbitrary query parameters",
+      "source": "tests/integrations.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "last relevant campaign survives internal navigation and direct return; new campaign replaces only last touch",
+      "source": "tests/marketing-attribution.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "organic, paid, QR, influencers, messaging, referral and direct remain distinct",
+      "source": "tests/marketing-attribution.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "identity allowlist cannot carry customer data, URLs or nested objects",
+      "source": "tests/marketing-attribution.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "monthly invoice items count billed occurrences and partial adjustments keep integer quantities",
+      "source": "tests/marketing-attribution.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "denied default precedes commands and no vendor script loads without consent",
+      "source": "tests/marketing-consent.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "analytics only excludes advertising scripts, click ids and private URL/referrer parameters",
+      "source": "tests/marketing-consent.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "marketing only supports Ads click ids without analytics identifiers; later GA uses same loader",
+      "source": "tests/marketing-consent.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "revocation updates Google and Meta then removes cookies from parent domains",
+      "source": "tests/marketing-consent.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "blocked storage still allows and revokes a choice without crashing",
+      "source": "tests/marketing-consent.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "GTM stays exclusive and requires both permissions for an unaudited container",
+      "source": "tests/marketing-consent.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "pending cash is not purchase; denied consent suppresses local and vendor purchase after payment",
+      "source": "tests/marketing-purchase.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "paid four-delivery package preserves browser identity, all billed units, RSD and analytics-only consent",
+      "source": "tests/marketing-purchase.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "GA success then Meta failure retries with identical transaction/event IDs and one local revenue row",
+      "source": "tests/marketing-purchase.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "PostgreSQL parameters preserve literal question marks, comments and dollar quotes",
+      "source": "tests/postgres-sql.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "PostgreSQL translates the dashboard date and JSON expressions",
+      "source": "tests/postgres-sql.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "Vercel Postgres variables take precedence over a local SQLite URL",
+      "source": "tests/postgres-sql.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "remote PostgreSQL verifies TLS even when connection URL requests disabled SSL",
+      "source": "tests/postgres-sql.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "fixed package quantity and price at month end; quote equals charged amount",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "weekly package issues advance on payment, final only on fourth confirmed handover, once",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "biweekly package paused across months retains two deliveries and avoids duplicate billing",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "skip and failed delivery preserve entitlement; package takes five attempts after one failure",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "mixed cart waits for both rhythms and one-time item; all actual quantities are conserved",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "future catalog and subscription edits never change purchased quantities, price or cadence",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "paid cancellation disables renewal and finishes remaining package; renewal never duplicates an open package",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "unpaid packages are visible to admin but never prepared or finalized",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "late payment moves an unused package past a locked route without losing any deliveries",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "payment webhook respects paused package start and disallows reversing a paid package",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "unpaid cancelled packages cannot be reactivated by late payments",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "three calendar month pause limit, future completion, payment reversal and repeat confirmation are protected",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "new package renewal only after prior fulfillment and with new configured quantities",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "calendar preview never invents a fifth paid occurrence",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "concurrent handovers of mixed package final delivery complete exactly once",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "failed mixed one-time item moves to a later visit without being charged again",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "admin photo upload persists a public image and rejects unauthorized or non-image input",
+      "source": "tests/prepaid-packages.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "server-renders the Serbian storefront shell and useful home content",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "production errors include CSP, HSTS and a support request ID",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "public catalog and product content are present in server-rendered HTML",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "missing product returns a real, noindex 404 page",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "core customer and admin pages render without a running dev server",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "indexable pages have a self-canonical, one H1 and unique titles",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "robots, noindex metadata and sitemap expose only canonical public pages",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "products API maps D1 rows into the public contract",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "checkout rejects raw card data before touching the database",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "checkout prices products server-side and stores only allowlisted attribution",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "weekly milk quote charges 350 RSD for each planned delivery",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "subscription notifications include date, cutoff and a self-service action",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "admin delivery export returns a complete formula-safe UTF-8 Spoke CSV",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "an ungenerated admin delivery is an actionable empty state",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "browser analytics endpoint rejects revenue events",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "admin delivery Excel contains route and preparation sheets",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "admin and payment webhook routes deny invalid credentials before DB access",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "admin access probe is data-free and production builds never allow localhost bypass",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    },
+    {
+      "name": "an unconfigured admin returns setup status without querying the database",
+      "source": "tests/rendered-html.test.mjs",
+      "status": "passed",
+      "knownIssue": false
+    }
+  ]
+}

@@ -1,14 +1,23 @@
-import { deliveryAddressError, normalizeDeliveryCity } from "../app/lib/delivery-area";
+import { reserveInventory } from "./inventory";
+import { serviceCity, assertSaleDate, selectSlot, slotGuard } from "./service-policy";
+import { resolvePromotions, reservePromotions } from "./promotions";
+import { effectivePrice } from "./product-details";
+import { billingSnapshot } from "./address-snapshot";
+import { createPackageStatements, openPackage, packageDates, packageOccurrences, packageProgress, packageSchedule, maximumPauseDate } from "./packages";
+import { normalizeDeliveryCity } from "../app/lib/delivery-area";
 import { randomToken, sha256, stableJsonHash } from "./crypto";
 import { DomainError, assertDomain, emailAddress, enumValue, optionalString, positiveInt, rejectCardData, requiredString } from "./domain";
 import { localPaymentGateway } from "./integrations";
 import { audit, enqueue } from "./outbox";
 import { ProductRow, publicProduct } from "./products";
 import { all, batch, first, sqlPlaceholders, type SqlValue } from "./sql";
-import { addLocalDays, assertBeforeCutoff, assertLocalDate, cutoffForDelivery, isCadenceDue, localDateAt, nextWeekday, occurrenceDatesInMonth, remainingOccurrencesInMonth } from "./time";
+import { addLocalDays, assertBeforeCutoff, assertLocalDate, cutoffForDelivery, isCadenceDue, localDateAt, nextWeekday } from "./time";
 import { getBusinessSettings, getNextDeliveryWindow, isServiceablePostalCode } from "./settings";
-import { generateDelivery } from "./deliveries";
+import { generateDelivery, lockOverdueDeliveries } from "./deliveries";
+import { assertDeliveryEditable } from "./delivery-cutoff";
 import { purchaseAnalyticsEvent } from "./analytics";
+import { sanitizeAnalyticsIdentity } from "../integrations/marketing-attribution.mjs";
+import { mutationGuard } from "./mutation-guard";
 
 interface CustomerRow extends Record<string, unknown> {
   id: string; email: string; full_name: string; phone: string; address_line_1: string; address_line_2: string | null;
@@ -33,19 +42,6 @@ type CheckoutItemInput = {
   purchaseType: "one_time" | "subscription";
   cadence: "weekly" | "biweekly" | null;
 };
-
-interface PromoRow extends Record<string, unknown> {
-  id: string;
-  code: string;
-  discount_type: "percent" | "fixed";
-  discount_value: number;
-  minimum_order_minor: number;
-  usage_limit: number | null;
-  times_used: number;
-  starts_at: string | null;
-  ends_at: string | null;
-  is_active: number;
-}
 
 function parseCheckoutItems(value: unknown): CheckoutItemInput[] {
   assertDomain(Array.isArray(value) && value.length > 0 && value.length <= 50, "VALIDATION_ERROR", "items must contain 1-50 items.", 422, { field: "items" });
@@ -116,33 +112,15 @@ export function sanitizeAttribution(value: unknown): Record<string, unknown> {
   return result;
 }
 
-async function resolvePromo(rawCode: unknown, subtotalMinor: number) {
-  const code = optionalString(rawCode, "promoCode", 40)?.toUpperCase().replace(/\s+/g, "") ?? null;
-  if (!code) return { promo: null, code: null, discountMinor: 0 };
-  const promo = await first<PromoRow>("SELECT * FROM promo_codes WHERE code = ?", code);
-  const now = Date.now();
-  const valid = promo && Boolean(promo.is_active)
-    && (!promo.starts_at || Date.parse(promo.starts_at) <= now)
-    && (!promo.ends_at || Date.parse(promo.ends_at) >= now)
-    && (promo.usage_limit == null || promo.times_used < promo.usage_limit)
-    && subtotalMinor >= promo.minimum_order_minor;
-  assertDomain(valid, "PROMO_INVALID", "Promo kod nije važeći ili uslovi nisu ispunjeni.", 422, { field: "promoCode" });
-  const discountMinor = promo.discount_type === "percent"
-    ? Math.floor(subtotalMinor * promo.discount_value / 100)
-    : Math.min(subtotalMinor, promo.discount_value);
-  return { promo, code, discountMinor };
-}
-
 function productUnitPrice(product: ProductRow, purchaseType: "one_time" | "subscription") {
-  return purchaseType === "subscription"
-    ? product.subscription_price_minor ?? product.price_minor
-    : product.price_minor;
+  return effectivePrice(product, purchaseType === "subscription");
 }
 
 export async function quoteCart(input: Record<string, unknown>) {
   const items = parseCheckoutItems(input.items);
   const settings = await getBusinessSettings();
   const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow()).deliveryDate : assertLocalDate(input.deliveryDate);
+  assertSaleDate(settings, deliveryDate);
   assertDomain(settings.deliveryWeekdays.includes(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay()), "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
   assertBeforeCutoff(cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime));
   const productIds = [...new Set(items.map((item) => item.productId))];
@@ -152,13 +130,13 @@ export async function quoteCart(input: Record<string, unknown>) {
     const product = products.get(item.productId);
     assertDomain(product, "PRODUCT_UNAVAILABLE", `Proizvod ${item.productId} nije dostupan.`, 409);
     assertDomain(item.purchaseType !== "subscription" || Boolean(product.allow_subscription), "SUBSCRIPTION_UNAVAILABLE", "Redovna dostava nije dostupna za ovaj proizvod.", 409);
-    const deliveryDates = item.purchaseType === "subscription" ? occurrenceDatesInMonth(deliveryDate, item.cadence!) : [deliveryDate];
+    const deliveryDates = item.purchaseType === "subscription" ? packageDates(deliveryDate, item.cadence!, settings.holidays) : [deliveryDate];
     const occurrences = deliveryDates.length;
     const unitPriceMinor = productUnitPrice(product, item.purchaseType);
     return { ...item, productName: product.name, unitLabel: product.unit_label, unitPriceMinor, occurrences, deliveryDates, lineTotalMinor: unitPriceMinor * item.quantity * occurrences };
   });
   const subtotalMinor = lines.reduce((sum, line) => sum + line.lineTotalMinor, 0);
-  const { code: promoCode, discountMinor } = await resolvePromo(input.promoCode, subtotalMinor);
+  const { code: promoCode, discountMinor } = await resolvePromotions(input.promoCodes ?? input.promoCode, subtotalMinor, typeof input.email === "string" ? input.email : undefined);
   const deliveryOccurrences = Math.max(...lines.map((line) => line.occurrences), 1);
   const deliveryFeeMinor = settings.deliveryFeeMinor > 0 && !(settings.freeDeliveryThresholdMinor > 0 && subtotalMinor >= settings.freeDeliveryThresholdMinor)
     ? settings.deliveryFeeMinor * deliveryOccurrences
@@ -166,7 +144,7 @@ export async function quoteCart(input: Record<string, unknown>) {
   const postalCode = optionalString(input.postalCode, "postalCode", 20);
   const city = optionalString(input.city, "city", 100);
   const serviceable = postalCode
-    ? isServiceablePostalCode(settings, postalCode) && (!city || deliveryAddressError(city, postalCode) === null)
+    ? isServiceablePostalCode(settings, postalCode) && (!city || serviceCity(settings, city, postalCode) !== null)
     : city ? normalizeDeliveryCity(city) !== null : undefined;
   const recommendedRows = await all<ProductRow>(
     `SELECT * FROM products WHERE is_active = 1 ${productIds.length ? `AND id NOT IN (${sqlPlaceholders(productIds.length)})` : ""} ORDER BY (price_minor - cost_minor - packaging_cost_minor) DESC, is_featured DESC, sort_order ASC LIMIT 3`,
@@ -174,6 +152,7 @@ export async function quoteCart(input: Record<string, unknown>) {
   );
   return {
     lines,
+    minimumOrderMinor: settings.minimumOrderMinor, minimumOrderMet: subtotalMinor >= settings.minimumOrderMinor, deliverySlots: settings.deliverySlots,
     subtotalMinor,
     discountMinor,
     deliveryFeeMinor,
@@ -227,15 +206,16 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   if (paymentToken) assertDomain(!/^\d{12,19}$/.test(paymentToken.replace(/[ -]/g, "")), "CARD_DATA_REJECTED", "paymentToken looks like raw card data and was rejected.", 422);
 
   const settings = await getBusinessSettings();
-  const addressError = deliveryAddressError(customer.city, customer.postalCode);
+  const normalizedCity = serviceCity(settings, customer.city, customer.postalCode);
+  const addressError = normalizedCity ? null : "Adresa nije u zoni dostave.";
   assertDomain(!addressError, "DELIVERY_AREA_UNAVAILABLE", addressError ?? "Adresa nije u zoni dostave.", 422, { field: "customer.postalCode" });
-  customer.city = normalizeDeliveryCity(customer.city)!;
+  customer.city = normalizedCity!;
   assertDomain(isServiceablePostalCode(settings, customer.postalCode), "DELIVERY_AREA_UNAVAILABLE", "Dostava trenutno nije dostupna za uneti poštanski broj.", 422, { field: "customer.postalCode" });
   const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow()).deliveryDate : assertLocalDate(input.deliveryDate);
+  assertSaleDate(settings, deliveryDate);
   assertDomain(settings.deliveryWeekdays.includes(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay()), "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
   const cutoffAt = cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime);
-  const selectedDelivery = await first<Record<string, unknown>>("SELECT status FROM deliveries WHERE delivery_date = ?", deliveryDate);
-  assertBeforeCutoff(cutoffAt, selectedDelivery && selectedDelivery.status !== "open" ? "locked" : null);
+  await assertDeliveryEditable(deliveryDate);
 
   const productIds = [...new Set(items.map((item) => item.productId))];
   const productRows = await all<ProductRow>(`SELECT * FROM products WHERE id IN (${sqlPlaceholders(productIds.length)}) AND is_active = 1`, ...productIds);
@@ -249,12 +229,14 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   const hasSubscription = items.some((item) => item.purchaseType === "subscription");
   const subtotalMinor = items.reduce((sum, item) => {
     const product = products.get(item.productId)!;
-    const occurrences = item.purchaseType === "subscription" ? remainingOccurrencesInMonth(deliveryDate, item.cadence!) : 1;
+    const occurrences = item.purchaseType === "subscription" ? packageOccurrences(item.cadence!) : 1;
     return sum + productUnitPrice(product, item.purchaseType) * item.quantity * occurrences;
   }, 0);
   assertDomain(Number.isSafeInteger(subtotalMinor), "AMOUNT_OVERFLOW", "Order total is too large.", 422);
-  const { promo, code: promoCode, discountMinor } = await resolvePromo(input.promoCode, subtotalMinor);
-  const deliveryOccurrences = Math.max(...items.map((item) => item.purchaseType === "subscription" ? remainingOccurrencesInMonth(deliveryDate, item.cadence!) : 1), 1);
+  assertDomain(subtotalMinor >= settings.minimumOrderMinor, "MINIMUM_ORDER", `Minimalna vrednost proizvoda je ${settings.minimumOrderMinor / 100} RSD.`, 422);
+  const slot = await selectSlot(settings, deliveryDate, input.slotId);
+  const { promos, code: promoCode, discountMinor } = await resolvePromotions(input.promoCodes ?? input.promoCode, subtotalMinor, customer.email);
+  const deliveryOccurrences = Math.max(...items.map((item) => item.purchaseType === "subscription" ? packageOccurrences(item.cadence!) : 1), 1);
   const deliveryFeeMinor = settings.deliveryFeeMinor > 0 && !(settings.freeDeliveryThresholdMinor > 0 && subtotalMinor >= settings.freeDeliveryThresholdMinor)
     ? settings.deliveryFeeMinor * deliveryOccurrences
     : 0;
@@ -263,13 +245,14 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   const orderId = `ord_${hash.slice(0, 32)}`;
   const subscriptionId = hasSubscription ? `sub_${hash.slice(0, 32)}` : null;
   const knownCustomer = await first<CustomerRow>("SELECT * FROM customers WHERE email = ?", customer.email);
+  if (knownCustomer) await lockOverdueDeliveries(knownCustomer.id);
   const customerId = knownCustomer?.id ?? `cus_${(await stableJsonHash({ email: customer.email })).slice(0, 32)}`;
   const payment = await localPaymentGateway.authorize({ idempotencyKey, orderId, amountMinor: totalMinor, currency: "RSD", method: paymentMethod, paymentToken });
   assertDomain(payment.status !== "failed", "PAYMENT_FAILED", "Payment authorization failed.", 402);
   const now = new Date().toISOString();
   const paymentFeeMinor = paymentMethod === "card" ? Math.round(totalMinor * settings.paymentFeeBps / 10_000) : 0;
   const estimatedDeliveryCostMinor = settings.estimatedDeliveryCostMinor;
-  const attribution = { ...sanitizeAttribution(input.attribution ?? input.source), consent: { analytics: input.analyticsConsent === true } };
+  const attribution = { ...sanitizeAttribution(input.attribution ?? input.source), consent: { analytics: input.analyticsConsent === true, marketing: input.marketingConsent === true }, ...(input.analyticsConsent === true ? { identity: sanitizeAnalyticsIdentity((input.attribution as Record<string, unknown> | undefined)?.identity) } : {}) };
   const eligibleConversionItems = !admin && !hasSubscription ? items.filter((item) => Boolean(products.get(item.productId)?.allow_subscription)) : [];
   const conversionToken = eligibleConversionItems.length ? randomToken() : null;
   const conversionTokenHash = conversionToken ? await sha256(conversionToken) : null;
@@ -288,7 +271,7 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
       bindings: [crypto.randomUUID(), idempotencyKey, requestHash, JSON.stringify(response), new Date(Date.now() + 7 * 86_400_000).toISOString()],
     },
     {
-      sql: "INSERT INTO customers (id, email, full_name, phone, address_line_1, address_line_2, city, postal_code, delivery_note, source_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(email) DO UPDATE SET full_name=excluded.full_name, phone=excluded.phone, address_line_1=excluded.address_line_1, address_line_2=excluded.address_line_2, city=excluded.city, postal_code=excluded.postal_code, delivery_note=excluded.delivery_note, source_json=excluded.source_json, updated_at=excluded.updated_at",
+      sql: "INSERT INTO customers (id, email, full_name, phone, address_line_1, address_line_2, city, postal_code, delivery_note, source_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(email) DO NOTHING",
       bindings: [customerId, customer.email, customer.fullName, customer.phone, customer.addressLine1, customer.addressLine2, customer.city, customer.postalCode, customer.deliveryNote, JSON.stringify(attribution), now, now],
     },
   ];
@@ -297,14 +280,26 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
     sql: "INSERT INTO orders (id, order_number, customer_id, subscription_id, kind, payment_method, payment_provider_ref, payment_status, fulfillment_status, delivery_date, subtotal_minor, discount_minor, delivery_fee_minor, payment_fee_minor, estimated_delivery_cost_minor, credit_applied_minor, total_minor, promo_code, currency, customer_note, source_json, idempotency_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'planned', ?, ?, ?, ?, ?, ?, 0, ?, ?, 'RSD', ?, ?, ?, ?, ?)",
     bindings: [orderId, response.order.orderNumber, customerId, subscriptionId, hasSubscription ? "subscription_invoice" : "one_time", paymentMethod, payment.providerReference, payment.status, deliveryDate, subtotalMinor, discountMinor, deliveryFeeMinor, paymentFeeMinor, estimatedDeliveryCostMinor, totalMinor, promoCode, customer.deliveryNote, JSON.stringify(attribution), idempotencyKey, now, now],
   });
+  if (slot) {
+    statements.push({ sql: "UPDATE orders SET slot_id = ? WHERE id = ?", bindings: [slot.id, orderId] });
+    if (subscriptionId) statements.push({sql: "UPDATE subscriptions SET slot_id = ? WHERE id = ?",bindings:[slot.id,subscriptionId]});
+    if (slot.capacity) { const capacityGuard = slotGuard(deliveryDate,slot); statements.push(capacityGuard.check,capacityGuard.cleanup); }
+  }
+  const billing = billingSnapshot(input.billing, customer);
+  statements.push({ sql: "UPDATE orders SET shipping_json = ?, billing_json = ? WHERE id = ?", bindings: [JSON.stringify({...customer,deliverySlot:slot?.label??null}), JSON.stringify(billing), orderId] });
+  if (subscriptionId) statements.push({ sql: "UPDATE subscriptions SET shipping_json = ?, billing_json = ? WHERE id = ?", bindings: [JSON.stringify({...customer,deliverySlot:slot?.label??null}), JSON.stringify(billing), subscriptionId] });
   for (const item of items) {
     const product = products.get(item.productId)!;
-    const occurrences = item.purchaseType === "subscription" ? remainingOccurrencesInMonth(deliveryDate, item.cadence!) : 1;
+    const occurrences = item.purchaseType === "subscription" ? packageOccurrences(item.cadence!) : 1;
     const unitPriceMinor = productUnitPrice(product, item.purchaseType);
     statements.push({ sql: "INSERT INTO order_items (id, order_id, product_id, product_name, unit_label, quantity, unit_price_minor, unit_cost_minor, unit_packaging_cost_minor, total_cost_minor, line_total_minor, purchase_type, cadence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", bindings: [crypto.randomUUID(), orderId, product.id, product.name, product.unit_label, item.quantity, unitPriceMinor, product.cost_minor, product.packaging_cost_minor, (product.cost_minor + product.packaging_cost_minor) * item.quantity * occurrences, unitPriceMinor * item.quantity * occurrences, item.purchaseType, item.cadence] });
     if (item.purchaseType === "subscription") statements.push({ sql: "INSERT INTO subscription_items (id, subscription_id, product_id, quantity, cadence, cadence_anchor_date, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)", bindings: [crypto.randomUUID(), subscriptionId, product.id, item.quantity, item.cadence, deliveryDate, now, now] });
   }
-  if (promo) statements.push({ sql: "UPDATE promo_codes SET times_used = times_used + 1, updated_at = ? WHERE id = ?", bindings: [now, promo.id] });
+  statements.push({sql: "UPDATE order_items SET fiscal_tax_label = (SELECT fiscal_tax_label FROM products WHERE products.id = order_items.product_id) WHERE order_id = ?", bindings: [orderId]});
+  if (subscriptionId) statements.push(...createPackageStatements(orderId, subscriptionId, deliveryDate));
+  statements.push({ sql: "UPDATE deliveries SET generation_key = ? WHERE delivery_date = ? AND status = 'open'", bindings: [`changed:${crypto.randomUUID()}`, deliveryDate] });
+  statements.push(...reservePromotions(promos, orderId, customerId));
+  statements.push(...await reserveInventory(orderId, items.map(item => ({ productId: item.productId, quantity: item.quantity * (item.purchaseType === "subscription" ? packageOccurrences(item.cadence!) : 1), lastDate: item.purchaseType === "subscription" ? packageDates(deliveryDate,item.cadence!,settings.holidays).at(-1)! : deliveryDate }))));
   statements.push(audit(admin ? "admin" : "system", admin ? "admin-panel" : "checkout", "order.created", "order", orderId, null, response.order));
   statements.push(enqueue("order.created", "order", orderId, response));
   if (!admin || admin.notify) statements.push(enqueue("email.order_confirmation.requested", "order", orderId, response));
@@ -317,12 +312,14 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   if (conversionTokenHash) statements.push({ sql: "INSERT INTO order_conversion_tokens (id, order_id, token_hash, expires_at) VALUES (?, ?, ?, ?)", bindings: [crypto.randomUUID(), orderId, conversionTokenHash, response.subscriptionOffer!.expiresAt] });
   const recoveryCartId = optionalString(input.recoveryCartId, "recoveryCartId", 100);
   if (recoveryCartId) statements.push({ sql: "UPDATE abandoned_carts SET status = 'converted', converted_order_id = ?, updated_at = ? WHERE id = ?", bindings: [orderId, now, recoveryCartId] });
+  await assertDeliveryEditable(deliveryDate);
+  const guard = mutationGuard("NOT EXISTS (SELECT 1 FROM deliveries WHERE delivery_date = ? AND status != 'open')", [deliveryDate]);
   try {
-    await batch(statements);
+    await batch([guard.check, ...statements, guard.cleanup]);
   } catch (error) {
     const replay = await first<{ request_hash: string; response_json: string | null; status_code: number | null } & Record<string, unknown>>("SELECT request_hash, response_json, status_code FROM idempotency_keys WHERE namespace = 'checkout' AND key = ?", idempotencyKey);
     if (replay?.request_hash === requestHash && replay.response_json) return { status: replay.status_code ?? 201, body: JSON.parse(replay.response_json) };
-    if (promo) await resolvePromo(promoCode, subtotalMinor);
+    if (promos.length) await resolvePromotions(promoCode, subtotalMinor, customer.email);
     throw error;
   }
   const openDelivery = await first<Record<string, unknown>>("SELECT id FROM deliveries WHERE delivery_date = ? AND status = 'open'", deliveryDate);
@@ -361,12 +358,13 @@ export async function convertOrderToSubscription(input: Record<string, unknown>)
   assertDomain(sourceItems.length > 0, "SUBSCRIPTION_UNAVAILABLE", "U ovoj porudžbini nema proizvoda dostupnih za redovnu dostavu.", 409);
   const idHash = await stableJsonHash({ conversion: conversion.token_id });
   const subscriptionId = `sub_${idHash.slice(0, 32)}`;
-  const nextDeliveryDate = addLocalDays(conversion.delivery_date, 7);
+  const nextDeliveryDate = addLocalDays(conversion.delivery_date, cadence === "weekly" ? 7 : 14);
   const now = new Date().toISOString();
   const statements: Array<{ sql: string; bindings?: SqlValue[] }> = [{
     sql: "INSERT INTO subscriptions (id, customer_id, status, payment_method, payment_provider_ref, next_delivery_date, started_at, created_at, updated_at) VALUES (?, ?, 'active', ?, ?, ?, ?, ?, ?)",
     bindings: [subscriptionId, conversion.customer_id, conversion.payment_method, conversion.payment_provider_ref, nextDeliveryDate, now, now, now],
   }];
+  statements.push({sql:"UPDATE subscriptions SET shipping_json=(SELECT shipping_json FROM orders WHERE id=?),billing_json=(SELECT billing_json FROM orders WHERE id=?) WHERE id=?",bindings:[conversion.order_id,conversion.order_id,subscriptionId]});
   sourceItems.forEach((item) => statements.push({
     sql: "INSERT INTO subscription_items (id, subscription_id, product_id, quantity, cadence, cadence_anchor_date, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?)",
     bindings: [crypto.randomUUID(), subscriptionId, item.id, item.order_quantity, cadence, nextDeliveryDate, now, now],
@@ -377,12 +375,15 @@ export async function convertOrderToSubscription(input: Record<string, unknown>)
   const conversionCutoffAt = cutoffForDelivery(nextDeliveryDate, conversionSettings.cutoffHours, conversionSettings.deliveryLocalTime);
   statements.push(enqueue("subscription.activated", "subscription", subscriptionId, { sourceOrderId: conversion.order_id, cadence, nextDeliveryDate, cutoffAt: conversionCutoffAt }));
   await batch(statements);
+  const { generateMonthlyBilling } = await import("./billing");
+  await generateMonthlyBilling(nextDeliveryDate.slice(0, 7), `conversion-package:${subscriptionId}`, subscriptionId);
   return { subscription: { id: subscriptionId, status: "active", cadence, nextDeliveryDate, itemCount: sourceItems.length } };
 }
 
 export async function getAccount(customerId: string) {
   const customer = await first<CustomerRow>("SELECT * FROM customers WHERE id = ?", customerId);
   assertDomain(customer, "ACCOUNT_NOT_FOUND", "Customer account was not found.", 404);
+  await lockOverdueDeliveries(customerId);
   const subscriptions = await all<SubscriptionRow>("SELECT * FROM subscriptions WHERE customer_id = ? ORDER BY created_at DESC", customerId);
   const items = subscriptions.length ? await all<SubscriptionItemRow>(`SELECT si.*, p.name AS product_name, p.unit_label, COALESCE(p.subscription_price_minor, p.price_minor) AS price_minor FROM subscription_items si JOIN products p ON p.id = si.product_id WHERE si.subscription_id IN (${sqlPlaceholders(subscriptions.length)}) ORDER BY si.created_at`, ...subscriptions.map((subscription) => subscription.id)) : [];
   const orders = await all<Record<string, unknown> & { id: string }>("SELECT id, order_number, kind, payment_status, fulfillment_status, delivery_date, total_minor, currency, created_at FROM orders WHERE customer_id = ? ORDER BY created_at DESC LIMIT 50", customerId);
@@ -397,7 +398,7 @@ export async function getAccount(customerId: string) {
      WHERE nda.subscription_id IN (${sqlPlaceholders(subscriptions.length)}) AND nda.consumed_at IS NULL AND nda.cancelled_at IS NULL ORDER BY nda.created_at`,
     ...subscriptions.map((subscription) => subscription.id),
   ) : [];
-  const addonProducts = (await all<ProductRow>("SELECT * FROM products WHERE is_active = 1 ORDER BY (price_minor - cost_minor - packaging_cost_minor) DESC, sort_order LIMIT 8")).map((product) => publicProduct(product));
+  const addonProducts = (await all<ProductRow>("SELECT * FROM products WHERE is_active = 1 ORDER BY (price_minor - cost_minor - packaging_cost_minor) DESC, sort_order")).map((product) => publicProduct(product));
   const settings = await getBusinessSettings();
   const windows = subscriptions.length ? await all<{ delivery_date: string; cutoff_at: string; locked_at: string | null } & Record<string, unknown>>(
     `SELECT delivery_date, cutoff_at, locked_at FROM deliveries WHERE delivery_date IN (${sqlPlaceholders(subscriptions.length)})`, ...subscriptions.map((subscription) => subscription.next_delivery_date),
@@ -412,17 +413,20 @@ export async function getAccount(customerId: string) {
   const skips = await all<{ id: string; date: string } & Record<string, unknown>>(
     `SELECT sk.id, sk.delivery_date AS date FROM subscription_skips sk JOIN subscriptions s ON s.id = sk.subscription_id WHERE s.customer_id = ? ORDER BY sk.delivery_date DESC LIMIT 50`, customerId,
   );
+  const purchasedLines = (await Promise.all(subscriptions.map(s => packageProgress(s.id)))).flat();
   return {
     customer: { id: customer.id, email: customer.email, fullName: customer.full_name, phone: customer.phone, addressLine1: customer.address_line_1, addressLine2: customer.address_line_2, city: customer.city, postalCode: customer.postal_code, deliveryNote: customer.delivery_note },
     subscriptions: subscriptions.map((subscription) => {
       const window = windows.find((entry) => entry.delivery_date === subscription.next_delivery_date);
       const cutoffAt = window?.cutoff_at ?? cutoffForDelivery(subscription.next_delivery_date, settings.cutoffHours, settings.deliveryLocalTime);
-      const activeItems = items.filter((item) => item.subscription_id === subscription.id && item.status === "active");
+      const purchased = purchasedLines.filter(line => line.subscription_id === subscription.id && line.status === "open");
+      const activeItems = purchased.length ? purchased.filter(line => line.purchase_type === "subscription").map(line => ({cadence_anchor_date: String(line.anchor_date), cadence: line.cadence as "weekly" | "biweekly"})) : items.filter((item) => item.subscription_id === subscription.id && item.status === "active");
       let afterSkipDate = addLocalDays(subscription.next_delivery_date, 7);
       for (let attempts = 0; attempts < 8 && activeItems.length && !activeItems.some((item) => isCadenceDue(item.cadence_anchor_date, afterSkipDate, item.cadence)); attempts += 1) afterSkipDate = addLocalDays(afterSkipDate, 7);
-      return { id: subscription.id, version: subscription.version, status: subscription.status, paymentMethod: subscription.payment_method, pauseUntil: subscription.pause_until, nextDeliveryDate: subscription.next_delivery_date, cutoffAt, locked: Boolean(window?.locked_at) || Date.now() >= Date.parse(cutoffAt), afterSkipDate, cancellationReason: subscription.cancellation_reason, items: items.filter((item) => item.subscription_id === subscription.id).map((item) => ({ id: item.id, productId: item.product_id, productName: item.product_name, unitLabel: item.unit_label, priceMinor: item.price_minor, quantity: item.quantity, cadence: item.cadence, cadenceAnchorDate: item.cadence_anchor_date, dueNext: isCadenceDue(item.cadence_anchor_date, subscription.next_delivery_date, item.cadence), status: item.status })), nextOnlyAddons: addons.filter((item) => item.subscription_id === subscription.id) };
+      return { currentPackage: purchased, maxPauseUntil: maximumPauseDate(String(subscription.pause_started_on ?? localDateAt())), id: subscription.id, version: subscription.version, status: subscription.status, paymentMethod: subscription.payment_method, pauseUntil: subscription.pause_until, renewalEnabled: subscription.renewal_enabled !== 0, nextDeliveryDate: subscription.next_delivery_date, cutoffAt, locked: Boolean(window?.locked_at) || Date.now() >= Date.parse(cutoffAt), afterSkipDate, cancellationReason: subscription.cancellation_reason, items: items.filter((item) => item.subscription_id === subscription.id).map((item) => ({ id: item.id, productId: item.product_id, productName: item.product_name, unitLabel: item.unit_label, priceMinor: item.price_minor, quantity: item.quantity, cadence: item.cadence, cadenceAnchorDate: item.cadence_anchor_date, dueNext: isCadenceDue(item.cadence_anchor_date, subscription.next_delivery_date, item.cadence), status: item.status })), nextOnlyAddons: addons.filter((item) => item.subscription_id === subscription.id) };
     }),
     currentDate: localDateAt(),
+    packages: purchasedLines,
     deliveryHistory: [...deliveryHistory.map((delivery) => ({ ...delivery, items: historyItems.filter((item) => item.delivery_order_id === delivery.id) })), ...skips.map((skip) => ({ ...skip, status: "skipped", items: [] }))].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 50),
     addonProducts,
     oneTimeDeliveries: [...new Set(oneTimeItems.map((item) => item.delivery_date))].map((date) => ({ date, items: oneTimeItems.filter((item) => item.delivery_date === date) })),
@@ -432,10 +436,7 @@ export async function getAccount(customerId: string) {
 }
 
 async function assertSubscriptionMutable(subscription: SubscriptionRow): Promise<void> {
-  const settings = await getBusinessSettings();
-  const delivery = await first<{ cutoff_at: string; locked_at: string | null } & Record<string, unknown>>("SELECT cutoff_at, locked_at FROM deliveries WHERE delivery_date = ?", subscription.next_delivery_date);
-  const cutoffAt = delivery?.cutoff_at ?? cutoffForDelivery(subscription.next_delivery_date, settings.cutoffHours, settings.deliveryLocalTime);
-  assertBeforeCutoff(cutoffAt, delivery?.locked_at);
+  await assertDeliveryEditable(subscription.next_delivery_date);
 }
 
 async function paidThisMonth(subscriptionId: string, date: string): Promise<boolean> {
@@ -459,7 +460,7 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
   let action = enumValue(input.action, "action", ["add_item", "update_item", "remove_item", "add_next_only", "skip_next", "slow_down", "pause", "resume", "cancel"] as const);
   assertDomain(subscription.status !== "cancelled", "SUBSCRIPTION_CANCELLED", "A cancelled subscription is terminal and cannot be changed or resumed.", 409);
   if (action === "resume") assertDomain(subscription.status === "paused", "INVALID_SUBSCRIPTION_STATE", "Only a paused subscription can be resumed.", 409);
-  if (["add_item", "update_item", "remove_item", "add_next_only", "skip_next", "slow_down", "pause"].includes(action)) {
+  if (["add_item", "update_item", "remove_item", "add_next_only", "skip_next", "slow_down"].includes(action)) {
     assertDomain(subscription.status === "active", "INVALID_SUBSCRIPTION_STATE", "This action requires an active subscription.", 409);
   }
   // Resume intentionally schedules a new future delivery and never edits a stale/locked snapshot.
@@ -474,7 +475,9 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
   let addonOrder: Record<string, unknown> | null = null;
   const activeItems = await all<SubscriptionItemRow & { price_minor: number }>("SELECT si.*, COALESCE(p.subscription_price_minor, p.price_minor) AS price_minor FROM subscription_items si JOIN products p ON p.id = si.product_id WHERE si.subscription_id = ? AND si.status = 'active'", subscriptionId);
   const pendingAddons = await all<{ id: string; order_id: string | null; payment_status: string | null; total_minor: number | null } & Record<string, unknown>>("SELECT nda.id, nda.order_id, o.payment_status, o.total_minor FROM next_delivery_addons nda LEFT JOIN orders o ON o.id = nda.order_id WHERE nda.subscription_id = ? AND nda.consumed_at IS NULL AND nda.cancelled_at IS NULL", subscriptionId);
-  const paid = await paidThisMonth(subscriptionId, subscription.next_delivery_date);
+  const purchasedPackage = await openPackage(subscriptionId);
+  const paid = !purchasedPackage && await paidThisMonth(subscriptionId, subscription.next_delivery_date);
+  const schedule = purchasedPackage ? await packageSchedule(subscriptionId) : activeItems;
   const deliveryValue = activeItems.filter((item) => isCadenceDue(item.cadence_anchor_date, subscription.next_delivery_date, item.cadence)).reduce((sum, item) => sum + item.price_minor * item.quantity, 0);
   const dueCount = (item: Pick<SubscriptionItemRow, "cadence_anchor_date" | "cadence">, cadence = item.cadence) => {
     let count = 0;
@@ -532,6 +535,8 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
     const addonOrderNumber = orderNumber(addonHash);
     statements.push({ sql: "INSERT INTO orders (id, order_number, customer_id, subscription_id, kind, payment_method, payment_provider_ref, payment_status, fulfillment_status, delivery_date, subtotal_minor, discount_minor, delivery_fee_minor, payment_fee_minor, estimated_delivery_cost_minor, credit_applied_minor, total_minor, currency, customer_note, source_json, idempotency_key, created_at, updated_at) VALUES (?, ?, ?, ?, 'adjustment', ?, ?, ?, 'planned', ?, ?, 0, 0, 0, 0, 0, ?, 'RSD', ?, ?, ?, ?, ?)", bindings: [addonOrderId, addonOrderNumber, customerId, subscriptionId, subscription.payment_method, payment.providerReference, payment.status, subscription.next_delivery_date, totalMinor, totalMinor, `Dodatak uz dostavu ${subscription.next_delivery_date}`, JSON.stringify({ type: "next_delivery_addon", subscriptionId }), addonOrderKey, now, now] });
     statements.push({ sql: "INSERT INTO order_items (id, order_id, product_id, product_name, unit_label, quantity, unit_price_minor, unit_cost_minor, unit_packaging_cost_minor, total_cost_minor, line_total_minor, purchase_type, cadence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'one_time', NULL)", bindings: [crypto.randomUUID(), addonOrderId, product.id, product.name, product.unit_label, quantity, product.price_minor, product.cost_minor, product.packaging_cost_minor, (product.cost_minor + product.packaging_cost_minor) * quantity, totalMinor] });
+    statements.push({sql:"UPDATE orders SET shipping_json=(SELECT shipping_json FROM subscriptions WHERE id=?),billing_json=(SELECT billing_json FROM subscriptions WHERE id=?) WHERE id=?",bindings:[subscriptionId,subscriptionId,addonOrderId]});
+    statements.push(...await reserveInventory(addonOrderId,[{productId,quantity,lastDate:subscription.next_delivery_date}]));
     statements.push({ sql: "INSERT INTO next_delivery_addons (id, subscription_id, product_id, delivery_date, quantity, unit_price_minor, order_id) VALUES (?, ?, ?, ?, ?, ?, ?)", bindings: [crypto.randomUUID(), subscriptionId, productId, subscription.next_delivery_date, quantity, product.price_minor, addonOrderId] });
     addonOrder = { id: addonOrderId, orderNumber: addonOrderNumber, totalMinor, paymentStatus: payment.status, paymentMethod: subscription.payment_method, deliveryDate: subscription.next_delivery_date };
     statements.push(enqueue("order.created", "order", addonOrderId, { order: addonOrder, source: "next_delivery_addon" }));
@@ -543,7 +548,7 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
     }
   } else if (action === "skip_next") {
     let nextDueDate = addLocalDays(subscription.next_delivery_date, 7);
-    for (let attempts = 0; attempts < 8 && activeItems.length && !activeItems.some((item) => isCadenceDue(item.cadence_anchor_date, nextDueDate, item.cadence)); attempts += 1) nextDueDate = addLocalDays(nextDueDate, 7);
+    for (let attempts = 0; attempts < 8 && activeItems.length && !schedule.some((item) => isCadenceDue(item.cadence_anchor_date, nextDueDate, item.cadence)); attempts += 1) nextDueDate = addLocalDays(nextDueDate, 7);
     statements.push({ sql: "INSERT INTO subscription_skips (id, subscription_id, delivery_date) VALUES (?, ?, ?) ON CONFLICT(subscription_id, delivery_date) DO NOTHING", bindings: [crypto.randomUUID(), subscriptionId, subscription.next_delivery_date] });
     statements.push({ sql: "UPDATE subscriptions SET next_delivery_date = ?, updated_at = ? WHERE id = ?", bindings: [nextDueDate, now, subscriptionId] });
     resultingNextDeliveryDate = nextDueDate;
@@ -553,12 +558,13 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
     if (paid) adjustmentMinor = activeItems.reduce((sum, item) => sum + item.price_minor * item.quantity * (dueCount(item) - dueCount(item, "biweekly")), 0);
   } else if (action === "pause") {
     const pauseUntil = assertLocalDate(input.pauseUntil, "pauseUntil");
+    assertDomain(pauseUntil <= maximumPauseDate(String(subscription.pause_started_on ?? localDateAt())), "PAUSE_TOO_LONG", "Pauza može trajati najviše tri kalendarska meseca od danas.", 422);
     assertDomain(pauseUntil > subscription.next_delivery_date, "VALIDATION_ERROR", "pauseUntil must be after the next delivery.", 422);
     let resumeDate = subscription.next_delivery_date;
     while (resumeDate < pauseUntil) resumeDate = addLocalDays(resumeDate, 7);
-    for (let attempts = 0; attempts < 8 && activeItems.length && !activeItems.some((item) => isCadenceDue(item.cadence_anchor_date, resumeDate, item.cadence)); attempts += 1) resumeDate = addLocalDays(resumeDate, 7);
+    for (let attempts = 0; attempts < 8 && activeItems.length && !schedule.some((item) => isCadenceDue(item.cadence_anchor_date, resumeDate, item.cadence)); attempts += 1) resumeDate = addLocalDays(resumeDate, 7);
     resultingNextDeliveryDate = resumeDate;
-    statements.push({ sql: "UPDATE subscriptions SET status = 'paused', pause_until = ?, next_delivery_date = ?, updated_at = ? WHERE id = ?", bindings: [pauseUntil, resumeDate, now, subscriptionId] });
+    statements.push({ sql: "UPDATE subscriptions SET status = 'paused', pause_started_on = COALESCE(pause_started_on, ?), pause_until = ?, next_delivery_date = ?, updated_at = ? WHERE id = ?", bindings: [localDateAt(), pauseUntil, resumeDate, now, subscriptionId] });
     if (paid) {
       for (let date = subscription.next_delivery_date; date < resumeDate && date.startsWith(subscription.next_delivery_date.slice(0, 7)); date = addLocalDays(date, 7)) {
         adjustmentMinor += activeItems.filter((item) => isCadenceDue(item.cadence_anchor_date, date, item.cadence)).reduce((sum, item) => sum + item.price_minor * item.quantity, 0);
@@ -566,19 +572,25 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
     }
   } else if (action === "resume") {
     const settings = await getBusinessSettings();
-    let resumeDate = subscription.next_delivery_date > localDateAt() ? subscription.next_delivery_date : nextWeekday(new Date(), new Date(`${activeItems[0]?.cadence_anchor_date ?? subscription.next_delivery_date}T12:00:00Z`).getUTCDay());
+    let resumeDate = nextWeekday(new Date(), new Date(`${activeItems[0]?.cadence_anchor_date ?? subscription.next_delivery_date}T12:00:00Z`).getUTCDay());
     for (let attempts = 0; attempts < 12; attempts += 1) {
       const delivery = await first<{ cutoff_at: string; locked_at: string | null } & Record<string, unknown>>("SELECT cutoff_at, locked_at FROM deliveries WHERE delivery_date = ?", resumeDate);
       const cutoffAt = delivery?.cutoff_at ?? cutoffForDelivery(resumeDate, settings.cutoffHours, settings.deliveryLocalTime);
-      if (!delivery?.locked_at && Date.now() < Date.parse(cutoffAt) && activeItems.some((item) => isCadenceDue(item.cadence_anchor_date, resumeDate, item.cadence))) break;
+      if (!settings.holidays.includes(resumeDate) && !delivery?.locked_at && !(await first("SELECT id FROM subscription_skips WHERE subscription_id = ? AND delivery_date = ?", subscriptionId, resumeDate)) && Date.now() < Date.parse(cutoffAt) && schedule.some((item) => isCadenceDue(item.cadence_anchor_date, resumeDate, item.cadence))) break;
       resumeDate = addLocalDays(resumeDate, 7);
     }
     resultingNextDeliveryDate = resumeDate;
-    statements.push({ sql: "UPDATE subscriptions SET status = 'active', pause_until = NULL, next_delivery_date = ?, updated_at = ? WHERE id = ?", bindings: [resumeDate, now, subscriptionId] });
+    statements.push({ sql: "UPDATE subscriptions SET status = 'active', pause_until = NULL, pause_started_on = NULL, next_delivery_date = ?, updated_at = ? WHERE id = ?", bindings: [resumeDate, now, subscriptionId] });
+  } else if (action === "cancel" && purchasedPackage && purchasedPackage.payment_status === "paid") {
+    statements.push({ sql: "UPDATE subscriptions SET renewal_enabled = 0, cancellation_reason = ?, updated_at = ? WHERE id = ?", bindings: [optionalString(input.reason, "reason", 240) ?? "cancel_after_package", now, subscriptionId] });
   } else if (action === "cancel") {
     const reason = optionalString(input.reason, "reason", 240) ?? "not_provided";
     statements.push({ sql: "UPDATE subscriptions SET status = 'cancelled', cancelled_at = ?, cancellation_reason = ?, updated_at = ? WHERE id = ?", bindings: [now, reason, now, subscriptionId] });
     if (paid) adjustmentMinor = activeItems.reduce((sum, item) => sum + item.price_minor * item.quantity * dueCount(item), 0);
+    if (purchasedPackage) {
+      statements.push({ sql: "UPDATE subscription_packages SET status = 'completed', completed_at = ? WHERE id = ?", bindings: [now, String(purchasedPackage.id)] });
+      statements.push({ sql: "UPDATE orders SET fulfillment_status = 'cancelled', updated_at = ? WHERE id = ?", bindings: [now, String(purchasedPackage.order_id)] });
+    }
     const paidAddonCredit = pendingAddons.filter((addon) => addon.payment_status === "paid").reduce((sum, addon) => sum + Number(addon.total_minor ?? 0), 0);
     adjustmentMinor += paidAddonCredit;
     statements.push({ sql: "UPDATE next_delivery_addons SET cancelled_at = ? WHERE subscription_id = ? AND consumed_at IS NULL AND cancelled_at IS NULL", bindings: [now, subscriptionId] });
@@ -589,15 +601,18 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
     statements.push({ sql: "UPDATE orders SET delivery_date = ?, updated_at = ? WHERE id IN (SELECT order_id FROM next_delivery_addons WHERE subscription_id = ? AND delivery_date = ? AND consumed_at IS NULL AND cancelled_at IS NULL AND order_id IS NOT NULL)", bindings: [resultingNextDeliveryDate, now, subscriptionId, resultingNextDeliveryDate] });
   }
   if (adjustmentMinor !== 0) statements.push({ sql: "INSERT INTO credits_ledger (id, customer_id, subscription_id, amount_minor, reason, status) VALUES (?, ?, ?, ?, ?, 'open')", bindings: [crypto.randomUUID(), customerId, subscriptionId, adjustmentMinor, `paid_month_${action}`] });
-  const response = { subscriptionId, action, version: expectedVersion + 1, adjustmentMinor, currency: "RSD", addonOrder };
+  const response = { subscriptionId, action, appliesTo: purchasedPackage && ["add_item", "update_item", "remove_item", "slow_down"].includes(action) ? "next_package" : "current", cancelAfterPackage: action === "cancel" && purchasedPackage?.payment_status === "paid", version: expectedVersion + 1, adjustmentMinor, currency: "RSD", addonOrder };
   statements.push({ sql: "INSERT INTO idempotency_keys (id, namespace, key, request_hash, response_json, status_code, expires_at) VALUES (?, 'subscription-mutation', ?, ?, ?, 200, ?)", bindings: [crypto.randomUUID(), mutationKey, requestHash, JSON.stringify(response), new Date(Date.now() + 400 * 86_400_000).toISOString()] });
   statements.push(audit(actor, actor === "admin" ? "admin-panel" : customerId, `subscription.${action}`, "subscription", subscriptionId, subscription, { ...input, adjustmentMinor }));
   const notificationSettings = await getBusinessSettings();
   const notificationDelivery = action === "cancel" ? null : await first<{ cutoff_at: string } & Record<string, unknown>>("SELECT cutoff_at FROM deliveries WHERE delivery_date = ?", resultingNextDeliveryDate);
   const notificationCutoffAt = action === "cancel" ? null : notificationDelivery?.cutoff_at ?? cutoffForDelivery(resultingNextDeliveryDate, notificationSettings.cutoffHours, notificationSettings.deliveryLocalTime);
-  statements.push(enqueue(`subscription.${action}`, "subscription", subscriptionId, { customerId, nextDeliveryDate: action === "cancel" ? null : resultingNextDeliveryDate, previousDeliveryDate: subscription.next_delivery_date, pauseUntil: input.pauseUntil, quantity: input.quantity, cadence: input.cadence, cutoffAt: notificationCutoffAt, adjustmentMinor, addonOrder }));
+  statements.push(enqueue(`subscription.${action}`, "subscription", subscriptionId, { customerId, nextDeliveryDate: action === "cancel" && !response.cancelAfterPackage ? null : resultingNextDeliveryDate, cancelAfterPackage: response.cancelAfterPackage, appliesTo: response.appliesTo, previousDeliveryDate: subscription.next_delivery_date, pauseUntil: input.pauseUntil, quantity: input.quantity, cadence: input.cadence, cutoffAt: notificationCutoffAt, adjustmentMinor, addonOrder }));
+  if (action !== "resume") await assertSubscriptionMutable(subscription);
+  statements.push({ sql: "UPDATE deliveries SET generation_key = ? || ':' || id WHERE status = 'open' AND delivery_date >= ?", bindings: [`changed:${crypto.randomUUID()}`, localDateAt()] });
+  const guard = mutationGuard("EXISTS (SELECT 1 FROM subscriptions WHERE id = ? AND customer_id = ? AND version = ?)", [subscriptionId, customerId, expectedVersion]);
   try {
-    await batch(statements);
+    await batch([guard.check, ...statements, guard.cleanup]);
   } catch (error) {
     const raced = await first<{ request_hash: string; response_json: string | null } & Record<string, unknown>>("SELECT request_hash, response_json FROM idempotency_keys WHERE namespace = 'subscription-mutation' AND key = ?", mutationKey);
     if (raced?.request_hash === requestHash && raced.response_json) return { ...JSON.parse(raced.response_json), account: await getAccount(customerId) };

@@ -81,3 +81,11 @@ export async function sendWhatsAppTemplate(to: string, templateName: string, pla
 export async function sendWhatsAppCode(to: string, code: string, id: string): Promise<string> {
   return sendWhatsAppTemplate(to, config().WHATSAPP_AUTH_TEMPLATE ?? "", [code], id, code);
 }
+
+/** Infobip SMS API v3. Sending is opt-in and disabled unless server credentials exist. */
+export async function sendSmsMessage(to: string, text: string, id: string): Promise<string> {
+  const c=config();
+  assertDomain(c.SMS_MODE==='provider' && c.SMS_API_KEY && c.SMS_SENDER_ID,'SMS_NOT_CONFIGURED','SMS servis još nije povezan.',503);
+  assertDomain(/^\+?[1-9]\d{7,14}$/.test(to),'INVALID_PHONE','Broj telefona nije ispravan.',422);
+  return infobipReceipt(await providerRequest(`${infobipBaseUrl()}/sms/3/messages`,{method:'POST',headers:{authorization:`App ${c.SMS_API_KEY}`,'content-type':'application/json'},body:JSON.stringify({messages:[{sender:c.SMS_SENDER_ID,destinations:[{to:to.replace(/^\+/,''),messageId:id}],content:{text:text.slice(0,1000)}}]})}));
+}

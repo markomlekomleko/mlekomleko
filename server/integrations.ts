@@ -18,6 +18,7 @@ export const localPaymentGateway: PaymentGateway = {
     if (request.method === "cash") return { providerReference: `cash_${request.orderId}`, status: "pending" };
     const runtime = env as Record<string, string | undefined>;
     assertDomain(runtime.APP_ENV === "local" && runtime.PAYMENT_MODE === "mock", "PAYMENT_METHOD_UNAVAILABLE", "Online plaćanje karticom trenutno nije dostupno. Izaberite gotovinu pri dostavi.", 503);
+    if (!request.paymentToken || request.paymentToken === "mock-decline") return {providerReference: `mock_declined_${request.orderId}`,status:"failed"};
     return { providerReference: `mock_pay_${request.orderId}`, status: "paid" };
   },
 };

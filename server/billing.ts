@@ -1,10 +1,14 @@
+import { reserveInventory } from "./inventory";
+import { effectivePrice } from "./product-details";
+import { createPackageStatements, openPackage, packageDates, packageOccurrences } from "./packages";
+import { mutationGuard } from "./mutation-guard";
 import { stableJsonHash } from "./crypto";
 import { assertDomain, requiredString } from "./domain";
 import { localPaymentGateway } from "./integrations";
 import { audit, enqueue } from "./outbox";
 import { all, batch, first, type SqlValue } from "./sql";
-import { isCadenceDue } from "./time";
-import { getBusinessSettings } from "./settings";
+import { localDateAt } from "./time";
+import { getBusinessSettings, getNextDeliveryWindow } from "./settings";
 import { purchaseAnalyticsEvent } from "./analytics";
 
 interface BillingSubscription extends Record<string, unknown> {
@@ -28,22 +32,11 @@ function assertMonth(value: unknown): string {
   return value;
 }
 
-function weekdayDates(month: string, weekday: number): string[] {
-  const [year, monthNumber] = month.split("-").map(Number);
-  const result: string[] = [];
-  for (let day = 1; ; day += 1) {
-    const value = new Date(Date.UTC(year, monthNumber - 1, day, 12));
-    if (value.getUTCMonth() !== monthNumber - 1) break;
-    if (value.getUTCDay() === weekday) result.push(value.toISOString().slice(0, 10));
-  }
-  return result;
-}
-
-export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string | null) {
+export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string | null, onlySubscriptionId?: string) {
   const month = assertMonth(rawMonth);
   const key = requiredString(rawKey, "Idempotency-Key", 200);
   assertDomain(key.length >= 8, "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key must contain at least 8 characters.", 422);
-  const requestHash = await stableJsonHash({ month });
+  const requestHash = await stableJsonHash({ month, ...(onlySubscriptionId ? {subscriptionId: onlySubscriptionId} : {}) });
   const replay = await first<{ request_hash: string; response_json: string | null } & Record<string, unknown>>("SELECT request_hash, response_json FROM idempotency_keys WHERE namespace = 'monthly-billing' AND key = ?", key);
   if (replay) {
     assertDomain(replay.request_hash === requestHash, "IDEMPOTENCY_CONFLICT", "This Idempotency-Key was used for another billing month.", 409);
@@ -51,24 +44,33 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
   }
 
   const settings = await getBusinessSettings();
-  const deliveryDates = settings.deliveryWeekdays.flatMap((day) => weekdayDates(month, day)).sort();
-  const subscriptions = await all<BillingSubscription>("SELECT s.*, c.source_json FROM subscriptions s JOIN customers c ON c.id = s.customer_id WHERE s.status IN ('active', 'paused') AND substr(s.started_at, 1, 7) <= ? ORDER BY s.id", month);
+  const nextWindow = await getNextDeliveryWindow();
+  const subscriptions = await all<BillingSubscription>("SELECT s.*, COALESCE((SELECT o.source_json FROM orders o WHERE o.subscription_id = s.id ORDER BY o.created_at, o.id LIMIT 1), c.source_json) AS source_json FROM subscriptions s JOIN customers c ON c.id = s.customer_id WHERE s.renewal_enabled = 1 AND s.status IN ('active', 'paused') AND substr(s.started_at, 1, 7) <= ? ORDER BY s.id", month);
   const results: Array<Record<string, unknown>> = [];
   for (const subscription of subscriptions) {
-    const orderKey = `billing:${month}:${subscription.id}`;
-    const alreadyBilled = await first<Record<string, unknown>>("SELECT id, order_number, total_minor, payment_status FROM orders WHERE subscription_id = ? AND kind = 'subscription_invoice' AND substr(delivery_date, 1, 7) = ? LIMIT 1", subscription.id, month);
-    if (alreadyBilled) {
-      results.push({ subscriptionId: subscription.id, skipped: "already_billed", order: alreadyBilled });
+    if (onlySubscriptionId && subscription.id !== onlySubscriptionId) continue;
+    if (await openPackage(subscription.id)) {
+      results.push({ subscriptionId: subscription.id, skipped: "unfinished_package" });
       continue;
     }
-    const items = await all<BillingItem>("SELECT si.id, si.product_id, p.name AS product_name, p.unit_label, COALESCE(p.subscription_price_minor, p.price_minor) AS price_minor, p.cost_minor, p.packaging_cost_minor, si.quantity, si.cadence, si.cadence_anchor_date FROM subscription_items si JOIN products p ON p.id = si.product_id WHERE si.subscription_id = ? AND si.status = 'active'", subscription.id);
-    const skips = new Set((await all<{ delivery_date: string } & Record<string, unknown>>("SELECT delivery_date FROM subscription_skips WHERE subscription_id = ? AND substr(delivery_date, 1, 7) = ?", subscription.id, month)).map((row) => row.delivery_date));
-    const effectiveDates = deliveryDates.filter((date) => date >= subscription.next_delivery_date && !skips.has(date) && (subscription.status === "active" || !subscription.pause_until || date >= subscription.pause_until));
-    const lines = items.map((item) => {
-      const occurrences = effectiveDates.filter((date) => isCadenceDue(item.cadence_anchor_date, date, item.cadence)).length;
-      return { item, occurrences, lineTotalMinor: item.price_minor * item.quantity * occurrences };
-    }).filter((line) => line.occurrences > 0);
-    const billedDeliveryDates = effectiveDates.filter((date) => items.some((item) => isCadenceDue(item.cadence_anchor_date, date, item.cadence)));
+    if ((subscription.status === "paused" && (!subscription.pause_until || subscription.pause_until > localDateAt())) || subscription.next_delivery_date.slice(0, 7) > month) {
+      results.push({ subscriptionId: subscription.id, skipped: "not_due" });
+      continue;
+    }
+    const legacy = await first<Record<string, unknown>>("SELECT id FROM orders WHERE subscription_id = ? AND kind = 'subscription_invoice' AND fulfillment_status != 'cancelled' AND NOT EXISTS (SELECT 1 FROM subscription_packages WHERE subscription_id = ?) LIMIT 1", subscription.id, subscription.id);
+    if (legacy) { results.push({subscriptionId: subscription.id, skipped: "legacy_review_required"}); continue; }
+    const firstDate = subscription.next_delivery_date < nextWindow.deliveryDate ? nextWindow.deliveryDate : subscription.next_delivery_date;
+    const orderKey = `package:${subscription.id}:${firstDate}`;
+    const alreadyBilled = await first<Record<string, unknown>>("SELECT id FROM orders WHERE idempotency_key = ?", orderKey);
+    if (alreadyBilled) { results.push({subscriptionId: subscription.id, skipped: "already_billed"}); continue; }
+    const items = await all<BillingItem>("SELECT si.id, si.product_id, p.name AS product_name, p.unit_label, COALESCE(p.subscription_price_minor, p.price_minor) AS price_minor, p.sale_subscription_price_minor, p.sale_starts_at, p.sale_ends_at, p.cost_minor, p.packaging_cost_minor, p.is_active, p.allow_subscription, si.quantity, si.cadence, si.cadence_anchor_date FROM subscription_items si JOIN products p ON p.id = si.product_id WHERE si.subscription_id = ? AND si.status = 'active'", subscription.id);
+    if (!items.length || items.some(item => !item.is_active || !item.allow_subscription)) {
+      results.push({subscriptionId: subscription.id, skipped: "product_unavailable", message: "Proverite proizvode pre obnove paketa."});
+      continue;
+    }
+    for (const item of items) item.price_minor = effectivePrice(item,true);
+    const lines = items.map(item => ({ item, occurrences: packageOccurrences(item.cadence), lineTotalMinor: item.price_minor * item.quantity * packageOccurrences(item.cadence) }));
+    const billedDeliveryDates = [...new Set(items.flatMap(item => packageDates(firstDate, item.cadence, settings.holidays)))].sort();
     const productsSubtotalMinor = lines.reduce((sum, line) => sum + line.lineTotalMinor, 0);
     const credits = await all<CreditRow>("SELECT id, amount_minor FROM credits_ledger WHERE customer_id = ? AND status = 'open' AND (subscription_id = ? OR subscription_id IS NULL) ORDER BY created_at, id", subscription.customer_id, subscription.id);
     const creditNet = credits.reduce((sum, credit) => sum + credit.amount_minor, 0);
@@ -84,7 +86,7 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
     const creditAppliedMinor = Math.min(subtotalMinor + deliveryFeeMinor, Math.max(0, creditNet));
     const totalMinor = subtotalMinor + deliveryFeeMinor - creditAppliedMinor;
     const creditRemainderMinor = Math.max(0, creditNet - creditAppliedMinor);
-    const hash = await stableJsonHash({ month, subscriptionId: subscription.id });
+    const hash = await stableJsonHash({ firstDate, subscriptionId: subscription.id });
     const orderId = `ord_${hash.slice(0, 32)}`;
     const orderNumber = `MM-${month.replace("-", "")}-${hash.slice(0, 8).toUpperCase()}`;
     const payment = totalMinor === 0
@@ -99,7 +101,12 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
     const statements: Array<{ sql: string; bindings?: SqlValue[] }> = [
       { sql: "INSERT INTO orders (id, order_number, customer_id, subscription_id, kind, payment_method, payment_provider_ref, payment_status, fulfillment_status, delivery_date, subtotal_minor, delivery_fee_minor, payment_fee_minor, estimated_delivery_cost_minor, credit_applied_minor, total_minor, currency, source_json, idempotency_key, created_at, updated_at) VALUES (?, ?, ?, ?, 'subscription_invoice', ?, ?, ?, 'planned', ?, ?, ?, ?, ?, ?, ?, 'RSD', ?, ?, ?, ?)", bindings: [orderId, orderNumber, subscription.customer_id, subscription.id, subscription.payment_method, payment.providerReference, payment.status, deliveryDate, subtotalMinor, deliveryFeeMinor, paymentFeeMinor, estimatedDeliveryCostMinor, creditAppliedMinor, totalMinor, subscription.source_json || "{}", orderKey, now, now] },
     ];
+    statements.push({ sql: "UPDATE orders SET shipping_json = (SELECT shipping_json FROM subscriptions WHERE id = ?), billing_json = (SELECT billing_json FROM subscriptions WHERE id = ?) WHERE id = ?", bindings: [subscription.id, subscription.id, orderId] });
     for (const line of lines) statements.push({ sql: "INSERT INTO order_items (id, order_id, product_id, product_name, unit_label, quantity, unit_price_minor, unit_cost_minor, unit_packaging_cost_minor, total_cost_minor, line_total_minor, purchase_type, cadence) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'subscription', ?)", bindings: [crypto.randomUUID(), orderId, line.item.product_id, line.item.product_name, line.item.unit_label, line.item.quantity, line.item.price_minor, line.item.cost_minor, line.item.packaging_cost_minor, (line.item.cost_minor + line.item.packaging_cost_minor) * line.item.quantity * line.occurrences, line.lineTotalMinor, line.item.cadence] });
+    statements.push({sql: "UPDATE order_items SET fiscal_tax_label = (SELECT fiscal_tax_label FROM products WHERE products.id = order_items.product_id) WHERE order_id = ?", bindings: [orderId]});
+    statements.push(...createPackageStatements(orderId, subscription.id, firstDate));
+    statements.push(...await reserveInventory(orderId,items.map(item=>({productId:item.product_id,quantity:item.quantity*packageOccurrences(item.cadence),lastDate:packageDates(firstDate,item.cadence,settings.holidays).at(-1)!}))));
+    statements.push({sql: "UPDATE subscriptions SET next_delivery_date = ?, version = version + 1 WHERE id = ?", bindings: [firstDate, subscription.id]});
     for (const credit of credits) statements.push({ sql: "UPDATE credits_ledger SET status = 'applied', order_id = ?, applied_at = ? WHERE id = ? AND status = 'open'", bindings: [orderId, now, credit.id] });
     if (creditRemainderMinor > 0) statements.push({ sql: "INSERT INTO credits_ledger (id, customer_id, subscription_id, order_id, amount_minor, reason, status) VALUES (?, ?, ?, ?, ?, 'credit_carry_forward', 'open')", bindings: [crypto.randomUUID(), subscription.customer_id, subscription.id, orderId, creditRemainderMinor] });
     const summary = { orderId, orderNumber, subscriptionId: subscription.id, productsSubtotalMinor, deliveryFeeMinor, deliveryOccurrences: billedDeliveryDates.length, debitAdjustmentMinor, creditAppliedMinor, creditRemainderMinor, totalMinor, currency: "RSD", paymentStatus: payment.status, providerReference: payment.providerReference };
@@ -112,7 +119,8 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
     }
     statements.push(enqueue("email.invoice.requested", "order", orderId, summary));
     try {
-      await batch(statements);
+      const guard = mutationGuard("EXISTS (SELECT 1 FROM subscriptions WHERE id = ? AND version = ? AND renewal_enabled = 1 AND status IN ('active', 'paused')) AND NOT EXISTS (SELECT 1 FROM subscription_packages WHERE subscription_id = ? AND status = 'open')", [subscription.id, Number(subscription.version), subscription.id]);
+      await batch([guard.check, ...statements, guard.cleanup]);
       results.push(summary);
     } catch (error) {
       const raced = await first<Record<string, unknown>>("SELECT id, order_number, total_minor, payment_status FROM orders WHERE idempotency_key = ?", orderKey);

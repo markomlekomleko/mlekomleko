@@ -36,14 +36,22 @@ export function renderTransactionalMessage(topic: string, data: Record<string, u
   if (topic === "auth.magic_link.requested") {
     return shell("Prijava na vaš nalog", [greeting, "Kliknite na dugme ispod da se prijavite. Link važi 15 minuta i može se iskoristiti samo jednom."], { label: "Prijavi se", url: String(data.url ?? "") });
   }
-  if (topic === "email.delivery_reminder.requested") {
-    return shell("Podsetnik za sutrašnju dostavu", [greeting, `Vaša sledeća isporuka je sutra, ${deliveryDay(deliveryDate)} (${formatDeliveryDate(deliveryDate)}).`, itemSummary ? `Stavke: ${itemSummary}.` : "", data.note ? `Napomena: ${data.note}` : ""].filter(Boolean), accountAction);
+  if (topic === "email.delivery_reminder.requested" || topic === "email.delivery_deadline.requested") {
+    const cutoffAt = data.cutoffAt ? String(data.cutoffAt) : "";
+    const deadline = cutoffAt ? new Intl.DateTimeFormat("sr-Latn-RS", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Belgrade" }).format(new Date(cutoffAt)) : "";
+    const locked = cutoffAt && Date.now() >= Date.parse(cutoffAt);
+    const beforeDeadline = topic === "email.delivery_deadline.requested";
+    return shell(beforeDeadline ? "Još možete izmeniti sledeću dostavu" : "Podsetnik za sutrašnju dostavu", [greeting, `Vaša sledeća isporuka je ${beforeDeadline ? "" : "sutra, "}${deliveryDay(deliveryDate)} (${formatDeliveryDate(deliveryDate)}).`, itemSummary ? `Stavke: ${itemSummary}.` : "", deadline ? locked ? `Rok za izmene i otkazivanje je istekao (${deadline}, vreme u Srbiji). Ova isporuka je zaključana.` : `Izmene i otkazivanje mogući su do ${deadline} (vreme u Srbiji). Nakon toga ova isporuka se zaključava.` : "", data.note ? `Napomena: ${data.note}` : ""].filter(Boolean), accountAction);
+  }
+  if (topic === "email.fiscal_document.requested") {
+    const label = data.documentKind === "advance" ? "Avansni fiskalni račun" : data.documentKind === "final" ? "Konačni fiskalni račun" : data.documentKind === "refund" ? "Zatvaranje avansa" : "Fiskalni račun";
+    return shell(label, [greeting, `${label} za porudžbinu ${orderNumber}: ${data.invoiceNumber}.`, data.documentKind === "advance" ? "Paket je plaćen unapred. Konačni račun sledi nakon svih kupljenih dostava." : data.documentKind === "refund" ? "Ovaj dokument zatvara avans. Ne predstavlja novu naplatu niti povraćaj novca kupcu." : "Ovo nije nova naplata."], data.documentUrl ? {label: "Otvori račun", url: String(data.documentUrl)} : accountAction);
   }
   if (topic === "email.receipt.requested") {
     return shell("Uplata je evidentirana", [greeting, `Uplata za porudžbinu ${orderNumber} je evidentirana. Fiskalni račun se obrađuje i biće poslat na ovu email adresu.`], accountAction);
   }
   if (topic === "email.invoice.requested") {
-    return shell("Mesečni obračun pretplate", [greeting, `Obračun ${orderNumber} iznosi ${total}.`, deliveryDate ? `Prva planirana dostava u ovom obračunu je ${deliveryDate}.` : "", itemSummary ? `Stavke: ${itemSummary}.` : ""].filter(Boolean), accountAction);
+    return shell("Obračun novog paketa pretplate", [greeting, `Obračun ${orderNumber} iznosi ${total}.`, deliveryDate ? `Prva planirana dostava u ovom obračunu je ${deliveryDate}.` : "", itemSummary ? `Stavke: ${itemSummary}.` : ""].filter(Boolean), accountAction);
   }
   if (topic === "payment.method_required") {
     return shell("Potrebna je provera načina plaćanja", [greeting, `Automatska naplata za ${orderNumber} nije uspela. Porudžbina je sačuvana, ali je potrebno ažurirati način plaćanja.`], accountAction);
@@ -56,9 +64,11 @@ export function renderTransactionalMessage(topic: string, data: Record<string, u
       add_item: "Proizvod je dodat u pretplatu", update_item: "Proizvod u pretplati je izmenjen", remove_item: "Proizvod je uklonjen iz pretplate",
       slow_down: "Dostava je promenjena na svake dve nedelje", add_next_only: "Dodatak za sledeću dostavu je evidentiran", activated: "Pretplata je aktivirana",
     };
-    const title = labels[action] ?? "Pretplata je ažurirana";
-    const cancelled = ["cancel", "cancelled"].includes(action);
+    const title = data.cancelAfterPackage ? "Obnova pretplate je otkazana" : labels[action] ?? "Pretplata je ažurirana";
+    const cancelled = !data.cancelAfterPackage && ["cancel", "cancelled"].includes(action);
     return shell(title, [greeting, `${title}.`,
+      data.cancelAfterPackage ? "Preostale plaćene dostave ostaju zakazane do završetka paketa." : "",
+      data.appliesTo === "next_package" ? "Izmena važi od sledećeg paketa. Već kupljeni paket ostaje nepromenjen." : "",
       action === "skip_next" && data.previousDeliveryDate ? `Preskočena isporuka: ${formatDeliveryDate(String(data.previousDeliveryDate))}.` : "",
       action === "pause" && data.pauseUntil ? `Pauza traje do ${formatDeliveryDate(String(data.pauseUntil))}.` : "",
       !cancelled && deliveryDate ? `Sledeća dostava: ${formatDeliveryDate(deliveryDate)}.` : "",

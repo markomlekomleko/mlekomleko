@@ -14,6 +14,7 @@ export const runtime = "nodejs";
 
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
+  ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
   title: {
     default: "Mleko i Mleko | Domaće kravlje i kozje mleko",
     template: "%s | Mleko i Mleko",

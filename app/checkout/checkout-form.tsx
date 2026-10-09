@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { DELIVERY_CITIES, deliveryAddressError } from "../lib/delivery-area";
+import { DELIVERY_CITIES } from "../lib/delivery-area";
 import { useCart } from "../components/cart-provider";
 import { getConsentPreferences, useAnalytics } from "../components/analytics-provider";
 import { getAttributionSnapshot } from "../lib/attribution";
@@ -10,6 +10,7 @@ import {
   fetchJson,
   formatMoney,
   formatDate,
+  formatDateTime,
   type CartQuote,
 } from "../lib/frontend";
 
@@ -25,7 +26,7 @@ type CheckoutResult = {
 
 export function CheckoutForm() {
   const { items, ready, promoCode, clearCart } = useCart();
-  const { track } = useAnalytics();
+  const { track, consent: trackingConsent } = useAnalytics();
   const paymentMethod = "cash";
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -33,16 +34,25 @@ export function CheckoutForm() {
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
   const [quotedAddress, setQuotedAddress] = useState("");
-  const addressError = city && postalCode.length === 5 ? deliveryAddressError(city, postalCode) : null;
+  const addressError = null;
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [conversionBusy, setConversionBusy] = useState(false);
   const [conversionDone, setConversionDone] = useState(false);
   const [quote, setQuote] = useState<CartQuote | null>(null);
   const [quoteError, setQuoteError] = useState("");
+  const promoTracked = useRef("");
+  const checkoutTracked = useRef(false);
   const idempotencyKey = useRef<string | null>(null);
   const addressVerified = Boolean(city && postalCode.length === 5 && !addressError
     && quote?.serviceable === true && quotedAddress === `${city}|${postalCode}`);
+
+  useEffect(() => {
+    if (!quote || (!trackingConsent?.analytics && !trackingConsent?.marketing)) return;
+    const ecommerce = { currency: "RSD", value: quote.totalMinor / 100, items: items.map(item => ({ item_id: item.productId, item_name: item.name, price: item.unitPriceRsd, quantity: item.quantity })) };
+    if (!checkoutTracked.current) { checkoutTracked.current = true; track("begin_checkout", ecommerce); }
+    if (quote.promoCode && promoTracked.current !== quote.promoCode) { promoTracked.current = quote.promoCode; track("promo_applied", { coupon: quote.promoCode }); }
+  }, [quote, items, track, trackingConsent]);
 
   async function convertToSubscription(token: string) {
     setConversionBusy(true);
@@ -87,6 +97,7 @@ export function CheckoutForm() {
       setError(addressError ?? "Izaberite Beograd ili Novi Sad i unesite važeći poštanski broj. Sačekajte proveru dostave.");
       return;
     }
+    track("add_payment_info", { payment_type: paymentMethod });
     setSubmitting(true);
     setError("");
     const form = new FormData(event.currentTarget);
@@ -99,6 +110,8 @@ export function CheckoutForm() {
         method: "POST",
         headers: { "Idempotency-Key": idempotencyKey.current },
         body: JSON.stringify({
+          slotId: form.get("slotId") || undefined,
+          billing: form.get("companyName") || form.get("billingStreet") ? { companyName: form.get("companyName") || undefined, taxId: form.get("taxId") || undefined, addressLine1: form.get("billingStreet") || form.get("street"), city: form.get("billingCity") || form.get("city"), postalCode: form.get("billingPostalCode") || form.get("postalCode") } : undefined,
           customer: {
             fullName: form.get("fullName"),
             email: form.get("email"),
@@ -119,11 +132,13 @@ export function CheckoutForm() {
           })),
           attribution,
           analyticsConsent: consent.analytics,
+          marketingConsent: consent.marketing,
         }),
       });
       setResult(payload);
       const orderId = payload.order?.id ?? payload.orderId ?? payload.id;
       track("order_created", { paymentMethod }, orderId);
+      if (payload.subscription?.id || payload.subscriptionIds?.length) track("subscription_activated", { paymentMethod }, orderId);
       clearCart();
     } catch (requestError) {
       setError(
@@ -158,6 +173,7 @@ export function CheckoutForm() {
               <> Broj porudžbine: <strong>{result.order?.orderNumber ?? result.orderId ?? result.order?.id ?? result.id}</strong>.</>
             ) : null}
           </p>
+          <p className="muted small-text">Za prvi pristup nalogu dovoljan je kod poslat na email sa porudžbine. Lozinka nije potrebna.</p>
           {result.subscriptionOffer ? <section className="post-purchase-offer" aria-labelledby="post-purchase-title"><p className="eyebrow">Jedan klik do mirnog frižidera</p><h2 id="post-purchase-title">Neka ista porudžbina stiže svake nedelje.</h2><p>Uključujemo {result.subscriptionOffer.eligibleItemCount} {result.subscriptionOffer.eligibleItemCount === 1 ? "proizvod" : "proizvoda"} u nedeljni ritam. Prva redovna dostava je sledeće nedelje, a sada nema nove naplate.{result.subscriptionOffer.savingPerDeliveryMinor > 0 ? <> Štedite <strong>{formatMoney(result.subscriptionOffer.savingPerDeliveryMinor / 100)}</strong> po dostavi.</> : null}</p>{conversionDone ? <p className="notice success">Redovna dostava je uključena. Možete je menjati iz naloga.</p> : <button className="button" type="button" disabled={conversionBusy} onClick={() => void convertToSubscription(result.subscriptionOffer!.token)}>{conversionBusy ? "Uključujemo…" : "Da, ponovi svake nedelje"}</button>}<small>Bez ugovorne obaveze · preskakanje i pauza online</small></section> : null}
           {error ? <p className="notice error" role="alert">{error}</p> : null}
           <div className="button-row">
@@ -227,17 +243,14 @@ export function CheckoutForm() {
             <div className="form-grid">
               <label className="field">
                 <span>Grad</span>
-                <select name="city" autoComplete="address-level2" value={city} onChange={(event) => setCity(event.target.value)} aria-describedby="delivery-area-help" required>
-                  <option value="">Izaberite grad</option>
-                  {DELIVERY_CITIES.map((name) => <option key={name} value={name}>{name}</option>)}
-                </select>
+                <input name="city" autoComplete="address-level2" list="delivery-cities" value={city} onChange={event=>setCity(event.target.value)} aria-describedby="delivery-area-help" required /><datalist id="delivery-cities">{DELIVERY_CITIES.map(name=><option key={name} value={name} />)}</datalist>
               </label>
               <label className="field">
                 <span>Poštanski broj</span>
                 <input name="postalCode" inputMode="numeric" autoComplete="postal-code" value={postalCode} onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 5))} pattern="\d{5}" aria-invalid={Boolean(addressError)} aria-describedby="delivery-area-help delivery-area-status" required />
               </label>
             </div>
-            <p id="delivery-area-help" className="muted small-text">Dostavljamo samo na teritoriji Beograda i Novog Sada.</p>
+            <p id="delivery-area-help" className="muted small-text">Unesite grad i poštanski broj da proverimo zonu dostave.</p>
             <div id="delivery-area-status" aria-live="polite">
               {city && postalCode.length === 5 ? <p className={`check-result ${addressError || (quotedAddress === `${city}|${postalCode}` && quote?.serviceable === false) ? "error" : addressVerified ? "success" : ""}`}>
                 {addressError ?? (addressVerified ? "Grad i poštanski broj su u zoni dostave." : quotedAddress === `${city}|${postalCode}` && quote?.serviceable === false ? "Ovaj poštanski broj trenutno nije u zoni dostave." : quoteError || "Proveravamo dostupnost dostave…")}
@@ -249,6 +262,8 @@ export function CheckoutForm() {
             </label>
           </section>
 
+          <details className="card"><summary>Račun za firmu ili druga adresa računa</summary><div className="form-grid"><label className="field"><span>Naziv firme</span><input name="companyName" /></label><label className="field"><span>PIB (9 cifara)</span><input name="taxId" pattern="[0-9]{9}" /></label><label className="field"><span>Adresa računa</span><input name="billingStreet" /></label><label className="field"><span>Grad za račun</span><input name="billingCity" /></label><label className="field"><span>Poštanski broj za račun</span><input name="billingPostalCode" /></label></div></details>
+          {quote?.deliverySlots?.length ? <label className="field"><span>Vreme dostave</span><select name="slotId" required><option value="">Izaberite termin</option>{quote.deliverySlots.map(slot=><option key={slot.id} value={slot.id}>{slot.label}</option>)}</select></label> : null}
           <fieldset className="card fieldset">
             <legend><h2>Način plaćanja</h2></legend>
             <div className="radio-group">
@@ -261,7 +276,7 @@ export function CheckoutForm() {
                   readOnly
                 />
                 Gotovina pri dostavi
-                <span className="muted small-text">Pretplata se plaća pri prvoj dostavi u mesecu.</span>
+                <span className="muted small-text">Ceo paket se plaća unapred, pre početka isporuka.</span>
               </label>
 
             </div>
@@ -274,6 +289,7 @@ export function CheckoutForm() {
             </span>
           </label>
           {error ? <p className="notice error" role="alert">{error}</p> : null}
+          {quote?.minimumOrderMet === false ? <p className="notice error">Minimalna kupovina: {formatMoney(Number(quote.minimumOrderMinor)/100)}</p> : null}
           {quoteError ? <p className="notice error" role="alert">{quoteError}</p> : null}
         </div>
 
@@ -284,16 +300,17 @@ export function CheckoutForm() {
               <span>
                 {line.quantity} × {line.productName}<br />
                 <span className="muted">
-                  {line.purchaseType === "one_time" ? "Jednokratno" : `${cadenceLabel(line.cadence ?? undefined)} · ${formatMoney(line.unitPriceMinor * line.quantity / 100)} po dostavi · ${line.occurrences}× ovog meseca`}
+                  {line.purchaseType === "one_time" ? "Jednokratno" : `${cadenceLabel(line.cadence ?? undefined)} · ${formatMoney(line.unitPriceMinor * line.quantity / 100)} po dostavi · ${line.occurrences}× u paketu`}
+                  <><br />Ukupno u paketu: {line.quantity * line.occurrences} komada</>
                   {line.deliveryDates.length ? <><br />Termini: {line.deliveryDates.map((date) => formatDate(date)).join(", ")}</> : null}
                 </span>
               </span>
               <strong>{formatMoney(line.lineTotalMinor / 100)}</strong>
             </div>
           ))}
-          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Danas plaćate za tekući mesec" : "Danas plaćate"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Izmene do {formatDate(quote.cutoffAt)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
-          <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Plaćate samo isporuke planirane za tekući mesec.</p>
-          <button className="button" type="submit" disabled={submitting || !quote || !addressVerified}>
+          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Ukupno za ceo paket" : "Danas plaćate"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Izmene do {formatDateTime(quote.cutoffAt)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
+          <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Paket obuhvata 4 nedeljne ili 2 dvonedeljne dostave. Pauza i preskakanje čuvaju plaćene količine.</p>
+          <button className="button" type="submit" disabled={submitting || !quote || !addressVerified || quote.minimumOrderMet === false}>
             {submitting ? "Čuvamo porudžbinu…" : "Potvrdi porudžbinu"}
           </button>
           <a className="button secondary" href="/korpa">Izmeni korpu</a>

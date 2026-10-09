@@ -1,4 +1,6 @@
 "use client";
+import { TodayPreparation } from "./today-preparation";
+import { MarketingReport } from "./marketing-report";
 import { useEffect, useState } from "react";
 import { formatDate, formatMoney, statusLabel } from "../lib/frontend";
 import {
@@ -92,6 +94,7 @@ export function Overview({
         </div>
         <span className="work-date">{formatDate(today())}</span>
       </div>
+      <TodayPreparation request={request} version={version} onDelivery={onDelivery} />
       {error ? (
         <p role="alert" className="notice error">
           {error}{" "}
@@ -489,6 +492,7 @@ export function Overview({
                 )}
               </section>
             </div>
+            <MarketingReport data={obj(data.marketing)} />
             <div className="work-two">
               <section className="admin-panel">
                 <h3>Kako kupci poručuju</h3>

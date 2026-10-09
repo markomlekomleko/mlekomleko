@@ -2,4 +2,11 @@ import { listSubscriptions } from "../../../../server/admin";
 import { requireAdmin } from "../../../../server/auth";
 import { jsonResponse, withRoute } from "../../../../server/domain";
 
-export function GET(request: Request) { return withRoute(async () => { await requireAdmin(request); return jsonResponse({ subscriptions: await listSubscriptions() }); }); }
+export function GET(request: Request) {
+  return withRoute(async () => {
+    await requireAdmin(request);
+    return jsonResponse(
+      await listSubscriptions(new URL(request.url).searchParams),
+    );
+  });
+}

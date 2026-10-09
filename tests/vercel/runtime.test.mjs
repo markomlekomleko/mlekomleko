@@ -40,7 +40,7 @@ before(async () => {
     ADMIN_EMAIL: adminUsername, ADMIN_PASSWORD: adminSecret, ADMIN_SECRET: "ignored-legacy-key", ADMIN_LEGACY_ACCESS: "false", CRON_SECRET: cronSecret,
     PAYMENT_WEBHOOK_SECRET: randomUUID(), PAYMENT_PROVIDER: 'disabled', PAYMENT_MODE: 'disabled',
     BADI_MODE: 'mock', EMAIL_MODE: 'console', WHATSAPP_MODE: 'queue',
-    ALLOW_PRODUCTION_INTEGRATIONS: 'false',
+    ALLOW_PRODUCTION_INTEGRATIONS: 'false', GA4_API_SECRET: '', GA4_MEASUREMENT_ID: '', NEXT_PUBLIC_GA4_MEASUREMENT_ID: '', NEXT_PUBLIC_GTM_CONTAINER_ID: '', NEXT_PUBLIC_META_PIXEL_ID: '', META_CONVERSIONS_ACCESS_TOKEN: '', NEXT_PUBLIC_GOOGLE_ADS_ID: '',
   };
   const migration = spawnSync(process.execPath, ['scripts/migrate.mjs', '--local'], { env, encoding: 'utf8' });
   assert.equal(migration.status, 0, migration.stderr);
@@ -407,4 +407,17 @@ test('order filters search the full database, paginate and include complete Belg
     assert.equal((await api(`/api/admin/orders?${query}`, { admin: true })).status, 422, query);
   }
   assert.equal((await api('/api/admin/orders?q=%25', { admin: true })).body.total, 0, 'Search treats LIKE wildcards literally');
+});
+
+
+test('production CSP permits consented Google and Meta transports without broad script wildcards', async () => {
+  const response = await fetch(origin + '/');
+  const csp = response.headers.get('content-security-policy');
+  assert.ok(csp);
+  const directives = Object.fromEntries(csp.split(';').map(part => { const [name, ...values] = part.trim().split(/\s+/); return [name, values]; }));
+  for (const vendor of ['https://www.googletagmanager.com', 'https://connect.facebook.net', 'https://www.googleadservices.com']) assert.ok(directives['script-src'].includes(vendor), vendor);
+  for (const vendor of ['https://*.google-analytics.com', 'https://www.facebook.com', 'https://www.googleadservices.com']) assert.ok(directives['connect-src'].includes(vendor), vendor);
+  assert.ok(!directives['script-src'].includes('*'));
+  assert.ok(!directives['script-src'].includes("'unsafe-eval'"));
+  assert.deepEqual(directives['frame-ancestors'], ["'none'"]);
 });

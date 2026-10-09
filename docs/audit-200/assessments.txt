@@ -1,0 +1,200 @@
+1|P|A|Admin unos čuva proizvod, a proizvod je dostupan u katalogu.|T001
+2|P|A|Naziv i opis mogu da se menjaju kroz admin; promene se trajno čuvaju.|T001,T002
+3|P|A|Podržani su otpremanje fotografije i zamena imageUrl; API čuva sliku u bazi.|T003,P206
+4|P|A|Galerija do 12 fotografija, upload i prikaz u prodavnici; odbijene nebezbedne adrese.|T004
+5|P|A|Jednokratna i pretplatna cena se posebno čuvaju i koriste u obračunu.|T005,T023
+6|P|A|unitLabel je slobodno polje; količina predstavlja broj takvih pakovanja, bez automatske konverzije litara.|T006
+7|P|A|Sakrivanje uklanja proizvod iz javnog kataloga i blokira novu kupovinu.|T007
+8|P|A|Već kupljeni paket ostaje obaveza; obnova staje kada je proizvod neaktivan.|T137,T174
+9|P|A|Kupljena cena i količina ostaju sačuvane i nakon promene kataloga.|P106
+10|P|A|allowSubscription zabranjuje pretplatu za izabrani proizvod.|T010
+11|P|A|Akcija se postavlja izmenom cene; precrtana cena i bedž se podešavaju odvojeno.|T011,T012
+12|P|A|Nova i precrtana cena se čuvaju; precrtana cena sama ne menja naplatu.|T012,app/proizvodi/[slug]/product-detail.tsx
+13|P|A|Akcijske cene imaju početak i kraj; kupljene cene ostaju zamrznute.|T013
+14|P|A|Admin kreira kod; quote proverava uslove i računa iznos.|T014
+15|P|A|Procentualni i fiksni popust provereni su nezavisnim očekivanim zbirovima.|T015
+16|P|A|Postoji ukupni limit upotrebe; konkurentne kupovine ne mogu obe da potroše poslednje korišćenje.|T016,D170
+17|P|A|Promo kod može važiti samo za prvu kupovinu; uslov se ponovo proverava u transakciji.|T017
+18|P|A|Kod važi za početnu kupovinu; pri obnovi se ne prenosi automatski.|T018
+19|P|A|Kod se obračunava na važeću katalošku cenu; popust ne umanjuje dostavu.|T019
+20|P|A|Raspodela popusta radi u parama; zbir fiskalnih stavki odgovara iznosu. Provereno bez stvarnog izdavanja.|tests/fiscal-amounts.test.mjs:6
+21|P|A|Kupovina bez sesije kreira kupca i porudžbinu; nalog se kasnije potvrđuje.|T021
+22|P|A|Obavezni su email, ime, telefon, ulica, grad i poštanski broj; nedostajuća polja su odbijena.|T022
+23|P|A|Izvršeno svih sedam nepraznih kombinacija jednokratno/nedeljno/dvonedeljno.|T023
+24|P|A|Isti proizvod može imati jednokratnu i pretplatnu stavku; količine se ne gube.|T024
+25|P|A|Nedeljni i dvonedeljni ritam imaju odvojene kupljene stavke i brojače.|T025
+26|P|A|Količina je po isporuci; ukupna roba je količina puta 1, 2 ili 4.|P53,T023
+27|P|K|Checkout prikazuje količinu po dostavi, termine i ukupan broj komada u paketu.|app/checkout/checkout-form.tsx
+28|P|A|Za zajednički početak naplaćuje se broj jedinstvenih termina: 1, 2 ili 4; artikli ne dupliraju dostavu.|D46,server/commerce.ts:171
+29|P|A|Ponavljanje istog ključa vraća isti rezultat; konkurentni zahtevi ne dupliraju porudžbinu.|D62
+30|P|A|Ručni admin unos radi i bez emaila, sa gotovinskim statusom pending; kartica nije podržana u ručnom unosu.|T030
+31|P|A|Paket je pravo na fiksne isporuke, a ne preostali dani kalendarskog meseca.|P53
+32|P|A|Nedeljni paket zatvara se tek posle četiri uspešne potvrde.|P61
+33|P|A|Dvonedeljni paket zatvara se nakon dve uspešne potvrde, uključujući pauzu.|P76
+34|P|A|Peti kalendarski termin ne postaje peta plaćena isporuka.|P181
+35|P|A|Kupljene isporuke prelaze granicu meseca i zadržavaju količinu i cenu.|P53,P88
+36|P|A|Počinje izabranog dozvoljenog datuma pre cutoff-a; kasna uplata pomera neiskorišćen paket.|D76,P133
+37|P|A|Dve odvojene kupovine istog kupca stvaraju dve nezavisne pretplate.|T037
+38|P|A|Svaka stavka ima svoj broj potrebnih uspešnih isporuka; zatvaranje čeka sve.|P99,T023
+39|D|A|Dnevni posao pravi novu porudžbinu tek posle završetka paketa; stvarna automatska kartična naplata još nije povezana.|P171,server/jobs.ts,integrations/commerce-readiness.mjs
+40|P|A|Otkazivanje plaćenog paketa isključuje obnovu i zadržava sve preostale isporuke.|P115
+41|P|A|Akcija skip_next pomera datum i uklanja preskočenu isporuku iz pripreme.|D226
+42|P|A|Promena se odbija tačno na cutoff-u; zaključani spisak ostaje nepromenjen.|D135,D281
+43|P|A|Preskakanje ne stvara kredit i ne umanjuje kupljene količine.|P88
+44|P|A|Akcija pause čuva datum pauze i izuzima termine do nastavka.|P76,D240
+45|P|A|Tri kalendarska meseca računaju se od datuma zahteva u Beogradu, uz poslednji važeći dan meseca.|T164
+46|P|A|Pauza se može produžiti; rok od tri meseca ostaje vezan za početak prvobitne pauze.|T046
+47|P|A|AUDIT-01 ispravljen: nastavak traži prvi slobodan termin plaćenog ritma i poštuje preskakanja i praznike.|T047
+48|P|A|Automatski nastavak po isteku pauze poštuje kupljeni ritam; ovo ne potvrđuje raniji ručni nastavak iz Q47.|P76,D260
+49|P|A|Plaćeni paket ostaje nepromenjen; promene važe za naredni paket.|P106,P171
+50|P|A|add_next_only kreira posebnu porudžbinu, naplaćuje je zasebno i troši dodatak jednom.|D110
+51|P|A+U|Danas za pripremu prikazuje kupce i ukupne količine; provereni API zbir i mobilni prikaz.|T051,UI
+52|P|A|Zbir za proizvod jednak je zbiru stavki kupaca na izabranom terminu.|T052
+53|P|A|Svaka dostava sadrži kupca, adresu, proizvod i količinu.|T053
+54|P|A|subscription_id razdvaja redovne i jednokratne stavke; brojači odgovaraju fixture porudžbinama.|T054
+55|P|A|Kalendar projektuje nedeljni/dvonedeljni ritam, pauze, preskakanja i preostali paket.|tests/account-dashboard.test.mjs:142,P181
+56|P|A|CSV za vozača i Excel sa rutom i pripremom imaju proverene sadržaje.|tests/rendered-html.test.mjs:502,tests/rendered-html.test.mjs:569
+57|P|A|Zaključavanje čuva snapshot i rezerviše stavke; ne znači da je roba uručena.|D281,P61
+58|P|A|Admin potvrda uspešne zaključane isporuke povećava brojač paketa.|P61,T155
+59|P|A|Neuspela redovna isporuka ne troši pravo; neuspeo jednokratni deo mešovitog paketa prenosi se na narednu posetu.|P88,P198,T162
+60|P|A|Potvrđuje se stvarno uručena količina; ostatak paketa ili jednokratne kupovine prelazi u naredni termin bez nove naplate.|T060
+61|D|A|Gotovinska evidencija postoji. Stvarna kartična i recurring naplata nisu povezane; mock nije banka.|D179,integrations/commerce-readiness.mjs
+62|P|A|Neplaćen paket ne ulazi u pripremu; cela uplata otključava isporuke.|P124
+63|P|A|Admin promena paymentStatus na paid aktivira paket i red za avans; ne predstavlja bankarski transfer.|P124,T188
+64|P|A|Prvi termin se pomera iza zaključane rute, uz očuvane sve isporuke.|P133,P144
+65|P|A|Otvoreni neplaćen paket vidljiv je adminu, ali nije na listi za pakovanje.|P124
+66|E|E|Stvarno odbijanje kartice nije moguće proveriti bez bankarskog adaptera. Proverena je blokada simuliranih kartica u produkciji.|D179,integrations/commerce-readiness.mjs
+67|D|A|Trajan red za ponovnu naplatu, najviše tri pokušaja i zaustavljanje nepoznatog ishoda; banka se povezuje kasnije.|T067
+68|P|A|Preostale plaćene isporuke se završavaju; naredna obnova se ne pravi.|P115
+69|D|A|Kupac/admin zahtev, pregled preostalih proizvoda, zaustavljanje pripreme, odobrenje i lokalna simulacija povraćaja. Stvarna bankarska i fiskalna korekcija čekaju povezivanje. Dostava nije deo ovog automatskog izračuna.|T069
+70|D|A|Ponovno aktiviranje otkazanog neplaćenog paketa je odbijeno; stvarnu kasnu uplatu treba finansijski usaglasiti van ovog toka.|P155
+71|P|A|Potvrda cele uplate pokreće avans. API zahtev proveravan mock odgovorima, bez stvarnog računa.|P61,F69
+72|P|A|Poslednja uspešna isporuka upisuje jedinstven događaj za konačni račun. Provereno lokalno.|P61,P186
+73|P|A|Broje se samo delivery_orders sa statusom delivered za svaku package_line.|P99,P186
+74|P|A|Pauza odlaže završetak; protek kalendarskog meseca ne izdaje konačni račun.|P76
+75|P|A|Mešoviti paket koristi zajednički avans i čeka sve stavke, uključujući jednokratnu. Provereno mock tokom.|P99,F69
+76|P|A|Finalize referencira PFR avansa; čuvaju se povezani refund i final dokumenti. Potvrđen mock HTTP ugovor.|F69
+77|E|E|Kreiranje email događaja je testirano; stvarni PDF i prijem u stvarno sanduče nisu provereni ovom proverom.|P61,F69,server/notifications.ts
+78|P|A|Ponovno slanje postojećeg računa dodaje email u red bez novog fiskalnog izdavanja.|T078
+79|P|A|Nepoznat ishod se trajno beleži i blokira automatski ponovni POST; potrebna je provera kod provajdera.|F61,tests/fiscal-dispatch.test.mjs:25
+80|P|A|Trajni dnevnik zahteva, ključevi i transakcije sprečavaju ponovljeno izdavanje u testiranim trkama i ponavljanjima.|P186,tests/fiscal-dispatch.test.mjs:35
+81|P|A|Prijava koristi jednokratni kod; kasnija prijava ne zahteva staru lozinku. Slanje provajdera je mockovano.|L75,L229
+82|P|A+U|Nalog prikazuje kupljenu količinu, isporučeno/ukupno i preostalu robu; proverena promena na 1/4.|T082,UI
+83|P|A|Posle prve isporuke prikazuje se sledeći termin iz rasporeda.|T083
+84|P|A|Kupac sam menja kontakt i profil; primena na buduće pretplate je eksplicitna i ne prepisuje stare porudžbine.|T084
+85|P|A|Zaključana dostava zadržava adresu iz snapshot-a; otvorene porudžbine dele profil adresu, vidi Q104.|T085,D281,tests/account-dashboard.test.mjs:71
+86|P|A|Kreiraju se i šalju potvrde porudžbine; proveren poziv mock email provajderu, ne stvarni inbox.|C131,C145
+87|P|A|Dnevni posao deduplikuje podsetnike; preskočeni/zaustavljeni termini ih ne dobijaju.|C193,C103
+88|P|A|Za sve podržane promene provereni su admin, priprema, email i odobreni WhatsApp zahtevi u mock okruženju.|C70,C153
+89|D|A|Email, WhatsApp i SMS tokovi postoje; SMS traži pristanak i potvrđen broj. Lokalni red i opoziv pristanka su testirani, stvarna isporuka čeka servise.|T089
+90|D|A|Dnevnik razlikuje simulaciju, prihvaćenu poruku i potvrdu dostave. Resend webhook proverava potpis, ponavljanje i redosled. Stvarni inbox nije testiran.|T090
+91|P|A|Odvojeni zaposleni: menadžer, dostavljač i finansije, sa serverskim pravima i opozivom sesija.|T091
+92|P|A|Izmene prijavljenog zaposlenog beleže njegov email u audit dnevniku.|T092
+93|P|A|Konkurentne izmene iste verzije daju jedan uspeh i jedan 409; starija verzija ne prepisuje noviju.|T093,D92
+94|P|A|Pretraga po imenu, telefonu i broju porudžbine vraća odgovarajući rezultat.|T094
+95|P|A|Dashboard prihodi odvajaju paid od pending; izveštaji imaju broj porudžbina i najprodavanije proizvode.|T095,server/admin-workspace.ts:227
+96|D|A|Postoji usaglašavanje starih plaćenih paketa sa istorijskim količinama i avansom. Originalni fiskalni zahtev mora biti usaglašen pre stvarnog završnog izdavanja; ne nagađa se.|T096
+97|D|A|Admin čuva oznaku proizvoda; dostava se podešava serverski. Ispravnost poreskog izbora mora biti potvrđena van testa.|T097,F52
+98|P|A|Testovi koriste izolovanu SQLite bazu i lokalne/mock adaptere, bez stvarnog fiskalnog ili platnog POST-a.|tests/functional-audit.test.mjs:10,tests/fiscomm.test.mjs:16
+99|D|K|Lokalna baza je kopirana, vraćena u odvojenu datoteku i prošla integrity/foreign-key provere; oporavak produkcionog hostinga se proverava kada se poveže.|scripts/verify-local-backup.mjs,work/local-backup-verification.json,work/main-local-backup-verification.json
+100|E|E|Lokalni tok je proveren; bankarski adapter, realni fiskalni sandbox, porezi, produkciona migracija i isporuka poruka ostaju uslovi za puštanje.|integrations/commerce-readiness.mjs,docs/prepaid-packages-2026-10-09.md
+101|P|A|Valuta obračuna i porudžbine je RSD; više valuta nije podržano.|T101,server/settings.ts
+102|P|A|Firma i PIB čuvaju se uz račun; Fiscomm zahtev šalje buyerId u obliku 10:PIB. Testiran ugovor lažnim HTTP servisom.|T102,tests/fiscomm.test.mjs
+103|P|A|Odvojene adrese fakturisanja i isporuke čuvaju se na porudžbini i pretplati.|T103
+104|P|A|AUDIT-02 ispravljen: druga kupovina istog emaila ne menja adresu prve porudžbine.|T104
+105|P|A|Minimalan iznos korpe podešava admin i proverava server pre poručivanja.|T105
+106|P|A|Dozvoljeno je 1–100 celih jedinica po redu; 100 prolazi, 101 se odbija.|T106
+107|P|A|Nula, negativna, decimalna i tekstualna količina su odbijene pre upisa porudžbine.|T107
+108|P|A|Korpa mora imati 1–50 redova; prazna i korpa od 51 reda su odbijene.|T108
+109|P|A|Nepostojeći proizvod vraća 409 i ne stvara porudžbinu.|T109
+110|P|A|Nepoznati purchaseType i cadence vraćaju 422.|T110
+111|P|A|Dupli identični redovi se čuvaju odvojeno i količine sabiraju u pripremi; nema automatskog spajanja korpe.|T111
+112|P|A|U svih sedam kombinacija očuvane su nezavisne količine istog proizvoda po ritmovima.|T112
+113|P|A|Server koristi cenu iz baze; poslati lažni unitPrice/total ne određuju naplatu.|T113
+114|P|A|Stara korpa ne zaobilazi is_active proveru pri novoj ponudi i kupovini.|T114
+115|P|A|Pretplata one-time-only proizvoda se odbija, jednokratna kupovina prolazi.|T115
+116|P|A|Kod čiji endsAt je u prošlosti vraća PROMO_INVALID.|T116
+117|P|A|Kod čiji startsAt je u budućnosti ne može da se primeni.|T117
+118|P|A|Minimalni iznos promo koda se proverava prema međuzbiru proizvoda.|T118
+119|P|A|Fiksni popust se ograničava na međuzbir proizvoda; dostava ostaje za naplatu.|T119
+120|P|A|Kod se normalizuje na velika slova uz uklanjanje razmaka.|T120
+121|P|A|Do pet kodova; kombinovanje samo kada svi kodovi to dozvoljavaju, svaki sledeći popust na preostali iznos proizvoda.|T121
+122|P|A|Limit po kupcu i evidencija iskorišćenih kodova proveravaju se i pri transakcionom upisu.|T122
+123|P|A|Razmaci, donje crte i ćirilica u URL slugu se odbijaju; format su ASCII slova, brojevi i crtice.|T123
+124|P|A|Postojeći slug vraća 409 bez prepisivanja originalnog proizvoda.|T124
+125|P|A|Ćirilica i dijakritici se čuvaju u nazivu; ograničenje ASCII važi samo za slug.|T125
+126|P|A|Opis sa script oznakom prikazuje se kao escaped tekst u serverskom HTML-u.|T126
+127|P|A|Fotografija od 2.000.001 bajta se odbija i ne čuva u bazi.|T127
+128|P|A|PNG, JPG i WebP upload provereni su stvarnim datotekama, povratom istih bajtova i tačnog MIME tipa; nema pune serverske validacije/dekodiranja slike.|T128,app/api/admin/product-images/route.ts
+129|P|A|SVG sa aktivnim sadržajem je odbijen i nije sačuvan.|T129
+130|P|A|HTML označen kao image/png je odbijen; proveravaju se magic bytes, ne radi se puna validacija/dekodiranje slike.|T130,app/api/admin/product-images/route.ts
+131|P|A|Proizvod bez fotografije prolazi; UI ima rezervni prikaz umesto obavezne slike.|T131,app/proizvodi/[slug]/product-detail.tsx:67
+132|P|A|HTTP i javascript URL vrednosti su odbijene; dozvoljena je lokalna putanja ili HTTPS.|T132
+133|P|A|sortOrder se čuva i menja redosled javnog kataloga.|T133
+134|P|A|Kategorija se čuva kao tekst; nema zasebne hijerarhije kategorija.|T134
+135|P|A|isFeatured oznaka se može menjati kroz admin.|T135
+136|P|A|Javni katalog nema nabavnu cenu, trošak pakovanja ni interne fiskalne oznake.|T136
+137|P|A|Proizvod sa referencama se arhivira, ne briše; kupljena roba ostaje na pripremi.|T137
+138|P|A|Dodavanje i izmena proizvoda ostavljaju odvojene audit zapise.|T138
+139|P|A|Kopiranje pravi novi skriven proizvod sa nezavisnom oznakom i galerijom.|T139
+140|P|A|Opcione zalihe po proizvodu, rezervacija ukupne kupljene količine, provera raspoloživosti i potrošnja samo uručenih komada.|T140
+141|P|A|Serije i rokovi, odabir po najbližem važećem roku, zabrana isteka i zamena rezervacije posle pauze.|T141
+142|P|A|Posebna polja sastojaka, alergena i nutritivne tabele prikazana su i kupcu.|T142
+143|P|A|Neradni datumi se uređuju u adminu; ne troše plaćenu isporuku i isključeni su iz termina paketa.|T143
+144|P|A|Admin može dodati grad sa konkretnim poštanskim brojevima; kupovina u novoj zoni je testirana.|T144
+145|P|A|Neslaganje grada i poštanskog broja se odbija i ne upisuje kupovinu.|tests/delivery-area.test.mjs:47
+146|P|A|Podržani su ćirilični nazivi i suvišni razmaci u nazivima podržanih gradova.|tests/delivery-area.test.mjs:38
+147|P|A|Neuspešna kupovina van zone ne ostavlja kupca, porudžbinu, pretplatu ili checkout ključ.|tests/delivery-area.test.mjs:47
+148|P|A|Tačno na pragu dostava je besplatna; ispod praga ostaje puna tarifa.|T148
+149|P|A|Promena tarife ne menja sačuvani iznos već plaćenog paketa.|T149
+150|P|A|Kupac bira ponuđeno vreme, admin podešava naziv i kapacitet; nova porudžbina se odbija kad je izabrani termin popunjen.|T150
+151|P|A|Podešavanje subote prihvata subotnji datum i odbija dan koji nije omogućen.|T151
+152|P|A|Kalendarska aritmetika i Beograd cutoff provereni su preko obe DST promene.|tests/business-calendar.test.mjs:12,tests/business-calendar.test.mjs:18,C178
+153|P|A|Tačan trenutak roka je zaključan; nema granične dodatne izmene.|D135
+154|P|A|Admin force zaključavanje radi pre roka; buduća potvrda uručenja je i dalje zabranjena.|P162,T155
+155|P|A|Buduća zaključana isporuka vraća 409 pri pokušaju potvrde.|T155
+156|P|A|Otvorena nezaključana isporuka ne može da bude potvrđena kao uručena.|T156
+157|P|A|Ponovljena ista potvrda vraća replay bez novih brojača i konačnog događaja.|P61
+158|P|A|Konkurentne potvrde poslednjih delova zatvaraju paket i kreiraju konačni događaj jednom.|P186
+159|P|A|Delivered se ne može prebaciti na failed običnom akcijom završetka.|T159
+160|P|A|Konačni račun čeka i neuručenu jednokratnu stavku mešovitog paketa.|P198
+161|P|A|Projekcija nema petu plaćenu pojavu; rezervisane i uručene stavke ograničavaju broj.|P181
+162|P|A|Neuspela dvonedeljna dostava se nastavlja za 14 dana; neuspeh ne troši paket.|T162
+163|P|A|Posle preskakanja nedeljna stavka ide za 7, a dvonedeljna na svoj naredni dospeli termin.|T163
+164|P|A|31. januar daje najkasnije 30. april; 1. maj se odbija.|T164
+165|P|A|30. februar se odbija bez promene statusa pretplate.|T165
+166|P|A|Preskočeni neplaćeni termin ostaje preskočen i nakon uplate; sva četiri prava ostaju.|T166
+167|P|A|Kasnija izmena stavke ne vraća renewal_enabled na 1.|T167
+168|P|A|Uklanjanje poslednje stavke isključuje obnovu; ne ostaje prazna naplativa pretplata.|D130
+169|P|A|Isti proizvod i ritam povećavaju količinu postojeće buduće stavke; kupljeni snapshot se ne menja.|T169
+170|P|A|slow_down menja budući ritam, a kupljene nedeljne isporuke i količine ostaju iste.|T170
+171|P|A|Dodatak i njegova porudžbina pomeraju se na isti sledeći termin posle preskakanja.|T171
+172|P|A|Dodatak ostaje sačuvan i prati termin nakon pauze.|T172
+173|P|A|Isključivanje obnove plaćenog paketa zadržava već plaćen dodatak i on se isporučuje.|T173
+174|P|A|Obnova vraća product_unavailable i ne kreira niti naplaćuje novi paket.|T174
+175|D|A|Višak kredita se prenosi, a nova porudžbina može imati nulu. Stvarni fiskalni tretman nultog računa nije potvrđen.|D149,server/billing.ts
+176|P|A|Legacy pretplata vraća legacy_review_required bez nove porudžbine.|T176
+177|P|A|Tuđi customerId/pretplata ne mogu da se menjaju; odgovor je 404.|T177,tests/account-dashboard.test.mjs:82
+178|P|A|Istekla sesija vraća 401 i ne dopušta pristup nalogu.|T178
+179|P|A|Logout poništava upotrebljeni token; naredni pristup više nije odobren.|D81
+180|P|A|Kod je jednokratan; konkurentni zahtevi ne stvaraju dve sesije.|L82
+181|P|A|U režimu koda kasnija prijava ne zahteva raniju lozinku; nije potreban zaseban reset lozinke.|L75,L229
+182|P|A|Kod se zaključava nakon pet pogrešnih pokušaja.|L82
+183|P|A|Cooldown po primaocu važi i kada zahtevi dolaze sa različitih IP adresa.|L96
+184|P|A|Neispravan email se odbija pre kreiranja kupca.|T184
+185|P|A|Cross-origin promena pretplate vraća 403 bez promene obnove.|T185
+186|P|A|Nedostajući admin token, pogrešna lozinka i istekao token odbijaju pristup.|T186
+187|P|A|Testirani javni/account odgovori i dijagnostika ne sadrže platni token ili serverske tajne; ovo nije kompletan penetracioni test.|T187,tests/integrations.test.mjs:26
+188|P|A|Pogrešna webhook tajna vraća 401 pre promene uplate; bankarski potpis tek zahteva adapter.|T188
+189|P|A|Isti eventId se obrađuje jednom i vraća duplicate bez drugog računa.|T189
+190|P|A|Admin vraćanje plaćenog paketa na pending je odbijeno; uplata ostaje paid.|T190
+191|P|A|Fiskalni 5xx/nejasan odgovor se ne tretira kao bezbedan automatski retry POST-a.|tests/fiscal-dispatch.test.mjs:46
+192|P|A|Završen paket bez avansa ostaje bez izdatog konačnog računa, uz ADVANCE_NOT_ISSUED.|T192
+193|P|A|javascript/HTTP dokumenti ne ulaze u sačuvani PDF/verification URL niti email payload.|FQ193
+194|P|A|Nedostajuća ili strana poreska oznaka blokira POST; nakon ispravne oznake bezbedno se nastavlja.|F52
+195|P|A|Raspodela ostatka od jedne pare je testirana; ukupan iznos ostaje tačan.|tests/fiscal-amounts.test.mjs:12
+196|P|A|Sačuvan uspešan odgovor popravlja prikaz bez novog izdavanja računa.|F39,tests/fiscal-dispatch.test.mjs:17
+197|P|A|Bez saglasnosti se potiskuju lokalni/vendor purchase događaji; provereni i odvojeni tipovi saglasnosti.|tests/marketing-purchase.test.mjs:33,tests/integrations.test.mjs:212
+198|P|A|Spoke CSV neutralizuje formule; Excel pravi tekstualne ćelije. Testirani su izvozi, ne svaka verzija Excela.|tests/integrations.test.mjs:147,tests/rendered-html.test.mjs:569
+199|P|A|Allowlist i rekurzivno čišćenje uklanjaju PII iz testiranih analitičkih payloadova.|tests/marketing-attribution.test.mjs:28,tests/integrations.test.mjs:212
+200|P|U|Na 390 px dnevna priprema i paketi imaju širinu dokumenta 390 px, vidljive količine i brojače bez horizontalnog prelivanja.|UI

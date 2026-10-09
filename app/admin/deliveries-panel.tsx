@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { DeliveryCalendar } from "./delivery-calendar";
 import { formatDate, formatMoney } from "../lib/frontend";
 import {
   Dialog,
@@ -56,8 +57,8 @@ export function DeliveriesPanel({
     return () => controller.abort();
   }, [request, date, version, revision]);
   useEffect(() => {
-    void request<{ dates: string[] }>("/api/admin/orders/quote")
-      .then((v) => setNextDate(v.dates[0] ?? ""))
+    void request<{ delivery: {deliveryDate: string} }>("/api/storefront")
+      .then((v) => setNextDate(v.delivery.deliveryDate))
       .catch(() => setNextDate(""));
   }, [request]);
   async function generate() {
@@ -99,6 +100,15 @@ export function DeliveriesPanel({
       setBusy(false);
     }
   }
+  const [handed, setHanded] = useState<Record<string,number>>({});
+  async function confirmHandover(id: string, status: "delivered" | "failed") {
+    setBusy(true); setError("");
+    try {
+      await request("/api/admin/deliveries", {method: "POST", body: JSON.stringify({action: "complete", id, status, ...(status === "delivered" ? {items: rows(orders.find(order => order.id === id)?.items).map(item=>({id:item.id,deliveredQuantity:handed[str(item.id)] ?? num(item.quantity)}))} : {})})});
+      setNotice(status === "delivered" ? "Uručene količine su sačuvane. Preostala roba ostaje u rasporedu." : "Neuspela dostava nije potrošila plaćenu isporuku.");
+      setRevision(v => v + 1); onChanged();
+    } catch (e) {setError(e instanceof Error ? e.message : "Potvrda nije uspela.");} finally {setBusy(false);}
+  }
   async function preview() {
     setBusy(true);
     setError("");
@@ -134,6 +144,7 @@ export function DeliveriesPanel({
     isLocked = delivery.status === "locked" || delivery.status === "completed";
   return (
     <div className="admin-stack">
+      <DeliveryCalendar request={request} selected={date} onSelect={onDate} version={version + revision} />
       <section className="admin-panel">
         <div className="panel-heading">
           <div>
@@ -263,6 +274,7 @@ export function DeliveriesPanel({
         <div className="work-route-list">
           {orders.map((order, i) => {
             const c = obj(order.customer_snapshot);
+            const partiallyDelivered = order.status === "delivered" && rows(order.items).some(item => num(item.delivered_quantity ?? item.quantity) < num(item.quantity));
             return (
               <article
                 className="admin-panel work-route-card"
@@ -291,23 +303,24 @@ export function DeliveriesPanel({
                   {rows(order.items).map((item) => (
                     <div
                       className="work-pack-item"
-                      key={`${str(item.product_id)}-${str(item.source_type)}`}
+                      key={str(item.id, `${str(item.product_id)}-${str(item.source_type)}-${str(item.package_line_id)}`)}
                     >
                       <strong>
                         {num(item.quantity)} × {str(item.unit_label)}
                       </strong>
-                      <span>{str(item.product_name)}</span>
+                      <span>{str(item.product_name)}</span>{isLocked && order.status === "locked" && (item.package_line_id || item.order_item_id) ? <label>Uručeno <input aria-label={`Uručeno ${str(item.product_name)}`} type="number" min="0" max={num(item.quantity)} value={handed[str(item.id)] ?? num(item.quantity)} onChange={event=>setHanded(previous=>({...previous,[str(item.id)]:Number(event.target.value)}))} style={{width:72}} /></label> : order.status === "delivered" ? <small>Uručeno: {num(item.delivered_quantity ?? item.quantity)}</small> : null}
                     </div>
                   ))}
+                  {c.deliverySlot ? <p>Vreme: {str(c.deliverySlot)}</p> : null}
                   {order.note ? (
                     <p className="work-delivery-note">
                       Napomena: {str(order.note)}
                     </p>
                   ) : null}
                 </div>
-                <span className="work-badge">
-                  {order.subscription_id ? "Redovna" : "Jednokratna"}
-                </span>
+                <div><span className="work-badge">{order.subscription_id ? "Pretplata" : "Jednokratna"} · {partiallyDelivered ? "Delimično isporučeno" : order.status === "delivered" ? "Isporučeno" : order.status === "failed" ? "Nije isporučeno" : "Čeka isporuku"}</span>
+                {partiallyDelivered ? <p>Neuručene količine ostaju za narednu dostavu.</p> : null}
+                {isLocked && order.status === "locked" ? <div className="button-row"><button className="button small" disabled={busy || date > today()} onClick={() => void confirmHandover(str(order.id), "delivered")}>Potvrdi isporuku</button><button className="button secondary small" disabled={busy || date > today()} onClick={() => void confirmHandover(str(order.id), "failed")}>Nije isporučeno</button></div> : null}</div>
               </article>
             );
           })}

@@ -1,0 +1,137 @@
+{
+  "date": "2026-10-09",
+  "environment": "Isolated preview on localhost:4184, synthetic customer data",
+  "checks": [
+    {
+      "screen": "Kupci / napredak paketa",
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "overflow": false,
+      "progress": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          0,
+          2
+        ]
+      ],
+      "screenshot": "output/playwright/audit200-mobile-packages.png"
+    },
+    {
+      "screen": "Pregled / danas za pripremu",
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "overflow": false,
+      "customers": 2,
+      "units": 6,
+      "oneTime": 1,
+      "subscription": 2,
+      "screenshot": "output/playwright/audit200-mobile-today.png"
+    },
+    {
+      "screen": "Pregled / danas za pripremu",
+      "viewportWidth": 1440,
+      "documentWidth": 1440,
+      "overflow": false,
+      "customers": 2,
+      "units": 6
+    },
+    {
+      "screen": "Proizvodi / dodavanje kroz admin",
+      "result": "passed",
+      "product": "Browser provera punog proizvoda",
+      "checks": [
+        "Galerija sa dve slike",
+        "Opis, sastav, alergeni i nutritivne vrednosti",
+        "Akcijska cena 240 RSD"
+      ],
+      "screenshot": "output/playwright/complete-product-saved.png"
+    },
+    {
+      "screen": "Javna stranica proizvoda",
+      "result": "passed",
+      "checks": [
+        "Akcijska cena 240 RSD",
+        "Galerija",
+        "Deklaracija i nutritivne vrednosti"
+      ],
+      "snapshot": "work/public-product-ui.txt"
+    },
+    {
+      "screen": "Zaposleni / novi dostavljač",
+      "result": "passed",
+      "checks": [
+        "Nalog napravljen kroz UI",
+        "Prijava dostavljača",
+        "Navigacija ograničena na dostave",
+        "Bez globalne pretrage i dodavanja porudžbine"
+      ],
+      "screenshot": "output/playwright/complete-staff-created.png"
+    },
+    {
+      "screen": "Dostavljač na telefonu",
+      "result": "passed",
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "overflow": false,
+      "screenshot": "output/playwright/complete-driver-mobile.png"
+    },
+    {
+      "screen": "Kupovina za firmu",
+      "result": "passed",
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "overflow": false,
+      "orderNumber": "MM-20261009-LCIAKEKW",
+      "checks": [
+        "Dve jedinice proizvoda",
+        "Odvojena adresa isporuke i računa firme",
+        "PIB sačuvan uz porudžbinu",
+        "Roba 480 RSD + dostava 350 RSD = 830 RSD",
+        "Uspešan završetak gotovinske porudžbine"
+      ],
+      "screenshot": "output/playwright/complete-checkout-mobile.png"
+    },
+    {
+      "screen": "Pravila dostave / neradni dan",
+      "result": "passed",
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "overflow": false,
+      "checks": [
+        "Dodat 2026-12-25 kroz obična polja",
+        "Sačuvano i ponovo otvoreno",
+        "Datum ostao sačuvan"
+      ],
+      "screenshot": "output/playwright/complete-policy-mobile.png"
+    },
+    {
+      "screen": "Delimično uručenje",
+      "result": "passed",
+      "viewportWidth": 390,
+      "documentWidth": 390,
+      "overflow": false,
+      "checks": [
+        "Uručeno 1 od 2 planirane jedinice kroz UI",
+        "Oznaka Delimično isporučeno",
+        "Od ukupno 4 kupljene jedinice uručena 1",
+        "Paket otvoren, bez događaja konačnog računa"
+      ],
+      "evidence": "work/partial-handover-verification.json",
+      "screenshot": "output/playwright/complete-partial-handover-mobile.png"
+    }
+  ],
+  "limits": "Desktop Chromium only; not a Safari/iOS hardware test or a full accessibility audit. No real payments, fiscal receipts or messages.",
+  "consoleCheck": {
+    "session": "packages",
+    "errors": 0,
+    "warnings": 0,
+    "evidence": "work/final-browser-errors.txt"
+  }
+}

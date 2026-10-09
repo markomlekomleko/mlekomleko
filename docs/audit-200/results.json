@@ -1,0 +1,3637 @@
+{
+  "date": "2026-10-09",
+  "scope": "200 questions reassessed after implementation; real bank, production hosting and live fiscal/messaging delivery deferred",
+  "questionCounts": {
+    "RADI LOKALNO": 186,
+    "DELIMIČNO": 11,
+    "NIJE UGRAĐENO": 0,
+    "GREŠKA": 0,
+    "SPOLJNA PROVERA": 3
+  },
+  "methodCounts": {
+    "Automatizovani test": 192,
+    "Pregled koda": 2,
+    "Pregledač": 1,
+    "Test + pregledač": 2,
+    "Blokirano za stvarni servis; lokalni deo naveden": 3
+  },
+  "tests": {
+    "total": 324,
+    "passed": 324,
+    "failedAssertions": 0,
+    "knownIssues": 0
+  },
+  "questions": [
+    {
+      "id": 1,
+      "question": "Kako dodajem novi proizvod?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Admin unos čuva proizvod, a proizvod je dostupan u katalogu.",
+      "evidence": [
+        {
+          "label": "Q001 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q001: catalog persists name through admin API"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "question": "Da li mogu samostalno da promenim naziv i opis proizvoda?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Naziv i opis mogu da se menjaju kroz admin; promene se trajno čuvaju.",
+      "evidence": [
+        {
+          "label": "Q001 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q001: catalog persists name through admin API"
+          ]
+        },
+        {
+          "label": "Q002 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q002: catalog persists description through admin API"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "question": "Kako postavljam i menjam fotografiju proizvoda?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Podržani su otpremanje fotografije i zamena imageUrl; API čuva sliku u bazi.",
+      "evidence": [
+        {
+          "label": "Q003 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q003: catalog persists imageUrl through admin API"
+          ]
+        },
+        {
+          "label": "P206",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 206
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "question": "Da li jedan proizvod može da ima više fotografija?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Galerija do 12 fotografija, upload i prikaz u prodavnici; odbijene nebezbedne adrese.",
+      "evidence": [
+        {
+          "label": "Q004 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 126,
+          "tests": [
+            "Q004 Q142: gallery and nutrition survive edit and public retrieval"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "question": "Da li mogu da postavim različite cene za jednokratnu kupovinu i pretplatu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Jednokratna i pretplatna cena se posebno čuvaju i koriste u obračunu.",
+      "evidence": [
+        {
+          "label": "Q005 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q005: catalog persists subscriptionPriceMinor through admin API"
+          ]
+        },
+        {
+          "label": "Q023 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 70,
+          "tests": [
+            "Q023 Q024 Q025 Q112: cart combination 1 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 2 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 3 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 4 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 5 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 6 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 7 preserves all purchased units"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "question": "Kako određujem jedinicu prodaje, na primer litar, flašu ili pakovanje?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "unitLabel je slobodno polje; količina predstavlja broj takvih pakovanja, bez automatske konverzije litara.",
+      "evidence": [
+        {
+          "label": "Q006 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q006: catalog persists unitLabel through admin API"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "question": "Da li mogu privremeno da sakrijem proizvod bez brisanja?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Sakrivanje uklanja proizvod iz javnog kataloga i blokira novu kupovinu.",
+      "evidence": [
+        {
+          "label": "Q007 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 58,
+          "tests": [
+            "Q007 Q114: hidden product disappears and cannot be ordered"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "question": "Šta se dešava sa postojećim pretplatama ako proizvod više nije dostupan?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Već kupljeni paket ostaje obaveza; obnova staje kada je proizvod neaktivan.",
+      "evidence": [
+        {
+          "label": "Q137 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 64,
+          "tests": [
+            "Q137: deleting a purchased product archives it and preserves paid delivery"
+          ]
+        },
+        {
+          "label": "Q174 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 93,
+          "tests": [
+            "Q174: inactive product prevents renewal without charging again"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "question": "Da li promena cene utiče na već plaćene pakete?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kupljena cena i količina ostaju sačuvane i nakon promene kataloga.",
+      "evidence": [
+        {
+          "label": "P106",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 106
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "question": "Da li mogu da odredim koji proizvodi mogu da se kupuju na pretplatu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "allowSubscription zabranjuje pretplatu za izabrani proizvod.",
+      "evidence": [
+        {
+          "label": "Q010 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 59,
+          "tests": [
+            "Q010 Q115: one-time-only product cannot be subscribed to"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "question": "Kako pravim akciju za određeni proizvod?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Akcija se postavlja izmenom cene; precrtana cena i bedž se podešavaju odvojeno.",
+      "evidence": [
+        {
+          "label": "Q011 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q011: catalog persists priceMinor through admin API"
+          ]
+        },
+        {
+          "label": "Q012 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q012: catalog persists compareAtPriceMinor through admin API"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "question": "Da li mogu da prikažem staru i novu cenu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Nova i precrtana cena se čuvaju; precrtana cena sama ne menja naplatu.",
+      "evidence": [
+        {
+          "label": "Q012 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q012: catalog persists compareAtPriceMinor through admin API"
+          ]
+        },
+        {
+          "label": "product-detail.tsx",
+          "path": "app/proizvodi/[slug]/product-detail.tsx"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "question": "Da li akcija može automatski da počne i završi se određenog datuma?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Akcijske cene imaju početak i kraj; kupljene cene ostaju zamrznute.",
+      "evidence": [
+        {
+          "label": "Q013 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 127,
+          "tests": [
+            "Q013: scheduled product prices start and expire without changing purchased snapshot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "question": "Kako pravim promotivni kod?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Admin kreira kod; quote proverava uslove i računa iznos.",
+      "evidence": [
+        {
+          "label": "Q014 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 66,
+          "tests": [
+            "Q014 Q015: percent promo has independently verified exact total",
+            "Q014 Q015: fixed promo has independently verified exact total"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "question": "Da li popust može da bude procentualni ili u fiksnom iznosu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Procentualni i fiksni popust provereni su nezavisnim očekivanim zbirovima.",
+      "evidence": [
+        {
+          "label": "Q015 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 66,
+          "tests": [
+            "Q014 Q015: percent promo has independently verified exact total",
+            "Q014 Q015: fixed promo has independently verified exact total"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "question": "Da li mogu da ograničim koliko puta se koristi promotivni kod?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Postoji ukupni limit upotrebe; konkurentne kupovine ne mogu obe da potroše poslednje korišćenje.",
+      "evidence": [
+        {
+          "label": "Q016 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 67,
+          "tests": [
+            "Q016: ineligible promo cannot discount the cart"
+          ]
+        },
+        {
+          "label": "D170",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 170
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "question": "Da li mogu da napravim popust samo za prvu kupovinu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Promo kod može važiti samo za prvu kupovinu; uslov se ponovo proverava u transakciji.",
+      "evidence": [
+        {
+          "label": "Q017 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 129,
+          "tests": [
+            "Q017 Q122: first-order and per-customer promo limits enforced on checkout"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "question": "Da li popust važi samo za prvi paket ili i za naredne obnove?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kod važi za početnu kupovinu; pri obnovi se ne prenosi automatski.",
+      "evidence": [
+        {
+          "label": "Q018 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 69,
+          "tests": [
+            "Q018: initial promo is not silently renewed on the next package"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "question": "Da li kupac može da kombinuje akcijsku cenu i promotivni kod?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kod se obračunava na važeću katalošku cenu; popust ne umanjuje dostavu.",
+      "evidence": [
+        {
+          "label": "Q019 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 68,
+          "tests": [
+            "Q019 Q119 Q120: promo combines with catalog sale, normalizes case and never discounts delivery"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "question": "Kako se popust raspoređuje na proizvode na fiskalnom računu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Raspodela popusta radi u parama; zbir fiskalnih stavki odgovara iznosu. Provereno bez stvarnog izdavanja.",
+      "evidence": [
+        {
+          "label": "fiscal-amounts.test.mjs:6",
+          "path": "tests/fiscal-amounts.test.mjs",
+          "line": 6
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "question": "Da li kupac može da poruči bez pravljenja naloga?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kupovina bez sesije kreira kupca i porudžbinu; nalog se kasnije potvrđuje.",
+      "evidence": [
+        {
+          "label": "Q021 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 71,
+          "tests": [
+            "Q021 Q022 Q101: guest checkout uses RSD and rejects missing mandatory contact fields"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "question": "Koje podatke kupac mora da ostavi prilikom poručivanja?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Obavezni su email, ime, telefon, ulica, grad i poštanski broj; nedostajuća polja su odbijena.",
+      "evidence": [
+        {
+          "label": "Q022 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 71,
+          "tests": [
+            "Q021 Q022 Q101: guest checkout uses RSD and rejects missing mandatory contact fields"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "question": "Da li u istoj korpi mogu da budu jednokratni proizvodi i pretplata?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Izvršeno svih sedam nepraznih kombinacija jednokratno/nedeljno/dvonedeljno.",
+      "evidence": [
+        {
+          "label": "Q023 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 70,
+          "tests": [
+            "Q023 Q024 Q025 Q112: cart combination 1 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 2 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 3 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 4 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 5 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 6 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 7 preserves all purchased units"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "question": "Da li isti proizvod može da se kupi jednokratno i kroz pretplatu u istoj porudžbini?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Isti proizvod može imati jednokratnu i pretplatnu stavku; količine se ne gube.",
+      "evidence": [
+        {
+          "label": "Q024 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 70,
+          "tests": [
+            "Q023 Q024 Q025 Q112: cart combination 1 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 2 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 3 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 4 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 5 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 6 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 7 preserves all purchased units"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "question": "Da li kupac može da kombinuje nedeljne i dvonedeljne dostave?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Nedeljni i dvonedeljni ritam imaju odvojene kupljene stavke i brojače.",
+      "evidence": [
+        {
+          "label": "Q025 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 70,
+          "tests": [
+            "Q023 Q024 Q025 Q112: cart combination 1 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 2 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 3 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 4 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 5 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 6 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 7 preserves all purchased units"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "question": "Da li se izabrana količina odnosi na jednu dostavu ili ceo paket?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Količina je po isporuci; ukupna roba je količina puta 1, 2 ili 4.",
+      "evidence": [
+        {
+          "label": "P53",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 53
+        },
+        {
+          "label": "Q023 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 70,
+          "tests": [
+            "Q023 Q024 Q025 Q112: cart combination 1 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 2 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 3 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 4 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 5 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 6 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 7 preserves all purchased units"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "question": "Da li kupac pre plaćanja vidi ukupnu cenu i ukupnu količinu paketa?",
+      "status": "RADI LOKALNO",
+      "method": "Pregled koda",
+      "result": "Checkout prikazuje količinu po dostavi, termine i ukupan broj komada u paketu.",
+      "evidence": [
+        {
+          "label": "checkout-form.tsx",
+          "path": "app/checkout/checkout-form.tsx"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "question": "Kako se računa dostava kada korpa sadrži različite vrste kupovine?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Za zajednički početak naplaćuje se broj jedinstvenih termina: 1, 2 ili 4; artikli ne dupliraju dostavu.",
+      "evidence": [
+        {
+          "label": "D46",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 46
+        },
+        {
+          "label": "commerce.ts:171",
+          "path": "server/commerce.ts",
+          "line": 171
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "question": "Šta se dešava ako kupac dva puta klikne na dugme za poručivanje?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Ponavljanje istog ključa vraća isti rezultat; konkurentni zahtevi ne dupliraju porudžbinu.",
+      "evidence": [
+        {
+          "label": "D62",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 62
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "question": "Da li mogu iz admin panela da napravim porudžbinu za kupca koji poručuje telefonom?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Ručni admin unos radi i bez emaila, sa gotovinskim statusom pending; kartica nije podržana u ručnom unosu.",
+      "evidence": [
+        {
+          "label": "Q030 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 72,
+          "tests": [
+            "Q030: manual cash order without email is persisted and included in preparation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "question": "Šta tačno kupac dobija kada izabere mesečni paket?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Paket je pravo na fiksne isporuke, a ne preostali dani kalendarskog meseca.",
+      "evidence": [
+        {
+          "label": "P53",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "question": "Da li nedeljni paket uvek podrazumeva četiri uspešne dostave?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Nedeljni paket zatvara se tek posle četiri uspešne potvrde.",
+      "evidence": [
+        {
+          "label": "P61",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 61
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "question": "Da li dvonedeljni paket uvek podrazumeva dve uspešne dostave?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Dvonedeljni paket zatvara se nakon dve uspešne potvrde, uključujući pauzu.",
+      "evidence": [
+        {
+          "label": "P76",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 76
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "question": "Šta se dešava ako kalendarski mesec ima pet termina za dostavu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Peti kalendarski termin ne postaje peta plaćena isporuka.",
+      "evidence": [
+        {
+          "label": "P181",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 181
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "question": "Ako kupac poruči krajem meseca, da li ostatak paketa prelazi u sledeći mesec?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kupljene isporuke prelaze granicu meseca i zadržavaju količinu i cenu.",
+      "evidence": [
+        {
+          "label": "P53",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 53
+        },
+        {
+          "label": "P88",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 88
+        }
+      ]
+    },
+    {
+      "id": 36,
+      "question": "Kada počinje prva dostava pretplate?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Počinje izabranog dozvoljenog datuma pre cutoff-a; kasna uplata pomera neiskorišćen paket.",
+      "evidence": [
+        {
+          "label": "D76",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 76
+        },
+        {
+          "label": "P133",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 133
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "question": "Da li kupac može da ima više aktivnih pretplata?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Dve odvojene kupovine istog kupca stvaraju dve nezavisne pretplate.",
+      "evidence": [
+        {
+          "label": "Q037 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 73,
+          "tests": [
+            "Q037: separate checkouts can create independent subscriptions for the same customer"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "question": "Kako se prati završetak paketa koji sadrži različite ritmove dostave?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Svaka stavka ima svoj broj potrebnih uspešnih isporuka; zatvaranje čeka sve.",
+      "evidence": [
+        {
+          "label": "P99",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 99
+        },
+        {
+          "label": "Q023 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 70,
+          "tests": [
+            "Q023 Q024 Q025 Q112: cart combination 1 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 2 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 3 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 4 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 5 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 6 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 7 preserves all purchased units"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 39,
+      "question": "Da li se paket automatski obnavlja i kada se naplaćuje sledeći?",
+      "status": "DELIMIČNO",
+      "method": "Automatizovani test",
+      "result": "Dnevni posao pravi novu porudžbinu tek posle završetka paketa; stvarna automatska kartična naplata još nije povezana.",
+      "evidence": [
+        {
+          "label": "P171",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 171
+        },
+        {
+          "label": "jobs.ts",
+          "path": "server/jobs.ts"
+        },
+        {
+          "label": "commerce-readiness.mjs",
+          "path": "integrations/commerce-readiness.mjs"
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "question": "Da li kupac može da kupi samo jedan paket i isključi dalju obnovu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Otkazivanje plaćenog paketa isključuje obnovu i zadržava sve preostale isporuke.",
+      "evidence": [
+        {
+          "label": "P115",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 115
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "question": "Kako kupac preskače sledeću dostavu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Akcija skip_next pomera datum i uklanja preskočenu isporuku iz pripreme.",
+      "evidence": [
+        {
+          "label": "D226",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 226
+        }
+      ]
+    },
+    {
+      "id": 42,
+      "question": "Do kog trenutka može da preskoči dostavu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Promena se odbija tačno na cutoff-u; zaključani spisak ostaje nepromenjen.",
+      "evidence": [
+        {
+          "label": "D135",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 135
+        },
+        {
+          "label": "D281",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 281
+        }
+      ]
+    },
+    {
+      "id": 43,
+      "question": "Da li preskakanjem gubi već plaćenu količinu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Preskakanje ne stvara kredit i ne umanjuje kupljene količine.",
+      "evidence": [
+        {
+          "label": "P88",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 88
+        }
+      ]
+    },
+    {
+      "id": 44,
+      "question": "Kako kupac uključuje pauzu pretplate?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Akcija pause čuva datum pauze i izuzima termine do nastavka.",
+      "evidence": [
+        {
+          "label": "P76",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 76
+        },
+        {
+          "label": "D240",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 240
+        }
+      ]
+    },
+    {
+      "id": 45,
+      "question": "Od kog datuma se računa maksimalna pauza od tri meseca?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Tri kalendarska meseca računaju se od datuma zahteva u Beogradu, uz poslednji važeći dan meseca.",
+      "evidence": [
+        {
+          "label": "Q164 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 90,
+          "tests": [
+            "Q164 Q165: calendar pause clamps January 31 to April 30 and rejects impossible dates"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 46,
+      "question": "Da li kupac može da produži postojeću pauzu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Pauza se može produžiti; rok od tri meseca ostaje vezan za početak prvobitne pauze.",
+      "evidence": [
+        {
+          "label": "Q046 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 105,
+          "tests": [
+            "Q046: extending a paused subscription preserves purchased units",
+            "Q046: extending pause cannot reset its three-month maximum"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "question": "Da li može da prekine pauzu ranije?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "AUDIT-01 ispravljen: nastavak traži prvi slobodan termin plaćenog ritma i poštuje preskakanja i praznike.",
+      "evidence": [
+        {
+          "label": "Q047 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 103,
+          "tests": [
+            "Q047: early resume should restore the first editable delivery, not the old pause-end date"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 48,
+      "question": "Kako se određuje prvi termin nakon završetka pauze?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Automatski nastavak po isteku pauze poštuje kupljeni ritam; ovo ne potvrđuje raniji ručni nastavak iz Q47.",
+      "evidence": [
+        {
+          "label": "P76",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 76
+        },
+        {
+          "label": "D260",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 260
+        }
+      ]
+    },
+    {
+      "id": 49,
+      "question": "Da li promena količine, proizvoda ili ritma važi odmah ili od sledećeg paketa?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Plaćeni paket ostaje nepromenjen; promene važe za naredni paket.",
+      "evidence": [
+        {
+          "label": "P106",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 106
+        },
+        {
+          "label": "P171",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 171
+        }
+      ]
+    },
+    {
+      "id": 50,
+      "question": "Da li kupac može da doda proizvod samo za jednu narednu dostavu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "add_next_only kreira posebnu porudžbinu, naplaćuje je zasebno i troši dodatak jednom.",
+      "evidence": [
+        {
+          "label": "D110",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 110
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "question": "Gde vidim šta tačno danas treba da pripremimo?",
+      "status": "RADI LOKALNO",
+      "method": "Test + pregledač",
+      "result": "Danas za pripremu prikazuje kupce i ukupne količine; provereni API zbir i mobilni prikaz.",
+      "evidence": [
+        {
+          "label": "Q051 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 82,
+          "tests": [
+            "Q051 Q052 Q053 Q054: preparation totals equal the sum of customer line quantities"
+          ]
+        },
+        {
+          "label": "Provera pregledača",
+          "path": "docs/audit-200/browser-results.json"
+        }
+      ]
+    },
+    {
+      "id": 52,
+      "question": "Da li vidim zbirnu količinu svakog proizvoda za izabrani datum?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Zbir za proizvod jednak je zbiru stavki kupaca na izabranom terminu.",
+      "evidence": [
+        {
+          "label": "Q052 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 82,
+          "tests": [
+            "Q051 Q052 Q053 Q054: preparation totals equal the sum of customer line quantities"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 53,
+      "question": "Da li vidim količine i proizvode pojedinačno za svakog kupca?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Svaka dostava sadrži kupca, adresu, proizvod i količinu.",
+      "evidence": [
+        {
+          "label": "Q053 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 82,
+          "tests": [
+            "Q051 Q052 Q053 Q054: preparation totals equal the sum of customer line quantities"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 54,
+      "question": "Kako razlikujem jednokratne porudžbine od pretplata?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "subscription_id razdvaja redovne i jednokratne stavke; brojači odgovaraju fixture porudžbinama.",
+      "evidence": [
+        {
+          "label": "Q054 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 82,
+          "tests": [
+            "Q051 Q052 Q053 Q054: preparation totals equal the sum of customer line quantities"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 55,
+      "question": "Da li mogu unapred da pregledam raspored za naredne nedelje?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kalendar projektuje nedeljni/dvonedeljni ritam, pauze, preskakanja i preostali paket.",
+      "evidence": [
+        {
+          "label": "account-dashboard.test.mjs:142",
+          "path": "tests/account-dashboard.test.mjs",
+          "line": 142
+        },
+        {
+          "label": "P181",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 181
+        }
+      ]
+    },
+    {
+      "id": 56,
+      "question": "Da li mogu da izvezem spisak za pakovanje i spisak za vozača?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "CSV za vozača i Excel sa rutom i pripremom imaju proverene sadržaje.",
+      "evidence": [
+        {
+          "label": "rendered-html.test.mjs:502",
+          "path": "tests/rendered-html.test.mjs",
+          "line": 502
+        },
+        {
+          "label": "rendered-html.test.mjs:569",
+          "path": "tests/rendered-html.test.mjs",
+          "line": 569
+        }
+      ]
+    },
+    {
+      "id": 57,
+      "question": "Šta znači zaključavanje liste za pripremu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Zaključavanje čuva snapshot i rezerviše stavke; ne znači da je roba uručena.",
+      "evidence": [
+        {
+          "label": "D281",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 281
+        },
+        {
+          "label": "P61",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 61
+        }
+      ]
+    },
+    {
+      "id": 58,
+      "question": "Kako se evidentira da je dostava uspešno uručena?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Admin potvrda uspešne zaključane isporuke povećava brojač paketa.",
+      "evidence": [
+        {
+          "label": "P61",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 61
+        },
+        {
+          "label": "Q155 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 87,
+          "tests": [
+            "Q155 Q156 Q159: completion rejects unprepared and future deliveries, then cannot reverse handover"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 59,
+      "question": "Šta se dešava kada kupac nije kod kuće ili dostava ne uspe?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Neuspela redovna isporuka ne troši pravo; neuspeo jednokratni deo mešovitog paketa prenosi se na narednu posetu.",
+      "evidence": [
+        {
+          "label": "P88",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 88
+        },
+        {
+          "label": "P198",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 198
+        },
+        {
+          "label": "Q162 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 88,
+          "tests": [
+            "Q162: failed biweekly delivery retries 14 days later and does not consume entitlement"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 60,
+      "question": "Kako postupamo ako je kupcu isporučen samo deo predviđene količine?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Potvrđuje se stvarno uručena količina; ostatak paketa ili jednokratne kupovine prelazi u naredni termin bez nove naplate.",
+      "evidence": [
+        {
+          "label": "Q060 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 136,
+          "tests": [
+            "Q060: partial quantity requires a fifth visit and exactly one final fiscal event",
+            "Q060: replay with changed partial quantity cannot silently succeed",
+            "Q060: partial one-time delivery carries only remaining units without another charge",
+            "Q060 Q190: conserved units quantity=1 cadence=weekly initialFailure=false",
+            "Q060 Q190: conserved units quantity=1 cadence=weekly initialFailure=true",
+            "Q060 Q190: conserved units quantity=1 cadence=biweekly initialFailure=false",
+            "Q060 Q190: conserved units quantity=1 cadence=biweekly initialFailure=true",
+            "Q060 Q190: conserved units quantity=2 cadence=weekly initialFailure=false",
+            "Q060 Q190: conserved units quantity=2 cadence=weekly initialFailure=true",
+            "Q060 Q190: conserved units quantity=2 cadence=biweekly initialFailure=false",
+            "Q060 Q190: conserved units quantity=2 cadence=biweekly initialFailure=true",
+            "Q060 Q190: conserved units quantity=100 cadence=weekly initialFailure=false",
+            "Q060 Q190: conserved units quantity=100 cadence=weekly initialFailure=true",
+            "Q060 Q190: conserved units quantity=100 cadence=biweekly initialFailure=false",
+            "Q060 Q190: conserved units quantity=100 cadence=biweekly initialFailure=true"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 61,
+      "question": "Koji načini plaćanja su dostupni kupcu?",
+      "status": "DELIMIČNO",
+      "method": "Automatizovani test",
+      "result": "Gotovinska evidencija postoji. Stvarna kartična i recurring naplata nisu povezane; mock nije banka.",
+      "evidence": [
+        {
+          "label": "D179",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 179
+        },
+        {
+          "label": "commerce-readiness.mjs",
+          "path": "integrations/commerce-readiness.mjs"
+        }
+      ]
+    },
+    {
+      "id": 62,
+      "question": "Da li ceo paket mora da bude plaćen pre prve dostave?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Neplaćen paket ne ulazi u pripremu; cela uplata otključava isporuke.",
+      "evidence": [
+        {
+          "label": "P124",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 124
+        }
+      ]
+    },
+    {
+      "id": 63,
+      "question": "Kako u adminu evidentiram uplatu koju sam primio van sajta?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Admin promena paymentStatus na paid aktivira paket i red za avans; ne predstavlja bankarski transfer.",
+      "evidence": [
+        {
+          "label": "P124",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 124
+        },
+        {
+          "label": "Q188 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 97,
+          "tests": [
+            "Q188 Q189 Q190: payment webhook authenticates, deduplicates, and protects paid package state"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 64,
+      "question": "Šta se dešava ako uplata stigne nakon roka za pripremu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Prvi termin se pomera iza zaključane rute, uz očuvane sve isporuke.",
+      "evidence": [
+        {
+          "label": "P133",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 133
+        },
+        {
+          "label": "P144",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 144
+        }
+      ]
+    },
+    {
+      "id": 65,
+      "question": "Da li neplaćena pretplata ulazi na spisak za dostavu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Otvoreni neplaćen paket vidljiv je adminu, ali nije na listi za pakovanje.",
+      "evidence": [
+        {
+          "label": "P124",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 124
+        }
+      ]
+    },
+    {
+      "id": 66,
+      "question": "Šta se dešava ako kartično plaćanje bude odbijeno?",
+      "status": "SPOLJNA PROVERA",
+      "method": "Blokirano za stvarni servis; lokalni deo naveden",
+      "result": "Stvarno odbijanje kartice nije moguće proveriti bez bankarskog adaptera. Proverena je blokada simuliranih kartica u produkciji.",
+      "evidence": [
+        {
+          "label": "D179",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 179
+        },
+        {
+          "label": "commerce-readiness.mjs",
+          "path": "integrations/commerce-readiness.mjs"
+        }
+      ]
+    },
+    {
+      "id": 67,
+      "question": "Da li sistem automatski ponavlja neuspelu naplatu i obaveštava kupca?",
+      "status": "DELIMIČNO",
+      "method": "Automatizovani test",
+      "result": "Trajan red za ponovnu naplatu, najviše tri pokušaja i zaustavljanje nepoznatog ishoda; banka se povezuje kasnije.",
+      "evidence": [
+        {
+          "label": "Q067 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 147,
+          "tests": [
+            "Q067: failed payment gets bounded retries and successful retry is idempotent",
+            "Q067: declined card retries stop after three attempts"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 68,
+      "question": "Šta se dešava sa preostalim dostavama kada kupac otkaže plaćenu pretplatu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Preostale plaćene isporuke se završavaju; naredna obnova se ne pravi.",
+      "evidence": [
+        {
+          "label": "P115",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 115
+        }
+      ]
+    },
+    {
+      "id": 69,
+      "question": "Da li kupac može da dobije povraćaj za neiskorišćeni deo paketa?",
+      "status": "DELIMIČNO",
+      "method": "Automatizovani test",
+      "result": "Kupac/admin zahtev, pregled preostalih proizvoda, zaustavljanje pripreme, odobrenje i lokalna simulacija povraćaja. Stvarna bankarska i fiskalna korekcija čekaju povezivanje. Dostava nije deo ovog automatskog izračuna.",
+      "evidence": [
+        {
+          "label": "Q069 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 140,
+          "tests": [
+            "Q069: refund request freezes preparation; mock approval returns only remaining net goods",
+            "Q069: live refund remains approved until bank and fiscal adapters are connected",
+            "Q069: account refund preview is scoped and contains no payment tokens"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "question": "Kako postupamo ako kupac uplati novac za već otkazanu porudžbinu?",
+      "status": "DELIMIČNO",
+      "method": "Automatizovani test",
+      "result": "Ponovno aktiviranje otkazanog neplaćenog paketa je odbijeno; stvarnu kasnu uplatu treba finansijski usaglasiti van ovog toka.",
+      "evidence": [
+        {
+          "label": "P155",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 155
+        }
+      ]
+    },
+    {
+      "id": 71,
+      "question": "Kada se automatski izdaje avansni račun?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Potvrda cele uplate pokreće avans. API zahtev proveravan mock odgovorima, bez stvarnog računa.",
+      "evidence": [
+        {
+          "label": "P61",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 61
+        },
+        {
+          "label": "F69",
+          "path": "tests/fiscomm.test.mjs",
+          "line": 69
+        }
+      ]
+    },
+    {
+      "id": 72,
+      "question": "Kada se automatski izdaje konačni fiskalni račun?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Poslednja uspešna isporuka upisuje jedinstven događaj za konačni račun. Provereno lokalno.",
+      "evidence": [
+        {
+          "label": "P61",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 61
+        },
+        {
+          "label": "P186",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 186
+        }
+      ]
+    },
+    {
+      "id": 73,
+      "question": "Kako sistem zna da su izvršene sve kupljene dostave?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Broje se samo delivery_orders sa statusom delivered za svaku package_line.",
+      "evidence": [
+        {
+          "label": "P99",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 99
+        },
+        {
+          "label": "P186",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 186
+        }
+      ]
+    },
+    {
+      "id": 74,
+      "question": "Da li pauza pomera i trenutak izdavanja konačnog računa?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Pauza odlaže završetak; protek kalendarskog meseca ne izdaje konačni račun.",
+      "evidence": [
+        {
+          "label": "P76",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 76
+        }
+      ]
+    },
+    {
+      "id": 75,
+      "question": "Kako se fiskalizuje korpa koja sadrži pretplatu i jednokratne proizvode?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Mešoviti paket koristi zajednički avans i čeka sve stavke, uključujući jednokratnu. Provereno mock tokom.",
+      "evidence": [
+        {
+          "label": "P99",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 99
+        },
+        {
+          "label": "F69",
+          "path": "tests/fiscomm.test.mjs",
+          "line": 69
+        }
+      ]
+    },
+    {
+      "id": 76,
+      "question": "Kako se zatvara avans i povezuje sa konačnim računom?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Finalize referencira PFR avansa; čuvaju se povezani refund i final dokumenti. Potvrđen mock HTTP ugovor.",
+      "evidence": [
+        {
+          "label": "F69",
+          "path": "tests/fiscomm.test.mjs",
+          "line": 69
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "question": "Da li kupac automatski dobija račun elektronskom poštom?",
+      "status": "SPOLJNA PROVERA",
+      "method": "Blokirano za stvarni servis; lokalni deo naveden",
+      "result": "Kreiranje email događaja je testirano; stvarni PDF i prijem u stvarno sanduče nisu provereni ovom proverom.",
+      "evidence": [
+        {
+          "label": "P61",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 61
+        },
+        {
+          "label": "F69",
+          "path": "tests/fiscomm.test.mjs",
+          "line": 69
+        },
+        {
+          "label": "notifications.ts",
+          "path": "server/notifications.ts"
+        }
+      ]
+    },
+    {
+      "id": 78,
+      "question": "Gde u adminu mogu da pronađem i ponovo pošaljem račun?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Ponovno slanje postojećeg računa dodaje email u red bez novog fiskalnog izdavanja.",
+      "evidence": [
+        {
+          "label": "Q078 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 83,
+          "tests": [
+            "Q078: resending an issued receipt queues email without issuing a second fiscal document"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 79,
+      "question": "Šta se dešava ako Fiscomm ne odgovori ili prekine vezu tokom izdavanja?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Nepoznat ishod se trajno beleži i blokira automatski ponovni POST; potrebna je provera kod provajdera.",
+      "evidence": [
+        {
+          "label": "F61",
+          "path": "tests/fiscomm.test.mjs",
+          "line": 61
+        },
+        {
+          "label": "fiscal-dispatch.test.mjs:25",
+          "path": "tests/fiscal-dispatch.test.mjs",
+          "line": 25
+        }
+      ]
+    },
+    {
+      "id": 80,
+      "question": "Kako sistem sprečava izdavanje dva računa za istu uplatu ili završeni paket?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Trajni dnevnik zahteva, ključevi i transakcije sprečavaju ponovljeno izdavanje u testiranim trkama i ponavljanjima.",
+      "evidence": [
+        {
+          "label": "P186",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 186
+        },
+        {
+          "label": "fiscal-dispatch.test.mjs:35",
+          "path": "tests/fiscal-dispatch.test.mjs",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "question": "Kako se kupac prijavljuje na svoj nalog?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Prijava koristi jednokratni kod; kasnija prijava ne zahteva staru lozinku. Slanje provajdera je mockovano.",
+      "evidence": [
+        {
+          "label": "L75",
+          "path": "tests/customer-login.test.mjs",
+          "line": 75
+        },
+        {
+          "label": "L229",
+          "path": "tests/customer-login.test.mjs",
+          "line": 229
+        }
+      ]
+    },
+    {
+      "id": 82,
+      "question": "Da li kupac vidi koliko je dostava iskoristio i koliko mu je ostalo?",
+      "status": "RADI LOKALNO",
+      "method": "Test + pregledač",
+      "result": "Nalog prikazuje kupljenu količinu, isporučeno/ukupno i preostalu robu; proverena promena na 1/4.",
+      "evidence": [
+        {
+          "label": "Q082 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 84,
+          "tests": [
+            "Q082 Q083: customer account shows purchased quantity, progress and next date"
+          ]
+        },
+        {
+          "label": "Provera pregledača",
+          "path": "docs/audit-200/browser-results.json"
+        }
+      ]
+    },
+    {
+      "id": 83,
+      "question": "Da li kupac vidi datum sledeće dostave?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Posle prve isporuke prikazuje se sledeći termin iz rasporeda.",
+      "evidence": [
+        {
+          "label": "Q083 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 84,
+          "tests": [
+            "Q082 Q083: customer account shows purchased quantity, progress and next date"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 84,
+      "question": "Da li kupac može samostalno da promeni adresu i broj telefona?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kupac sam menja kontakt i profil; primena na buduće pretplate je eksplicitna i ne prepisuje stare porudžbine.",
+      "evidence": [
+        {
+          "label": "Q084 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 135,
+          "tests": [
+            "Q084: authenticated profile changes do not rewrite earlier order addresses"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 85,
+      "question": "Da li promena adrese važi i za već pripremljenu dostavu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Zaključana dostava zadržava adresu iz snapshot-a; otvorene porudžbine dele profil adresu, vidi Q104.",
+      "evidence": [
+        {
+          "label": "Q085 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 118,
+          "tests": [
+            "Q085: later checkout cannot rewrite a locked delivery address snapshot"
+          ]
+        },
+        {
+          "label": "D281",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 281
+        },
+        {
+          "label": "account-dashboard.test.mjs:71",
+          "path": "tests/account-dashboard.test.mjs",
+          "line": 71
+        }
+      ]
+    },
+    {
+      "id": 86,
+      "question": "Da li kupac dobija potvrdu nakon kreiranja porudžbine?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kreiraju se i šalju potvrde porudžbine; proveren poziv mock email provajderu, ne stvarni inbox.",
+      "evidence": [
+        {
+          "label": "C131",
+          "path": "tests/connected-delivery-flows.test.mjs",
+          "line": 131
+        },
+        {
+          "label": "C145",
+          "path": "tests/connected-delivery-flows.test.mjs",
+          "line": 145
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "question": "Da li dobija podsetnik pre dostave i pre isteka roka za izmene?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Dnevni posao deduplikuje podsetnike; preskočeni/zaustavljeni termini ih ne dobijaju.",
+      "evidence": [
+        {
+          "label": "C193",
+          "path": "tests/connected-delivery-flows.test.mjs",
+          "line": 193
+        },
+        {
+          "label": "C103",
+          "path": "tests/connected-delivery-flows.test.mjs",
+          "line": 103
+        }
+      ]
+    },
+    {
+      "id": 88,
+      "question": "Da li dobija obaveštenje nakon pauziranja, preskakanja ili otkazivanja?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Za sve podržane promene provereni su admin, priprema, email i odobreni WhatsApp zahtevi u mock okruženju.",
+      "evidence": [
+        {
+          "label": "C70",
+          "path": "tests/connected-delivery-flows.test.mjs",
+          "line": 70
+        },
+        {
+          "label": "C153",
+          "path": "tests/connected-delivery-flows.test.mjs",
+          "line": 153
+        }
+      ]
+    },
+    {
+      "id": 89,
+      "question": "Da li obaveštenja mogu da se šalju putem SMS-a ili WhatsApp-a?",
+      "status": "DELIMIČNO",
+      "method": "Automatizovani test",
+      "result": "Email, WhatsApp i SMS tokovi postoje; SMS traži pristanak i potvrđen broj. Lokalni red i opoziv pristanka su testirani, stvarna isporuka čeka servise.",
+      "evidence": [
+        {
+          "label": "Q089 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 151,
+          "tests": [
+            "Q089: opted-in SMS is a separate durable message and revocation suppresses future SMS"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 90,
+      "question": "Šta se dešava ako obaveštenje ili račun ne stignu kupcu?",
+      "status": "DELIMIČNO",
+      "method": "Automatizovani test",
+      "result": "Dnevnik razlikuje simulaciju, prihvaćenu poruku i potvrdu dostave. Resend webhook proverava potpis, ponavljanje i redosled. Stvarni inbox nije testiran.",
+      "evidence": [
+        {
+          "label": "Q090 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 149,
+          "tests": [
+            "Q090: forged email delivery webhook cannot change message status",
+            "Q090: signed email delivery is recorded once; older callbacks cannot downgrade it"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 91,
+      "question": "Da li više zaposlenih može da koristi admin panel sa različitim ovlašćenjima?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Odvojeni zaposleni: menadžer, dostavljač i finansije, sa serverskim pravima i opozivom sesija.",
+      "evidence": [
+        {
+          "label": "Q091 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 142,
+          "tests": [
+            "Q091 Q092: named staff roles enforce server permissions and record personal actor",
+            "Q091: driver may read routes but cannot access customer database or change prices"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 92,
+      "question": "Da li mogu da vidim ko je promenio porudžbinu ili potvrdio dostavu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Izmene prijavljenog zaposlenog beleže njegov email u audit dnevniku.",
+      "evidence": [
+        {
+          "label": "Q092 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 65,
+          "tests": [
+            "Q138 Q092: product changes leave audit entries, with shared rather than personal actor identity",
+            "Q091 Q092: named staff roles enforce server permissions and record personal actor"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 93,
+      "question": "Šta se dešava ako dva zaposlena istovremeno menjaju istu porudžbinu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Konkurentne izmene iste verzije daju jedan uspeh i jedan 409; starija verzija ne prepisuje noviju.",
+      "evidence": [
+        {
+          "label": "Q093 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 107,
+          "tests": [
+            "Q093: competing order updates accept only one original version"
+          ]
+        },
+        {
+          "label": "D92",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 92
+        }
+      ]
+    },
+    {
+      "id": 94,
+      "question": "Da li mogu da pretražujem kupce po imenu, telefonu i broju porudžbine?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Pretraga po imenu, telefonu i broju porudžbine vraća odgovarajući rezultat.",
+      "evidence": [
+        {
+          "label": "Q094 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 85,
+          "tests": [
+            "Q094: admin order search finds name, phone and order number without returning another customer"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 95,
+      "question": "Da li mogu da vidim prihod, broj porudžbina i najprodavanije proizvode?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Dashboard prihodi odvajaju paid od pending; izveštaji imaju broj porudžbina i najprodavanije proizvode.",
+      "evidence": [
+        {
+          "label": "Q095 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 86,
+          "tests": [
+            "Q095: dashboard counts paid revenue independently from pending cash orders"
+          ]
+        },
+        {
+          "label": "admin-workspace.ts:227",
+          "path": "server/admin-workspace.ts",
+          "line": 227
+        }
+      ]
+    },
+    {
+      "id": 96,
+      "question": "Kako se postojeće pretplate i uplate prenose u novi sistem?",
+      "status": "DELIMIČNO",
+      "method": "Automatizovani test",
+      "result": "Postoji usaglašavanje starih plaćenih paketa sa istorijskim količinama i avansom. Originalni fiskalni zahtev mora biti usaglašen pre stvarnog završnog izdavanja; ne nagađa se.",
+      "evidence": [
+        {
+          "label": "Q096 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 152,
+          "tests": [
+            "Q096: reconciled historical units reduce remaining quantity without duplicate charge"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 97,
+      "question": "Ko određuje poreske oznake proizvoda i dostave i gde se one podešavaju?",
+      "status": "DELIMIČNO",
+      "method": "Automatizovani test",
+      "result": "Admin čuva oznaku proizvoda; dostava se podešava serverski. Ispravnost poreskog izbora mora biti potvrđena van testa.",
+      "evidence": [
+        {
+          "label": "Q097 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q097: catalog persists fiscalTaxLabel through admin API"
+          ]
+        },
+        {
+          "label": "F52",
+          "path": "tests/fiscomm.test.mjs",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "id": 98,
+      "question": "Da li mogu sve da isprobam bez stvarne naplate i izdavanja pravih računa?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Testovi koriste izolovanu SQLite bazu i lokalne/mock adaptere, bez stvarnog fiskalnog ili platnog POST-a.",
+      "evidence": [
+        {
+          "label": "functional-audit.test.mjs:10",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 10
+        },
+        {
+          "label": "fiscomm.test.mjs:16",
+          "path": "tests/fiscomm.test.mjs",
+          "line": 16
+        }
+      ]
+    },
+    {
+      "id": 99,
+      "question": "Šta se dešava sa porudžbinama i automatskim poslovima ako sajt privremeno prestane da radi?",
+      "status": "DELIMIČNO",
+      "method": "Pregled koda",
+      "result": "Lokalna baza je kopirana, vraćena u odvojenu datoteku i prošla integrity/foreign-key provere; oporavak produkcionog hostinga se proverava kada se poveže.",
+      "evidence": [
+        {
+          "label": "verify-local-backup.mjs",
+          "path": "scripts/verify-local-backup.mjs"
+        },
+        {
+          "label": "local-backup-verification.json",
+          "path": "work/local-backup-verification.json"
+        },
+        {
+          "label": "main-local-backup-verification.json",
+          "path": "work/main-local-backup-verification.json"
+        }
+      ]
+    },
+    {
+      "id": 100,
+      "question": "Koje funkcionalnosti su spremne, a šta još mora da se poveže i proveri pre puštanja u rad?",
+      "status": "SPOLJNA PROVERA",
+      "method": "Blokirano za stvarni servis; lokalni deo naveden",
+      "result": "Lokalni tok je proveren; bankarski adapter, realni fiskalni sandbox, porezi, produkciona migracija i isporuka poruka ostaju uslovi za puštanje.",
+      "evidence": [
+        {
+          "label": "commerce-readiness.mjs",
+          "path": "integrations/commerce-readiness.mjs"
+        },
+        {
+          "label": "prepaid-packages-2026-10-09.md",
+          "path": "docs/prepaid-packages-2026-10-09.md"
+        }
+      ]
+    },
+    {
+      "id": 101,
+      "question": "Da li se cene i naplata vode isključivo u dinarima ili i u drugim valutama?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Valuta obračuna i porudžbine je RSD; više valuta nije podržano.",
+      "evidence": [
+        {
+          "label": "Q101 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 71,
+          "tests": [
+            "Q021 Q022 Q101: guest checkout uses RSD and rejects missing mandatory contact fields"
+          ]
+        },
+        {
+          "label": "settings.ts",
+          "path": "server/settings.ts"
+        }
+      ]
+    },
+    {
+      "id": 102,
+      "question": "Da li pravno lice može da unese naziv firme i PIB za račun?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Firma i PIB čuvaju se uz račun; Fiscomm zahtev šalje buyerId u obliku 10:PIB. Testiran ugovor lažnim HTTP servisom.",
+      "evidence": [
+        {
+          "label": "Q102 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 134,
+          "tests": [
+            "Q102 Q103 Q104: billing and shipping snapshots remain distinct across repeated guest purchases"
+          ]
+        },
+        {
+          "label": "fiscomm.test.mjs",
+          "path": "tests/fiscomm.test.mjs"
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "question": "Da li kupac može da navede posebnu adresu za račun i posebnu za dostavu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Odvojene adrese fakturisanja i isporuke čuvaju se na porudžbini i pretplati.",
+      "evidence": [
+        {
+          "label": "Q103 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 134,
+          "tests": [
+            "Q102 Q103 Q104: billing and shipping snapshots remain distinct across repeated guest purchases"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 104,
+      "question": "Da li nova porudžbina istog kupca na drugoj adresi menja adresu prethodne otvorene porudžbine?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "AUDIT-02 ispravljen: druga kupovina istog emaila ne menja adresu prve porudžbine.",
+      "evidence": [
+        {
+          "label": "Q104 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 104,
+          "tests": [
+            "Q104: a second guest order should not rewrite an earlier open order delivery address",
+            "Q102 Q103 Q104: billing and shipping snapshots remain distinct across repeated guest purchases"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 105,
+      "question": "Da li mogu da postavim minimalan iznos za poručivanje?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Minimalan iznos korpe podešava admin i proverava server pre poručivanja.",
+      "evidence": [
+        {
+          "label": "Q105 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 131,
+          "tests": [
+            "Q105: minimum order enforced server-side even when client skips quote"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 106,
+      "question": "Koja je najveća dozvoljena količina jednog proizvoda po stavci?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Dozvoljeno je 1–100 celih jedinica po redu; 100 prolazi, 101 se odbija.",
+      "evidence": [
+        {
+          "label": "Q106 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 74,
+          "tests": [
+            "Q106 Q107: invalid item quantity 0 is rejected",
+            "Q106 Q107: invalid item quantity -1 is rejected",
+            "Q106 Q107: invalid item quantity 1.5 is rejected",
+            "Q106 Q107: invalid item quantity 101 is rejected",
+            "Q106 Q107: invalid item quantity &quot;2&quot; is rejected",
+            "Q106: 100 units is the accepted per-line maximum"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 107,
+      "question": "Da li sistem odbija nulu, negativne i decimalne količine?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Nula, negativna, decimalna i tekstualna količina su odbijene pre upisa porudžbine.",
+      "evidence": [
+        {
+          "label": "Q107 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 74,
+          "tests": [
+            "Q106 Q107: invalid item quantity 0 is rejected",
+            "Q106 Q107: invalid item quantity -1 is rejected",
+            "Q106 Q107: invalid item quantity 1.5 is rejected",
+            "Q106 Q107: invalid item quantity 101 is rejected",
+            "Q106 Q107: invalid item quantity &quot;2&quot; is rejected"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 108,
+      "question": "Šta se dešava sa praznom korpom ili korpom koja ima previše stavki?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Korpa mora imati 1–50 redova; prazna i korpa od 51 reda su odbijene.",
+      "evidence": [
+        {
+          "label": "Q108 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 76,
+          "tests": [
+            "Q108: empty and more-than-50-line carts are rejected"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 109,
+      "question": "Šta se dešava ako korpa sadrži proizvod koji ne postoji?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Nepostojeći proizvod vraća 409 i ne stvara porudžbinu.",
+      "evidence": [
+        {
+          "label": "Q109 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 77,
+          "tests": [
+            "Q109 Q110: unknown product, purchase type or cadence cannot create an order"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 110,
+      "question": "Da li sistem odbija nepoznat tip kupovine ili nepodržan ritam dostave?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Nepoznati purchaseType i cadence vraćaju 422.",
+      "evidence": [
+        {
+          "label": "Q110 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 77,
+          "tests": [
+            "Q109 Q110: unknown product, purchase type or cadence cannot create an order"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 111,
+      "question": "Šta se dešava ako se ista stavka pojavi dva puta u korpi?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Dupli identični redovi se čuvaju odvojeno i količine sabiraju u pripremi; nema automatskog spajanja korpe.",
+      "evidence": [
+        {
+          "label": "Q111 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 78,
+          "tests": [
+            "Q111: duplicate cart rows conserve quantities rather than silently dropping a row"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 112,
+      "question": "Da li se količine istog proizvoda u različitim ritmovima odvojeno čuvaju i isporučuju?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "U svih sedam kombinacija očuvane su nezavisne količine istog proizvoda po ritmovima.",
+      "evidence": [
+        {
+          "label": "Q112 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 70,
+          "tests": [
+            "Q023 Q024 Q025 Q112: cart combination 1 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 2 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 3 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 4 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 5 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 6 preserves all purchased units",
+            "Q023 Q024 Q025 Q112: cart combination 7 preserves all purchased units"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 113,
+      "question": "Može li kupac izmenom podataka u pregledaču da plati staru ili proizvoljnu cenu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Server koristi cenu iz baze; poslati lažni unitPrice/total ne određuju naplatu.",
+      "evidence": [
+        {
+          "label": "Q113 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 79,
+          "tests": [
+            "Q113: forged browser prices and totals are ignored"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 114,
+      "question": "Da li proizvod koji je upravo sakriven može da se kupi iz ranije otvorene korpe?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Stara korpa ne zaobilazi is_active proveru pri novoj ponudi i kupovini.",
+      "evidence": [
+        {
+          "label": "Q114 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 58,
+          "tests": [
+            "Q007 Q114: hidden product disappears and cannot be ordered"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 115,
+      "question": "Šta se dešava ako kupac pokuša da pretplati proizvod namenjen samo jednokratnoj kupovini?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Pretplata one-time-only proizvoda se odbija, jednokratna kupovina prolazi.",
+      "evidence": [
+        {
+          "label": "Q115 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 59,
+          "tests": [
+            "Q010 Q115: one-time-only product cannot be subscribed to"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 116,
+      "question": "Da li se istekao promotivni kod automatski odbija?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kod čiji endsAt je u prošlosti vraća PROMO_INVALID.",
+      "evidence": [
+        {
+          "label": "Q116 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 67,
+          "tests": [
+            "Q116: ineligible promo cannot discount the cart"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 117,
+      "question": "Da li može da se upotrebi promotivni kod pre početka njegovog važenja?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kod čiji startsAt je u budućnosti ne može da se primeni.",
+      "evidence": [
+        {
+          "label": "Q117 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 67,
+          "tests": [
+            "Q117: ineligible promo cannot discount the cart"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 118,
+      "question": "Da li se proverava minimalna vrednost korpe potrebna za popust?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Minimalni iznos promo koda se proverava prema međuzbiru proizvoda.",
+      "evidence": [
+        {
+          "label": "Q118 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 67,
+          "tests": [
+            "Q118: ineligible promo cannot discount the cart"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 119,
+      "question": "Može li fiksni popust veći od vrednosti proizvoda da napravi negativan račun?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Fiksni popust se ograničava na međuzbir proizvoda; dostava ostaje za naplatu.",
+      "evidence": [
+        {
+          "label": "Q119 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 68,
+          "tests": [
+            "Q019 Q119 Q120: promo combines with catalog sale, normalizes case and never discounts delivery"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 120,
+      "question": "Da li su mala i velika slova u promotivnom kodu izjednačena?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kod se normalizuje na velika slova uz uklanjanje razmaka.",
+      "evidence": [
+        {
+          "label": "Q120 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 68,
+          "tests": [
+            "Q019 Q119 Q120: promo combines with catalog sale, normalizes case and never discounts delivery"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 121,
+      "question": "Da li kupac može da upotrebi dva promotivna koda u istoj porudžbini?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Do pet kodova; kombinovanje samo kada svi kodovi to dozvoljavaju, svaki sledeći popust na preostali iznos proizvoda.",
+      "evidence": [
+        {
+          "label": "Q121 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 130,
+          "tests": [
+            "Q121: explicit stacking uses remaining subtotal, forbidden combinations rejected"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 122,
+      "question": "Da li postoji ograničenje korišćenja promotivnog koda po kupcu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Limit po kupcu i evidencija iskorišćenih kodova proveravaju se i pri transakcionom upisu.",
+      "evidence": [
+        {
+          "label": "Q122 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 129,
+          "tests": [
+            "Q017 Q122: first-order and per-customer promo limits enforced on checkout"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 123,
+      "question": "Šta se dešava ako unesem neispravan URL naziv proizvoda?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Razmaci, donje crte i ćirilica u URL slugu se odbijaju; format su ASCII slova, brojevi i crtice.",
+      "evidence": [
+        {
+          "label": "Q123 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 60,
+          "tests": [
+            "Q123: malformed product slug bad slug is rejected",
+            "Q123: malformed product slug mleko_1 is rejected",
+            "Q123: malformed product slug млеко is rejected"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 124,
+      "question": "Da li mogu slučajno da napravim dva proizvoda sa istim URL nazivom?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Postojeći slug vraća 409 bez prepisivanja originalnog proizvoda.",
+      "evidence": [
+        {
+          "label": "Q124 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 61,
+          "tests": [
+            "Q124: duplicate product slug is rejected without overwriting original"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 125,
+      "question": "Da li su podržani ćirilica i slova č, ć, š, đ i ž u nazivu proizvoda?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Ćirilica i dijakritici se čuvaju u nazivu; ograničenje ASCII važi samo za slug.",
+      "evidence": [
+        {
+          "label": "Q125 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q125: catalog persists name through admin API"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 126,
+      "question": "Da li HTML ili skripta uneta u opis proizvoda može da se izvrši kod posetioca?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Opis sa script oznakom prikazuje se kao escaped tekst u serverskom HTML-u.",
+      "evidence": [
+        {
+          "label": "Q126 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 106,
+          "tests": [
+            "Q126: product description markup is escaped in server rendered HTML"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 127,
+      "question": "Šta se dešava kada pokušam da otpremim fotografiju veću od dozvoljene?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Fotografija od 2.000.001 bajta se odbija i ne čuva u bazi.",
+      "evidence": [
+        {
+          "label": "Q127 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 99,
+          "tests": [
+            "Q127: uploaded image/png with 2000001 bytes validates content and size"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 128,
+      "question": "Koji formati fotografija su podržani i da li se sačuvana slika pravilno prikazuje?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "PNG, JPG i WebP upload provereni su stvarnim datotekama, povratom istih bajtova i tačnog MIME tipa; nema pune serverske validacije/dekodiranja slike.",
+      "evidence": [
+        {
+          "label": "Q128 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 99,
+          "tests": [
+            "Q128: uploaded image/png with 84486 bytes validates content and size",
+            "Q128: image/jpeg upload round-trips a real catalog asset",
+            "Q128: image/webp upload round-trips a real catalog asset"
+          ]
+        },
+        {
+          "label": "route.ts",
+          "path": "app/api/admin/product-images/route.ts"
+        }
+      ]
+    },
+    {
+      "id": 129,
+      "question": "Da li je dozvoljeno postavljanje SVG fajlova koji mogu sadržati aktivan kod?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "SVG sa aktivnim sadržajem je odbijen i nije sačuvan.",
+      "evidence": [
+        {
+          "label": "Q129 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 99,
+          "tests": [
+            "Q129: uploaded image/svg+xml with 24 bytes validates content and size"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 130,
+      "question": "Da li sistem proverava sadržaj fajla ili veruje samo ekstenziji i oznaci tipa?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "HTML označen kao image/png je odbijen; proveravaju se magic bytes, ne radi se puna validacija/dekodiranje slike.",
+      "evidence": [
+        {
+          "label": "Q130 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 99,
+          "tests": [
+            "Q130: uploaded image/png with 25 bytes validates content and size"
+          ]
+        },
+        {
+          "label": "route.ts",
+          "path": "app/api/admin/product-images/route.ts"
+        }
+      ]
+    },
+    {
+      "id": 131,
+      "question": "Može li proizvod da postoji bez fotografije i šta kupac tada vidi?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Proizvod bez fotografije prolazi; UI ima rezervni prikaz umesto obavezne slike.",
+      "evidence": [
+        {
+          "label": "Q131 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 62,
+          "tests": [
+            "Q131 Q136: missing photo remains optional and public catalog hides internal costs"
+          ]
+        },
+        {
+          "label": "product-detail.tsx:67",
+          "path": "app/proizvodi/[slug]/product-detail.tsx",
+          "line": 67
+        }
+      ]
+    },
+    {
+      "id": 132,
+      "question": "Da li se odbijaju nebezbedne adrese fotografija, poput HTTP i javascript linkova?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "HTTP i javascript URL vrednosti su odbijene; dozvoljena je lokalna putanja ili HTTPS.",
+      "evidence": [
+        {
+          "label": "Q132 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 63,
+          "tests": [
+            "Q132: unsafe photo scheme http is rejected",
+            "Q132: unsafe photo scheme javascript is rejected"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 133,
+      "question": "Da li mogu ručno da promenim redosled proizvoda u prodavnici?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "sortOrder se čuva i menja redosled javnog kataloga.",
+      "evidence": [
+        {
+          "label": "Q133 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q133: catalog persists sortOrder through admin API"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 134,
+      "question": "Da li mogu da rasporedim proizvode po kategorijama?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kategorija se čuva kao tekst; nema zasebne hijerarhije kategorija.",
+      "evidence": [
+        {
+          "label": "Q134 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q134: catalog persists category through admin API"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 135,
+      "question": "Da li mogu da označim proizvod kao izdvojen?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "isFeatured oznaka se može menjati kroz admin.",
+      "evidence": [
+        {
+          "label": "Q135 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 52,
+          "tests": [
+            "Q135: catalog persists isFeatured through admin API"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 136,
+      "question": "Da li kupci mogu da vide nabavnu cenu ili interne troškove pakovanja?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Javni katalog nema nabavnu cenu, trošak pakovanja ni interne fiskalne oznake.",
+      "evidence": [
+        {
+          "label": "Q136 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 62,
+          "tests": [
+            "Q131 Q136: missing photo remains optional and public catalog hides internal costs"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 137,
+      "question": "Šta se dešava kada obrišem proizvod koji je već kupljen u aktivnom paketu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Proizvod sa referencama se arhivira, ne briše; kupljena roba ostaje na pripremi.",
+      "evidence": [
+        {
+          "label": "Q137 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 64,
+          "tests": [
+            "Q137: deleting a purchased product archives it and preserves paid delivery"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 138,
+      "question": "Da li postoji istorija dodavanja i izmena proizvoda?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Dodavanje i izmena proizvoda ostavljaju odvojene audit zapise.",
+      "evidence": [
+        {
+          "label": "Q138 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 65,
+          "tests": [
+            "Q138 Q092: product changes leave audit entries, with shared rather than personal actor identity"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 139,
+      "question": "Da li mogu jednim klikom da napravim kopiju postojećeg proizvoda?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kopiranje pravi novi skriven proizvod sa nezavisnom oznakom i galerijom.",
+      "evidence": [
+        {
+          "label": "Q139 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 128,
+          "tests": [
+            "Q139: cloned product has independent identity and starts unpublished"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 140,
+      "question": "Da li sistem vodi zalihe i sprečava prodaju kada nema dovoljno robe?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Opcione zalihe po proizvodu, rezervacija ukupne kupljene količine, provera raspoloživosti i potrošnja samo uručenih komada.",
+      "evidence": [
+        {
+          "label": "Q140 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 138,
+          "tests": [
+            "Q140 Q141: stock reserves FEFO, blocks overselling and consumes only handed units"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 141,
+      "question": "Da li mogu da pratim serije proizvoda i rokove trajanja?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Serije i rokovi, odabir po najbližem važećem roku, zabrana isteka i zamena rezervacije posle pauze.",
+      "evidence": [
+        {
+          "label": "Q141 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 138,
+          "tests": [
+            "Q140 Q141: stock reserves FEFO, blocks overselling and consumes only handed units",
+            "Q141: expired or short-lived stock cannot cover a prepaid package",
+            "Q141: expired reservation blocks handover and can be exchanged for valid inventory"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 142,
+      "question": "Da li postoje posebna polja za alergene, sastav i nutritivne vrednosti?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Posebna polja sastojaka, alergena i nutritivne tabele prikazana su i kupcu.",
+      "evidence": [
+        {
+          "label": "Q142 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 126,
+          "tests": [
+            "Q004 Q142: gallery and nutrition survive edit and public retrieval"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 143,
+      "question": "Da li mogu da označim praznike i neradne datume bez menjanja cele nedeljne rutine?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Neradni datumi se uređuju u adminu; ne troše plaćenu isporuku i isključeni su iz termina paketa.",
+      "evidence": [
+        {
+          "label": "Q143 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 132,
+          "tests": [
+            "Q143 Q144: new city works through checkout and holiday cannot be booked",
+            "Q143: scheduled holiday is omitted from package dates and consumes no entitlement"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 144,
+      "question": "Da li kroz admin mogu da uvedem potpuno novi grad za dostavu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Admin može dodati grad sa konkretnim poštanskim brojevima; kupovina u novoj zoni je testirana.",
+      "evidence": [
+        {
+          "label": "Q144 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 132,
+          "tests": [
+            "Q143 Q144: new city works through checkout and holiday cannot be booked"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 145,
+      "question": "Šta se dešava kada grad i poštanski broj kupca ne odgovaraju jedno drugom?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Neslaganje grada i poštanskog broja se odbija i ne upisuje kupovinu.",
+      "evidence": [
+        {
+          "label": "delivery-area.test.mjs:47",
+          "path": "tests/delivery-area.test.mjs",
+          "line": 47
+        }
+      ]
+    },
+    {
+      "id": 146,
+      "question": "Da li se prepoznaju ćirilični nazivi gradova i suvišni razmaci?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Podržani su ćirilični nazivi i suvišni razmaci u nazivima podržanih gradova.",
+      "evidence": [
+        {
+          "label": "delivery-area.test.mjs:38",
+          "path": "tests/delivery-area.test.mjs",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "id": 147,
+      "question": "Da li neuspešna kupovina van zone dostave ostavlja porudžbinu ili naplatu u sistemu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Neuspešna kupovina van zone ne ostavlja kupca, porudžbinu, pretplatu ili checkout ključ.",
+      "evidence": [
+        {
+          "label": "delivery-area.test.mjs:47",
+          "path": "tests/delivery-area.test.mjs",
+          "line": 47
+        }
+      ]
+    },
+    {
+      "id": 148,
+      "question": "Kako se ponaša besplatna dostava tačno na propisanom pragu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Tačno na pragu dostava je besplatna; ispod praga ostaje puna tarifa.",
+      "evidence": [
+        {
+          "label": "Q148 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 80,
+          "tests": [
+            "Q148 Q149: free shipping boundary is exact and later fee changes preserve purchased invoice"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 149,
+      "question": "Da li promena cene dostave utiče na već plaćen paket?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Promena tarife ne menja sačuvani iznos već plaćenog paketa.",
+      "evidence": [
+        {
+          "label": "Q149 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 80,
+          "tests": [
+            "Q148 Q149: free shipping boundary is exact and later fee changes preserve purchased invoice"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 150,
+      "question": "Da li kupac može da izabere satnicu dostave, na primer od 10 do 12 časova?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kupac bira ponuđeno vreme, admin podešava naziv i kapacitet; nova porudžbina se odbija kad je izabrani termin popunjen.",
+      "evidence": [
+        {
+          "label": "Q150 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 133,
+          "tests": [
+            "Q150: slot capacity cannot be exceeded and unlisted slot is rejected"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 151,
+      "question": "Da li mogu da uključim ili isključim određene dane u nedelji za dostavu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Podešavanje subote prihvata subotnji datum i odbija dan koji nije omogućen.",
+      "evidence": [
+        {
+          "label": "Q151 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 81,
+          "tests": [
+            "Q151: configured weekend delivery is accepted, an unconfigured weekday is rejected"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 152,
+      "question": "Da li promena letnjeg i zimskog računanja vremena remeti raspored i rokove?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kalendarska aritmetika i Beograd cutoff provereni su preko obe DST promene.",
+      "evidence": [
+        {
+          "label": "business-calendar.test.mjs:12",
+          "path": "tests/business-calendar.test.mjs",
+          "line": 12
+        },
+        {
+          "label": "business-calendar.test.mjs:18",
+          "path": "tests/business-calendar.test.mjs",
+          "line": 18
+        },
+        {
+          "label": "C178",
+          "path": "tests/connected-delivery-flows.test.mjs",
+          "line": 178
+        }
+      ]
+    },
+    {
+      "id": 153,
+      "question": "Da li zahtev pristigao tačno u trenutku isteka roka još može da promeni dostavu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Tačan trenutak roka je zaključan; nema granične dodatne izmene.",
+      "evidence": [
+        {
+          "label": "D135",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 135
+        }
+      ]
+    },
+    {
+      "id": 154,
+      "question": "Može li administrator da zaključa pripremu pre automatskog roka?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Admin force zaključavanje radi pre roka; buduća potvrda uručenja je i dalje zabranjena.",
+      "evidence": [
+        {
+          "label": "P162",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 162
+        },
+        {
+          "label": "Q155 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 87,
+          "tests": [
+            "Q155 Q156 Q159: completion rejects unprepared and future deliveries, then cannot reverse handover"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 155,
+      "question": "Da li je moguće greškom potvrditi dostavu koja je tek sledeće nedelje?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Buduća zaključana isporuka vraća 409 pri pokušaju potvrde.",
+      "evidence": [
+        {
+          "label": "Q155 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 87,
+          "tests": [
+            "Q155 Q156 Q159: completion rejects unprepared and future deliveries, then cannot reverse handover"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 156,
+      "question": "Da li se može potvrditi isporuka dok priprema još nije zaključana?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Otvorena nezaključana isporuka ne može da bude potvrđena kao uručena.",
+      "evidence": [
+        {
+          "label": "Q156 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 87,
+          "tests": [
+            "Q155 Q156 Q159: completion rejects unprepared and future deliveries, then cannot reverse handover"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 157,
+      "question": "Šta se dešava ako zaposleni dva puta potvrdi istu isporuku?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Ponovljena ista potvrda vraća replay bez novih brojača i konačnog događaja.",
+      "evidence": [
+        {
+          "label": "P61",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 61
+        }
+      ]
+    },
+    {
+      "id": 158,
+      "question": "Šta se dešava ako dva zaposlena istovremeno potvrde poslednje delove istog paketa?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Konkurentne potvrde poslednjih delova zatvaraju paket i kreiraju konačni događaj jednom.",
+      "evidence": [
+        {
+          "label": "P186",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 186
+        }
+      ]
+    },
+    {
+      "id": 159,
+      "question": "Da li se već potvrđena isporuka može naknadno označiti kao neuspešna?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Delivered se ne može prebaciti na failed običnom akcijom završetka.",
+      "evidence": [
+        {
+          "label": "Q159 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 87,
+          "tests": [
+            "Q155 Q156 Q159: completion rejects unprepared and future deliveries, then cannot reverse handover"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 160,
+      "question": "Da li se paket zatvara ako su sve redovne dostave završene, a jednokratna stavka još nije uručena?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Konačni račun čeka i neuručenu jednokratnu stavku mešovitog paketa.",
+      "evidence": [
+        {
+          "label": "P198",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 198
+        }
+      ]
+    },
+    {
+      "id": 161,
+      "question": "Može li sistem slučajno da pripremi petu dostavu iz paketa koji ima četiri?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Projekcija nema petu plaćenu pojavu; rezervisane i uručene stavke ograničavaju broj.",
+      "evidence": [
+        {
+          "label": "P181",
+          "path": "tests/prepaid-packages.test.mjs",
+          "line": 181
+        }
+      ]
+    },
+    {
+      "id": 162,
+      "question": "Kada se ponavlja neuspešna dostava kod dvonedeljnog paketa?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Neuspela dvonedeljna dostava se nastavlja za 14 dana; neuspeh ne troši paket.",
+      "evidence": [
+        {
+          "label": "Q162 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 88,
+          "tests": [
+            "Q162: failed biweekly delivery retries 14 days later and does not consume entitlement"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 163,
+      "question": "Kako preskakanje radi kada paket istovremeno ima nedeljne i dvonedeljne stavke?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Posle preskakanja nedeljna stavka ide za 7, a dvonedeljna na svoj naredni dospeli termin.",
+      "evidence": [
+        {
+          "label": "Q163 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 89,
+          "tests": [
+            "Q163: skipping mixed rhythms moves only to an actual next cadence date"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 164,
+      "question": "Kako se računaju tri meseca pauze ako zahtev stigne 31. januara?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "31. januar daje najkasnije 30. april; 1. maj se odbija.",
+      "evidence": [
+        {
+          "label": "Q164 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 90,
+          "tests": [
+            "Q164 Q165: calendar pause clamps January 31 to April 30 and rejects impossible dates"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 165,
+      "question": "Da li sistem odbija nepostojeće datume, poput 30. februara?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "30. februar se odbija bez promene statusa pretplate.",
+      "evidence": [
+        {
+          "label": "Q165 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 90,
+          "tests": [
+            "Q164 Q165: calendar pause clamps January 31 to April 30 and rejects impossible dates"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 166,
+      "question": "Šta se dešava ako kupac preskoči termin dok paket još nije plaćen?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Preskočeni neplaćeni termin ostaje preskočen i nakon uplate; sva četiri prava ostaju.",
+      "evidence": [
+        {
+          "label": "Q166 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 91,
+          "tests": [
+            "Q166: skipping an unpaid package keeps all entitlements after payment"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 167,
+      "question": "Da li izmena stavke nakon isključivanja obnove može slučajno ponovo da uključi obnovu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kasnija izmena stavke ne vraća renewal_enabled na 1.",
+      "evidence": [
+        {
+          "label": "Q167 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 108,
+          "tests": [
+            "Q167 Q169 Q170: future configuration merges matching items and cannot restart cancelled renewal or alter paid cadence"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 168,
+      "question": "Šta se dešava ako kupac ukloni poslednju stavku iz buduće pretplate?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Uklanjanje poslednje stavke isključuje obnovu; ne ostaje prazna naplativa pretplata.",
+      "evidence": [
+        {
+          "label": "D130",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 130
+        }
+      ]
+    },
+    {
+      "id": 169,
+      "question": "Da li ponovno dodavanje istog proizvoda i ritma pravi novu stavku ili povećava količinu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Isti proizvod i ritam povećavaju količinu postojeće buduće stavke; kupljeni snapshot se ne menja.",
+      "evidence": [
+        {
+          "label": "Q169 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 108,
+          "tests": [
+            "Q167 Q169 Q170: future configuration merges matching items and cannot restart cancelled renewal or alter paid cadence"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 170,
+      "question": "Da li prelazak na ređi ritam menja isporuke koje su već plaćene?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "slow_down menja budući ritam, a kupljene nedeljne isporuke i količine ostaju iste.",
+      "evidence": [
+        {
+          "label": "Q170 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 108,
+          "tests": [
+            "Q167 Q169 Q170: future configuration merges matching items and cannot restart cancelled renewal or alter paid cadence"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 171,
+      "question": "Da li dodatak za sledeću dostavu prati pomeranje kada kupac preskoči termin?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Dodatak i njegova porudžbina pomeraju se na isti sledeći termin posle preskakanja.",
+      "evidence": [
+        {
+          "label": "Q171 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 92,
+          "tests": [
+            "Q171 Q172: next-only addon follows skip_next and is not duplicated",
+            "Q171 Q172: next-only addon follows pause and is not duplicated"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 172,
+      "question": "Da li dodatak za sledeću dostavu ostaje sačuvan tokom pauze?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Dodatak ostaje sačuvan i prati termin nakon pauze.",
+      "evidence": [
+        {
+          "label": "Q172 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 92,
+          "tests": [
+            "Q171 Q172: next-only addon follows skip_next and is not duplicated",
+            "Q171 Q172: next-only addon follows pause and is not duplicated"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 173,
+      "question": "Šta se dešava sa već plaćenim dodatkom kada kupac isključi obnovu paketa?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Isključivanje obnove plaćenog paketa zadržava već plaćen dodatak i on se isporučuje.",
+      "evidence": [
+        {
+          "label": "Q173 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 109,
+          "tests": [
+            "Q173: stopping paid-package renewal retains and delivers the purchased next-only addon"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 174,
+      "question": "Da li obnova staje ako neki izabrani proizvod više nije dostupan?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Obnova vraća product_unavailable i ne kreira niti naplaćuje novi paket.",
+      "evidence": [
+        {
+          "label": "Q174 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 93,
+          "tests": [
+            "Q174: inactive product prevents renewal without charging again"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 175,
+      "question": "Šta se dešava ako raspoloživi kredit pokrije ceo iznos narednog paketa?",
+      "status": "DELIMIČNO",
+      "method": "Automatizovani test",
+      "result": "Višak kredita se prenosi, a nova porudžbina može imati nulu. Stvarni fiskalni tretman nultog računa nije potvrđen.",
+      "evidence": [
+        {
+          "label": "D149",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 149
+        },
+        {
+          "label": "billing.ts",
+          "path": "server/billing.ts"
+        }
+      ]
+    },
+    {
+      "id": 176,
+      "question": "Kako se sprečava da stara mesečna pretplata bude ponovo naplaćena tokom prelaska na pakete?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Legacy pretplata vraća legacy_review_required bez nove porudžbine.",
+      "evidence": [
+        {
+          "label": "Q176 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 94,
+          "tests": [
+            "Q176: legacy monthly invoice is not silently charged as a new package"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 177,
+      "question": "Može li prijavljeni kupac da vidi ili menja tuđu pretplatu poznavanjem njenog ID-ja?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Tuđi customerId/pretplata ne mogu da se menjaju; odgovor je 404.",
+      "evidence": [
+        {
+          "label": "Q177 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 95,
+          "tests": [
+            "Q177 Q178: another customer and expired sessions cannot access subscription changes"
+          ]
+        },
+        {
+          "label": "account-dashboard.test.mjs:82",
+          "path": "tests/account-dashboard.test.mjs",
+          "line": 82
+        }
+      ]
+    },
+    {
+      "id": 178,
+      "question": "Šta se dešava kada istekne sesija kupca?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Istekla sesija vraća 401 i ne dopušta pristup nalogu.",
+      "evidence": [
+        {
+          "label": "Q178 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 95,
+          "tests": [
+            "Q177 Q178: another customer and expired sessions cannot access subscription changes"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 179,
+      "question": "Da li odjava odmah poništava postojeći pristup nalogu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Logout poništava upotrebljeni token; naredni pristup više nije odobren.",
+      "evidence": [
+        {
+          "label": "D81",
+          "path": "tests/domain-sqlite.test.mjs",
+          "line": 81
+        }
+      ]
+    },
+    {
+      "id": 180,
+      "question": "Može li isti kod za prijavu da se upotrebi dva puta ili istovremeno u dva prozora?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kod je jednokratan; konkurentni zahtevi ne stvaraju dve sesije.",
+      "evidence": [
+        {
+          "label": "L82",
+          "path": "tests/customer-login.test.mjs",
+          "line": 82
+        }
+      ]
+    },
+    {
+      "id": 181,
+      "question": "Kako se kupac prijavljuje ako je zaboravio raniju lozinku?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "U režimu koda kasnija prijava ne zahteva raniju lozinku; nije potreban zaseban reset lozinke.",
+      "evidence": [
+        {
+          "label": "L75",
+          "path": "tests/customer-login.test.mjs",
+          "line": 75
+        },
+        {
+          "label": "L229",
+          "path": "tests/customer-login.test.mjs",
+          "line": 229
+        }
+      ]
+    },
+    {
+      "id": 182,
+      "question": "Koliko puta može da pogreši kod za prijavu pre nego što bude blokiran?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Kod se zaključava nakon pet pogrešnih pokušaja.",
+      "evidence": [
+        {
+          "label": "L82",
+          "path": "tests/customer-login.test.mjs",
+          "line": 82
+        }
+      ]
+    },
+    {
+      "id": 183,
+      "question": "Da li postoji ograničenje učestalosti slanja kodova za prijavu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Cooldown po primaocu važi i kada zahtevi dolaze sa različitih IP adresa.",
+      "evidence": [
+        {
+          "label": "L96",
+          "path": "tests/customer-login.test.mjs",
+          "line": 96
+        }
+      ]
+    },
+    {
+      "id": 184,
+      "question": "Da li se neispravna email adresa odbija pre kreiranja kupca?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Neispravan email se odbija pre kreiranja kupca.",
+      "evidence": [
+        {
+          "label": "Q184 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 96,
+          "tests": [
+            "Q184: malformed email is rejected before customer creation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 185,
+      "question": "Može li drugi sajt da pošalje promenu pretplate u ime prijavljenog kupca?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Cross-origin promena pretplate vraća 403 bez promene obnove.",
+      "evidence": [
+        {
+          "label": "Q185 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 110,
+          "tests": [
+            "Q185: cross-origin customer mutation is rejected without state change"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 186,
+      "question": "Da li neispravni ili istekli admin pristupni podaci blokiraju pregled porudžbina?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Nedostajući admin token, pogrešna lozinka i istekao token odbijaju pristup.",
+      "evidence": [
+        {
+          "label": "Q186 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 111,
+          "tests": [
+            "Q186: real admin session rejects wrong password, missing token and expired token"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 187,
+      "question": "Da li se API ključevi, platni tokeni i druge tajne skrivaju iz odgovora dostupnih kupcu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Testirani javni/account odgovori i dijagnostika ne sadrže platni token ili serverske tajne; ovo nije kompletan penetracioni test.",
+      "evidence": [
+        {
+          "label": "Q187 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 112,
+          "tests": [
+            "Q187: account, order details and readiness do not expose provider tokens or credentials"
+          ]
+        },
+        {
+          "label": "integrations.test.mjs:26",
+          "path": "tests/integrations.test.mjs",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "id": 188,
+      "question": "Da li se odbija obaveštenje o uplati sa neispravnim potpisom ili tajnom?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Pogrešna webhook tajna vraća 401 pre promene uplate; bankarski potpis tek zahteva adapter.",
+      "evidence": [
+        {
+          "label": "Q188 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 97,
+          "tests": [
+            "Q188 Q189 Q190: payment webhook authenticates, deduplicates, and protects paid package state"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 189,
+      "question": "Šta se dešava kada isti događaj o uplati stigne više puta?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Isti eventId se obrađuje jednom i vraća duplicate bez drugog računa.",
+      "evidence": [
+        {
+          "label": "Q189 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 97,
+          "tests": [
+            "Q188 Q189 Q190: payment webhook authenticates, deduplicates, and protects paid package state"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 190,
+      "question": "Može li plaćen paket greškom da se vrati u status neplaćen kroz admin?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Admin vraćanje plaćenog paketa na pending je odbijeno; uplata ostaje paid.",
+      "evidence": [
+        {
+          "label": "Q190 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 97,
+          "tests": [
+            "Q188 Q189 Q190: payment webhook authenticates, deduplicates, and protects paid package state",
+            "Q060 Q190: conserved units quantity=1 cadence=weekly initialFailure=false",
+            "Q060 Q190: conserved units quantity=1 cadence=weekly initialFailure=true",
+            "Q060 Q190: conserved units quantity=1 cadence=biweekly initialFailure=false",
+            "Q060 Q190: conserved units quantity=1 cadence=biweekly initialFailure=true",
+            "Q060 Q190: conserved units quantity=2 cadence=weekly initialFailure=false",
+            "Q060 Q190: conserved units quantity=2 cadence=weekly initialFailure=true",
+            "Q060 Q190: conserved units quantity=2 cadence=biweekly initialFailure=false",
+            "Q060 Q190: conserved units quantity=2 cadence=biweekly initialFailure=true",
+            "Q060 Q190: conserved units quantity=100 cadence=weekly initialFailure=false",
+            "Q060 Q190: conserved units quantity=100 cadence=weekly initialFailure=true",
+            "Q060 Q190: conserved units quantity=100 cadence=biweekly initialFailure=false",
+            "Q060 Q190: conserved units quantity=100 cadence=biweekly initialFailure=true"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 191,
+      "question": "Da li greška fiskalnog servisa 500 može da izazove ponovno izdavanje istog računa?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Fiskalni 5xx/nejasan odgovor se ne tretira kao bezbedan automatski retry POST-a.",
+      "evidence": [
+        {
+          "label": "fiscal-dispatch.test.mjs:46",
+          "path": "tests/fiscal-dispatch.test.mjs",
+          "line": 46
+        }
+      ]
+    },
+    {
+      "id": 192,
+      "question": "Šta se dešava ako paket bude završen pre nego što je uspešno izdat avans?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Završen paket bez avansa ostaje bez izdatog konačnog računa, uz ADVANCE_NOT_ISSUED.",
+      "evidence": [
+        {
+          "label": "Q192 — API test",
+          "path": "tests/functional-audit.test.mjs",
+          "line": 98,
+          "tests": [
+            "Q192: completed package waits for missing advance rather than issuing a final alone"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 193,
+      "question": "Da li se nebezbedan link ka fiskalnom dokumentu prosleđuje kupcu?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "javascript/HTTP dokumenti ne ulaze u sačuvani PDF/verification URL niti email payload.",
+      "evidence": [
+        {
+          "label": "Fiscomm Q193",
+          "path": "tests/fiscomm.test.mjs",
+          "line": 98
+        }
+      ]
+    },
+    {
+      "id": 194,
+      "question": "Da li se nepoznata poreska oznaka odbija pre slanja fiskalnog zahteva?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Nedostajuća ili strana poreska oznaka blokira POST; nakon ispravne oznake bezbedno se nastavlja.",
+      "evidence": [
+        {
+          "label": "F52",
+          "path": "tests/fiscomm.test.mjs",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "id": 195,
+      "question": "Kako se rešava razlika od jedne pare pri raspodeli popusta na više jedinica?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Raspodela ostatka od jedne pare je testirana; ukupan iznos ostaje tačan.",
+      "evidence": [
+        {
+          "label": "fiscal-amounts.test.mjs:12",
+          "path": "tests/fiscal-amounts.test.mjs",
+          "line": 12
+        }
+      ]
+    },
+    {
+      "id": 196,
+      "question": "Da li ponovna obrada sačuvanog fiskalnog odgovora koristi originalni dokument bez novog izdavanja?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Sačuvan uspešan odgovor popravlja prikaz bez novog izdavanja računa.",
+      "evidence": [
+        {
+          "label": "F39",
+          "path": "tests/fiscomm.test.mjs",
+          "line": 39
+        },
+        {
+          "label": "fiscal-dispatch.test.mjs:17",
+          "path": "tests/fiscal-dispatch.test.mjs",
+          "line": 17
+        }
+      ]
+    },
+    {
+      "id": 197,
+      "question": "Da li se analitika i marketinško praćenje isključuju kada kupac ne da saglasnost?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Bez saglasnosti se potiskuju lokalni/vendor purchase događaji; provereni i odvojeni tipovi saglasnosti.",
+      "evidence": [
+        {
+          "label": "marketing-purchase.test.mjs:33",
+          "path": "tests/marketing-purchase.test.mjs",
+          "line": 33
+        },
+        {
+          "label": "integrations.test.mjs:212",
+          "path": "tests/integrations.test.mjs",
+          "line": 212
+        }
+      ]
+    },
+    {
+      "id": 198,
+      "question": "Da li Excel i CSV izvoz štite od formula unetih u ime ili napomenu kupca?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Spoke CSV neutralizuje formule; Excel pravi tekstualne ćelije. Testirani su izvozi, ne svaka verzija Excela.",
+      "evidence": [
+        {
+          "label": "integrations.test.mjs:147",
+          "path": "tests/integrations.test.mjs",
+          "line": 147
+        },
+        {
+          "label": "rendered-html.test.mjs:569",
+          "path": "tests/rendered-html.test.mjs",
+          "line": 569
+        }
+      ]
+    },
+    {
+      "id": 199,
+      "question": "Da li ime, telefon i adresa kupca mogu slučajno da završe u analitičkim podacima?",
+      "status": "RADI LOKALNO",
+      "method": "Automatizovani test",
+      "result": "Allowlist i rekurzivno čišćenje uklanjaju PII iz testiranih analitičkih payloadova.",
+      "evidence": [
+        {
+          "label": "marketing-attribution.test.mjs:28",
+          "path": "tests/marketing-attribution.test.mjs",
+          "line": 28
+        },
+        {
+          "label": "integrations.test.mjs:212",
+          "path": "tests/integrations.test.mjs",
+          "line": 212
+        }
+      ]
+    },
+    {
+      "id": 200,
+      "question": "Da li su dnevna priprema i napredak paketa upotrebljivi na telefonu bez horizontalnog pomeranja?",
+      "status": "RADI LOKALNO",
+      "method": "Pregledač",
+      "result": "Na 390 px dnevna priprema i paketi imaju širinu dokumenta 390 px, vidljive količine i brojače bez horizontalnog prelivanja.",
+      "evidence": [
+        {
+          "label": "Provera pregledača",
+          "path": "docs/audit-200/browser-results.json"
+        }
+      ]
+    }
+  ]
+}

@@ -143,7 +143,7 @@
 .footerNav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px 20px; }
 .footerNav a { font-weight: 800; text-decoration: none; }
 .footer a:hover { text-decoration: underline; }
-.socials { display: flex; align-items: flex-end; gap: 24px; color: #628753; }
+.socials { display: flex; align-items: flex-end; gap: 24px; color: #4c7040; }
 .socials a { display: inline-flex; min-height: 44px; align-items: center; text-decoration: none; }
 .socials svg { width: 30px; height: 30px; }
 .legal { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 15px; font-size: 12px; }

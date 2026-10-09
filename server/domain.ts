@@ -1,3 +1,4 @@
+import { actorContext } from "./staff";
 export class DomainError extends Error {
   constructor(
     public readonly code: string,
@@ -94,5 +95,5 @@ export function routeError(error: unknown): Response {
 }
 
 export function withRoute(handler: () => Promise<Response>): Promise<Response> {
-  return handler().catch(routeError);
+  return actorContext.run({}, () => handler().catch(routeError));
 }

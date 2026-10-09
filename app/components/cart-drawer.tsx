@@ -25,7 +25,7 @@ const FOCUSABLE =
 
 export function CartDrawer() {
   const { items, ready, drawerOpen, closeDrawer, updateItem, removeItem, addItem } = useCart();
-  const { track } = useAnalytics();
+  const { track, consent } = useAnalytics();
   const panel = useRef<HTMLDivElement>(null);
   // The quote is stored with the selection it answers, so a late reply for an older
   // selection can never be shown as the final price (D07).
@@ -35,6 +35,13 @@ export function CartDrawer() {
   const [offerBusy, setOfferBusy] = useState(false);
   const [offerError, setOfferError] = useState("");
   const seenOffer = useRef("");
+  const viewedCart = useRef(false);
+  useEffect(() => {
+    if (!drawerOpen) { viewedCart.current = false; return; }
+    if (viewedCart.current || (!consent?.analytics && !consent?.marketing)) return;
+    viewedCart.current = true;
+    track("view_cart", { currency: "RSD", items: items.map(item => ({ item_id: item.productId, item_name: item.name, price: item.unitPriceRsd, quantity: item.quantity })) });
+  }, [drawerOpen, consent, items, track]);
 
   const quoteKey = useMemo(
     () =>
@@ -240,7 +247,7 @@ export function CartDrawer() {
                           {item.purchaseType === "one_time"
                             ? "jednokratno"
                             : cadenceLabel(item.cadence).toLocaleLowerCase("sr-Latn")}
-                          {line && line.occurrences > 1 ? ` · ${line.occurrences} dostave ovog meseca` : ""}
+                          {line && line.occurrences > 1 ? ` · ${line.occurrences} dostave u paketu` : ""}
                         </p>
                         <div className="drawer-item-controls">
                           <label className="field">
@@ -405,7 +412,7 @@ export function CartDrawer() {
                     event.preventDefault();
                     return;
                   }
-                  track("begin_checkout", {
+                  track("checkout_clicked", {
                     valueRsd: quote.totalMinor / 100,
                     itemCount: items.length,
                     amountBasis: subscriptionOccurrences ? "billing_total" : "per_delivery",

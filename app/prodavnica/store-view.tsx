@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useAnalytics } from "../components/analytics-provider";
 import { ProductConfigurator } from "../components/product-configurator";
 import { type DeliveryWindow, type Product } from "../lib/frontend";
 
@@ -12,6 +13,8 @@ export function StoreView({
   delivery: DeliveryWindow;
 }) {
   const products = initialProducts;
+  const { consent, track } = useAnalytics();
+  useEffect(() => { if (consent?.analytics || consent?.marketing) track("view_item_list", { item_list_name: "Prodavnica", items: initialProducts.map(product => ({ item_id: product.id, item_name: product.name, price: product.priceRsd })) }); }, [consent, initialProducts, track]);
   const [category, setCategory] = useState("Sve");
 
   const categories = useMemo(
@@ -37,6 +40,7 @@ export function StoreView({
         </div>
       ) : (
         <>
+          <h2 className="sr-only">Proizvodi i izbor dostave</h2>
           {categories.length > 2 ? (
             <div className="tabs" aria-label="Filter kategorija">
               {categories.map((item) => (

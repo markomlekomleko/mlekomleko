@@ -1,3 +1,4 @@
+import { effectivePrice, productDetails, detailsStatement } from "./product-details";
 import { DomainError, assertDomain, nonNegativeInt, optionalString, requiredString } from "./domain";
 import { all, batch, first } from "./sql";
 import { audit } from "./outbox";
@@ -27,6 +28,7 @@ export interface ProductRow extends Record<string, unknown> {
   seo_title: string | null;
   seo_description: string | null;
   badi_sku: number | null;
+  fiscal_tax_label: string | null;
   is_active: number;
   created_at: string;
   updated_at: string;
@@ -71,9 +73,11 @@ export function publicProduct(row: ProductRow, includeCosts = false) {
     description: row.description ?? "",
     category: row.category ?? "Ostalo",
     unitLabel: row.unit_label,
-    priceMinor: row.price_minor,
-    ...(includeCosts ? { costMinor: row.cost_minor ?? 0, packagingCostMinor: row.packaging_cost_minor ?? 0, badiSku: row.badi_sku ?? null } : {}),
-    subscriptionPriceMinor: row.subscription_price_minor ?? row.price_minor,
+    priceMinor: includeCosts ? row.price_minor : effectivePrice(row),
+    gallery: JSON.parse(String(row.gallery_json ?? "[]")), ingredients: String(row.ingredients ?? ""), allergens: String(row.allergens ?? ""), nutrition: JSON.parse(String(row.nutrition_json ?? "{}")), inventoryEnabled: Boolean(row.inventory_enabled),
+    salePriceMinor: row.sale_price_minor ?? null, saleSubscriptionPriceMinor: row.sale_subscription_price_minor ?? null, saleStartsAt: row.sale_starts_at ?? null, saleEndsAt: row.sale_ends_at ?? null,
+    ...(includeCosts ? { costMinor: row.cost_minor ?? 0, packagingCostMinor: row.packaging_cost_minor ?? 0, badiSku: row.badi_sku ?? null, fiscalTaxLabel: row.fiscal_tax_label ?? null } : {}),
+    subscriptionPriceMinor: includeCosts ? row.subscription_price_minor ?? row.price_minor : effectivePrice(row, true),
     compareAtPriceMinor: row.compare_at_price_minor ?? null,
     currency: row.currency,
     imageUrl: row.image_url,
@@ -152,27 +156,32 @@ export async function createProduct(input: Record<string, unknown>) {
     sortOrder: input.sortOrder === undefined ? 0 : nonNegativeInt(input.sortOrder, "sortOrder", 10_000),
     seoTitle: optionalString(input.seoTitle, "seoTitle", 70),
     seoDescription: optionalString(input.seoDescription, "seoDescription", 170),
+    fiscalTaxLabel: optionalString(input.fiscalTaxLabel, "fiscalTaxLabel", 10),
     badiSku: optionalSku(input.badiSku),
     isActive: booleanValue(input.isActive, true),
   };
+  const details = productDetails(input);
   await assertProductSlug(value.slug);
   await batch([
     {
-      sql: "INSERT INTO products (id, slug, name, short_description, description, category, unit_label, price_minor, cost_minor, packaging_cost_minor, subscription_price_minor, compare_at_price_minor, currency, image_url, image_alt, badge, origin, is_featured, allow_subscription, is_demo, sort_order, seo_title, seo_description, badi_sku, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'RSD', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      sql: "INSERT INTO products (id, slug, name, short_description, description, category, unit_label, price_minor, cost_minor, packaging_cost_minor, subscription_price_minor, compare_at_price_minor, currency, image_url, image_alt, badge, origin, is_featured, allow_subscription, is_demo, sort_order, seo_title, seo_description, badi_sku, fiscal_tax_label, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'RSD', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
       bindings: [
         id, value.slug, value.name, value.shortDescription, value.description, value.category,
         value.unitLabel, value.priceMinor, value.costMinor, value.packagingCostMinor, value.subscriptionPriceMinor, value.compareAtPriceMinor,
         value.imageUrl, value.imageAlt, value.badge, value.origin, value.isFeatured,
         value.allowSubscription, value.isDemo, value.sortOrder, value.seoTitle,
-        value.seoDescription, value.badiSku, value.isActive, now, now,
+        value.seoDescription, value.badiSku, value.fiscalTaxLabel, value.isActive, now, now,
       ],
     },
+    detailsStatement(id, details),
     audit("admin", "local-admin", "product.created", "product", id, null, value),
   ]);
   return getProduct(value.slug, true);
 }
 
 export async function updateProduct(id: string, input: Record<string, unknown>) {
+  const { lockOverdueDeliveries } = await import("./deliveries");
+  await lockOverdueDeliveries();
   const before = await first<ProductRow>("SELECT * FROM products WHERE id = ?", id);
   if (!before) throw new DomainError("PRODUCT_NOT_FOUND", "Proizvod nije pronađen.", 404);
   const next = {
@@ -197,21 +206,24 @@ export async function updateProduct(id: string, input: Record<string, unknown>) 
     sortOrder: input.sortOrder === undefined ? before.sort_order : nonNegativeInt(input.sortOrder, "sortOrder", 10_000),
     seoTitle: input.seoTitle === undefined ? before.seo_title : optionalString(input.seoTitle, "seoTitle", 70),
     seoDescription: input.seoDescription === undefined ? before.seo_description : optionalString(input.seoDescription, "seoDescription", 170),
+    fiscalTaxLabel: input.fiscalTaxLabel === undefined ? before.fiscal_tax_label : optionalString(input.fiscalTaxLabel, "fiscalTaxLabel", 10),
     badiSku: input.badiSku === undefined ? before.badi_sku : optionalSku(input.badiSku),
     isActive: input.isActive === undefined ? before.is_active : booleanValue(input.isActive, true),
   };
+  const details = productDetails(input, before);
   await assertProductSlug(next.slug, id);
   await batch([
     {
-      sql: "UPDATE products SET slug = ?, name = ?, short_description = ?, description = ?, category = ?, unit_label = ?, price_minor = ?, cost_minor = ?, packaging_cost_minor = ?, subscription_price_minor = ?, compare_at_price_minor = ?, image_url = ?, image_alt = ?, badge = ?, origin = ?, is_featured = ?, allow_subscription = ?, is_demo = ?, sort_order = ?, seo_title = ?, seo_description = ?, badi_sku = ?, is_active = ?, updated_at = ? WHERE id = ?",
+      sql: "UPDATE products SET slug = ?, name = ?, short_description = ?, description = ?, category = ?, unit_label = ?, price_minor = ?, cost_minor = ?, packaging_cost_minor = ?, subscription_price_minor = ?, compare_at_price_minor = ?, image_url = ?, image_alt = ?, badge = ?, origin = ?, is_featured = ?, allow_subscription = ?, is_demo = ?, sort_order = ?, seo_title = ?, seo_description = ?, badi_sku = ?, fiscal_tax_label = ?, is_active = ?, updated_at = ? WHERE id = ?",
       bindings: [
         next.slug, next.name, next.shortDescription, next.description, next.category,
         next.unitLabel, next.priceMinor, next.costMinor, next.packagingCostMinor, next.subscriptionPriceMinor, next.compareAtPriceMinor,
         next.imageUrl, next.imageAlt, next.badge, next.origin, next.isFeatured,
         next.allowSubscription, next.isDemo, next.sortOrder, next.seoTitle,
-        next.seoDescription, next.badiSku, next.isActive, new Date().toISOString(), id,
+        next.seoDescription, next.badiSku, next.fiscalTaxLabel, next.isActive, new Date().toISOString(), id,
       ],
     },
+    detailsStatement(id, details),
     audit("admin", "local-admin", "product.updated", "product", id, publicProduct(before), next),
   ]);
   return getProduct(next.slug, true);
@@ -240,4 +252,10 @@ export async function removeProduct(id: string) {
     ),
   ]);
   return { deleted: !referenced, archived: referenced };
+}
+
+export async function cloneProduct(id: string) {
+  const source = await first<ProductRow>("SELECT * FROM products WHERE id = ?", id);
+  assertDomain(source, "PRODUCT_NOT_FOUND", "Proizvod nije pronađen.", 404);
+  return createProduct({ ...publicProduct(source, true), name: `${source.name} — kopija`, slug: `${source.slug.slice(0,90)}-kopija-${crypto.randomUUID().slice(0,8)}`, isActive: false });
 }

@@ -1,8 +1,10 @@
+import type { ServiceRegion, DeliverySlot } from "./service-policy";
 import { all } from "./sql";
 import { deliveryCityForPostalCode } from "../app/lib/delivery-area";
-import { addLocalDays, cutoffForDelivery, nextWeekday, occurrenceDatesInMonth } from "./time";
+import { addLocalDays, cutoffForDelivery, nextWeekday } from "./time";
 
 export interface BusinessSettings {
+  minimumOrderMinor: number; holidays: string[]; serviceRegions: ServiceRegion[]; deliverySlots: DeliverySlot[];
   timezone: "Europe/Belgrade";
   currency: "RSD";
   deliveryWeekday: number;
@@ -38,6 +40,7 @@ export interface BusinessSettings {
 }
 
 const defaults: BusinessSettings = {
+  minimumOrderMinor: 0, holidays: [], serviceRegions: [], deliverySlots: [],
   timezone: "Europe/Belgrade",
   currency: "RSD",
   deliveryWeekday: 5,
@@ -94,7 +97,7 @@ export async function getNextDeliveryWindow(now = new Date()) {
   const settings = await getBusinessSettings();
   const candidates = settings.deliveryWeekdays.map((weekday) => {
     let date = nextWeekday(now, weekday);
-    while (now.getTime() >= Date.parse(cutoffForDelivery(date, settings.cutoffHours, settings.deliveryLocalTime))) date = addLocalDays(date, 7);
+    while (settings.holidays.includes(date) || now.getTime() >= Date.parse(cutoffForDelivery(date, settings.cutoffHours, settings.deliveryLocalTime))) date = addLocalDays(date, 7);
     return date;
   }).sort();
   const deliveryDate = candidates[0];
@@ -106,14 +109,15 @@ export async function getNextDeliveryWindow(now = new Date()) {
     cutoffAt,
     cutoffHours: settings.cutoffHours,
     remainingOccurrences: {
-      weekly: occurrenceDatesInMonth(deliveryDate, "weekly").length,
-      biweekly: occurrenceDatesInMonth(deliveryDate, "biweekly").length,
+      weekly: 4,
+      biweekly: 2,
     },
   };
 }
 
 export function isServiceablePostalCode(settings: BusinessSettings, postalCode: string) {
   const normalized = postalCode.trim();
+  if (settings.serviceRegions.some(region => region.postalCodes.includes(normalized))) return true;
   if (!deliveryCityForPostalCode(normalized)) return false;
   if (settings.servicePostalCodes.length === 0) return true;
   return settings.servicePostalCodes.some((entry) => {

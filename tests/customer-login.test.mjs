@@ -40,7 +40,7 @@ function live() {
 }
 function accepted(messageId = 'provider-id') { return Response.json({ messages: [{ messageId, status: { groupId: 1, name: 'PENDING_ENROUTE' } }] }); }
 
-test('registration requires a strong password and email proof; the session works without an order', async () => {
+test('legacy supplied passwords are validated and email proof is required; sessions work without an order', async () => {
   ok(await signup('bad@example.test', 'short'), 422);
   tick();
   const challenge = ok(await signup(), 202);
@@ -68,7 +68,7 @@ test('registration claims an existing guest customer without changing delivery d
   const hash = database.raw.prepare('SELECT password_hash FROM customer_credentials').get().password_hash;
   tick();
   const duplicate = ok(await signup('kupac@example.test', 'different-password'), 202);
-  assert.equal(duplicate.localDevelopment, undefined);
+  ok(await verify(duplicate));
   assert.equal(database.raw.prepare('SELECT password_hash FROM customer_credentials').get().password_hash, hash);
 });
 
@@ -223,4 +223,21 @@ test('utility jobs require separate consent, use a static account button, and re
   ok(await api('/api/account/login-settings', { notifications: false }, { cookie, method: 'PATCH' }));
   ok(await jobs()); assert.equal(sent.length, 1);
   assert.equal(database.raw.prepare("SELECT COUNT(*) n FROM outbox WHERE topic='whatsapp.account_update' AND external_id LIKE 'suppressed:%'").get().n, 1);
+});
+
+
+test('first registration and guest-order onboarding work without a password and preserve verified WhatsApp', async () => {
+  const fresh = ok(await api('/api/auth/register', { email: 'fresh@example.test' }), 202);
+  ok(await verify(fresh));
+  assert.match(database.raw.prepare('SELECT password_hash FROM customer_credentials').get().password_hash, /^passwordless:/);
+  database.raw.exec("INSERT INTO customers (id,email,full_name,phone,address_line_1,city,postal_code) VALUES ('guest','guest@example.test','Guest Buyer','+381600000000','Guest 1','Beograd','11000')");
+  const guest = ok(await api('/api/auth/code', { email: 'guest@example.test', channel: 'email' }), 202);
+  assert.equal(database.raw.prepare("SELECT COUNT(*) n FROM customer_credentials WHERE customer_id='guest'").get().n, 0);
+  ok(await verify(guest));
+  assert.equal(database.raw.prepare("SELECT full_name FROM customers WHERE id='guest'").get().full_name, 'Guest Buyer');
+  database.raw.exec("UPDATE customer_credentials SET whatsapp_phone='+381601234567', whatsapp_verified_at='2026-09-01', whatsapp_consent_at='2026-09-01' WHERE customer_id='guest'");
+  tick();
+  const repeat = ok(await api('/api/auth/register', { email: 'guest@example.test' }), 202);
+  ok(await verify(repeat));
+  assert.equal(database.raw.prepare("SELECT whatsapp_phone FROM customer_credentials WHERE customer_id='guest'").get().whatsapp_phone, '+381601234567');
 });

@@ -1,0 +1,200 @@
+Kako dodajem novi proizvod?
+Da li mogu samostalno da promenim naziv i opis proizvoda?
+Kako postavljam i menjam fotografiju proizvoda?
+Da li jedan proizvod može da ima više fotografija?
+Da li mogu da postavim različite cene za jednokratnu kupovinu i pretplatu?
+Kako određujem jedinicu prodaje, na primer litar, flašu ili pakovanje?
+Da li mogu privremeno da sakrijem proizvod bez brisanja?
+Šta se dešava sa postojećim pretplatama ako proizvod više nije dostupan?
+Da li promena cene utiče na već plaćene pakete?
+Da li mogu da odredim koji proizvodi mogu da se kupuju na pretplatu?
+Kako pravim akciju za određeni proizvod?
+Da li mogu da prikažem staru i novu cenu?
+Da li akcija može automatski da počne i završi se određenog datuma?
+Kako pravim promotivni kod?
+Da li popust može da bude procentualni ili u fiksnom iznosu?
+Da li mogu da ograničim koliko puta se koristi promotivni kod?
+Da li mogu da napravim popust samo za prvu kupovinu?
+Da li popust važi samo za prvi paket ili i za naredne obnove?
+Da li kupac može da kombinuje akcijsku cenu i promotivni kod?
+Kako se popust raspoređuje na proizvode na fiskalnom računu?
+Da li kupac može da poruči bez pravljenja naloga?
+Koje podatke kupac mora da ostavi prilikom poručivanja?
+Da li u istoj korpi mogu da budu jednokratni proizvodi i pretplata?
+Da li isti proizvod može da se kupi jednokratno i kroz pretplatu u istoj porudžbini?
+Da li kupac može da kombinuje nedeljne i dvonedeljne dostave?
+Da li se izabrana količina odnosi na jednu dostavu ili ceo paket?
+Da li kupac pre plaćanja vidi ukupnu cenu i ukupnu količinu paketa?
+Kako se računa dostava kada korpa sadrži različite vrste kupovine?
+Šta se dešava ako kupac dva puta klikne na dugme za poručivanje?
+Da li mogu iz admin panela da napravim porudžbinu za kupca koji poručuje telefonom?
+Šta tačno kupac dobija kada izabere mesečni paket?
+Da li nedeljni paket uvek podrazumeva četiri uspešne dostave?
+Da li dvonedeljni paket uvek podrazumeva dve uspešne dostave?
+Šta se dešava ako kalendarski mesec ima pet termina za dostavu?
+Ako kupac poruči krajem meseca, da li ostatak paketa prelazi u sledeći mesec?
+Kada počinje prva dostava pretplate?
+Da li kupac može da ima više aktivnih pretplata?
+Kako se prati završetak paketa koji sadrži različite ritmove dostave?
+Da li se paket automatski obnavlja i kada se naplaćuje sledeći?
+Da li kupac može da kupi samo jedan paket i isključi dalju obnovu?
+Kako kupac preskače sledeću dostavu?
+Do kog trenutka može da preskoči dostavu?
+Da li preskakanjem gubi već plaćenu količinu?
+Kako kupac uključuje pauzu pretplate?
+Od kog datuma se računa maksimalna pauza od tri meseca?
+Da li kupac može da produži postojeću pauzu?
+Da li može da prekine pauzu ranije?
+Kako se određuje prvi termin nakon završetka pauze?
+Da li promena količine, proizvoda ili ritma važi odmah ili od sledećeg paketa?
+Da li kupac može da doda proizvod samo za jednu narednu dostavu?
+Gde vidim šta tačno danas treba da pripremimo?
+Da li vidim zbirnu količinu svakog proizvoda za izabrani datum?
+Da li vidim količine i proizvode pojedinačno za svakog kupca?
+Kako razlikujem jednokratne porudžbine od pretplata?
+Da li mogu unapred da pregledam raspored za naredne nedelje?
+Da li mogu da izvezem spisak za pakovanje i spisak za vozača?
+Šta znači zaključavanje liste za pripremu?
+Kako se evidentira da je dostava uspešno uručena?
+Šta se dešava kada kupac nije kod kuće ili dostava ne uspe?
+Kako postupamo ako je kupcu isporučen samo deo predviđene količine?
+Koji načini plaćanja su dostupni kupcu?
+Da li ceo paket mora da bude plaćen pre prve dostave?
+Kako u adminu evidentiram uplatu koju sam primio van sajta?
+Šta se dešava ako uplata stigne nakon roka za pripremu?
+Da li neplaćena pretplata ulazi na spisak za dostavu?
+Šta se dešava ako kartično plaćanje bude odbijeno?
+Da li sistem automatski ponavlja neuspelu naplatu i obaveštava kupca?
+Šta se dešava sa preostalim dostavama kada kupac otkaže plaćenu pretplatu?
+Da li kupac može da dobije povraćaj za neiskorišćeni deo paketa?
+Kako postupamo ako kupac uplati novac za već otkazanu porudžbinu?
+Kada se automatski izdaje avansni račun?
+Kada se automatski izdaje konačni fiskalni račun?
+Kako sistem zna da su izvršene sve kupljene dostave?
+Da li pauza pomera i trenutak izdavanja konačnog računa?
+Kako se fiskalizuje korpa koja sadrži pretplatu i jednokratne proizvode?
+Kako se zatvara avans i povezuje sa konačnim računom?
+Da li kupac automatski dobija račun elektronskom poštom?
+Gde u adminu mogu da pronađem i ponovo pošaljem račun?
+Šta se dešava ako Fiscomm ne odgovori ili prekine vezu tokom izdavanja?
+Kako sistem sprečava izdavanje dva računa za istu uplatu ili završeni paket?
+Kako se kupac prijavljuje na svoj nalog?
+Da li kupac vidi koliko je dostava iskoristio i koliko mu je ostalo?
+Da li kupac vidi datum sledeće dostave?
+Da li kupac može samostalno da promeni adresu i broj telefona?
+Da li promena adrese važi i za već pripremljenu dostavu?
+Da li kupac dobija potvrdu nakon kreiranja porudžbine?
+Da li dobija podsetnik pre dostave i pre isteka roka za izmene?
+Da li dobija obaveštenje nakon pauziranja, preskakanja ili otkazivanja?
+Da li obaveštenja mogu da se šalju putem SMS-a ili WhatsApp-a?
+Šta se dešava ako obaveštenje ili račun ne stignu kupcu?
+Da li više zaposlenih može da koristi admin panel sa različitim ovlašćenjima?
+Da li mogu da vidim ko je promenio porudžbinu ili potvrdio dostavu?
+Šta se dešava ako dva zaposlena istovremeno menjaju istu porudžbinu?
+Da li mogu da pretražujem kupce po imenu, telefonu i broju porudžbine?
+Da li mogu da vidim prihod, broj porudžbina i najprodavanije proizvode?
+Kako se postojeće pretplate i uplate prenose u novi sistem?
+Ko određuje poreske oznake proizvoda i dostave i gde se one podešavaju?
+Da li mogu sve da isprobam bez stvarne naplate i izdavanja pravih računa?
+Šta se dešava sa porudžbinama i automatskim poslovima ako sajt privremeno prestane da radi?
+Koje funkcionalnosti su spremne, a šta još mora da se poveže i proveri pre puštanja u rad?
+Da li se cene i naplata vode isključivo u dinarima ili i u drugim valutama?
+Da li pravno lice može da unese naziv firme i PIB za račun?
+Da li kupac može da navede posebnu adresu za račun i posebnu za dostavu?
+Da li nova porudžbina istog kupca na drugoj adresi menja adresu prethodne otvorene porudžbine?
+Da li mogu da postavim minimalan iznos za poručivanje?
+Koja je najveća dozvoljena količina jednog proizvoda po stavci?
+Da li sistem odbija nulu, negativne i decimalne količine?
+Šta se dešava sa praznom korpom ili korpom koja ima previše stavki?
+Šta se dešava ako korpa sadrži proizvod koji ne postoji?
+Da li sistem odbija nepoznat tip kupovine ili nepodržan ritam dostave?
+Šta se dešava ako se ista stavka pojavi dva puta u korpi?
+Da li se količine istog proizvoda u različitim ritmovima odvojeno čuvaju i isporučuju?
+Može li kupac izmenom podataka u pregledaču da plati staru ili proizvoljnu cenu?
+Da li proizvod koji je upravo sakriven može da se kupi iz ranije otvorene korpe?
+Šta se dešava ako kupac pokuša da pretplati proizvod namenjen samo jednokratnoj kupovini?
+Da li se istekao promotivni kod automatski odbija?
+Da li može da se upotrebi promotivni kod pre početka njegovog važenja?
+Da li se proverava minimalna vrednost korpe potrebna za popust?
+Može li fiksni popust veći od vrednosti proizvoda da napravi negativan račun?
+Da li su mala i velika slova u promotivnom kodu izjednačena?
+Da li kupac može da upotrebi dva promotivna koda u istoj porudžbini?
+Da li postoji ograničenje korišćenja promotivnog koda po kupcu?
+Šta se dešava ako unesem neispravan URL naziv proizvoda?
+Da li mogu slučajno da napravim dva proizvoda sa istim URL nazivom?
+Da li su podržani ćirilica i slova č, ć, š, đ i ž u nazivu proizvoda?
+Da li HTML ili skripta uneta u opis proizvoda može da se izvrši kod posetioca?
+Šta se dešava kada pokušam da otpremim fotografiju veću od dozvoljene?
+Koji formati fotografija su podržani i da li se sačuvana slika pravilno prikazuje?
+Da li je dozvoljeno postavljanje SVG fajlova koji mogu sadržati aktivan kod?
+Da li sistem proverava sadržaj fajla ili veruje samo ekstenziji i oznaci tipa?
+Može li proizvod da postoji bez fotografije i šta kupac tada vidi?
+Da li se odbijaju nebezbedne adrese fotografija, poput HTTP i javascript linkova?
+Da li mogu ručno da promenim redosled proizvoda u prodavnici?
+Da li mogu da rasporedim proizvode po kategorijama?
+Da li mogu da označim proizvod kao izdvojen?
+Da li kupci mogu da vide nabavnu cenu ili interne troškove pakovanja?
+Šta se dešava kada obrišem proizvod koji je već kupljen u aktivnom paketu?
+Da li postoji istorija dodavanja i izmena proizvoda?
+Da li mogu jednim klikom da napravim kopiju postojećeg proizvoda?
+Da li sistem vodi zalihe i sprečava prodaju kada nema dovoljno robe?
+Da li mogu da pratim serije proizvoda i rokove trajanja?
+Da li postoje posebna polja za alergene, sastav i nutritivne vrednosti?
+Da li mogu da označim praznike i neradne datume bez menjanja cele nedeljne rutine?
+Da li kroz admin mogu da uvedem potpuno novi grad za dostavu?
+Šta se dešava kada grad i poštanski broj kupca ne odgovaraju jedno drugom?
+Da li se prepoznaju ćirilični nazivi gradova i suvišni razmaci?
+Da li neuspešna kupovina van zone dostave ostavlja porudžbinu ili naplatu u sistemu?
+Kako se ponaša besplatna dostava tačno na propisanom pragu?
+Da li promena cene dostave utiče na već plaćen paket?
+Da li kupac može da izabere satnicu dostave, na primer od 10 do 12 časova?
+Da li mogu da uključim ili isključim određene dane u nedelji za dostavu?
+Da li promena letnjeg i zimskog računanja vremena remeti raspored i rokove?
+Da li zahtev pristigao tačno u trenutku isteka roka još može da promeni dostavu?
+Može li administrator da zaključa pripremu pre automatskog roka?
+Da li je moguće greškom potvrditi dostavu koja je tek sledeće nedelje?
+Da li se može potvrditi isporuka dok priprema još nije zaključana?
+Šta se dešava ako zaposleni dva puta potvrdi istu isporuku?
+Šta se dešava ako dva zaposlena istovremeno potvrde poslednje delove istog paketa?
+Da li se već potvrđena isporuka može naknadno označiti kao neuspešna?
+Da li se paket zatvara ako su sve redovne dostave završene, a jednokratna stavka još nije uručena?
+Može li sistem slučajno da pripremi petu dostavu iz paketa koji ima četiri?
+Kada se ponavlja neuspešna dostava kod dvonedeljnog paketa?
+Kako preskakanje radi kada paket istovremeno ima nedeljne i dvonedeljne stavke?
+Kako se računaju tri meseca pauze ako zahtev stigne 31. januara?
+Da li sistem odbija nepostojeće datume, poput 30. februara?
+Šta se dešava ako kupac preskoči termin dok paket još nije plaćen?
+Da li izmena stavke nakon isključivanja obnove može slučajno ponovo da uključi obnovu?
+Šta se dešava ako kupac ukloni poslednju stavku iz buduće pretplate?
+Da li ponovno dodavanje istog proizvoda i ritma pravi novu stavku ili povećava količinu?
+Da li prelazak na ređi ritam menja isporuke koje su već plaćene?
+Da li dodatak za sledeću dostavu prati pomeranje kada kupac preskoči termin?
+Da li dodatak za sledeću dostavu ostaje sačuvan tokom pauze?
+Šta se dešava sa već plaćenim dodatkom kada kupac isključi obnovu paketa?
+Da li obnova staje ako neki izabrani proizvod više nije dostupan?
+Šta se dešava ako raspoloživi kredit pokrije ceo iznos narednog paketa?
+Kako se sprečava da stara mesečna pretplata bude ponovo naplaćena tokom prelaska na pakete?
+Može li prijavljeni kupac da vidi ili menja tuđu pretplatu poznavanjem njenog ID-ja?
+Šta se dešava kada istekne sesija kupca?
+Da li odjava odmah poništava postojeći pristup nalogu?
+Može li isti kod za prijavu da se upotrebi dva puta ili istovremeno u dva prozora?
+Kako se kupac prijavljuje ako je zaboravio raniju lozinku?
+Koliko puta može da pogreši kod za prijavu pre nego što bude blokiran?
+Da li postoji ograničenje učestalosti slanja kodova za prijavu?
+Da li se neispravna email adresa odbija pre kreiranja kupca?
+Može li drugi sajt da pošalje promenu pretplate u ime prijavljenog kupca?
+Da li neispravni ili istekli admin pristupni podaci blokiraju pregled porudžbina?
+Da li se API ključevi, platni tokeni i druge tajne skrivaju iz odgovora dostupnih kupcu?
+Da li se odbija obaveštenje o uplati sa neispravnim potpisom ili tajnom?
+Šta se dešava kada isti događaj o uplati stigne više puta?
+Može li plaćen paket greškom da se vrati u status neplaćen kroz admin?
+Da li greška fiskalnog servisa 500 može da izazove ponovno izdavanje istog računa?
+Šta se dešava ako paket bude završen pre nego što je uspešno izdat avans?
+Da li se nebezbedan link ka fiskalnom dokumentu prosleđuje kupcu?
+Da li se nepoznata poreska oznaka odbija pre slanja fiskalnog zahteva?
+Kako se rešava razlika od jedne pare pri raspodeli popusta na više jedinica?
+Da li ponovna obrada sačuvanog fiskalnog odgovora koristi originalni dokument bez novog izdavanja?
+Da li se analitika i marketinško praćenje isključuju kada kupac ne da saglasnost?
+Da li Excel i CSV izvoz štite od formula unetih u ime ili napomenu kupca?
+Da li ime, telefon i adresa kupca mogu slučajno da završe u analitičkim podacima?
+Da li su dnevna priprema i napredak paketa upotrebljivi na telefonu bez horizontalnog pomeranja?

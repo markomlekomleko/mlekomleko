@@ -6,8 +6,8 @@ export const metadata: Metadata = { title: "Pravila redovne dostave", descriptio
 
 export default function SubscriptionRulesPage() {
   return <PolicyPage eyebrow="Redovna dostava" title="Pravila pretplate" intro="Redovna dostava nema ugovorni minimalni period, a svaku promenu potvrđujemo u nalogu." sections={[
-    { title: "Obračun", paragraphs: ["Cena se računa iz stvarnih preostalih termina u konkretnom obračunskom mesecu, zasebno za nedeljni i dvonedeljni ritam. Korpa prikazuje datume obuhvaćenih isporuka.", "Dostava i popusti se obračunavaju po pravilima prikazanim pre potvrde."] },
-    { title: "Izmena ritma", paragraphs: ["Količinu ili ritam možete promeniti, preskočiti sledeću isporuku ili pauzirati do izabranog datuma dok rok za izmenu nije istekao. Zaključana dostava ostaje nepromenjena."] },
-    { title: "Otkazivanje", paragraphs: ["Pretplatu možete trajno otkazati iz naloga. Ako je tekući mesec već plaćen, sistem evidentira odgovarajući kredit ili obavezu na osnovu preostalih termina; podrška rešava eventualni povraćaj."] },
+    { title: "Obračun", paragraphs: ["Paket se plaća unapred i sadrži četiri dostave za nedeljni ili dve za dvonedeljni ritam, bez obzira na kraj kalendarskog meseca. Korpa prikazuje početni raspored. Avansni račun izdaje se po potvrdi uplate, a konačni nakon svih izvršenih dostava.", "Dostava i popusti se obračunavaju po pravilima prikazanim pre potvrde."] },
+    { title: "Izmena ritma", paragraphs: ["Preskakanje i pauza do tri kalendarska meseca čuvaju sve neisporučene količine plaćenog paketa. Izmene količine i ritma važe od narednog paketa. Posebno plaćen dodatak može se dodati sledećoj dostavi pre roka. Zaključana dostava ostaje nepromenjena."] },
+    { title: "Otkazivanje", paragraphs: ["Otkazivanje zaustavlja obnovu. Plaćeni paket se isporučuje do kraja; neplaćeni paket se otkazuje. Za prekid već plaćenog paketa i povraćaj novca kontaktirajte podršku radi obračuna i odgovarajućih fiskalnih dokumenata."] },
   ]} />;
 }

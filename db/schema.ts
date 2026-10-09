@@ -9,6 +9,9 @@ const timestamps = {
 export const products = sqliteTable(
   "products",
   {
+    galleryJson: text("gallery_json").notNull().default("[]"), ingredients: text("ingredients").notNull().default(""), allergens: text("allergens").notNull().default(""), nutritionJson: text("nutrition_json").notNull().default("{}"),
+    salePriceMinor: integer("sale_price_minor"), saleSubscriptionPriceMinor: integer("sale_subscription_price_minor"), saleStartsAt: text("sale_starts_at"), saleEndsAt: text("sale_ends_at"), inventoryEnabled: integer("inventory_enabled").notNull().default(0),
+    fiscalTaxLabel: text("fiscal_tax_label"),
     id: text("id").primaryKey(),
     slug: text("slug").notNull(),
     name: text("name").notNull(),
@@ -72,6 +75,7 @@ export const customerCredentials = sqliteTable("customer_credentials", {
   whatsappPhone: text("whatsapp_phone").unique(),
   whatsappVerifiedAt: text("whatsapp_verified_at"),
   whatsappConsentAt: text("whatsapp_consent_at"),
+  smsNotificationsAt: text("sms_notifications_at"),
   whatsappNotificationsAt: text("whatsapp_notifications_at"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -97,8 +101,11 @@ export const authChallenges = sqliteTable("auth_challenges", {
 export const subscriptions = sqliteTable(
   "subscriptions",
   {
+    shippingJson: text("shipping_json"), billingJson: text("billing_json"), slotId: text("slot_id"),
+    pauseStartedOn: text("pause_started_on"),
     id: text("id").primaryKey(),
     customerId: text("customer_id").notNull().references(() => customers.id),
+    renewalEnabled: integer("renewal_enabled").notNull().default(1),
     status: text("status", { enum: ["active", "paused", "cancelled"] }).notNull().default("active"),
     paymentMethod: text("payment_method", { enum: ["card", "cash"] }).notNull(),
     // Opaque provider token/reference only. Never a PAN, CVC, or other raw card data.
@@ -181,6 +188,7 @@ export const nextDeliveryAddons = sqliteTable(
 export const orders = sqliteTable(
   "orders",
   {
+    shippingJson: text("shipping_json"), billingJson: text("billing_json"), slotId: text("slot_id"),
     id: text("id").primaryKey(),
     orderNumber: text("order_number").notNull(),
     customerId: text("customer_id").notNull().references(() => customers.id),
@@ -217,6 +225,7 @@ export const orders = sqliteTable(
 export const orderItems = sqliteTable(
   "order_items",
   {
+    fiscalTaxLabel: text("fiscal_tax_label"),
     id: text("id").primaryKey(),
     orderId: text("order_id").notNull().references(() => orders.id),
     productId: text("product_id").notNull().references(() => products.id),
@@ -272,6 +281,8 @@ export const deliveryOrders = sqliteTable(
 export const deliveryItems = sqliteTable(
   "delivery_items",
   {
+    packageLineId: text("package_line_id").references(() => packageLines.id),
+    orderItemId: text("order_item_id").references(() => orderItems.id), deliveredQuantity: integer("delivered_quantity"),
     id: text("id").primaryKey(),
     deliveryOrderId: text("delivery_order_id").notNull().references(() => deliveryOrders.id),
     productId: text("product_id").notNull(),
@@ -340,6 +351,7 @@ export const settings = sqliteTable("settings", {
 export const promoCodes = sqliteTable(
   "promo_codes",
   {
+    firstPurchaseOnly: integer("first_purchase_only").notNull().default(0), perCustomerLimit: integer("per_customer_limit"), stackable: integer("stackable").notNull().default(0),
     id: text("id").primaryKey(),
     code: text("code").notNull(),
     description: text("description").notNull().default(""),
@@ -464,6 +476,9 @@ export const fiscalReceipts = sqliteTable(
     provider: text("provider").notNull().default("badi"),
     providerReference: text("provider_reference"),
     invoiceNumber: text("invoice_number"),
+    referenceReceiptId: text("reference_receipt_id"),
+    pfrTime: text("pfr_time"),
+    verificationUrl: text("verification_url"),
     pdfUrl: text("pdf_url"),
     attempts: integer("attempts").notNull().default(0),
     lastErrorCode: text("last_error_code"),
@@ -478,6 +493,16 @@ export const fiscalReceipts = sqliteTable(
     index("fiscal_receipts_status_idx").on(table.status, table.updatedAt),
   ],
 );
+
+// Immutable request journal; ambiguous outcomes are reconciled before another issuance.
+export const fiscalDispatches = sqliteTable("fiscal_dispatches", {
+  operationKey: text("operation_key").primaryKey().references(() => fiscalReceipts.operationKey),
+  requestJson: text("request_json").notNull(),
+  status: text("status", { enum: ["sending", "issued", "rejected", "unknown"] }).notNull(),
+  responseJson: text("response_json"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
 
 // Append-only by application contract. No update/delete service is exposed.
 export const auditLog = sqliteTable(
@@ -534,10 +559,47 @@ export const rateLimits = sqliteTable(
 );
 
 
-// Admin credentials stay in server environment variables; only session hashes persist.
+// Owner credentials remain in the environment. Staff passwords and session tokens are hashed.
 export const adminSessions = sqliteTable("admin_sessions", {
+  adminUserId: text("admin_user_id").references(() => adminUsers.id),
   tokenHash: text("token_hash").primaryKey(),
   credentialHash: text("credential_hash").notNull(),
   expiresAt: text("expires_at").notNull(),
   revokedAt: text("revoked_at"),
 }, (table) => [index("admin_sessions_expiry_idx").on(table.expiresAt)]);
+
+export const mutationGuards = sqliteTable("mutation_guards", { id: text("id").primaryKey().notNull(), allowed: integer("allowed").notNull() }, (table) => [check("mutation_guard_allowed", sql`${table.allowed} = 1`)]);
+
+export const subscriptionPackages = sqliteTable("subscription_packages", {
+  id: text("id").primaryKey(),
+  orderId: text("order_id").notNull().unique().references(() => orders.id),
+  subscriptionId: text("subscription_id").notNull().references(() => subscriptions.id),
+  status: text("status", {enum: ["open", "completed"]}).notNull().default("open"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  completedAt: text("completed_at"),
+}, table => [uniqueIndex("subscription_packages_open_unique").on(table.subscriptionId).where(sql`${table.status} = 'open'`)]);
+export const packageLines = sqliteTable("package_lines", {
+  cancelledQuantity: integer("cancelled_quantity").notNull().default(0), importedDeliveredQuantity: integer("imported_delivered_quantity").notNull().default(0),
+  id: text("id").primaryKey(),
+  packageId: text("package_id").notNull().references(() => subscriptionPackages.id),
+  orderItemId: text("order_item_id").notNull().unique().references(() => orderItems.id),
+  requiredDeliveries: integer("required_deliveries").notNull(),
+  anchorDate: text("anchor_date").notNull(),
+});
+export const productImages = sqliteTable("product_images", {
+  id: text("id").primaryKey(),
+  mimeType: text("mime_type").notNull(),
+  dataBase64: text("data_base64").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const adminUsers = sqliteTable("admin_users", { id:text("id").primaryKey(), email:text("email").notNull().unique(), fullName:text("full_name").notNull(), passwordHash:text("password_hash").notNull(), role:text("role",{enum:["owner","manager","driver","finance"]}).notNull(), isActive:integer("is_active").notNull().default(1), version:integer("version").notNull().default(1), createdAt:timestamps.createdAt });
+export const orderPromotions = sqliteTable("order_promotions", {orderId:text("order_id").notNull().references(()=>orders.id),promoId:text("promo_id").notNull().references(()=>promoCodes.id),customerId:text("customer_id").notNull().references(()=>customers.id),discountMinor:integer("discount_minor").notNull()}, t=>[uniqueIndex("order_promotions_order_promo").on(t.orderId,t.promoId)]);
+export const inventoryLots = sqliteTable("inventory_lots",{id:text("id").primaryKey(),productId:text("product_id").notNull().references(()=>products.id),lotNumber:text("lot_number").notNull(),expiresOn:text("expires_on"),quantity:integer("quantity").notNull(),reserved:integer("reserved").notNull().default(0),version:integer("version").notNull().default(1),createdAt:timestamps.createdAt},t=>[uniqueIndex("inventory_lots_product_lot").on(t.productId,t.lotNumber),check("inventory_lots_available",sql`${t.quantity} >= ${t.reserved} AND ${t.reserved} >= 0`)]);
+export const inventoryReservations = sqliteTable("inventory_reservations",{id:text("id").primaryKey(),orderId:text("order_id").notNull().references(()=>orders.id),productId:text("product_id").notNull().references(()=>products.id),lotId:text("lot_id").notNull().references(()=>inventoryLots.id),quantity:integer("quantity").notNull(),consumed:integer("consumed").notNull().default(0)},t=>[uniqueIndex("inventory_reservations_order_lot").on(t.orderId,t.lotId),check("inventory_consumed_valid",sql`${t.quantity} >= ${t.consumed} AND ${t.consumed} >= 0`)]);
+export const inventoryMovements = sqliteTable("inventory_movements",{id:text("id").primaryKey(),lotId:text("lot_id").notNull().references(()=>inventoryLots.id),quantity:integer("quantity").notNull(),reason:text("reason").notNull(),actorId:text("actor_id"),createdAt:timestamps.createdAt});
+export const refundRequests = sqliteTable("refund_requests",{id:text("id").primaryKey(),orderId:text("order_id").notNull().references(()=>orders.id),customerId:text("customer_id").notNull().references(()=>customers.id),status:text("status",{enum:["requested","approved","processing","completed","rejected","unknown"]}).notNull(),amountMinor:integer("amount_minor").notNull(),itemsJson:text("items_json").notNull(),reason:text("reason").notNull(),paymentReference:text("payment_reference"),fiscalReference:text("fiscal_reference"),idempotencyKey:text("idempotency_key").notNull().unique(),version:integer("version").notNull().default(1),...timestamps},t=>[uniqueIndex("refund_active_order_idx").on(t.orderId).where(sql`${t.status} IN ('requested','approved','processing','unknown')`)]);
+export const paymentAttempts = sqliteTable("payment_attempts",{id:text("id").primaryKey(),orderId:text("order_id").notNull().references(()=>orders.id),operation:text("operation",{enum:["charge","refund"]}).notNull(),status:text("status",{enum:["pending","processing","paid","failed","unknown"]}).notNull(),amountMinor:integer("amount_minor").notNull(),provider:text("provider").notNull(),providerReference:text("provider_reference"),idempotencyKey:text("idempotency_key").notNull().unique(),attempts:integer("attempts").notNull().default(0),nextAttemptAt:text("next_attempt_at"),lastError:text("last_error"),...timestamps});
+export const messageDeliveries = sqliteTable("message_deliveries",{id:text("id").primaryKey(),outboxId:text("outbox_id"),channel:text("channel").notNull(),recipient:text("recipient").notNull(),subject:text("subject").notNull().default(""),body:text("body").notNull().default(""),provider:text("provider").notNull(),providerReference:text("provider_reference"),status:text("status").notNull().default("queued"),lastError:text("last_error"),...timestamps});
+export const messageWebhookEvents = sqliteTable("message_webhook_events",{id:text("id").primaryKey(),providerReference:text("provider_reference").notNull(),eventType:text("event_type").notNull(),eventAt:text("event_at").notNull(),createdAt:timestamps.createdAt});
+export const legacyReconciliations = sqliteTable("legacy_reconciliations",{id:text("id").primaryKey(),orderId:text("order_id").notNull().unique().references(()=>orders.id),subscriptionId:text("subscription_id").notNull().references(()=>subscriptions.id),detailsJson:text("details_json").notNull(),actorId:text("actor_id"),createdAt:timestamps.createdAt});

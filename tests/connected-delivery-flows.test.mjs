@@ -48,7 +48,7 @@ function optIn() {
 }
 const line=(productId='prod_kravlje_1l',purchaseType='subscription')=>({productId,quantity:2,purchaseType,...(purchaseType==='subscription'?{cadence:'weekly'}:{})});
 async function create(date='2026-09-15',items=[line()]) {
- return api('/api/checkout',{customer:{email:'flow@example.test',fullName:'Test Kupac',phone:'+381600000000',addressLine1:'Test 1',city:'Beograd',postalCode:'11000'},paymentMethod:'cash',deliveryDate:date,items});
+ return api('/api/checkout',{customer:{email:'flow@example.test',fullName:'Test Kupac',phone:'+381600000000',addressLine1:'Test 1',city:'Beograd',postalCode:'11000'},paymentMethod:items.some(item=>item.purchaseType==='subscription')?'card':'cash',paymentToken:'test-provider-token',deliveryDate:date,items});
 }
 const generate = (date) => api('/api/admin/deliveries',{action:'generate',date},{admin:true});
 const jobs = () => api('/api/jobs/scheduled',null,{method:'GET',cron:true});
@@ -60,7 +60,7 @@ async function mutate(id,action,details={},key=randomUUID()) {
 const emails=()=>sent.filter(x=>x.channel==='email');
 const whatsapps=()=>sent.filter(x=>x.channel==='whatsapp');
 const waText=(m)=>m.content.templateData.body.placeholders[0];
-for (const [action, expected] of [['skip_next','Vaša sledeća isporuka je preskočena'],['pause','Pretplata je pauzirana'],['resume','Pretplata je nastavljena'],['cancel','Pretplata je otkazana'],['add_item','Proizvod je dodat'],['update_item','Proizvod u pretplati je izmenjen'],['remove_item','Proizvod je uklonjen'],['slow_down','svake dve nedelje'],['add_next_only','Dodatak za sledeću dostavu']]) {
+for (const [action, expected] of [['skip_next','Vaša sledeća isporuka je preskočena'],['pause','Pretplata je pauzirana'],['resume','Pretplata je nastavljena'],['cancel','Obnova pretplate je otkazana'],['add_item','Proizvod je dodat'],['update_item','Proizvod u pretplati je izmenjen'],['remove_item','Proizvod je uklonjen'],['slow_down','svake dve nedelje'],['add_next_only','Dodatak za sledeću dostavu']]) {
  test(`customer ${action} reaches admin, delivery preparation, email and opted-in WhatsApp`,async()=>{
   const result=await create('2026-09-15',[line(),line('prod_kozje_1l')]),id=result.subscription.id;
   optIn();
@@ -71,18 +71,19 @@ for (const [action, expected] of [['skip_next','Vaša sledeća isporuka je presk
   const changed=await mutate(id,action,details);
   const admin=(await api('/api/admin/subscriptions',null,{admin:true,method:'GET'})).subscriptions.find(s=>s.id===id);
   assert.equal(admin.version,changed.version);
-  const expectedStatus=action==='cancel'?'cancelled':action==='pause'?'paused':'active';
+  const expectedStatus=action==='pause'?'paused':'active';
   assert.equal(admin.status,expectedStatus);
   if(action==='skip_next') assert.equal(admin.skips[0].delivery_date,'2026-09-15');
   if(action==='update_item') { assert.equal(admin.items.find(i=>i.id===itemId).quantity,4); assert.equal(admin.items.find(i=>i.id===itemId).cadence,'biweekly'); }
   const projection=await api('/api/admin/deliveries?date=2026-09-15',null,{admin:true,method:'GET'});
-  if(['skip_next','pause','cancel','resume'].includes(action)) assert.equal(projection.orders.length,0);
-  if(action==='update_item') assert.equal(projection.preparation.find(i=>i.product_id==='prod_kravlje_1l').total_quantity,4);
-  if(action==='remove_item') assert.ok(!projection.preparation.some(i=>i.product_id==='prod_kravlje_1l'));
+  if(['skip_next','pause'].includes(action)) assert.equal(projection.orders.length,0);
+  if(action==='resume') assert.equal(projection.orders.length,1);
+  if(action==='update_item') assert.equal(projection.preparation.find(i=>i.product_id==='prod_kravlje_1l').total_quantity,2);
+  if(action==='remove_item') assert.ok(projection.preparation.some(i=>i.product_id==='prod_kravlje_1l'));
   assert.ok(emails().some(m=>m.subject.includes(expected)), JSON.stringify({emails:emails(),outbox:database.raw.prepare("SELECT topic,status,last_error_message FROM outbox").all()}));
   assert.ok(whatsapps().some(m=>waText(m).includes(expected)), JSON.stringify(whatsapps()));
   assert.ok(emails().every(m=>m.text.includes('http://localhost/nalog')));
-  if(action==='cancel') assert.ok(!emails().find(m=>m.subject===expected).text.includes('Sledeća dostava:'));
+  if(action==='cancel') assert.ok(emails().find(m=>m.subject===expected).text.includes('Preostale plaćene dostave'));
  });
 }
 for(const [date,day,previous] of [['2026-09-15','u utorak','2026-09-14'],['2026-09-18','u petak','2026-09-17']]) {
@@ -100,8 +101,8 @@ for(const [date,day,previous] of [['2026-09-15','u utorak','2026-09-14'],['2026-
   assert.equal(whatsapps().length,2);
  });
 }
-test('skipped/cancelled/paused subscriptions never get next-day reminders',async()=>{
- for(const action of ['skip_next','pause','cancel']) {
+test('skipped and paused subscriptions never get next-day reminders',async()=>{
+ for(const action of ['skip_next','pause']) {
   const r=await create(); await mutate(r.subscription.id,action,action==='pause'?{pauseUntil:'2026-09-22'}:{});
  }
  sent=[]; at('2026-09-14T10:00:00Z'); await jobs(); await jobs();
@@ -139,8 +140,8 @@ test('creation and admin changes send confirmations and opted-out customers rece
 test('Tuesday subscription retains Tuesday cadence and is included in next monthly billing',async()=>{
  const r=await create();
  const result=await api('/api/jobs/billing',{month:'2026-10'},{admin:true});
- assert.equal(result.results.find(x=>x.subscriptionId===r.subscription.id).deliveryOccurrences,4);
- assert.equal(one("SELECT delivery_date FROM orders WHERE subscription_id=? AND delivery_date LIKE '2026-10%'",r.subscription.id).delivery_date,'2026-10-06');
+ assert.equal(result.results.find(x=>x.subscriptionId===r.subscription.id).skipped,'unfinished_package');
+ assert.equal(one("SELECT COUNT(*) AS n FROM orders WHERE subscription_id=?",r.subscription.id).n,1);
 });
 test('opted-in customer receives one-time order and subscription activation confirmations',async()=>{
  await create('2026-09-15',[line('prod_kravlje_1l','one_time')]); optIn(); sent=[];
@@ -188,4 +189,16 @@ test('one-time purchase conversion activates a subscription and sends both confi
  assert.equal(admin[0].id,result.subscription.id); assert.equal(admin[0].items[0].cadence,'biweekly');
  assert.equal(emails().length,1); assert.equal(emails()[0].subject,'Pretplata je aktivirana');
  assert.equal(whatsapps().length,1); assert.match(waText(whatsapps()[0]),/Pretplata je aktivirana/);
+});
+
+test('daily job sends editable reminder before cutoff, deduplicates, then locks at deadline', async () => {
+ await create('2026-09-15'); optIn(); sent=[];
+ at('2026-09-13T08:00:00Z'); await jobs();
+ const notice=emails().find(m=>m.subject==='Još možete izmeniti sledeću dostavu');
+ assert.ok(notice); assert.match(notice.html,/14\. 9\. 2026|14\.09\.2026|14\. sept/); assert.match(notice.html,/08:00/);
+ assert.match(notice.html,/Izmene i otkazivanje/);
+ const before=sent.length; await jobs(); assert.equal(sent.length,before);
+ at('2026-09-14T08:00:00Z'); await jobs();
+ assert.equal(one("SELECT status FROM deliveries WHERE delivery_date='2026-09-15'").status,'locked');
+ assert.match(emails().find(m=>m.subject==='Podsetnik za sutrašnju dostavu').html,/zaključana/);
 });

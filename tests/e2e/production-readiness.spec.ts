@@ -14,16 +14,17 @@ test("responsive navigation has no overflow and exposes every primary destinatio
   await acceptNecessary(page);
   const viewport = page.viewportSize()!;
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-  if (viewport.width < 861) {
+  if (viewport.width <= 1000) {
     const menu = page.getByRole("button", { name: "Meni" });
     await expect(menu).toBeVisible();
     await page.waitForTimeout(300);
     await menu.click();
     await expect(menu).toHaveAttribute("aria-expanded", "true");
-    const nav = page.getByRole("navigation", { name: "Glavna navigacija" });
-    for (const label of ["Mleko", "Kako dostavljamo", "Naše poreklo", "Česta pitanja", "Kontakt", "Moj nalog"]) {
+    const nav = page.getByRole("navigation", { name: "Mobilna navigacija" });
+    for (const label of ["Prodavnica", "Kako funkcioniše", "Dostava", "Gde kupiti", "Naše farme", "Česta pitanja", "Kontakt"]) {
       await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
     }
+    await expect(page.getByRole("link", { name: "Moj nalog", exact: true })).toBeVisible();
   } else {
     await expect(page.getByRole("navigation", { name: "Glavna navigacija" })).toBeVisible();
   }
@@ -43,6 +44,7 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   const cards = page.locator(".configurator");
   expect(await cards.count()).toBeGreaterThanOrEqual(2);
   await cards.nth(0).getByRole("button", { name: "Redovna dostava" }).click();
+  await expect(cards.nth(0).getByRole("button", { name: "Redovna dostava" })).toHaveAttribute("aria-pressed", "true");
   await cards.nth(0).locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
   await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "true");
   await page.keyboard.press("Escape");
@@ -56,7 +58,7 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   await page.getByRole("textbox", { name: "Email", exact: true }).fill(email);
   await page.getByLabel("Broj telefona").fill("+381600000001");
   await page.getByLabel("Ulica i broj").fill("Test ulica 1");
-  await page.getByLabel("Grad").fill("Beograd");
+  await page.getByLabel("Grad").selectOption("Beograd");
   await page.getByLabel("Poštanski broj").fill("11000");
   await page.locator('input[type="checkbox"][required]').check();
   await page.getByRole("button", { name: "Potvrdi porudžbinu" }).click();
@@ -65,7 +67,6 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   await page.goto("/prijava");
   await page.getByRole("button", { name: "Napravi nalog", exact: true }).click();
   await page.getByLabel("Email adresa").fill(email);
-  await page.getByLabel("Lozinka", { exact: true }).fill("e2e-customer-password");
   const challengeResponse = page.waitForResponse(response => response.url().endsWith("/api/auth/register") && response.request().method() === "POST");
   await page.getByRole("button", { name: "Napravi nalog i pošalji kod" }).click();
   const challenge = await (await challengeResponse).json();
@@ -77,7 +78,7 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   const replay = await page.request.post("/api/auth/code/verify", { headers: { origin: new URL(page.url()).origin }, data: { challengeId: challenge.challengeId, code: challenge.localDevelopment.code } });
   expect(replay.status()).toBe(401);
   await expect(page.getByRole("heading", { name: /Zdravo, Fiktivni E2E Kupac/ })).toBeVisible();
-  await page.getByText("Moje porudžbine", { exact: false }).filter({ has: page.locator("span") }).click();
+  await page.locator("summary").filter({ hasText: "Moje porudžbine" }).click();
   await expect(page.locator(".account-orders > li")).toHaveCount(1);
   await expect(page.locator("body")).not.toContainText(/demo|mockup/i);
   const subscription = page.locator("[data-subscription-id]").first();
@@ -116,10 +117,10 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   await subscription.getByRole("button", { name: /^Smanji količinu/ }).click();
   await subscription.getByRole("button", { name: "Sačuvaj izmene" }).click();
   await expect(page.getByRole("status")).toContainText("Izmena je sačuvana");
-  await subscription.getByRole("combobox").selectOption("biweekly");
+  await subscription.getByLabel(/^Ritam za/).selectOption("biweekly");
   await subscription.getByRole("button", { name: "Sačuvaj izmene" }).click();
   await expect(page.getByRole("status")).toContainText("Izmena je sačuvana");
-  await subscription.locator(".account-extras summary").click();
+  await subscription.locator(".account-extras summary").filter({ hasText: "Dodajte nešto samo sledećoj dostavi" }).click();
   await subscription.getByRole("region", { name: "Dodajte sledećoj dostavi" }).getByRole("button").first().click();
   await expect(subscription.locator(".next-addon-summary")).toContainText("Dodato samo sledećoj dostavi");
   await subscription.getByRole("button", { name: /Pauziraj dostave/ }).click();
@@ -191,7 +192,7 @@ test("hero priorities remain visible and a custom milk selection survives the ca
   await expect(page.locator(".scene-poster img")).toBeAttached();
 
   await page.locator(".scene-actions .button").click();
-  await expect(page.locator("#offer-title")).toBeInViewport();
+  await expect(page.locator("#products-title")).toBeInViewport();
 
   const card = page.locator(".configurator").first();
   await card.getByRole("button", { name: "4 L", exact: true }).click();

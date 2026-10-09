@@ -1,3 +1,4 @@
+import { marketingReport } from "./marketing";
 import { all, first, batch, type Row } from "./sql";
 import {
   assertDomain,
@@ -167,6 +168,8 @@ export async function updateAdminCustomer(
   id: string,
   input: Record<string, unknown>,
 ) {
+  const { lockOverdueDeliveries } = await import("./deliveries");
+  await lockOverdueDeliveries(id);
   const before = await first<Row>("SELECT * FROM customers WHERE id = ?", id);
   assertDomain(before, "CUSTOMER_NOT_FOUND", "Kupac nije pronađen.", 404);
   const fullName = requiredString(input.fullName, "Ime i prezime", 160);
@@ -307,6 +310,7 @@ export async function insights(params: URLSearchParams) {
     upcoming,
     nextDate,
     nextBookingDate: nextWindow.deliveryDate,
+    marketing: await marketingReport(from, to),
     totals: {
       paidMinor: sum(current),
       previousPaidMinor: sum(prior),
@@ -412,4 +416,30 @@ export async function adminDelivery(date: string) {
     date,
   );
   return { ...payload, orders, excluded };
+}
+
+/** A bounded calendar made from the same projection used by the packing list. */
+export async function deliveryCalendar(params: URLSearchParams) {
+  const from = assertLocalDate(params.get("from") || localDateAt());
+  const to = assertLocalDate(params.get("to") || addLocalDays(from, 27));
+  assertDomain(from <= to && Date.parse(to) - Date.parse(from) <= 61 * 86400000, "VALIDATION_ERROR", "Izaberite period do 62 dana.", 422);
+  const settings = await getBusinessSettings();
+  const explicit = await all<Row>("SELECT delivery_date FROM deliveries WHERE delivery_date BETWEEN ? AND ? UNION SELECT delivery_date FROM orders WHERE delivery_date BETWEEN ? AND ? AND fulfillment_status != 'cancelled'", from, to, from, to);
+  const knownDates = new Set(explicit.map(row => String(row.delivery_date)));
+  const rhythms = await all<Row>("SELECT s.next_delivery_date, s.pause_until, si.cadence_anchor_date, si.cadence FROM subscriptions s JOIN subscription_items si ON si.subscription_id = s.id WHERE s.status IN ('active', 'paused') AND si.status = 'active' AND s.next_delivery_date <= ?", to);
+  const dates: string[] = [];
+  for (let date = from; date <= to; date = addLocalDays(date, 1)) {
+    const scheduled = rhythms.some(rhythm => date >= String(rhythm.next_delivery_date) && (!rhythm.pause_until || date >= String(rhythm.pause_until)) && (Date.parse(date) - Date.parse(String(rhythm.cadence_anchor_date))) / 86400000 % (rhythm.cadence === "biweekly" ? 14 : 7) === 0);
+    if (settings.deliveryWeekdays.includes(new Date(`${date}T12:00:00Z`).getUTCDay()) || knownDates.has(date) || scheduled) dates.push(date);
+  }
+  const days: Row[] = [];
+  // Sequential snapshots avoid racing automatic deadline locking for one customer.
+  for (const date of dates) {
+    const preview = await generateDelivery(date, `calendar:${date}`, true);
+    const delivery = preview.delivery as Row;
+    const planned = preview.orders.filter(order => order.status !== "cancelled");
+    const customers = new Set(planned.map(order => String(order.customer_id)));
+    days.push({ date, status: delivery.status, cutoffAt: delivery.cutoff_at, customers: customers.size, stops: planned.length, packages: preview.preparation.reduce((total, item) => total + Number(item.total_quantity || 0), 0), products: preview.preparation });
+  }
+  return { from, to, days };
 }

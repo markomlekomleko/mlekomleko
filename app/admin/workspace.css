@@ -1273,3 +1273,20 @@
   max-height: 350px;
   overflow-y: auto;
 }
+
+.today-preparation { border: 2px solid #31583f; }
+.market-theme .admin-content { grid-template-columns: minmax(0, 1fr); }
+.market-theme .admin-content > * { min-width: 0; }
+.today-preparation .panel-heading { flex-wrap: wrap; }
+.package-progress-card { display:grid; grid-template-columns:1fr 1.4fr; gap:24px; padding:20px 0; border-top:1px solid #ddd; }
+.package-line-progress { display:grid; gap:6px; margin-bottom:16px; }
+.package-line-progress progress { width:100%; accent-color:#31583f; }
+@media(max-width:700px) { .package-progress-card { grid-template-columns:1fr; gap:12px; } }
+
+/* Operational forms share the same compact layout on phones and desktop. */
+.admin-form details { min-width: 0; }
+.admin-form details > summary { cursor: pointer; font-weight: 650; padding-block: 1rem; }
+.admin-form fieldset { min-width: 0; }
+.table-scroll { width: 100%; max-width: 100%; overflow-x: auto; }
+.table-scroll table { width: 100%; border-collapse: collapse; }
+.table-scroll th, .table-scroll td { text-align: left; padding: .65rem; border-bottom: 1px solid #e2e5da; overflow-wrap: anywhere; }
