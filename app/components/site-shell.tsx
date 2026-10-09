@@ -9,6 +9,10 @@ import { Marquee } from "./marquee";
 import { MotionToggle } from "./motion-toggle";
 import { shellCopy } from "../lib/content";
 
+// One source for the contact pair the footer and the mobile menu both show.
+const PHONE = { href: "tel:+381605022323", label: "060 502 23 23" };
+const INSTAGRAM_URL = "https://instagram.com/mleko_i_mleko";
+
 export type HeaderSettings = {
   storeName: string;
   announcementEnabled: boolean;
@@ -73,6 +77,10 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
             <a className="nav-support" href="/faq">Česta pitanja</a>
             <a className="nav-support" href="/kontakt">Kontakt</a>
             <a className="mobile-account" href="/nalog">Moj nalog</a>
+            <p className="nav-contact">
+              <a href={PHONE.href}>{PHONE.label}</a>
+              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">Instagram ↗</a>
+            </p>
           </nav>
           <Link className="brand" href="/" aria-label={`${settings.storeName} - početna`}>
             <Image
@@ -119,8 +127,8 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
           </Link>
           <p className="footer-tagline">{shellCopy.footer.tagline}</p>
           <p className="footer-contact">
-            <a href="tel:+381605022323">060 502 23 23</a>
-            <a href="https://instagram.com/mleko_i_mleko" target="_blank" rel="noreferrer">Instagram ↗</a>
+            <a href={PHONE.href}>{PHONE.label}</a>
+            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">Instagram ↗</a>
           </p>
         </div>
         <nav className="footer-links" aria-labelledby="footer-istrazi">

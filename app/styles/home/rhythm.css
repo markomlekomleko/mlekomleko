@@ -5,7 +5,7 @@
 
 .rhythm-head h2 {
   max-width: 16ch;
-  font-size: clamp(2.4rem, 7.4vw, 5.75rem);
+  font-size: var(--fs-h2);
 }
 
 .rhythm-grid {
@@ -14,11 +14,18 @@
 }
 
 /* Three-up only from 900px: in a 768px third, "JEDNOKRATNO" in the chunky serif no
-   longer fits a line and would break mid-word. */
+   longer fits a line and would break mid-word. Each card spans the grid's two rows as a
+   subgrid, so if a name still wraps (900–1000px, a fallback face, enlarged text) all
+   three bodies keep starting on one line. The row gap matches the card's own. */
 @media (min-width: 900px) {
   .rhythm-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-5);
+    gap: var(--space-3) var(--space-5);
+  }
+
+  .rhythm-card {
+    grid-row: span 2;
+    grid-template-rows: subgrid;
   }
 }
 
@@ -43,11 +50,13 @@
   }
 }
 
-/* Chunky serif card names, as on the reference product cards. */
+/* Chunky serif card names, as on the reference product cards. "SVAKE 2 NEDELJE" is
+   about 9.5em wide, so this size keeps all three names on one line in a three-up card
+   from 1024px up (the tightest fit, about 4% to spare, is at 1024). */
 .rhythm-card h3 {
   margin: 0;
   font-family: var(--ff-card);
-  font-size: clamp(1.6rem, 2.5vw, 2.25rem);
+  font-size: clamp(1.6rem, 2.2vw, 2rem);
   font-weight: 800;
   letter-spacing: -0.01em;
   line-height: 0.95;

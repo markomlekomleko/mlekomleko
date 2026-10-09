@@ -50,7 +50,7 @@ export function DeliveryChecker({ title, note, delivery }: { title: string; note
         {result ? (
           <p className={`check-result ${result.available ? "success" : "error"}`} role="status">
             {result.available
-              ? `Dostavljamo na ${result.postalCode}. Možete da sastavite korpu.`
+              ? `Dostavljamo na ${result.postalCode}. Možeš da sastaviš korpu.`
               : `Poštanski broj ${result.postalCode} trenutno nije u zoni dostave za Beograd i Novi Sad.`}
           </p>
         ) : null}

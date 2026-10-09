@@ -1,20 +1,6 @@
 /* Owner: W-shell — ticker, header stack, header, nav, mobile menu, footer, consent banner */
 
-/* Both bars have fixed heights, so --header-stack (the offset sticky columns, the hero
-   copy and every anchor use) equals the rendered stack by construction, not by
-   measurement. These override the starting values in tokens.css. */
-:root {
-  --ticker-h: 32px;
-  --header-h: 64px;
-  --header-stack: calc(var(--ticker-h) + var(--header-h));
-}
-
-@media (min-width: 768px) {
-  :root {
-    --ticker-h: 36px;
-    --header-h: 76px;
-  }
-}
+/* --ticker-h, --header-h and --header-stack are defined once, in tokens.css. */
 
 /* Anchors land just under the sticky stack at every width. */
 [id] { scroll-margin-top: calc(var(--header-stack) + 12px); }
@@ -41,11 +27,12 @@
 
 /* ---------- Ticker: pause control, moving rail, pinned announcement ---------- */
 
-/* Clipped so an over-long announcement can never widen the page; every focus ring in
-   the bar is inset, so nothing focusable is cut off. */
+/* Clipped sideways so an over-long announcement can never widen the page; every focus
+   ring in the bar is inset, so nothing focusable is cut off. Only the x axis clips, so
+   the controls' hit areas can reach below the bar (see their ::before). */
 .ticker-bar {
   display: flex;
-  overflow: hidden;
+  overflow-x: clip;
   height: var(--ticker-h);
   border-bottom: 1px solid var(--rule);
   background: var(--teal);
@@ -60,6 +47,16 @@
   min-width: 0;
   height: 100%;
   border-bottom: 0;
+  /* The rail fades out against the pause control and the pinned link instead of being
+     sliced off at their rules. */
+  mask-image: linear-gradient(90deg, transparent, var(--ink) 32px, var(--ink) calc(100% - 32px), transparent);
+}
+
+/* A still rail starts flush left, where a fade would eat the first letters. */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-bar .marquee--ticker {
+    mask-image: linear-gradient(90deg, var(--ink) calc(100% - 32px), transparent);
+  }
 }
 
 /* White on teal is 5.5:1; a black ring would only reach 3.8:1 here. Inset, so the
@@ -69,10 +66,22 @@
   outline-offset: -5px;
 }
 
+/* The bar is 40px tall; each control's hit area runs 4px on into the header's empty top
+   edge, so it is 44px without making the bar itself taller. */
+.motion-toggle,
+.ticker-pin { position: relative; }
+
+.motion-toggle::before,
+.ticker-pin::before {
+  position: absolute;
+  inset: 0 0 -4px;
+  content: "";
+}
+
 .motion-toggle {
   display: grid;
   flex: none;
-  width: var(--ticker-h);
+  width: 44px;
   height: 100%;
   place-items: center;
   padding: 0;
@@ -88,10 +97,11 @@
   height: 12px;
 }
 
-/* Static: it is a link, and a moving target cannot be read or clicked. */
+/* Static: it is a link, and a moving target cannot be read or clicked. Clipped on x
+   only, so its ::before hit area is not cut off at the bar's bottom. */
 .ticker-pin {
   display: flex;
-  overflow: hidden;
+  overflow-x: clip;
   flex: 0 1 auto;
   min-width: 0;
   max-width: min(55%, 560px);
@@ -237,7 +247,7 @@
 .main-nav { font-size: 0.8125rem; }
 .header-actions { font-size: 0.875rem; }
 
-.main-nav a,
+.main-nav > a,
 .header-account,
 .cart-link {
   display: inline-flex;
@@ -256,7 +266,7 @@
   white-space: nowrap;
 }
 
-.main-nav a:hover,
+.main-nav > a:hover,
 .header-account:hover,
 .cart-link:hover {
   text-decoration: underline;
@@ -292,7 +302,8 @@
 
 .cart-link:active { transform: scale(0.98); }
 
-.mobile-menu-button { display: none; }
+.mobile-menu-button,
+.nav-contact { display: none; }
 
 .menu-lines {
   display: grid;
@@ -375,14 +386,18 @@
   }
 
   /* A full-width orange sheet hung under the header. Positioned against the sticky
-     stack, so top: 100% is the header's bottom rule. The panel keeps its box and
-     animates; visibility does the hiding and keeps closed links out of the tab order. */
+     stack, so top: 100% is the header's bottom rule. It runs to the bottom of the
+     viewport, so no half-cut page shows under it; rows stack from the top and the
+     contact line sits at the bottom. The panel keeps its box and animates; visibility
+     does the hiding and keeps closed links out of the tab order. */
   .main-nav {
     position: absolute;
     top: 100%;
     right: 0;
     left: 0;
-    display: grid;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - var(--header-stack));
     max-height: calc(100dvh - var(--header-stack));
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -407,7 +422,7 @@
   }
 
   /* Condensed to a fixed width so "KAKO DOSTAVLJAMO" holds one line from 320px up. */
-  .main-nav a {
+  .main-nav > a {
     display: flex;
     min-height: 64px;
     padding: var(--space-3) var(--shell-gutter);
@@ -421,32 +436,42 @@
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  .main-nav a + a { border-top: 1px solid var(--rule); }
+  .main-nav > a + a { border-top: 1px solid var(--rule); }
 
   .main-nav .nav-support,
   .main-nav .mobile-account { display: flex; }
 
+  /* Phone and Instagram, the same pair as in the footer, fill the sheet's empty foot. */
+  .nav-contact {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--space-5);
+    margin: auto 0 0;
+    padding: var(--space-4) var(--shell-gutter) calc(var(--space-4) + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--rule);
+  }
+
   /* Black row, orange type (6.1:1) and an orange ring inside it: the ring stays
      visible on the black ground. */
-  .main-nav a:hover,
-  .main-nav a:focus-visible {
+  .main-nav > a:hover,
+  .main-nav > a:focus-visible {
     background: var(--ink);
     color: var(--brand);
     text-decoration: none;
   }
 
-  .main-nav a:focus-visible {
+  .main-nav > a:focus-visible {
     outline: 3px solid var(--brand);
     outline-offset: -7px;
   }
 
   /* Rows arrive just behind the panel, fast enough that the menu still feels instant. */
-  .main-nav.is-open a { animation: nav-row-in 0.3s cubic-bezier(0.22, 0.7, 0.25, 1) both; }
-  .main-nav.is-open a:nth-child(2) { animation-delay: 0.03s; }
-  .main-nav.is-open a:nth-child(3) { animation-delay: 0.06s; }
-  .main-nav.is-open a:nth-child(4) { animation-delay: 0.09s; }
-  .main-nav.is-open a:nth-child(5) { animation-delay: 0.12s; }
-  .main-nav.is-open a:nth-child(6) { animation-delay: 0.15s; }
+  .main-nav.is-open > a { animation: nav-row-in 0.3s cubic-bezier(0.22, 0.7, 0.25, 1) both; }
+  .main-nav.is-open > a:nth-child(2) { animation-delay: 0.03s; }
+  .main-nav.is-open > a:nth-child(3) { animation-delay: 0.06s; }
+  .main-nav.is-open > a:nth-child(4) { animation-delay: 0.09s; }
+  .main-nav.is-open > a:nth-child(5) { animation-delay: 0.12s; }
+  .main-nav.is-open > a:nth-child(6) { animation-delay: 0.15s; }
 }
 
 @keyframes nav-row-in {
@@ -495,6 +520,17 @@
   .footer-brand-col { grid-column: auto; }
 }
 
+/* Wide screens: fractional tracks left the short link lists hugging the left of wide
+   columns, a big gap after the brand and an empty right side. Content-sized tracks
+   spread edge to edge instead: the brand on the page-shell's left edge, the last list
+   ending on its right edge, equal gaps between. */
+@media (min-width: 1024px) {
+  .footer-grid {
+    grid-template-columns: repeat(3, auto);
+    justify-content: space-between;
+  }
+}
+
 .footer-brand {
   width: fit-content;
   margin-bottom: var(--space-4);
@@ -541,6 +577,7 @@
 }
 
 .footer-contact a,
+.nav-contact a,
 .footer-links a,
 .footer-cookie-button {
   display: inline-flex;
@@ -564,6 +601,7 @@
 }
 
 .footer-contact a:hover,
+.nav-contact a:hover,
 .footer-links a:hover,
 .footer-cookie-button:hover { text-decoration-thickness: 2px; }
 
@@ -609,12 +647,15 @@
   color: var(--ink);
 }
 
+/* From 768px a card in the bottom-right corner: the hero copy and its calls to action
+   are left-aligned and end at 56vw (51vw from 1024px), so 44vw minus both margins
+   keeps the card clear of them. */
 @media (min-width: 768px) {
   .consent-banner {
-    right: auto;
+    right: var(--space-4);
     bottom: var(--space-4);
-    left: var(--space-4);
-    width: min(420px, calc(100% - 2 * var(--space-4)));
+    left: auto;
+    width: min(420px, calc(44vw - 2 * var(--space-4)));
     padding: var(--space-5);
     border: 1px solid var(--rule);
   }

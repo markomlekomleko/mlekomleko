@@ -8,18 +8,29 @@
 /* Rotating about the centre lifts one end and drops the other by half the width times
    tan(2deg), and pulls the corners inwards; the bleed on both sides is far wider than
    that, so the ends never show a wedge of page behind them. The negative top margin
-   lays the strip across the hero's last stretch, where the folded frame sits on orange,
-   so the two read as one composition. The hero's sticky pin is a stacking context of
-   its own, so a small z-index here is enough; the sticky header (30) and every drawer
-   or bar stay above it. */
+   pulls the strip up across the bottom of the folded frame, as the reference band
+   crosses its hero picture. The folded frame leaves about 3.6% of the pinned screen's
+   height of orange below it, so the overlap is that plus the part that crosses the
+   frame; on orange alone the strip would sink into the ground. The hero's sticky pin
+   is a stacking context of its own, so a small z-index here is enough; the sticky
+   header (30) and every drawer or bar stay above it. */
 .home-band {
   --band-bleed: 64px;
-  --band-overlap: clamp(24px, 3.4vw, 52px);
+  --band-overlap: calc(3.6svh + clamp(20px, 4.4vw, 64px));
   position: relative;
   z-index: 3;
   margin: calc(-1 * var(--band-overlap)) calc(-1 * var(--band-bleed)) 0;
   transform: rotate(-2deg);
 }
+
+/* The ambient loop never folds, and its copy is centred down to near its bottom edge,
+   so the strip only grazes it. */
+.hero[data-kind="loop"] + .home-band { --band-overlap: clamp(24px, 3.4vw, 52px); }
+
+/* The strip's own bottom edge is the seam. A straight top rule on the next section
+   would leave a cream wedge between two black lines under the tilt. This file loads
+   after offer.css, and the element in the selector outranks `.offer` anyway. */
+.home-band + section { border-top: 0; }
 
 /* More air between the words and the bottle stamps than the primitive's default, as in
    the reference strip. */

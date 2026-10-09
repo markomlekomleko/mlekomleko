@@ -81,8 +81,8 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       {consent === null || settingsOpen ? (
         <section className="consent-banner" aria-label="Podešavanja kolačića" role="dialog" aria-modal="true">
           <div>
-            <strong className="consent-banner-title">Privatnost je pod vašom kontrolom</strong>
-            <p>Neophodni kolačići čuvaju korpu i prijavu. Analitika i marketing su odvojeni i ne pokreću se bez vaše dozvole.</p>
+            <strong className="consent-banner-title">Privatnost je pod tvojom kontrolom</strong>
+            <p>Neophodni kolačići čuvaju korpu i prijavu. Analitika i marketing su odvojeni i ne pokreću se bez tvoje dozvole.</p>
           </div>
           <div className="consent-banner-actions">
             <button className="button secondary small" type="button" onClick={() => decide(DEFAULT_CONSENT)}>Samo neophodno</button>

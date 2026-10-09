@@ -195,21 +195,43 @@
   pointer-events: auto;
 }
 
-/* A size container, so the headline can be sized off the column it sits in. */
+/* A size container, so the headline can be sized off the column it sits in.
+   The engine's intro value falls from 1 to 0 over a long stretch of scroll, and fading
+   the whole block on it held the actions at ~60% for a while, where they read as
+   disabled. So each part remaps it onto a shorter window of its own, bottom first: the
+   lead and the actions are gone by the time the value reaches 2/3, the headline leaves
+   between 3/4 and 1/4. Nothing lingers half-visible, and at load every part is 1. */
 .scene-intro {
+  --hero-out-copy: clamp(0, calc(var(--hero-intro-o) * 3 - 2), 1);
+  --hero-out-title: clamp(0, calc(var(--hero-intro-o) * 2 - 0.5), 1);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   align-self: start;
   max-width: var(--hero-copy-w);
   container-type: inline-size;
-  opacity: var(--hero-intro-o);
   transform: translate3d(0, calc(var(--hero-intro-y) * 1px), 0);
+  will-change: transform;
+}
+
+/* Each part also rises a little as it goes, so the fade reads as an exit. */
+.scene-intro .eyebrow,
+.scene-intro h1 {
+  opacity: var(--hero-out-title);
+  transform: translate3d(0, calc((1 - var(--hero-out-title)) * -20px), 0);
+  will-change: opacity, transform;
+}
+
+.scene-lead,
+.scene-actions {
+  opacity: var(--hero-out-copy);
+  transform: translate3d(0, calc((1 - var(--hero-out-copy)) * -20px), 0);
   will-change: opacity, transform;
 }
 
 .hero[data-mode="static"] .scene-intro {
-  opacity: 1;
+  --hero-out-copy: 1;
+  --hero-out-title: 1;
   transform: none;
 }
 
@@ -297,13 +319,17 @@
 :root[data-motion="paused"] .scene-hint { animation-play-state: paused; }
 
 /* The mid-scroll line, as a sticker slapped onto the scene. Its own width is the
-   container its words are sized against. */
+   container its words are sized against. It stays on the wall left of and above the
+   glass: at 30rem its tilted corner ends short of the glass's left rim on a wide
+   screen, and from 768px it hangs from the top of the copy band rather than its
+   middle, because by the time it shows the clip has brought the glass's rim up to
+   just below the middle of the screen. */
 .scene-rhythm {
   display: grid;
   align-self: start;
   justify-self: start;
   gap: var(--space-2);
-  width: min(100%, 34rem, var(--hero-copy-w));
+  width: min(100%, 30rem, var(--hero-copy-w));
   margin: 0;
   padding: var(--space-4) var(--space-5);
   border: 1px solid var(--ink);
@@ -354,10 +380,7 @@
     );
   }
 
-  .scene-intro,
-  .scene-rhythm {
-    align-self: center;
-  }
+  .scene-intro { align-self: center; }
 
   .scene-lead { font-size: 1.125rem; }
 }

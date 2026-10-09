@@ -350,6 +350,12 @@ type StateOptions = {
   full?: boolean;
   /** Run axe. Only for a test's last state: it may scroll the document. */
   axe?: boolean;
+  /**
+   * Also shoot this element, scrolled into view. The viewport shot sits at the resting
+   * scroll position, which shows the page top rather than the component that changed.
+   * Taken after the digest and metrics, so the scroll cannot affect them.
+   */
+  element?: string;
 };
 
 /** Digest first, then the optional parts, so a digest-only run follows the same path. */
@@ -366,6 +372,10 @@ async function captureState(
   if (SHOTS) {
     await viewportShot(page, projectDir(testInfo, "states", `${name}.png`));
     if (options.full) await fullShot(page, projectDir(testInfo, "states", `${name}--full.png`));
+    if (options.element) {
+      const target = page.locator(options.element).first();
+      if (await target.count()) await target.screenshot({ path: projectDir(testInfo, "states", `${name}--element.png`) });
+    }
   }
   if (METRICS) {
     if (options.axe) metrics.axe = await axeBlocking(page);
@@ -636,7 +646,7 @@ test("state delivery-checker results", async ({ page }, testInfo) => {
   await expect(result).toContainText(VALID_POSTAL_CODE);
   await expect(submit).toBeEnabled();
   await steady(page);
-  await captureState(page, testInfo, "delivery-valid", { route: "/", postalCode: VALID_POSTAL_CODE });
+  await captureState(page, testInfo, "delivery-valid", { route: "/", postalCode: VALID_POSTAL_CODE }, { element: "#proveri-dostavu" });
 
   await input.fill(INVALID_POSTAL_CODE);
   await submit.click();
@@ -644,7 +654,7 @@ test("state delivery-checker results", async ({ page }, testInfo) => {
   await expect(result).toContainText(INVALID_POSTAL_CODE);
   await expect(submit).toBeEnabled();
   await steady(page);
-  await captureState(page, testInfo, "delivery-invalid", { route: "/", postalCode: INVALID_POSTAL_CODE }, { axe: true });
+  await captureState(page, testInfo, "delivery-invalid", { route: "/", postalCode: INVALID_POSTAL_CODE }, { axe: true, element: "#proveri-dostavu" });
 });
 
 test("state faq-open", async ({ page }, testInfo) => {
@@ -653,7 +663,7 @@ test("state faq-open", async ({ page }, testInfo) => {
   await first.locator("summary").click();
   await expect(first).toHaveAttribute("open", "");
   await steady(page);
-  await captureState(page, testInfo, "faq-open", { route: "/" }, { axe: true });
+  await captureState(page, testInfo, "faq-open", { route: "/" }, { axe: true, element: ".faq .faq-list" });
 });
 
 test("state buy-bar", async ({ page }, testInfo) => {
@@ -679,5 +689,5 @@ test("state configurator-subscription", async ({ page }, testInfo) => {
   await expect(subscription).toHaveAttribute("aria-pressed", "true");
   await expect(card.locator("legend", { hasText: "Ritam dostave" })).toBeVisible();
   await steady(page);
-  await captureState(page, testInfo, "configurator-subscription", { route: "/" }, { axe: true });
+  await captureState(page, testInfo, "configurator-subscription", { route: "/" }, { axe: true, element: ".configurator" });
 });

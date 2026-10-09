@@ -243,7 +243,7 @@ export function CartDrawer() {
                           {line && line.occurrences > 1 ? ` · ${line.occurrences} dostave ovog meseca` : ""}
                         </p>
                         <div className="drawer-item-controls">
-                          <label className="field">
+                          <label className="field drawer-item-qty">
                             <span className="visually-hidden">{`Količina za ${item.name}`}</span>
                             <input
                               type="number"
@@ -276,7 +276,7 @@ export function CartDrawer() {
                             </select>
                           </label>
                           {item.purchaseType === "subscription" ? (
-                            <label className="field">
+                            <label className="field drawer-item-cadence">
                               <span className="visually-hidden">{`Ritam za ${item.name}`}</span>
                               <select
                                 value={item.cadence ?? "weekly"}

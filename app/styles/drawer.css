@@ -110,7 +110,12 @@
   align-items: baseline;
 }
 
+/* One line of the name is 19px; padding cancelled by equal negative margins makes the
+   link a 44px target without moving the line. More of it goes up, into the card's own
+   padding, than down towards the meta line. */
 .drawer-item-head a {
+  padding-block: 16px 10px;
+  margin-block: -16px -10px;
   font-family: var(--ff-card);
   font-size: 1.125rem;
   font-weight: 800;
@@ -123,6 +128,9 @@
   text-decoration: underline;
   text-decoration-thickness: 2px;
 }
+
+/* Flush ring: the default offset would push it through the meta line below. */
+.drawer-item-head a:focus-visible { outline-offset: 0; }
 
 .drawer-item-head strong {
   flex: none;
@@ -140,10 +148,42 @@
   align-items: center;
 }
 
-.drawer-item-controls .field { flex: 1 1 7rem; gap: 0; }
+/* Quantity is fixed and the purchase-type select takes the rest of the row, so there is
+   no dead gap between them; Ukloni wraps below only on very narrow screens. The rhythm
+   select's basis is too wide to share the first row (424px > the 398px row of the
+   widest drawer), so with it the controls are always two even rows: quantity and type,
+   then rhythm and Ukloni, and neither select is squeezed into clipping its label. */
+.drawer-item-controls .field { flex: 1 1 8rem; gap: 0; min-width: 0; }
+.drawer-item-controls .drawer-item-qty { flex: 0 0 5.5rem; }
+.drawer-item-controls .drawer-item-cadence { flex-basis: 12rem; }
 .drawer-item-controls input,
 .drawer-item-controls select { min-height: 44px; padding-block: 0.45rem; font-size: 0.88rem; }
-.drawer-item-controls input { max-width: 5.5rem; }
+
+/* Own chevron: the native one is wide and sits on the text in a narrow select. */
+.drawer-item-controls select {
+  padding-right: 2.25rem;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 0.75rem center / 12px 8px;
+  appearance: none;
+}
+
+/* A forced palette may paint the ground black, where the black chevron would vanish. */
+@media (forced-colors: active) {
+  .drawer-item-controls select {
+    padding-right: 0.76rem;
+    background-image: none;
+    appearance: auto;
+  }
+}
+
+/* Ukloni and Ne, hvala: full 44px targets, the label centred in them. */
+.drawer-item-controls .text-button,
+.drawer-offer-actions .text-button {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+}
 
 /* Cross-sell: blush ground, black frame, standard black button. */
 .drawer-offer {

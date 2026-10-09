@@ -44,7 +44,7 @@
 
 .steps .section-head h2 {
   margin-inline: auto;
-  font-size: clamp(2.4rem, 8vw, 6rem);
+  font-size: var(--fs-h2);
   text-wrap: balance;
 }
 
@@ -70,6 +70,15 @@
     border-top: 0;
     border-left: 1px solid var(--rule);
   }
+
+  /* Side by side, the columns share their rows: when one title wraps to two lines and
+     its neighbours don't, the numerals, titles and body copy still line up across. */
+  @supports (grid-template-rows: subgrid) {
+    .steps .steps-grid li {
+      grid-row: span 3;
+      grid-template-rows: subgrid;
+    }
+  }
 }
 
 .steps-number {
@@ -84,7 +93,6 @@
 }
 
 .steps .steps-grid h3 {
-  max-width: 18ch;
   font-size: clamp(1.15rem, 2vw, 1.5rem);
 }
 

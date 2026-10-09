@@ -2,7 +2,7 @@
 
 .faq-head h2 {
   max-width: 16ch;
-  font-size: clamp(2.4rem, 7.4vw, 5.75rem);
+  font-size: var(--fs-h2);
 }
 
 /* Full-width rows between 1px black rules; the shared .details-list padding moves onto

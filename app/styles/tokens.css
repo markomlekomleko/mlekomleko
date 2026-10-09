@@ -63,7 +63,9 @@
      stays bound only inside the admin scope (admin.css). */
   --font-editorial: var(--ff-card);
   --fs-h1: clamp(2.6rem, 10.5vw, 6.5rem);
-  --fs-h2: clamp(2.1rem, 7vw, 4.25rem);
+  /* One section-heading size for every home section; it stays under the hero h1,
+     which is sized to its own column (about 54px at 768, 87px at 1440). */
+  --fs-h2: clamp(2.25rem, 5.6vw, 4.75rem);
   --fs-h3: clamp(1.15rem, 2.4vw, 1.5rem);
   --fs-eyebrow: 0.75rem;
   /* Archivo's width axis: full width by default, condensed on phones so long Serbian
@@ -82,12 +84,12 @@
   --space-9: 96px;
   --section-y: 56px;
 
-  /* Ticker strip and header bar heights, for the shell to build --header-stack from. */
-  --ticker-h: 32px;
+  /* Ticker strip and header bar heights: the only definition. Both bars have fixed
+     heights, so --header-stack equals the rendered stack by construction. */
+  --ticker-h: 40px;
   --header-h: 64px;
   /* Ticker plus sticky header; the hero copy clears this once pinned, and other sticky
-     columns (cart summary, product gallery) use it as their own offset. shell.css owns
-     the final bar heights. */
+     columns (cart summary, product gallery) and every anchor use it as their offset. */
   --header-stack: calc(var(--ticker-h) + var(--header-h));
 }
 
@@ -98,7 +100,6 @@
 @media (min-width: 768px) {
   :root {
     --section-y: 80px;
-    --ticker-h: 36px;
     --header-h: 76px;
   }
 }
