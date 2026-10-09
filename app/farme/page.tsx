@@ -24,7 +24,6 @@ export default function FarmsPage() {
               <source srcSet="/images/farma.webp" type="image/webp" />
               <img src="/images/farma.jpg" alt="Krave na pašnjaku domaće farme" width="1600" height="1066" fetchPriority="high" />
             </picture>
-            <figcaption>Domaće mleko u povratnoj staklenoj ambalaži</figcaption>
           </figure>
         </div>
       </header>

@@ -50,7 +50,7 @@ test("mixed cart checkout, magic-link login and subscription mutation work", asy
   await cards.nth(1).locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
   await expect(page.locator(".drawer-item")).toHaveCount(2);
   await page.locator(".cart-drawer").getByRole("link", { name: "Otvori celu korpu" }).click();
-  await expect(page.getByText("Danas plaćaš za ovaj mesec")).toBeVisible();
+  await expect(page.getByText("Ukupno za ovaj mesec")).toBeVisible();
   await page.getByRole("link", { name: /Nastavi na podatke/ }).click();
   await page.getByLabel("Ime i prezime").fill("Fiktivni E2E Kupac");
   await page.getByRole("textbox", { name: "Email", exact: true }).fill(email);

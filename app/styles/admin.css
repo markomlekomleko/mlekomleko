@@ -141,6 +141,7 @@
 :where(:root:has(.admin-app, .admin-access)) .notice,
 :where(:root:has(.admin-app, .admin-access)) .empty-state,
 :where(:root:has(.admin-app, .admin-access)) .loading-state { border-radius: 11px; }
+:where(:root:has(.admin-app, .admin-access)) .eyebrow + :is(h1, h2) { margin-top: 0; }
 :where(:root:has(.admin-app, .admin-access)) .notice.error { border: 1px solid #e2c7c4; background: #fff4f3; color: #812e28; }
 :where(:root:has(.admin-app, .admin-access)) .notice.success { border: 1px solid #bbd9c3; background: #f0f8f1; color: var(--success); }
 :where(:root:has(.admin-app, .admin-access)) .check-result.success { border-left: 0; background: #edf7ef; color: var(--success); }

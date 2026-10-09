@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ContentStamp } from "../components/policy-page";
 import { canonicalUrl } from "../lib/seo";
 
 export const metadata: Metadata = {
@@ -11,8 +12,9 @@ export default function WhereToBuyPage() {
   return (
     <div className="content-page">
       <header className="content-band content-hero">
-        <div className="page-shell">
+        <div className="page-shell content-head">
           <div className="page-heading"><p className="eyebrow">Gde kupiti</p><h1>Dostava ili mlekomat.</h1><p className="lead">Poruči za Beograd i Novi Sad ili svrati na jednu od tri lokacije mlekomata u Beogradu.</p></div>
+          <ContentStamp glyph="bottle" />
         </div>
       </header>
       <div className="content-band">

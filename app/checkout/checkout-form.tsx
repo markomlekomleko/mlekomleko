@@ -9,6 +9,7 @@ import {
   fetchJson,
   formatMoney,
   formatDate,
+  formatDateTime,
   type CartQuote,
 } from "../lib/frontend";
 
@@ -166,8 +167,9 @@ export function CheckoutForm() {
     return (
       <div className="page-shell narrow checkout-page">
         <div className="empty-state">
+          <p className="eyebrow">Plaćanje</p>
           <h1>Nema stavki za plaćanje.</h1>
-          <p className="muted">Dodaj proizvode u korpu pre nastavka.</p>
+          <p className="lead">Dodaj proizvode u korpu pre nastavka.</p>
           <a className="button" href="/prodavnica">
             Otvori prodavnicu
           </a>
@@ -275,7 +277,7 @@ export function CheckoutForm() {
               <strong>{formatMoney(line.lineTotalMinor / 100)}</strong>
             </div>
           ))}
-          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Danas plaćaš za tekući mesec" : "Danas plaćaš"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Izmene do {formatDate(quote.cutoffAt)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
+          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Ukupno za ovaj mesec" : "Ukupno"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="summary-total-note">Plaćaš gotovinom pri dostavi.</p><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Rok za izmene: {formatDateTime(quote.cutoffAt)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
           <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Plaćaš samo isporuke planirane za tekući mesec.</p>
           <button className="button" type="submit" disabled={submitting || !quote || quote.serviceable === false}>
             {submitting ? "Čuvamo porudžbinu…" : "Potvrdi porudžbinu"}

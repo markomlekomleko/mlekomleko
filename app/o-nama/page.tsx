@@ -12,7 +12,7 @@ export default function AboutPage() {
     <div className="content-page">
       <header className="content-band content-hero">
         <div className="page-shell content-split">
-          <div className="page-heading">
+          <div className="page-heading about-intro">
             <p className="eyebrow">O nama</p>
             <h1>Pravo mleko više nije daleko.</h1>
             <p className="lead">Mleko i Mleko donosi punomasno sirovo kravlje i kozje mleko sa domaćih farmi direktno na kućnu adresu.</p>

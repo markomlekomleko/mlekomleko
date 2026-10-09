@@ -83,6 +83,25 @@
   text-transform: uppercase;
 }
 
+/* On a phone the three filters wrapped 2 + 1. One row instead: "Sve" keeps its own
+   width, the categories share the rest; a long category name wraps inside its chip
+   rather than pushing a chip onto a second row. */
+@media (max-width: 479px) {
+  .store-page .tabs {
+    display: grid;
+    grid-template-columns: auto;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+  }
+
+  .store-page .tab {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+}
+
 /* ---------------------------------------------------------------------------------
    /proizvodi/[slug]
    --------------------------------------------------------------------------------- */
@@ -103,8 +122,10 @@
   margin-block: -13px;
 }
 
-/* On a phone the facts follow the purchase card, so the name and price come straight
-   after the photograph; the visual column steps aside (display: contents) for that. */
+/* Up to a laptop the page is one column: the facts follow the purchase card, so the
+   name and price come straight after the photograph; the visual column steps aside
+   (display: contents) for that. Side by side at tablet width, the narrow photo column
+   left a long empty stretch under the photo while the card ran on. */
 .product-detail {
   display: grid;
   grid-template-areas: "media" "buy" "facts";
@@ -113,11 +134,18 @@
 }
 
 .product-visual-column { display: contents; }
-.product-detail-media { grid-area: media; }
 .product-buy-column { grid-area: buy; }
 .product-quick-facts { grid-area: facts; }
 
-@media (min-width: 700px) {
+/* Capped so the square photo stays under three quarters of a tablet screen
+   (compact-commerce spec) and the price within reach below it. */
+.product-detail-media {
+  grid-area: media;
+  max-width: 35rem;
+  justify-self: center;
+}
+
+@media (min-width: 1024px) {
   .product-detail {
     grid-template-areas: "visual buy";
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
@@ -175,13 +203,16 @@
   text-transform: uppercase;
 }
 
-/* One white strip, one column per fact, split by a single rule. */
+/* One white strip, split by single rules. A fact gets a column only where it has room
+   for its value on one line ("1 L · povratna staklena flaša" broke before "flaša" in
+   half a phone); otherwise the facts stack. The 1px gap over the black ground draws the
+   rule between them, across or down, without knowing which. */
 .product-quick-facts {
   display: grid;
-  grid-auto-columns: minmax(0, 1fr);
-  grid-auto-flow: column;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1px;
   border: 1px solid var(--rule);
-  background: var(--surface);
+  background: var(--rule);
   font-size: 0.88rem;
 }
 
@@ -190,9 +221,9 @@
   gap: var(--space-1);
   align-content: start;
   padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  text-wrap: balance;
 }
-
-.product-quick-facts > span + span { border-left: 1px solid var(--rule); }
 
 .product-quick-facts strong {
   color: var(--ink-2);
@@ -237,6 +268,9 @@
 /* The title-to-description gap the configurator head had before the name moved up. */
 .product-buy-card .configurator-body { padding-top: var(--space-2); }
 
+/* "Detalji proizvoda" would link to this very page. */
+.product-buy-card .configurator-actions .text-link { display: none; }
+
 .product-buy-category {
   margin: 0;
   color: var(--ink-2);
@@ -246,13 +280,14 @@
   text-transform: uppercase;
 }
 
-/* Same voice and size as .configurator-panel .configurator-title: the chunky card serif
-   in capitals, scaled to the card's own width. */
+/* The card serif in capitals, scaled to the card's own width. As the page's h1 it never
+   drops below a product card's name (at most 2.25rem): the floor sits above the cards'
+   size at phone width and still keeps "DOMAĆE KRAVLJE MLEKO" to two lines there. */
 .product-detail-page .product-buy-title {
   max-width: none;
   margin: 0;
   font-family: var(--ff-card);
-  font-size: clamp(1.75rem, 8cqi, 2.6rem);
+  font-size: clamp(2rem, 9cqi, 2.6rem);
   font-variation-settings: normal;
   font-weight: 800;
   letter-spacing: -0.01em;
@@ -312,6 +347,30 @@
   padding-block: var(--section-y) 0;
   border-top: 1px solid var(--rule);
   border-bottom: 0;
+}
+
+/* A single recommendation sat in a 620px column with the right half of the row empty.
+   From a laptop it takes the story section's grid instead, so the two headings and the
+   lead and card line up: heading left, the card across the wider right column. */
+@media (min-width: 1024px) {
+  .cross-sell-section[data-count="1"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    gap: var(--space-7);
+    align-items: start;
+  }
+
+  .cross-sell-section[data-count="1"] .section-head { margin: 0; }
+
+  .cross-sell-section[data-count="1"] .section-head h2 {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  .cross-sell-section[data-count="1"] .offer-grid {
+    max-width: none;
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ---------------------------------------------------------------------------------
@@ -537,7 +596,14 @@ body:has(.buy-bar[data-visible="true"]) .site-footer { padding-bottom: 5.5rem; }
 .cart-summary > .eyebrow,
 .cart-summary > h2 { margin: 0; }
 
-.cart-summary .button { width: 100%; }
+/* "Nastavi na podatke za dostavu →" wraps on a phone; the lines stay centred and even. */
+.cart-summary .button {
+  width: 100%;
+  padding-block: var(--space-3);
+  line-height: 1.15;
+  text-align: center;
+  text-wrap: balance;
+}
 .cart-summary .summary-row small { color: var(--ink-2); }
 
 .cart-summary .summary-total {
@@ -546,6 +612,13 @@ body:has(.buy-bar[data-visible="true"]) .site-footer { padding-bottom: 5.5rem; }
   font-variation-settings: "wdth" var(--display-wdth);
   font-weight: 900;
   text-transform: uppercase;
+}
+
+/* Pulled up under the total it qualifies. */
+.cart-summary .summary-total-note {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  color: var(--ink-2);
+  font-size: 0.8rem;
 }
 
 .promo-form {
@@ -717,6 +790,16 @@ body:has(.buy-bar[data-visible="true"]) .site-footer { padding-bottom: 5.5rem; }
 /* The terms links sit inside a sentence; the padding gives them a taller hit area
    without changing the line. */
 .checkout-page .checkbox-row a { padding-block: 0.3rem; }
+
+/* Links inside a sentence are told apart by an underline, not by colour (WCAG 1.4.1);
+   the preflight resets the line, so it is set here, as on the content pages. */
+:is(.checkout-page .checkbox-row, .login-page .notice) a:not([class]) {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+:is(.checkout-page .checkbox-row, .login-page .notice) a:not([class]):hover { text-decoration-thickness: 2px; }
 
 /* base.css tints the postcode result in legacy pastels; here it is a framed line in the
    success or danger token. */

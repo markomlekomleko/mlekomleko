@@ -64,20 +64,93 @@
   .content-media img { aspect-ratio: 4 / 5; }
 }
 
-.content-media figcaption {
-  margin-top: var(--space-2);
-  color: var(--ink-2);
-  font-size: 0.75rem;
-}
-
 .content-text {
   max-width: 60ch;
   margin-top: var(--space-4);
   line-height: 1.6;
 }
 
+/* /o-nama: the lead is the statement and the paragraph under it supports it, so the
+   lead goes black and larger and the paragraph steps down to body size in grey. */
+.about-intro .lead {
+  color: var(--ink);
+  font-size: 1.25rem;
+}
+
+.about-intro .content-text {
+  color: var(--ink-2);
+  font-size: 1rem;
+}
+
 /* Action row closing a band's content. */
 .content-actions { margin-top: var(--space-6); }
+
+/* On a phone a pair of CTAs wraps onto two lines; each takes the full row so the stack
+   has one clean edge instead of two ragged button widths. */
+@media (max-width: 479px) {
+  .content-page .button-row > .button { flex: 1 1 100%; }
+}
+
+/* ---------------------------------------------------------------------------------
+   Text-only page heads: from 1024px the title shares the band with the house stamp
+   (ContentStamp), so the right half of a wide screen is not left empty.
+   --------------------------------------------------------------------------------- */
+
+.content-stamp { display: none; }
+
+@media (min-width: 1024px) {
+  .content-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-7);
+    align-items: center;
+  }
+
+  /* The stamp narrows the title column below the old 820px measure. 9vw keeps the
+     widest title word ("REKLAMACIJE", about 7.7em) whole at 1024 and reaches the full
+     h1 size by about 1160px, where the column has room for it again. */
+  .content-head h1 { font-size: min(var(--fs-h1), 9vw); }
+
+  .content-stamp {
+    display: block;
+    width: clamp(10rem, 30vw - 8rem, 18rem);
+    height: auto;
+    overflow: visible;
+    transform: rotate(-8deg);
+  }
+}
+
+/* Black on orange (6.1:1), the home offer stamp's sticker treatment. */
+.content-stamp-disc {
+  fill: var(--brand);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.content-stamp-inner {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.content-stamp path { fill: var(--ink); }
+
+/* Only the ring of glyphs turns; the disc and the centre glyph stay put. */
+.content-stamp-spin {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: content-stamp-spin 48s linear infinite;
+}
+
+@keyframes content-stamp-spin {
+  to { transform: rotate(360deg); }
+}
+
+:root[data-motion="paused"] .content-stamp-spin { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .content-stamp-spin { animation: none; }
+}
 
 /* ---------------------------------------------------------------------------------
    Cards: white, 1px black rule, square — the home page's rhythm cards.
@@ -96,13 +169,9 @@
   .content-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* Two up on a tablet with the odd card spanning the row, three up from 1024px, where a
-   third is wide enough for "DOKUMENTOVAN" and "DRUŠTVENE" in the card serif. */
-@media (min-width: 680px) and (max-width: 1023px) {
-  .content-grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .content-grid--3 > :last-child:nth-child(odd) { grid-column: 1 / -1; }
-}
-
+/* One column until 1024px, then three up. A third at 768 (about 184px inside the
+   padding) cannot hold "DOKUMENTOVAN" (225px in the card serif), and two up left the
+   third card stretched alone across the row. */
 @media (min-width: 1024px) {
   .content-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
@@ -180,9 +249,10 @@
 .farm-route-grid > * { min-width: 0; }
 
 /* Smaller than the section size: from 1024px the heading shares the band with the
-   list, and "POTVRĐENE" must still fit its column whole. */
+   list, and "POTVRĐENE" must still fit its column whole. The 12ch measure belongs to
+   that column only; stacked above the list it squeezed the heading to five lines. */
 .farm-route h2 {
-  max-width: 12ch;
+  max-width: 18ch;
   margin: 0;
   font-size: clamp(2.25rem, 4.4vw, 4rem);
 }
@@ -192,6 +262,8 @@
     grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
     gap: var(--space-7);
   }
+
+  .farm-route h2 { max-width: 12ch; }
 }
 
 .farm-route ol {
@@ -315,6 +387,24 @@
 }
 
 .how-price { max-width: 46rem; }
+
+/* From 1024px the price card and its CTAs share one row, the buttons centred beside the
+   card, instead of a half-width card stacked over a short button row. */
+@media (min-width: 1024px) {
+  .how-price-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-7);
+    align-items: center;
+  }
+
+  .how-price { max-width: none; }
+
+  .how-price-row .content-actions {
+    flex-wrap: nowrap;
+    margin-top: 0;
+  }
+}
 
 /* ---------------------------------------------------------------------------------
    /kontakt
@@ -492,37 +582,4 @@
   margin-top: var(--space-3);
   color: var(--ink-2);
   font-size: 0.875rem;
-}
-
-/* ---------------------------------------------------------------------------------
-   Route loading: a small uppercase status with a square orange pulse.
-   --------------------------------------------------------------------------------- */
-
-.page-loading {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin: 0;
-  font-size: var(--fs-eyebrow);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.page-loading::before {
-  flex: 0 0 auto;
-  width: 14px;
-  height: 14px;
-  border: 1px solid var(--ink);
-  background: var(--brand);
-  animation: page-loading-pulse 0.8s ease-in-out infinite alternate;
-  content: "";
-}
-
-@keyframes page-loading-pulse {
-  to { opacity: 0.2; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .page-loading::before { animation: none; }
 }

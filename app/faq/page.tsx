@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ContentStamp } from "../components/policy-page";
 import { frequentlyAskedQuestions } from "../lib/content";
 import { canonicalUrl } from "../lib/seo";
 
@@ -12,8 +13,9 @@ export default function FaqPage() {
   return (
     <div className="content-page">
       <header className="content-band content-hero">
-        <div className="page-shell">
+        <div className="page-shell content-head">
           <div className="page-heading"><p className="eyebrow">FAQ</p><h1>Česta pitanja</h1></div>
+          <ContentStamp glyph="drop" />
         </div>
       </header>
       <div className="content-band">

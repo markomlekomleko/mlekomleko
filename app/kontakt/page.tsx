@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ContentStamp } from "../components/policy-page";
 import { canonicalUrl } from "../lib/seo";
 
 export const metadata: Metadata = {
@@ -11,8 +12,9 @@ export default function ContactPage() {
   return (
     <div className="content-page">
       <header className="content-band content-hero">
-        <div className="page-shell">
+        <div className="page-shell content-head">
           <div className="page-heading"><p className="eyebrow">Kontakt</p><h1>Tu smo za pitanja.</h1><p className="lead">Za najbržu proveru porudžbine navedi email korišćen pri kupovini i ID porudžbine.</p></div>
+          <ContentStamp />
         </div>
       </header>
       <div className="content-band">

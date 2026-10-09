@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DeliveryChecker } from "../components/delivery-checker";
+import { ContentStamp } from "../components/policy-page";
 import { formatMoney } from "../lib/frontend";
 import { canonicalUrl, serializeJsonLd } from "../lib/seo";
 import { getStorefront } from "../../server/storefront";
@@ -53,17 +54,20 @@ export async function CityDeliveryPage({
             <nav className="breadcrumbs" aria-label="Putanja">
               <Link href="/">Početna</Link> <span aria-hidden="true">/</span> <span aria-current="page">Dostava za {city}</span>
             </nav>
-            <div className="page-heading">
-              <p className="eyebrow">{deliveryDays}</p>
-              <h1>Dostava domaćeg mleka u {city === "Beograd" ? "Beogradu" : "Novom Sadu"}.</h1>
-              <p className="lead">
-                Poruči domaće kravlje ili kozje mleko u povratnim staklenim flašama.
-                Biraš litre i da li želiš jednu ili redovnu dostavu.
-              </p>
-              <div className="button-row">
-                <a className="button" href="/prodavnica">Izaberi mleko</a>
-                <a className="button secondary" href="/kako-funkcionise">Kako funkcioniše</a>
+            <div className="content-head">
+              <div className="page-heading">
+                <p className="eyebrow">{deliveryDays}</p>
+                <h1>Dostava domaćeg mleka u {city === "Beograd" ? "Beogradu" : "Novom Sadu"}.</h1>
+                <p className="lead">
+                  Poruči domaće kravlje ili kozje mleko u povratnim staklenim flašama.
+                  Biraš litre i da li želiš jednu ili redovnu dostavu.
+                </p>
+                <div className="button-row">
+                  <a className="button" href="/prodavnica">Izaberi mleko</a>
+                  <a className="button secondary" href="/kako-funkcionise">Kako funkcioniše</a>
+                </div>
               </div>
+              <ContentStamp glyph="bottle" />
             </div>
           </div>
         </header>

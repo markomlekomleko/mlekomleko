@@ -233,6 +233,10 @@ p,
   letter-spacing: 0.1em;
 }
 
+/* Display headings run at a 0.92 line height, so an accent on a capital (Č, Š, Ž, Đ)
+   climbs into the eyebrow above; a little air proportional to the heading clears it. */
+.eyebrow + :is(h1, h2) { margin-top: 0.16em; }
+
 .lead { color: var(--ink-2); }
 
 .visually-hidden {

@@ -120,7 +120,7 @@ export function ProductDetail({
           <p className="next-delivery">
             Sledeća dostava: <strong>{formatDate(delivery.deliveryDate)}</strong>
           </p>
-          <p className="purchase-footnote">Izmene za tu dostavu moguće su do {cutoff} h.</p>
+          <p className="purchase-footnote">Rok za izmene: {cutoff}</p>
         </div>
       </div>
 
@@ -135,7 +135,11 @@ export function ProductDetail({
       </section>
 
       {recommendations.length ? (
-        <section className="section cross-sell-section" aria-labelledby="cross-sell-title">
+        <section
+          className="section cross-sell-section"
+          aria-labelledby="cross-sell-title"
+          data-count={recommendations.length}
+        >
           <div className="section-head">
             <p className="eyebrow">Još iz naše ponude</p>
             <h2 id="cross-sell-title">Probaj i drugi ukus.</h2>
