@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useState } from "react";
 import { useAnalytics } from "./analytics-provider";
 import { useCart } from "./cart-provider";
@@ -31,6 +32,8 @@ export function BundleOffers({
   bundles: BundleOffer[];
   delivery: DeliveryWindow;
 }) {
+  const localize = useLocalize();
+  const locale = useLocale();
   const { addItems, ready, openDrawer } = useCart();
   const { track } = useAnalytics();
   const [preview, setPreview] = useState<string>("");
@@ -82,7 +85,7 @@ export function BundleOffers({
     openDrawer();
   }
 
-  return (
+  return localize((
     <section className="bundles" aria-labelledby="bundle-title">
       <div className="section-head">
         <p className="eyebrow">Lakši izbor</p>
@@ -116,14 +119,14 @@ export function BundleOffers({
                 ))}
               </ul>
               <p className="bundle-price">
-                <strong>{formatMoney(bundle.perDeliveryMinor / 100)}</strong>
+                <strong>{formatMoney(bundle.perDeliveryMinor / 100, locale)}</strong>
                 <span>proizvodi po prvoj zajedničkoj dostavi</span>
                 <small>Dostava nije uključena u ovaj iznos.</small>
               </p>
               {open ? (
                 <div className="bundle-preview">
                   <p>
-                    Prva dostava: <strong>{formatDate(delivery.deliveryDate)}</strong>
+                    Prva dostava: <strong>{formatDate(delivery.deliveryDate, locale)}</strong>
                     {hasSubscription
                       ? " Redovne stavke se ponavljaju do izmene ili pauze."
                       : " Stavke su jednokratne, samo za ovu dostavu."}
@@ -152,5 +155,5 @@ export function BundleOffers({
         })}
       </div>
     </section>
-  );
+  ));
 }

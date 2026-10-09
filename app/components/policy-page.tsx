@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocalize } from "@/app/lib/i18n/client";
 import Link from "next/link";
 import { glyphPaths, type BrandGlyphName } from "./brand-glyph";
 
@@ -12,7 +15,8 @@ const stampRing: readonly BrandGlyphName[] = ["bottle", "drop"];
  * Purely decorative, hidden from assistive technology; content.css shows it from 1024px.
  */
 export function ContentStamp({ glyph = "cow" }: { glyph?: BrandGlyphName }) {
-  return (
+  const localize = useLocalize();
+  return localize((
     <svg className="content-stamp" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
       <circle className="content-stamp-disc" cx="80" cy="80" r="78" />
       <circle className="content-stamp-inner" cx="80" cy="80" r="44" />
@@ -24,11 +28,12 @@ export function ContentStamp({ glyph = "cow" }: { glyph?: BrandGlyphName }) {
       </g>
       <path d={glyphPaths[glyph]} transform="translate(56 56) scale(0.75)" />
     </svg>
-  );
+  ));
 }
 
 export function PolicyPage({ eyebrow, title, intro, sections }: { eyebrow: string; title: string; intro: string; sections: PolicySection[] }) {
-  return (
+  const localize = useLocalize();
+  return localize((
     <div className="content-page policy-page">
       <header className="content-band content-hero">
         <div className="page-shell content-head">
@@ -45,5 +50,5 @@ export function PolicyPage({ eyebrow, title, intro, sections }: { eyebrow: strin
         </div>
       </div>
     </div>
-  );
+  ));
 }

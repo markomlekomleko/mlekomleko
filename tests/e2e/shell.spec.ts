@@ -29,7 +29,7 @@ async function measureStack(page: Page) {
   });
 }
 
-test("--header-stack equals the rendered ticker and header", async ({ page }) => {
+test("--header-stack equals the rendered announcement and header", async ({ page }) => {
   await acceptNecessary(page);
   for (const path of ["/", "/prodavnica"]) {
     await page.goto(path);
@@ -53,11 +53,11 @@ test("an anchor jump leaves the offer title below the sticky header", async ({ p
     .toBeGreaterThanOrEqual(0);
 });
 
-test("the ticker scrolls by default and stands still with reduced motion", async ({ page }) => {
+test("the content marquee scrolls by default and stands still with reduced motion", async ({ page }) => {
   await acceptNecessary(page);
   await page.goto("/");
   await parkPointer(page);
-  const rail = page.locator(".ticker-bar .marquee-rail");
+  const rail = page.locator(".marquee-rail").first();
   await expect(rail).toHaveCSS("animation-name", "marquee-x");
   await expect(rail).toHaveCSS("animation-play-state", "running");
   const start = await rail.evaluate((node) => node.getBoundingClientRect().left);
@@ -70,11 +70,11 @@ test("the ticker scrolls by default and stands still with reduced motion", async
   await expect(page.locator(".motion-toggle")).toBeHidden();
 });
 
-test("the motion toggle pauses the ticker and remembers the choice", async ({ page }) => {
+test("the motion toggle pauses the content marquee and remembers the choice", async ({ page }) => {
   await acceptNecessary(page);
   await page.goto("/");
   await parkPointer(page);
-  const rail = page.locator(".ticker-bar .marquee-rail");
+  const rail = page.locator(".marquee-rail").first();
   const toggle = page.locator(".motion-toggle");
   await expect(toggle).toHaveAttribute("aria-pressed", "false");
   await expect(toggle).toHaveAccessibleName("Zaustavi animacije");
@@ -99,25 +99,6 @@ test("the motion toggle pauses the ticker and remembers the choice", async ({ pa
   await expect(page.locator("html")).not.toHaveAttribute("data-motion");
   await expect(rail).toHaveCSS("animation-play-state", "running");
   expect(await page.evaluate(() => window.localStorage.getItem("mleko-i-mleko-motion"))).toBeNull();
-});
-
-test("the pinned announcement is a keyboard stop that does not move", async ({ page }) => {
-  await acceptNecessary(page);
-  await page.goto("/");
-  const pin = page.locator(".ticker-bar .ticker-pin");
-  test.skip((await pin.count()) === 0, "The announcement is switched off in settings");
-  expect(await pin.evaluate((node) => node.closest(".marquee") === null)).toBe(true);
-
-  await page.locator(".motion-toggle").focus();
-  await page.keyboard.press("Tab");
-  await expect(pin).toBeFocused();
-  // White ring on teal: the default black one would only reach 3.8:1 there.
-  await expect(pin).toHaveCSS("outline-style", "solid");
-  await expect(pin).toHaveCSS("outline-color", "rgb(255, 255, 255)");
-
-  const before = await pin.boundingBox();
-  await page.waitForTimeout(800);
-  expect(await pin.boundingBox()).toEqual(before);
 });
 
 test("Escape closes the mobile menu and returns focus to Meni", async ({ page }) => {

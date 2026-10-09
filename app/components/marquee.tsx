@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocalize } from "@/app/lib/i18n/client";
 import { Fragment, type CSSProperties, type ReactNode } from "react";
 
 type MarqueeVariant = "ticker" | "band";
@@ -26,6 +29,7 @@ const MIN_SECONDS: Record<MarqueeVariant, number> = { ticker: 20, band: 24 };
  * technology; an informational ticker exposes one static copy instead.
  */
 export function Marquee({ items, variant, separator, repeat = 3, label, className }: MarqueeProps) {
+  const localize = useLocalize();
   const copies = Math.max(1, Math.floor(repeat));
   const sequence = Array.from({ length: copies }, () => items).flat();
   // Separators count as roughly three characters of travel each.
@@ -47,7 +51,7 @@ export function Marquee({ items, variant, separator, repeat = 3, label, classNam
     </ul>
   );
 
-  return (
+  return localize((
     <div className={classes} style={style} aria-hidden={band ? true : undefined}>
       {!band && label ? (
         <p className="marquee-sr">
@@ -61,5 +65,5 @@ export function Marquee({ items, variant, separator, repeat = 3, label, classNam
         </div>
       </div>
     </div>
-  );
+  ));
 }

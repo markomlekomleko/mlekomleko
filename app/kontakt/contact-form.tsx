@@ -1,9 +1,11 @@
 "use client";
 
+import { useLocalize } from "@/app/lib/i18n/client";
 import { useRef, useState, type FormEvent } from "react";
 import { fetchJson } from "../lib/frontend";
 
 export function ContactForm() {
+  const localize = useLocalize();
   const [busy, setBusy] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -29,16 +31,16 @@ export function ContactForm() {
     }
   }
 
-  if (sent) return (
+  if (sent) return localize((
     <div className="contact-success" role="status">
       <span className="contact-success-mark" aria-hidden="true">✓</span>
       <h3>Hvala što si nam pisao/la.</h3>
       <p>Poruka je poslata. Odgovorićemo ti na email koji si ostavio/la.</p>
       <button type="button" className="button secondary" onClick={() => setSent(false)}>Nova poruka</button>
     </div>
-  );
+  ));
 
-  return (
+  return localize((
     <form className="contact-form" onSubmit={submit} aria-busy={busy}>
       <div className="contact-form-row">
         <label className="field"><span>Ime</span><input name="name" autoComplete="given-name" placeholder="Tvoje ime" maxLength={100} required /></label>
@@ -57,5 +59,5 @@ export function ContactForm() {
       <div aria-live="polite">{error ? <p className="contact-form-error" role="alert">{error} Možeš nas pozvati na <a href="tel:+381605022323">060 502 23 23</a>.</p> : null}</div>
       <button className="button contact-submit" type="submit" disabled={busy}>{busy ? "Šaljemo…" : "Pošalji poruku"}<span aria-hidden="true">→</span></button>
     </form>
-  );
+  ));
 }

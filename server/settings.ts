@@ -15,6 +15,9 @@ export interface BusinessSettings {
   storeName: string;
   announcementEnabled: boolean;
   announcementText: string;
+  announcementTextEn: string;
+  announcementTextRu: string;
+  announcementTextSrCyrl: string;
   announcementLinkLabel: string;
   announcementUrl: string;
   heroEyebrow: string;
@@ -51,6 +54,9 @@ const defaults: BusinessSettings = {
   storeName: "Mleko i Mleko",
   announcementEnabled: false,
   announcementText: "",
+  announcementTextEn: "",
+  announcementTextRu: "",
+  announcementTextSrCyrl: "",
   announcementLinkLabel: "Saznaj više",
   announcementUrl: "/prodavnica",
   heroEyebrow: "Dostava sa farme do vaših vrata",

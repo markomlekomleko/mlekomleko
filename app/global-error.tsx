@@ -1,5 +1,8 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
+import { localizeTree } from "./lib/i18n/render";
+import { defaultLocale, languageTags, splitLocale } from "./lib/i18n/routing";
 // global-error replaces the root layout, so neither base.css nor the next/font
 // variables reach it. tokens.css is safe to import twice (it only declares :root
 // properties); the rest is a self-contained block, kept inline rather than in a shared
@@ -17,9 +20,15 @@ const styles = `
 .global-error-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 `;
 
+const subscribe = () => () => {};
+const errorLocale = () => splitLocale(window.location.pathname).locale;
+
 export default function GlobalError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
-  return (
-    <html lang="sr-Latn">
+  // This boundary replaces the layout, so its locale provider is unavailable.
+  const locale = useSyncExternalStore(subscribe, errorLocale, () => defaultLocale);
+  const localize = (node: React.ReactNode) => localizeTree(node, locale);
+  return localize((
+    <html lang={languageTags[locale]}>
       <body className="global-error">
         <style>{styles}</style>
         <main className="global-error-main">
@@ -31,5 +40,5 @@ export default function GlobalError({ error, retry }: { error: Error & { digest?
         </main>
       </body>
     </html>
-  );
+  ));
 }

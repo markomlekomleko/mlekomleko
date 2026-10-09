@@ -1,3 +1,5 @@
+import { localizedMetadata } from "@/app/lib/i18n/server";
+import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
 import { Hero } from "./components/hero";
 import { ClosingSection } from "./components/home/closing-section";
@@ -13,20 +15,21 @@ import { heroMedia } from "./lib/hero-media";
 import { canonicalUrl, serializeJsonLd } from "./lib/seo";
 import { getStorefront } from "../server/storefront";
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
   title: "Domaće kravlje i kozje mleko na tvojoj adresi",
   description:
     "Punomasno sirovo kravlje i kozje mleko u povratnim staklenim flašama, sa dostavom u Beogradu i Novom Sadu.",
   alternates: { canonical: canonicalUrl("/") },
-};
+}); }
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  const localize = await getLocalize();
   const storefront = await getStorefront();
   const { settings, delivery } = storefront;
   const products = storefront.products.map(normalizeProduct);
 
-  return (
+  return localize((
     <div className="home">
       <Hero media={heroMedia} offerHref="#izaberite-mleko" />
       <MarqueeBand />
@@ -52,5 +55,5 @@ export default async function HomePage() {
         }}
       />
     </div>
-  );
+  ));
 }

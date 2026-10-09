@@ -1,3 +1,5 @@
+import { localizedMetadata } from "@/app/lib/i18n/server";
+import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -25,7 +27,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const image = product.imageUrl
     ? [{ url: absoluteUrl(product.imageUrl), alt: product.imageAlt || product.name }]
     : [];
-  return {
+  return localizedMetadata({
     title: title.includes("Mleko i Mleko") ? { absolute: title } : title,
     description,
     alternates: { canonical: canonicalUrl(path) },
@@ -42,7 +44,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       description,
       images: image,
     },
-  };
+  });
 }
 
 export default async function ProductPage({
@@ -50,6 +52,7 @@ export default async function ProductPage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
+  const localize = await getLocalize();
   const { slug } = await params;
   const [rawProduct, storefront] = await Promise.all([
     loadProduct(slug),
@@ -91,7 +94,7 @@ export default async function ProductPage({
       { "@type": "ListItem", position: 3, name: product.name, item: productUrl },
     ],
   };
-  return (
+  return localize((
     <>
       <ProductDetail
         product={product}
@@ -107,5 +110,5 @@ export default async function ProductPage({
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
       />
     </>
-  );
+  ));
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize } from "@/app/lib/i18n/client";
 import { useEffect } from "react";
 import Link from "next/link";
 
@@ -10,11 +11,12 @@ export default function ErrorPage({
   error: Error & { digest?: string };
   retry: () => void;
 }) {
+  const localize = useLocalize();
   useEffect(() => {
     console.error("Greška pri prikazu javne stranice", error.digest ?? "bez-digest-a");
   }, [error]);
 
-  return (
+  return localize((
     <div className="content-page">
       <section className="content-band status-page" role="alert" aria-labelledby="error-title">
         <div className="page-shell">
@@ -29,5 +31,5 @@ export default function ErrorPage({
         </div>
       </section>
     </div>
-  );
+  ));
 }

@@ -35,7 +35,7 @@ function configure(codes) {
 }
 const count = (table) => database.raw.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get().n;
 
-for (const [city, code] of [['Beograd', '11000'], ['Novi Sad', '21000'], ['Novi Beograd', '11070'], ['Zemun', '11080'], ['Petrovaradin', '21132'], ['Београд', '11000'], ['  НОВИ   САД  ', '21101']]) {
+for (const [city, code] of [['Beograd', '11000'], ['Belgrade', '11000'], ['Белград', '11000'], ['Нови-Сад', '21000'], ['Novi Sad', '21000'], ['Novi Beograd', '11070'], ['Zemun', '11080'], ['Petrovaradin', '21132'], ['Београд', '11000'], ['  НОВИ   САД  ', '21101']]) {
   test(`checkout accepts a matching supported address: ${city} / ${code}`, async () => {
     const result = await request('/api/checkout', payload(city, code));
     assert.equal(result.status, 201, JSON.stringify(result.body));

@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocalize } from "@/app/lib/i18n/client";
 import { homeCopy } from "../../lib/content";
 import { BrandGlyph } from "../brand-glyph";
 import { Marquee } from "../marquee";
@@ -8,9 +11,10 @@ import { Marquee } from "../marquee";
  * technology as a whole.
  */
 export function MarqueeBand() {
-  return (
+  const localize = useLocalize();
+  return localize((
     <div className="home-band" aria-hidden="true">
       <Marquee variant="band" items={homeCopy.band} separator={<BrandGlyph name="cow" />} />
     </div>
-  );
+  ));
 }

@@ -1,16 +1,19 @@
+import { localizedMetadata } from "@/app/lib/i18n/server";
+import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
 import { ContentStamp } from "../components/policy-page";
 import { frequentlyAskedQuestions } from "../lib/content";
 import { canonicalUrl } from "../lib/seo";
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
   title: "Česta pitanja",
   description: "Odgovori o pretplati, dostavi, izmenama i plaćanju.",
   alternates: { canonical: canonicalUrl("/faq") },
-};
+}); }
 
-export default function FaqPage() {
-  return (
+export default async function FaqPage() {
+  const localize = await getLocalize();
+  return localize((
     <div className="content-page">
       <header className="content-band content-hero">
         <div className="page-shell content-head">
@@ -37,5 +40,5 @@ export default function FaqPage() {
         </div>
       </div>
     </div>
-  );
+  ));
 }

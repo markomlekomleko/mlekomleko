@@ -1,5 +1,8 @@
 "use client";
 
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
+import { translate } from "../lib/i18n/translate";
+import { intlLocales } from "@/app/lib/i18n/routing";
 import { useState } from "react";
 import { formatDate, type DeliverySchedule } from "../lib/frontend";
 
@@ -12,6 +15,8 @@ export function DeliveryCalendar({ schedule, value, onChange, recurring }: {
   onChange: (date: string) => void;
   recurring: boolean;
 }) {
+  const localize = useLocalize();
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState((value || schedule.dates[0] || "").slice(0, 7));
   const selectedDay = value ? weekday(value) : undefined;
@@ -25,10 +30,10 @@ export function DeliveryCalendar({ schedule, value, onChange, recurring }: {
   const offset = (new Date(`${displayedMonth}-01T12:00:00Z`).getUTCDay() + 6) % 7;
   const changeMonth = (delta: number) => setMonth(new Date(Date.UTC(year, monthNumber - 1 + delta, 1)).toISOString().slice(0, 7));
 
-  return (
+  return localize((
     <section className="card form-stack delivery-schedule" aria-labelledby="delivery-schedule-title">
       <h2 id="delivery-schedule-title">Tvoj dan. Tvoj početak.</h2>
-      <p className="muted">{schedule.city} · {schedule.weekdays.map(day => dayNames[day]).join(" i ")}. {recurring ? "Ritam svake nedelje ili svake 2 nedelje biraš za svaki proizvod u korpi." : "Izaberi kada želiš svoju dostavu."}</p>
+      <p className="muted">{schedule.city} · {schedule.weekdays.map(day => translate(dayNames[day], locale)).join(translate(" i ", locale))}. {recurring ? "Ritam svake nedelje ili svake 2 nedelje biraš za svaki proizvod u korpi." : "Izaberi kada želiš svoju dostavu."}</p>
       {!schedule.dates.length ? <p role="alert">Trenutno nema dostupnih termina. Kontaktiraj nas za dostavu.</p> : <>
         <fieldset className="fieldset delivery-weekdays">
           <legend>Dan dostave</legend>
@@ -44,13 +49,13 @@ export function DeliveryCalendar({ schedule, value, onChange, recurring }: {
         <div className="field">
           <span>{recurring ? "Datum prve dostave" : "Datum dostave"}</span>
           <button className="button secondary calendar-trigger" type="button" aria-expanded={open} aria-controls="delivery-calendar" onClick={() => { setMonth(value.slice(0, 7)); setOpen(!open); }}>
-            <span>{value ? formatDate(value) : "Izaberi datum"}</span><span aria-hidden="true">▦</span>
+            <span>{value ? formatDate(value, locale) : "Izaberi datum"}</span><span aria-hidden="true">▦</span>
           </button>
         </div>
         {open && displayedMonth ? <div id="delivery-calendar" className="delivery-calendar" role="region" aria-label="Kalendar dostave">
           <div className="calendar-heading">
             <button type="button" aria-label="Prethodni mesec" disabled={displayedMonth <= firstMonth} onClick={() => changeMonth(-1)}>←</button>
-            <strong aria-live="polite">{new Intl.DateTimeFormat("sr-Latn-RS", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${displayedMonth}-01T12:00:00Z`))}</strong>
+            <strong aria-live="polite">{new Intl.DateTimeFormat(intlLocales[locale], { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(`${displayedMonth}-01T12:00:00Z`))}</strong>
             <button type="button" aria-label="Sledeći mesec" disabled={displayedMonth >= lastMonth} onClick={() => changeMonth(1)}>→</button>
           </div>
           <div className="calendar-grid">
@@ -58,13 +63,13 @@ export function DeliveryCalendar({ schedule, value, onChange, recurring }: {
             {Array.from({ length: offset }, (_, i) => <span key={`empty-${i}`} />)}
             {Array.from({ length: count }, (_, i) => {
               const date = `${displayedMonth}-${String(i + 1).padStart(2, "0")}`;
-              return <button key={date} type="button" disabled={!available.has(date)} aria-label={formatDate(date)} aria-pressed={date === value} onClick={() => { onChange(date); setOpen(false); }}>{i + 1}</button>;
+              return <button key={date} type="button" disabled={!available.has(date)} aria-label={formatDate(date, locale)} aria-pressed={date === value} onClick={() => { onChange(date); setOpen(false); }}>{i + 1}</button>;
             })}
           </div>
           <p className="muted small-text">Dostupni su samo izabrani dani dostave. Praznici, prošli datumi i zaključeni termini ne mogu da se izaberu.</p>
         </div> : null}
-        <p className="small-text" aria-live="polite">{recurring ? "Paket počinje" : "Dostava stiže"} <strong>{formatDate(value)}</strong>. {recurring ? "Sve datume vidiš u pregledu porudžbine." : ""}</p>
+        <p className="small-text" aria-live="polite">{recurring ? "Paket počinje" : "Dostava stiže"} <strong>{formatDate(value, locale)}</strong>. {recurring ? "Sve datume vidiš u pregledu porudžbine." : ""}</p>
       </>}
     </section>
-  );
+  ));
 }

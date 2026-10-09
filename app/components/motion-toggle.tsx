@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize } from "@/app/lib/i18n/client";
 import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "mleko-i-mleko-motion";
@@ -12,6 +13,7 @@ function applyMotion(paused: boolean) {
 
 /** Site-wide pause for looping motion, remembered per browser (WCAG 2.2.2). */
 export function MotionToggle() {
+  const localize = useLocalize();
   const [paused, setPaused] = useState(false);
 
   // Storage is read only after mount, so the server and the first client render agree.
@@ -39,7 +41,7 @@ export function MotionToggle() {
     }
   }
 
-  return (
+  return localize((
     <button
       type="button"
       className="motion-toggle"
@@ -51,5 +53,5 @@ export function MotionToggle() {
         {paused ? <path d="M4.5 2.75v10.5L13 8z" /> : <path d="M3.5 2.75h3v10.5h-3zM9.5 2.75h3v10.5h-3z" />}
       </svg>
     </button>
-  );
+  ));
 }

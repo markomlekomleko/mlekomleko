@@ -1,3 +1,4 @@
+import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 
@@ -6,8 +7,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default function NotFound() {
-  return (
+export default async function NotFound() {
+  const localize = await getLocalize();
+  return localize((
     <div className="content-page">
       <section className="content-band status-page" aria-labelledby="not-found-title">
         <div className="page-shell">
@@ -24,5 +26,5 @@ export default function NotFound() {
         </div>
       </section>
     </div>
-  );
+  ));
 }

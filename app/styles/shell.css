@@ -736,3 +736,29 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
 @media (min-width: 600px) and (max-width: 860px) {
   .main-nav > a { font-size: clamp(2.5rem, 7vw, 3.5rem); }
 }
+
+/* One announcement, with the same copy whether linked or plain text. */
+.announcement-bar { display: grid; place-items: center; min-height: var(--ticker-h); padding: 9px 20px; background: var(--teal); color: white; border-bottom: 1px solid var(--rule); text-align: center; font-size: .8rem; font-weight: 650; line-height: 1.4; }
+.announcement-bar p { margin: 0; }
+.announcement-bar a { color: inherit; text-underline-offset: 3px; }
+.announcement-bar :focus-visible { outline: 2px solid white; outline-offset: 3px; }
+.language-switcher { position: relative; font-size: .8rem; font-family: var(--ff-body); }
+.language-switcher summary { cursor: pointer; display: flex; align-items: center; gap: 5px; min-height: 44px; padding: 6px; list-style: none; font-weight: 750; }
+.language-switcher summary::-webkit-details-marker { display: none; }
+.language-switcher nav { position: absolute; top: calc(100% + 4px); right: 0; width: max-content; min-width: 210px; padding: 8px; border: 1px solid var(--ink); background: var(--surface); box-shadow: 0 8px 20px #0002; z-index: 45; }
+.language-switcher nav a { display: block; padding: 12px; color: var(--ink); text-decoration: none; font-weight: 500; }
+.language-switcher nav a[aria-current], .language-switcher nav a:hover { background: var(--blush); font-weight: 750; }
+@media (max-width: 767px) {
+  .header-actions { gap: 4px; }
+  .nav-shell { grid-template-columns: 44px minmax(0, 1fr) auto; gap: 6px; }
+  .nav-shell > .brand { justify-self: center; width: min(163px, 100%); gap: 6px; }
+  .nav-shell .brand-animals { width: 32%; height: auto; }
+  .nav-shell .brand-wordmark { width: calc(68% - 6px); height: auto; }
+}
+@media (max-width: 360px) {
+  .nav-shell .brand-animals { display: none; }
+  .nav-shell .brand-wordmark { width: 100%; }
+}
+html:lang(sr-Cyrl), html:lang(ru) { --ff-display: var(--font-geist), sans-serif; --ff-card: var(--font-vollkorn), Georgia, serif; }
+html:lang(sr-Cyrl) .scene-intro, html:lang(ru) .scene-intro { font-family: var(--font-geist), sans-serif; }
+.site-footer .motion-toggle { height: 44px; border: 1px solid currentColor; margin-top: 8px; }

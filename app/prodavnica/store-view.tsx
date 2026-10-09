@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize } from "@/app/lib/i18n/client";
 import { useEffect, useMemo, useState } from "react";
 import { useAnalytics } from "../components/analytics-provider";
 import { ProductConfigurator } from "../components/product-configurator";
@@ -12,6 +13,7 @@ export function StoreView({
   initialProducts: Product[];
   delivery: DeliveryWindow;
 }) {
+  const localize = useLocalize();
   const products = initialProducts;
   const { consent, track } = useAnalytics();
   useEffect(() => { if (consent?.analytics || consent?.marketing) track("view_item_list", { item_list_name: "Prodavnica", items: initialProducts.map(product => ({ item_id: product.id, item_name: product.name, price: product.priceRsd })) }); }, [consent, initialProducts, track]);
@@ -25,7 +27,7 @@ export function StoreView({
   const visibleProducts =
     category === "Sve" ? products : products.filter((product) => product.category === category);
 
-  return (
+  return localize((
     <div className="page-shell store-page">
       <header className="section-head">
         <p className="eyebrow">Prodavnica</p>
@@ -68,5 +70,5 @@ export function StoreView({
         </>
       )}
     </div>
-  );
+  ));
 }

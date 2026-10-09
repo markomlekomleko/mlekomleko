@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useEffect, useRef, useState } from "react";
 import {
   cadenceLabel,
@@ -83,17 +84,19 @@ function ItemEditor({
   onSave: (details: Record<string, unknown>) => Promise<boolean>;
   onRemove: () => void;
 }) {
+  const localize = useLocalize();
+  const locale = useLocale();
   const [quantity, setQuantity] = useState(String(item.quantity));
   const [cadence, setCadence] = useState(item.cadence);
   const value = Number(quantity);
   const valid = Number.isInteger(value) && value >= 1 && value <= 100;
   const dirty = quantity !== String(item.quantity) || cadence !== item.cadence;
-  return (
+  return localize((
     <li className="account-product">
       <div className="account-product-title">
         <strong>{item.productName}</strong>
         <span>
-          {item.unitLabel} · {formatMoney(item.priceMinor / 100)} po pakovanju
+          {item.unitLabel} · {formatMoney(item.priceMinor / 100, locale)} po pakovanju
         </span>
         {!item.dueNext && (
           <small>
@@ -150,8 +153,7 @@ function ItemEditor({
         </label>
         <strong className="account-product-price">
           {formatMoney(
-            (item.priceMinor * (valid ? value : item.quantity)) / 100,
-          )}
+            (item.priceMinor * (valid ? value : item.quantity)) / 100, locale)}
           <small>po dolasku ovog proizvoda</small>
         </strong>
       </div>
@@ -193,7 +195,7 @@ function ItemEditor({
         Ukloni proizvod
       </button>
     </li>
-  );
+  ));
 }
 
 export function SubscriptionCard({
@@ -209,6 +211,8 @@ export function SubscriptionCard({
   mutate: Mutate;
   index: number;
 }) {
+  const localize = useLocalize();
+  const locale = useLocale();
   const [action, setAction] = useState("");
   const [removeId, setRemoveId] = useState("");
   const [newProductId, setNewProductId] = useState("");
@@ -253,7 +257,7 @@ export function SubscriptionCard({
           : {};
     if (await mutate(sub.id, action, details)) setAction("");
   }
-  return (
+  return localize((
     <article
       className="card account-subscription"
       data-subscription-id={sub.id}
@@ -274,7 +278,7 @@ export function SubscriptionCard({
           <h2 id={`delivery-${sub.id}`}>
             {cancelled
               ? "Pretplata je otkazana"
-              : formatDate(sub.nextDeliveryDate)}
+              : formatDate(sub.nextDeliveryDate, locale)}
           </h2>
         </div>
         <span className={`account-status ${paused ? "is-paused" : ""}`}>
@@ -286,7 +290,7 @@ export function SubscriptionCard({
           <p>
             Pauza traje do{" "}
             <strong>
-              {formatDate(sub.pauseUntil ?? sub.nextDeliveryDate)}
+              {formatDate(sub.pauseUntil ?? sub.nextDeliveryDate, locale)}
             </strong>
             . Dostave se zatim nastavljaju automatski, od termina prikazanog
             iznad.
@@ -308,7 +312,7 @@ export function SubscriptionCard({
             "Priprema je počela. Rok za izmene ove dostave je istekao."
           ) : (
             <>
-              Možete menjati do <strong>{formatDateTime(sub.cutoffAt)}</strong>{" "}
+              Možete menjati do <strong>{formatDateTime(sub.cutoffAt, locale)}</strong>{" "}
               (vreme u Beogradu).
             </>
           )}
@@ -361,7 +365,7 @@ export function SubscriptionCard({
                   .map((product) => (
                     <option key={product.id} value={product.id}>
                       {product.name} · {product.unit} ·{" "}
-                      {formatMoney(product.subscriptionPriceRsd)}
+                      {formatMoney(product.subscriptionPriceRsd, locale)}
                     </option>
                   ))}
               </select>
@@ -424,7 +428,7 @@ export function SubscriptionCard({
               Bez naknade za dostavu. Mesečni obračun je u porudžbinama.
             </small>
           </span>
-          <strong>{formatMoney(nextTotal / 100)}</strong>
+          <strong>{formatMoney(nextTotal / 100, locale)}</strong>
         </div>
       )}
       {!cancelled && !paused && (
@@ -470,8 +474,8 @@ export function SubscriptionCard({
           </h3>
           {action === "skip_next" ? (
             <p>
-              Preskačete {formatDate(sub.nextDeliveryDate)}. Sledeća redovna
-              dostava biće <strong>{formatDate(sub.afterSkipDate)}</strong>.
+              Preskačete {formatDate(sub.nextDeliveryDate, locale)}. Sledeća redovna
+              dostava biće <strong>{formatDate(sub.afterSkipDate, locale)}</strong>.
             </p>
           ) : action === "pause" ? (
             <>
@@ -488,7 +492,7 @@ export function SubscriptionCard({
               {pauseUntil > sub.nextDeliveryDate && (
                 <p>
                   Do tada ne šaljemo redovne dostave. Prva posle pauze:{" "}
-                  <strong>{formatDate(pauseDelivery(sub, pauseUntil))}</strong>.
+                  <strong>{formatDate(pauseDelivery(sub, pauseUntil), locale)}</strong>.
                 </p>
               )}
             </>
@@ -557,7 +561,7 @@ export function SubscriptionCard({
           {sub.nextOnlyAddons.map((addon) => (
             <span key={addon.id}>
               {addon.quantity} × {addon.product_name} ·{" "}
-              {formatMoney((addon.quantity * addon.unit_price_minor) / 100)}
+              {formatMoney((addon.quantity * addon.unit_price_minor) / 100, locale)}
             </span>
           ))}
         </div>
@@ -622,7 +626,7 @@ export function SubscriptionCard({
                       <small>{product.unit}</small>
                     </span>
                     <b>
-                      + {formatMoney(product.priceRsd * (addonQuantity || 1))}
+                      + {formatMoney(product.priceRsd * (addonQuantity || 1), locale)}
                     </b>
                   </button>
                 ))}
@@ -643,5 +647,5 @@ export function SubscriptionCard({
         </div>
       )}
     </article>
-  );
+  ));
 }

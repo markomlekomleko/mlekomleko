@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocalize } from "@/app/lib/i18n/client";
 import { DeliveryChecker } from "../delivery-checker";
 import { homeCopy } from "../../lib/content";
 import type { DeliveryWindow, StorefrontSettings } from "../../lib/frontend";
@@ -11,7 +14,8 @@ export function StepsSection({
   settings: Pick<StorefrontSettings, "serviceAreaTitle" | "serviceAreaNote">;
   delivery: DeliveryWindow;
 }) {
-  return (
+  const localize = useLocalize();
+  return localize((
     <section className="steps" aria-labelledby="steps-title">
       <div className="page-shell">
         <div className="section-head">
@@ -40,5 +44,5 @@ export function StepsSection({
         </div>
       </div>
     </section>
-  );
+  ));
 }

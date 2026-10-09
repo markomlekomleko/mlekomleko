@@ -1,16 +1,19 @@
+import { localizedMetadata } from "@/app/lib/i18n/server";
+import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
 import { ContactForm } from "./contact-form";
 import { ContentStamp } from "../components/policy-page";
 import { canonicalUrl } from "../lib/seo";
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
   title: "Kontakt",
   description: "Kontaktiraj Mleko i Mleko u vezi sa proizvodima, porudžbinama ili dostavom.",
   alternates: { canonical: canonicalUrl("/kontakt") },
-};
+}); }
 
-export default function ContactPage() {
-  return (
+export default async function ContactPage() {
+  const localize = await getLocalize();
+  return localize((
     <div className="content-page">
       <header className="content-band content-hero">
         <div className="page-shell content-head">
@@ -29,5 +32,5 @@ export default function ContactPage() {
         </div>
       </div>
     </div>
-  );
+  ));
 }

@@ -1,15 +1,18 @@
+import { localizedMetadata } from "@/app/lib/i18n/server";
+import { getLocalize } from "@/app/lib/i18n/server";
 import { BrandIllustration } from "../components/brand-illustration";
 import type { Metadata } from "next";
 import { canonicalUrl } from "../lib/seo";
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
   title: "Naše farme",
   description: "Put domaćeg kravljeg i kozjeg mleka od farme do tvoje adrese.",
   alternates: { canonical: canonicalUrl("/farme") },
-};
+}); }
 
-export default function FarmsPage() {
-  return (
+export default async function FarmsPage() {
+  const localize = await getLocalize();
+  return localize((
     <div className="content-page">
       <header className="content-band content-hero">
         <div className="page-shell content-split">
@@ -46,5 +49,5 @@ export default function FarmsPage() {
         </div>
       </section>
     </div>
-  );
+  ));
 }

@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocalize } from "@/app/lib/i18n/client";
 import Image from "next/image";
 import type { CSSProperties } from "react";
 import { homeCopy } from "../../lib/content";
@@ -63,9 +66,10 @@ const patternStyle = {
 } as CSSProperties;
 
 export function ClosingSection({ settings }: { settings: Pick<StorefrontSettings, "guaranteeText"> }) {
+  const localize = useLocalize();
   const copy = homeCopy.closing;
 
-  return (
+  return localize((
     <section className="closing" aria-labelledby="closing-title" style={patternStyle}>
       <div className="page-shell">
         <div className="closing-card">
@@ -88,5 +92,5 @@ export function ClosingSection({ settings }: { settings: Pick<StorefrontSettings
         </div>
       </div>
     </section>
-  );
+  ));
 }

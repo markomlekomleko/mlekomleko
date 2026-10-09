@@ -1,9 +1,13 @@
+"use client";
+
+import { useLocalize } from "@/app/lib/i18n/client";
 import { frequentlyAskedQuestions, homeCopy } from "../../lib/content";
 
 export function FaqSection() {
+  const localize = useLocalize();
   const copy = homeCopy.faq;
 
-  return (
+  return localize((
     <section className="faq" aria-labelledby="faq-home-title">
       <div className="page-shell">
         <div className="section-head faq-head">
@@ -29,5 +33,5 @@ export function FaqSection() {
         </p>
       </div>
     </section>
-  );
+  ));
 }

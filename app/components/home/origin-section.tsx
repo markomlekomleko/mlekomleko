@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocalize } from "@/app/lib/i18n/client";
 import { BrandIllustration } from "../brand-illustration";
 import { homeCopy } from "../../lib/content";
 import type { StorefrontSettings } from "../../lib/frontend";
@@ -7,11 +10,12 @@ export function OriginSection({
 }: {
   settings: Pick<StorefrontSettings, "announcementEnabled" | "announcementUrl" | "announcementText" | "announcementLinkLabel">;
 }) {
+  const localize = useLocalize();
   const copy = homeCopy.origin;
   const video =
     settings.announcementEnabled && /(?:tiktok\.com|youtu\.?be)/i.test(settings.announcementUrl);
 
-  return (
+  return localize((
     <section className="origin" aria-labelledby="origin-title">
       {/* Only display-size white type and solid-ground controls sit on the photo; the
           body copy lives on the plain strip below it. */}
@@ -42,5 +46,5 @@ export function OriginSection({
         ) : null}
       </div>
     </section>
-  );
+  ));
 }

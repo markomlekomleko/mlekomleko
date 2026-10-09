@@ -1,4 +1,6 @@
 "use client";
+
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useEffect, useState } from "react";
 import {
   fetchJson,
@@ -28,6 +30,8 @@ export function OrderItemEditor({
   admin?: boolean;
   onSaved: () => void;
 }) {
+  const localize = useLocalize();
+  const locale = useLocale();
   const [editing, setEditing] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [quantities, setQuantities] = useState<Record<string, number>>(() =>
@@ -154,13 +158,13 @@ export function OrderItemEditor({
     }
   }
   if (!detail.editable || expired)
-    return (
+    return localize((
       <p className="small-text">
         {expired
           ? "Rok za izmenu i otkazivanje ove dostave je istekao."
           : detail.editReason}
       </p>
-    );
+    ));
   const catalog = [
     ...products,
     ...detail.items
@@ -178,10 +182,10 @@ export function OrderItemEditor({
           }) as Product,
       ),
   ];
-  return (
+  return localize((
     <section className="form-stack" aria-label="Izmena porudžbine">
       <p className="small-text">
-        Izmene i otkazivanje do {formatDateTime(detail.cutoffAt)} (Beograd).
+        Izmene i otkazivanje do {formatDateTime(detail.cutoffAt, locale)} (Beograd).
       </p>
       {!editing && !cancel ? (
         <div className="button-row">
@@ -206,7 +210,7 @@ export function OrderItemEditor({
             <label className="field" key={product.id}>
               <span>
                 {product.name} · {product.unit} ·{" "}
-                {formatMoney(product.priceRsd)}
+                {formatMoney(product.priceRsd, locale)}
                 {!product.available
                   ? " · trenutno nedostupno, uklonite stavku"
                   : ""}
@@ -238,10 +242,10 @@ export function OrderItemEditor({
           </label>
           {quote?.key === quoteBody && valid ? (
             <p role="status">
-              Novi iznos: <strong>{formatMoney(quote.totalMinor / 100)}</strong>{" "}
-              · dostava {formatMoney(quote.deliveryFeeMinor / 100)}
+              Novi iznos: <strong>{formatMoney(quote.totalMinor / 100, locale)}</strong>{" "}
+              · dostava {formatMoney(quote.deliveryFeeMinor / 100, locale)}
               {quote.discountMinor
-                ? ` · popust ${formatMoney(quote.discountMinor / 100)}`
+                ? ` · popust ${formatMoney(quote.discountMinor / 100, locale)}`
                 : ""}
             </p>
           ) : (
@@ -304,5 +308,5 @@ export function OrderItemEditor({
         </p>
       )}
     </section>
-  );
+  ));
 }

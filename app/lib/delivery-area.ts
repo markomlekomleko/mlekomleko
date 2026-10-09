@@ -41,8 +41,8 @@ export const DELIVERY_POSTAL_CODES: Record<DeliveryCity, readonly string[]> = {
 };
 
 const cityAliases: Record<string, DeliveryCity> = {
-  beograd: "Beograd", belgrade: "Beograd", "novi beograd": "Beograd", zemun: "Beograd",
-  "novi sad": "Novi Sad", petrovaradin: "Novi Sad", "sremska kamenica": "Novi Sad",
+  beograd: "Beograd", belgrad: "Beograd", belgrade: "Beograd", "novi beograd": "Beograd", zemun: "Beograd",
+  "novi sad": "Novi Sad", "novi-sad": "Novi Sad", petrovaradin: "Novi Sad", "sremska kamenica": "Novi Sad",
 };
 
 export function normalizeDeliveryCity(value: string): DeliveryCity | null {

@@ -1,4 +1,6 @@
 "use client";
+
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 /* eslint-disable @next/next/no-img-element -- Catalog photography is pre-optimised and admin image URLs are arbitrary. */
 
 import { useEffect, useId, useState } from "react";
@@ -55,6 +57,8 @@ export function ProductConfigurator({
   layout?: ConfiguratorLayout;
   onSelectionChange?: (selection: { label: string; totalRsd: number; addToCart: () => void; disabled: boolean }) => void;
 }) {
+  const localize = useLocalize();
+  const locale = useLocale();
   const { addItem, ready, openDrawer } = useCart();
   const { track } = useAnalytics();
   const fieldId = useId();
@@ -158,7 +162,7 @@ export function ProductConfigurator({
     setQuantity(value);
   }
 
-  return (
+  return localize((
     <article className={`configurator configurator-${layout}`} data-available={product.available}>
       <a className="configurator-media" href={href} aria-label={`Detalji: ${product.name}`}>
         {product.imageUrl ? (
@@ -178,9 +182,9 @@ export function ProductConfigurator({
           )}
           <p className="configurator-note">{product.shortDescription}</p>
           <p className="configurator-price">
-            <strong>{formatMoney(unitPrice)}</strong>
+            <strong>{formatMoney(unitPrice, locale)}</strong>
             <span>/ {product.unit}</span>
-            {litres && litres !== 1 ? <small>{formatMoney(unitPrice / litres)} / L</small> : null}
+            {litres && litres !== 1 ? <small>{formatMoney(unitPrice / litres, locale)} / L</small> : null}
           </p>
         </div>
 
@@ -280,7 +284,7 @@ export function ProductConfigurator({
                   ))}
                 </div>
                 <p className="configurator-hint">
-                  Prva dostava: {formatDate(delivery.deliveryDate)}
+                  Prva dostava: {formatDate(delivery.deliveryDate, locale)}
                 </p>
               </fieldset>
             ) : null}
@@ -291,7 +295,7 @@ export function ProductConfigurator({
                   Mleko po dostavi
                   <small>{selectionLabel}</small>
                 </span>
-                <strong>{formatMoney(perDelivery)}</strong>
+                <strong>{formatMoney(perDelivery, locale)}</strong>
               </p>
               {purchaseType === "subscription" && occurrences > 1 ? (
                 <p className="configurator-occurrences">
@@ -314,5 +318,5 @@ export function ProductConfigurator({
         )}
       </div>
     </article>
-  );
+  ));
 }

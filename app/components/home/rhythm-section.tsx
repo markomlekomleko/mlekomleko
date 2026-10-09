@@ -1,9 +1,13 @@
+"use client";
+
+import { useLocalize } from "@/app/lib/i18n/client";
 import { homeCopy } from "../../lib/content";
 
 export function RhythmSection() {
+  const localize = useLocalize();
   const copy = homeCopy.rhythm;
 
-  return (
+  return localize((
     <section className="rhythm" aria-labelledby="rhythm-title">
       <div className="page-shell">
         <div className="section-head rhythm-head">
@@ -21,5 +25,5 @@ export function RhythmSection() {
         <p className="rhythm-note">{copy.note}</p>
       </div>
     </section>
-  );
+  ));
 }

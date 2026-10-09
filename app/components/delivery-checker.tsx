@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useId, useState, type FormEvent } from "react";
 import { fetchJson, formatDate, type DeliveryWindow } from "../lib/frontend";
 
@@ -20,6 +21,8 @@ export function DeliveryChecker({
   /** Example postcode for the city the checker sits on. */
   placeholder?: string;
 }) {
+  const localize = useLocalize();
+  const locale = useLocale();
   const [postalCode, setPostalCode] = useState("");
   const [result, setResult] = useState<{ available: boolean; postalCode: string } | null>(null);
   const [error, setError] = useState("");
@@ -40,13 +43,13 @@ export function DeliveryChecker({
     }
   }
 
-  return (
+  return localize((
     <section className="delivery-checker" aria-labelledby="delivery-check-title">
       <div className="delivery-checker-copy">
         <p className="eyebrow">Sledeći termin</p>
         <h2 id="delivery-check-title">{title}</h2>
         <p className="muted">{note}</p>
-        <p className="delivery-date"><strong>{formatDate(delivery.deliveryDate)}</strong> · od {delivery.deliveryLocalTime}</p>
+        <p className="delivery-date"><strong>{formatDate(delivery.deliveryDate, locale)}</strong> · od {delivery.deliveryLocalTime}</p>
       </div>
       <form className="delivery-checker-form" onSubmit={check}>
         {/* The label names the field only: wrapped around the button too, it would read
@@ -68,5 +71,5 @@ export function DeliveryChecker({
         {error ? <p className="check-result error" role="alert">{error}</p> : null}
       </form>
     </section>
-  );
+  ));
 }

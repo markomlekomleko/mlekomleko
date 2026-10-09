@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Preserve the request origin for language rewrites, including loopback IPs.
+  skipProxyUrlNormalize: true,
   distDir: process.env.E2E_DIST_DIR || ".next",
   serverExternalPackages: ["@libsql/client", "libsql", "pg"],
   async headers() {

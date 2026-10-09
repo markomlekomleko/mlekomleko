@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAnalytics } from "./analytics-provider";
@@ -24,6 +25,8 @@ const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 export function CartDrawer() {
+  const localize = useLocalize();
+  const locale = useLocale();
   const { items, ready, drawerOpen, closeDrawer, updateItem, removeItem, addItem } = useCart();
   const { track, consent } = useAnalytics();
   const panel = useRef<HTMLDivElement>(null);
@@ -188,7 +191,7 @@ export function CartDrawer() {
   const thresholdActive = (quote?.freeDeliveryThresholdMinor ?? 0) > 0;
 
   // The viewport-sized root clips the closed panel so it never widens the document.
-  return (
+  return localize((
     <div className="drawer-root" data-open={drawerOpen}>
       <div
         className="drawer-scrim"
@@ -240,7 +243,7 @@ export function CartDrawer() {
                       <li key={item.key} className="drawer-item">
                         <div className="drawer-item-head">
                           <a href={`/proizvodi/${encodeURIComponent(item.slug)}`}>{item.name}</a>
-                          <strong>{line ? formatMoney(line.lineTotalMinor / 100) : "…"}</strong>
+                          <strong>{line ? formatMoney(line.lineTotalMinor / 100, locale) : "…"}</strong>
                         </div>
                         <p className="drawer-item-meta">
                           {quantityLabel(item.quantity, item.unit)} po dostavi ·{" "}
@@ -314,7 +317,7 @@ export function CartDrawer() {
                     <div>
                       <strong>Probaj i {offer.name.toLocaleLowerCase("sr-Latn")}.</strong>
                       <span>
-                        Dodaj {quantityLabel(1, offer.unit)} samo ovoj dostavi. +{formatMoney(offer.priceRsd)}
+                        Dodaj {quantityLabel(1, offer.unit)} samo ovoj dostavi. +{formatMoney(offer.priceRsd, locale)}
                       </span>
                     </div>
                     <div className="drawer-offer-actions">
@@ -358,44 +361,44 @@ export function CartDrawer() {
                 <>
                   <div className="summary-row">
                     <span>Proizvodi</span>
-                    <span>{formatMoney(quote.subtotalMinor / 100)}</span>
+                    <span>{formatMoney(quote.subtotalMinor / 100, locale)}</span>
                   </div>
                   {quote.discountMinor > 0 ? (
                     <div className="summary-row discount-row">
                       <span>Popust {quote.promoCode}</span>
-                      <span>−{formatMoney(quote.discountMinor / 100)}</span>
+                      <span>−{formatMoney(quote.discountMinor / 100, locale)}</span>
                     </div>
                   ) : null}
                   <div className="summary-row">
                     <span>
                       Dostava
                       {quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor
-                        ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})`
+                        ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100, locale)})`
                         : ""}
                     </span>
                     <span>
                       {quote.deliveryFeeMinor
-                        ? formatMoney(quote.deliveryFeeMinor / 100)
+                        ? formatMoney(quote.deliveryFeeMinor / 100, locale)
                         : thresholdActive
                           ? "Bez naknade"
-                          : formatMoney(0)}
+                          : formatMoney(0, locale)}
                     </span>
                   </div>
                   <div className="summary-row summary-total">
                     <span>{subscriptionOccurrences ? "Za ovaj obračun" : "Ukupno"}</span>
-                    <span>{formatMoney(quote.totalMinor / 100)}</span>
+                    <span>{formatMoney(quote.totalMinor / 100, locale)}</span>
                   </div>
                   {thresholdActive && quote.freeDeliveryRemainingMinor > 0 ? (
                     <p className="muted small-text">
                       {subscriptionOccurrences
-                        ? `Do besplatne dostave za ovaj obračun nedostaje ${formatMoney(quote.freeDeliveryRemainingMinor / 100)}.`
-                        : `Do besplatne dostave nedostaje ${formatMoney(quote.freeDeliveryRemainingMinor / 100)}.`}
+                        ? `Do besplatne dostave za ovaj obračun nedostaje ${formatMoney(quote.freeDeliveryRemainingMinor / 100, locale)}.`
+                        : `Do besplatne dostave nedostaje ${formatMoney(quote.freeDeliveryRemainingMinor / 100, locale)}.`}
                     </p>
                   ) : null}
                   <p className="muted small-text">
-                    Sledeća dostava: {formatDate(quote.deliveryDate)}
+                    Sledeća dostava: {formatDate(quote.deliveryDate, locale)}
                     <br />
-                    Rok za izmene: {formatDateTime(quote.cutoffAt)}
+                    Rok za izmene: {formatDateTime(quote.cutoffAt, locale)}
                   </p>
                 </>
               ) : (
@@ -429,5 +432,5 @@ export function CartDrawer() {
         </div>
       </aside>
     </div>
-  );
+  ));
 }

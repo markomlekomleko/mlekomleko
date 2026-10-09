@@ -1,15 +1,18 @@
+import { localizedMetadata } from "@/app/lib/i18n/server";
+import { getLocalize } from "@/app/lib/i18n/server";
 import { BrandIllustration } from "../components/brand-illustration";
 import type { Metadata } from "next";
 import { canonicalUrl } from "../lib/seo";
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
   title: "O nama",
   description: "Mleko i Mleko povezuje domaće proizvođače i kupce kroz jednostavnu dostavu.",
   alternates: { canonical: canonicalUrl("/o-nama") },
-};
+}); }
 
-export default function AboutPage() {
-  return (
+export default async function AboutPage() {
+  const localize = await getLocalize();
+  return localize((
     <div className="content-page">
       <header className="content-band content-hero">
         <div className="page-shell content-split">
@@ -26,5 +29,5 @@ export default function AboutPage() {
         </div>
       </header>
     </div>
-  );
+  ));
 }

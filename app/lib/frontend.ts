@@ -1,3 +1,4 @@
+import { intlLocales, type Locale } from "./i18n/routing";
 export type PurchaseType = "one_time" | "subscription";
 export type DeliveryCadence = "weekly" | "biweekly";
 
@@ -304,15 +305,15 @@ export const money = new Intl.NumberFormat("sr-Latn-RS", {
   maximumFractionDigits: 0,
 });
 
-export function formatMoney(value: number) {
-  return money.format(Number.isFinite(value) ? value : 0);
+export function formatMoney(value: number, locale: Locale = "sr-latn") {
+  return (locale === "sr-latn" ? money : new Intl.NumberFormat(intlLocales[locale], { style: "currency", currency: "RSD", maximumFractionDigits: 0 })).format(Number.isFinite(value) ? value : 0);
 }
 
-export function formatDate(value: string | number | Date | undefined) {
+export function formatDate(value: string | number | Date | undefined, locale: Locale = "sr-latn") {
   if (!value) return "Nije zakazano";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return new Intl.DateTimeFormat("sr-Latn-RS", {
+  return new Intl.DateTimeFormat(intlLocales[locale], {
     timeZone: "Europe/Belgrade",
     weekday: "long",
     day: "2-digit",
@@ -345,11 +346,11 @@ export function quantityLabel(quantity: number, unit: string) {
 }
 
 /** Cut-off times carry a time of day, so never render them as a bare date. */
-export function formatDateTime(value: string | number | Date | undefined) {
+export function formatDateTime(value: string | number | Date | undefined, locale: Locale = "sr-latn") {
   if (!value) return "Nije zakazano";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
-  return new Intl.DateTimeFormat("sr-Latn-RS", {
+  return new Intl.DateTimeFormat(intlLocales[locale], {
     timeZone: "Europe/Belgrade",
     weekday: "long",
     day: "numeric",

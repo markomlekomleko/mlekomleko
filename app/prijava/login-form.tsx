@@ -1,11 +1,15 @@
 "use client";
+import { localizedPath } from "../lib/i18n/routing";
 
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useEffect, useState, type FormEvent } from "react";
 import { fetchJson } from "../lib/frontend";
 import { useAnalytics } from "../components/analytics-provider";
 import { CodeEntry, type CodeChallenge } from "./code-entry";
 
 export function LoginForm() {
+  const localize = useLocalize();
+  const locale = useLocale();
   const { track } = useAnalytics();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -52,7 +56,7 @@ export function LoginForm() {
       setBusy(false);
     }
   }
-  return (
+  return localize((
     <div className="page-shell narrow" style={{ maxWidth: "760px" }}>
       <header className="page-heading">
         <p className="eyebrow">Korisnički nalog</p>
@@ -70,7 +74,7 @@ export function LoginForm() {
           challenge={challenge}
           onBack={() => setChallenge(null)}
           onVerified={() => {
-            window.location.assign("/nalog");
+            window.location.assign(localizedPath("/nalog", locale));
           }}
         />
       ) : (
@@ -188,5 +192,5 @@ export function LoginForm() {
         </>
       )}
     </div>
-  );
+  ));
 }

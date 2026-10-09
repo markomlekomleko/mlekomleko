@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize } from "@/app/lib/i18n/client";
 import { useEffect, useState, type FormEvent } from "react";
 import { fetchJson } from "../lib/frontend";
 import { CodeEntry, type CodeChallenge } from "../prijava/code-entry";
@@ -7,6 +8,7 @@ import { CodeEntry, type CodeChallenge } from "../prijava/code-entry";
 type Settings = { registered: boolean; email: string; whatsappPhone: string | null; whatsappVerified: boolean; whatsappAvailable: boolean; notifications: boolean };
 
 export function LoginSettings() {
+  const localize = useLocalize();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [phone, setPhone] = useState("");
   const [consent, setConsent] = useState(false);
@@ -33,7 +35,7 @@ export function LoginSettings() {
     } catch (error) { setError(error instanceof Error ? error.message : "Podešavanja nisu sačuvana."); }
     finally { setBusy(false); }
   }
-  return <section className="card form-stack" aria-labelledby="login-settings-title">
+  return localize(<section className="card form-stack" aria-labelledby="login-settings-title">
     <h2 id="login-settings-title">Prijava i WhatsApp</h2>
     {error ? <p className="notice error" role="alert">{error}</p> : null}
     {notice ? <p className="notice success" role="status">{notice}</p> : null}
@@ -50,5 +52,5 @@ export function LoginSettings() {
         <button className="button" disabled={busy || !consent}>{busy ? "Šaljemo kod…" : "Potvrdi WhatsApp broj"}</button>
       </form> : <p>WhatsApp povezivanje uskoro će biti dostupno. Za prijavu koristite kod putem emaila.</p>}
     </>}
-  </section>;
+  </section>);
 }

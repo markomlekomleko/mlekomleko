@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize } from "@/app/lib/i18n/client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { analyticsIdentity, captureAttribution, clearAnalyticsStorage, CONSENT_KEY, getConsentPreferences, readStoredConsent, saveConsentPreferences, syncStoredConsent } from "../lib/attribution";
@@ -16,6 +17,7 @@ const AnalyticsContext = createContext<AnalyticsContextValue | null>(null);
 const DEFAULT_CONSENT = { analytics: false, marketing: false };
 
 export function AnalyticsProvider({ children }: { children: ReactNode }) {
+  const localize = useLocalize();
   const [consent, setConsent] = useState<AnalyticsContextValue["consent"]>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selection, setSelection] = useState(DEFAULT_CONSENT);
@@ -78,7 +80,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(() => ({ consent, track, openSettings: () => { setSelection(getConsentPreferences()); setSettingsOpen(true); } }), [consent, track]);
-  return (
+  return localize((
     <AnalyticsContext.Provider value={value}>
       {children}
       {consent === null || settingsOpen ? (
@@ -106,12 +108,13 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
         </section>
       ) : null}
     </AnalyticsContext.Provider>
-  );
+  ));
 }
 
 export function CookieSettingsButton() {
+  const localize = useLocalize();
   const { openSettings } = useAnalytics();
-  return <button className="footer-cookie-button" type="button" onClick={openSettings}>Podešavanja kolačića</button>;
+  return localize(<button className="footer-cookie-button" type="button" onClick={openSettings}>Podešavanja kolačića</button>);
 }
 
 export function useAnalytics() {

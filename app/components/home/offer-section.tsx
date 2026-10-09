@@ -1,3 +1,7 @@
+"use client";
+
+import { translate } from "../../lib/i18n/translate";
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { BundleOffers } from "../bundle-offers";
 import { glyphPaths } from "../brand-glyph";
 import { ProductConfigurator } from "../product-configurator";
@@ -28,8 +32,10 @@ const blobPath = (() => {
  * approved band copy.
  */
 function OfferStamp() {
-  const ring = `${homeCopy.band.slice(0, 4).join(" • ")} • `;
-  return (
+  const localize = useLocalize();
+  const locale = useLocale();
+  const ring = `${homeCopy.band.slice(0, 4).map(word => translate(word, locale)).join(" • ")} • `;
+  return localize((
     <svg className="offer-stamp" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
       <path className="offer-stamp-disc" d={blobPath} />
       <circle className="offer-stamp-inner" cx="80" cy="80" r="44" />
@@ -45,7 +51,7 @@ function OfferStamp() {
       </g>
       <path className="offer-stamp-glyph" d={glyphPaths.cow} transform="translate(56 56) scale(0.75)" />
     </svg>
-  );
+  ));
 }
 
 export function OfferSection({
@@ -57,10 +63,11 @@ export function OfferSection({
   bundles: BundleOffer[];
   delivery: DeliveryWindow;
 }) {
+  const localize = useLocalize();
   const sellable = products.filter((product) => product.available);
   const offered = (sellable.length ? sellable : products).slice(0, 4);
 
-  return (
+  return localize((
     <section id="izaberite-mleko" className="offer" aria-labelledby="offer-title">
       <div className="page-shell">
         <div className="offer-head">
@@ -90,5 +97,5 @@ export function OfferSection({
         <BundleOffers products={products} bundles={bundles} delivery={delivery} />
       </div>
     </section>
-  );
+  ));
 }

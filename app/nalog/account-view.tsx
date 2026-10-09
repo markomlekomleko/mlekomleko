@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -71,6 +72,8 @@ function deliveryStatus(status: string) {
 }
 
 export function AccountView() {
+  const localize = useLocalize();
+  const locale = useLocale();
   const { track } = useAnalytics();
   const [authenticated, setAuthenticated] = useState(true);
   const [account, setAccount] = useState<AccountPayload | null>(null);
@@ -129,7 +132,7 @@ export function AccountView() {
       });
       setAccount(result.account);
       const updated = result.account.subscriptions.find((sub) => sub.id === id);
-      const date = formatDate(updated?.nextDeliveryDate);
+      const date = formatDate(updated?.nextDeliveryDate, locale);
       let message =
         updated?.status === "cancelled"
           ? "Pretplata je otkazana. Redovne dostave više nisu zakazane."
@@ -145,9 +148,9 @@ export function AccountView() {
       if (result.appliesTo === "next_package") message = "Izmena je sačuvana za sledeći paket. Količine i ritam već kupljenog paketa ostaju isti.";
       if (result.cancelAfterPackage) message = "Obnova je otkazana. Preostale plaćene dostave ostaju zakazane.";
       if (result.adjustmentMinor > 0)
-        message += ` Odobreno za naredni obračun: ${formatMoney(result.adjustmentMinor / 100)}.`;
+        message += ` Odobreno za naredni obračun: ${formatMoney(result.adjustmentMinor / 100, locale)}.`;
       if (result.adjustmentMinor < 0)
-        message += ` Doplata u obračunu: ${formatMoney(-result.adjustmentMinor / 100)}.`;
+        message += ` Doplata u obračunu: ${formatMoney(-result.adjustmentMinor / 100, locale)}.`;
       setNotice(message);
       const event =
         action === "pause"
@@ -199,16 +202,16 @@ export function AccountView() {
     }
   }
   if (loading)
-    return (
+    return localize((
       <div className="page-shell">
         <p className="loading-state" role="status">
           Učitavamo vaš nalog…
         </p>
       </div>
-    );
-  if (!authenticated) return <LoginForm />;
+    ));
+  if (!authenticated) return localize(<LoginForm />);
   if (!account)
-    return (
+    return localize((
       <div className="page-shell narrow">
         <div className="notice error" role="alert">
           <h1>Nalog nije učitan.</h1>
@@ -221,7 +224,7 @@ export function AccountView() {
           </button>
         </div>
       </div>
-    );
+    ));
   const { customer } = account;
   const subscriptions = [...account.subscriptions].sort(
     (a, b) =>
@@ -235,7 +238,7 @@ export function AccountView() {
         ? ["delivered", "completed"].includes(delivery.status)
         : delivery.status === "skipped"),
   );
-  return (
+  return localize((
     <div className="account-dashboard">
       <aside className="account-sidebar" aria-label="Meni naloga">
         <Link className="account-brand" href="/">
@@ -258,7 +261,7 @@ export function AccountView() {
         <header className="account-welcome">
           <div>
             <p className="eyebrow">Moj nalog</p>
-            <h1>Zdravo, {customer.fullName || "kupče"}.</h1>
+            <h1>Zdravo, {customer.fullName ? <span data-no-translate>{customer.fullName}</span> : "kupče"}.</h1>
             <p>Pregled dostava, porudžbina i podešavanja naloga.</p>
           </div>
           <a className="button secondary small" href="/prodavnica">
@@ -288,7 +291,7 @@ export function AccountView() {
               .map((delivery) => (
                 <section className="card" key={delivery.id}>
                   <p className="eyebrow">Dostava u pripremi</p>
-                  <h2>{formatDate(delivery.date)}</h2>
+                  <h2>{formatDate(delivery.date, locale)}</h2>
                   <p>
                     Ova dostava je već zaključana. Izmene redovne dostave ispod
                     važe za naredne termine.
@@ -325,7 +328,7 @@ export function AccountView() {
             {(account.oneTimeDeliveries ?? []).map((delivery) => (
               <section className="card" key={delivery.date}>
                 <p className="eyebrow">Naručeno jednokratno</p>
-                <h2>{formatDate(delivery.date)}</h2>
+                <h2>{formatDate(delivery.date, locale)}</h2>
                 <ul className="list-clean">
                   {delivery.items.map((item, index) => (
                     <li key={index}>
@@ -368,7 +371,7 @@ export function AccountView() {
                   {history.map((delivery) => (
                     <li key={delivery.id}>
                       <div className="account-history-title">
-                        <strong>{formatDate(delivery.date)}</strong>
+                        <strong>{formatDate(delivery.date, locale)}</strong>
                         <span className="account-status">
                           {deliveryStatus(delivery.status)}
                         </span>
@@ -424,14 +427,14 @@ export function AccountView() {
                     <div className="summary-row">
                       <strong>{label(order.order_number)}</strong>
                       <strong>
-                        {formatMoney(Number(order.total_minor) / 100)}
+                        {formatMoney(Number(order.total_minor) / 100, locale)}
                       </strong>
                     </div>
                     <p>
                       {order.kind === "subscription_invoice"
                         ? "Početak obračunatog perioda"
                         : "Termin dostave"}
-                      : {formatDate(label(order.delivery_date))}
+                      : {formatDate(label(order.delivery_date), locale)}
                     </p>
                     <p>
                       Plaćanje: {statusLabel(label(order.payment_status))} ·{" "}
@@ -488,7 +491,7 @@ export function AccountView() {
           <aside className="account-side" aria-label="Informacije o dostavi">
             <section className="card">
               <p className="eyebrow">Stižemo na adresu</p>
-              <h2>{customer.addressLine1 || "Adresa za dostavu"}</h2>
+              <h2>{customer.addressLine1 ? <span data-no-translate>{customer.addressLine1}</span> : "Adresa za dostavu"}</h2>
               <p>
                 {[customer.addressLine2, customer.postalCode, customer.city]
                   .filter(Boolean)
@@ -544,5 +547,5 @@ export function AccountView() {
         </section>
       </div>
     </div>
-  );
+  ));
 }

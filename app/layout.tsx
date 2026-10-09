@@ -1,3 +1,7 @@
+import { getLocale, localizedMetadata } from "./lib/i18n/server";
+import { languageTags } from "./lib/i18n/routing";
+import { LocaleProvider } from "./lib/i18n/client";
+import { localizeSchema } from "./lib/i18n/render";
 import type { Metadata } from "next";
 import { Archivo, Fraunces, Geist, Vollkorn } from "next/font/google";
 import { ApplicationShell } from "./components/application-shell";
@@ -29,7 +33,7 @@ export const runtime = "nodejs";
 
 const geist = Geist({
   variable: "--font-geist",
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin", "latin-ext", "cyrillic"],
 });
 
 // Headlines: heavy uppercase. The width axis lets phones condense long Serbian words
@@ -54,17 +58,17 @@ const fraunces = Fraunces({
   preload: false,
 });
 
-// Only /admin still sets type in Vollkorn (admin.css binds it to --font-editorial there).
-// Not preloaded, and no storefront element names it, so the storefront never downloads it.
+// Vollkorn supports Cyrillic product names as well as the admin editorial style.
+// It loads only where used, keeping the Latin storefront font budget unchanged.
 const vollkorn = Vollkorn({
   variable: "--font-vollkorn",
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin", "latin-ext", "cyrillic"],
   style: ["normal", "italic"],
   display: "swap",
   preload: false,
 });
 
-export const metadata: Metadata = {
+const baseMetadata: Metadata = {
   metadataBase: getSiteUrl(),
   ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
   title: {
@@ -102,11 +106,14 @@ export const metadata: Metadata = {
   },
 };
 
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata(baseMetadata); }
+
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
   const storefront = await getStorefront();
   const { settings } = storefront;
   const organizationJsonLd = {
@@ -130,16 +137,16 @@ export default async function RootLayout({
     // The font variables sit on <html> so the :root stacks in tokens.css (--ff-display …)
     // can resolve them: a custom property referencing another resolves where it is declared.
     <html
-      lang="sr-Latn"
+      lang={languageTags[locale]}
       data-scroll-behavior="smooth"
       className={`${geist.variable} ${archivo.variable} ${fraunces.variable} ${vollkorn.variable}`}
     >
       <body>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(localizeSchema(organizationJsonLd, locale)) }}
         />
-        <ApplicationShell settings={settings}>{children}</ApplicationShell>
+        <LocaleProvider locale={locale}><ApplicationShell settings={settings}>{children}</ApplicationShell></LocaleProvider>
       </body>
     </html>
   );

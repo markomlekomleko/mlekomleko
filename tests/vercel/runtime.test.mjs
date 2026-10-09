@@ -421,3 +421,24 @@ test('production CSP permits consented Google and Meta transports without broad 
   assert.ok(!directives['script-src'].includes("'unsafe-eval'"));
   assert.deepEqual(directives['frame-ancestors'], ["'none'"]);
 });
+
+test('localized pages ship translated HTML, canonical alternatives, schema and noindex for private pages', async () => {
+  for (const [prefix, lang, title] of [['/en', 'en', 'Shop'], ['/ru', 'ru', 'Магазин'], ['/sr-cyrl', 'sr-Cyrl', 'Продавница']]) {
+    const response = await fetch(origin + prefix + '/prodavnica');
+    assert.equal(response.status, 200);
+    const html = await response.text();
+    assert.ok(html.includes(`<html lang="${lang}"`), html.match(/<html[^>]*>/)?.[0] + " URL=" + response.url);
+    assert.ok(html.includes(`<title>${title} | Mleko i Mleko</title>`));
+    const canonical = html.match(/rel="canonical" href="([^"]+)"/)[1];
+    assert.equal(new URL(canonical).pathname, prefix + '/prodavnica');
+    for (const tag of ['sr-Latn', 'sr-Cyrl', 'en', 'ru', 'x-default']) assert.ok(html.includes(`hrefLang="${tag}"`));
+    const product = await (await fetch(origin + prefix + '/proizvodi/sveze-kravlje-mleko-1l')).text();
+    const json = [...product.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/g)].map(match => JSON.parse(match[1]));
+    assert.ok(JSON.stringify(json).includes(prefix + '/proizvodi/sveze-kravlje-mleko-1l'));
+    const account = await (await fetch(origin + prefix + '/nalog')).text();
+    assert.ok(account.includes('name="robots" content="noindex, nofollow"'));
+    const admin = await fetch(origin + prefix + '/admin', { redirect: 'manual' });
+    assert.equal(admin.status, 308);
+    assert.equal(new URL(admin.headers.get('location'), origin).pathname, '/admin');
+  }
+});

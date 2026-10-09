@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize } from "@/app/lib/i18n/client";
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { HeroMedia, HeroVariant } from "../lib/hero-media";
 import { HeroCopy } from "./hero-copy";
@@ -34,6 +35,7 @@ function useMediaQuery(query: string) {
  * never mounts a <video>, so nothing is downloaded for it.
  */
 export function HeroLoop({ media, offerHref, deliveryHref }: HeroLoopProps) {
+  const localize = useLocalize();
   const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const reduced = useMediaQuery("(prefers-reduced-motion: reduce)");
@@ -70,7 +72,7 @@ export function HeroLoop({ media, offerHref, deliveryHref }: HeroLoopProps) {
     };
   }, [paused, src]);
 
-  return (
+  return localize((
     <section
       ref={sectionRef}
       className="hero"
@@ -133,5 +135,5 @@ export function HeroLoop({ media, offerHref, deliveryHref }: HeroLoopProps) {
         </div>
       </div>
     </section>
-  );
+  ));
 }

@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/api/"],
+      disallow: ["/admin", "/api/", ...["", "/sr-cyrl", "/en", "/ru"].flatMap(prefix => ["/nalog", "/prijava", "/checkout", "/korpa"].map(path => prefix + path))],
     },
     sitemap: canonicalUrl("/sitemap.xml"),
   };

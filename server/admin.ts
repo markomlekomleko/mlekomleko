@@ -257,6 +257,9 @@ export async function readSettings() {
 const textSettings = new Map<string, number>([
   ["storeName", 120],
   ["announcementText", 180],
+  ["announcementTextEn", 180],
+  ["announcementTextRu", 180],
+  ["announcementTextSrCyrl", 180],
   ["announcementLinkLabel", 80],
   ["announcementUrl", 500],
   ["heroEyebrow", 120],
@@ -288,7 +291,7 @@ const urlSettings = new Set(["announcementUrl", "heroPrimaryUrl", "heroSecondary
 
 function safeLink(value: string, field: string) {
   assertDomain(
-    value.startsWith("/") || /^https:\/\//i.test(value),
+    (value.startsWith("/") && !value.startsWith("//")) || /^https:\/\//i.test(value),
     "VALIDATION_ERROR",
     `${field} mora biti lokalna putanja ili HTTPS adresa.`,
     422,
@@ -333,6 +336,7 @@ export async function updateSettings(input: Record<string, unknown>) {
       assertDomain(postalCodes.every((item) => /^\d{2,5}\*?$/.test(item)), "VALIDATION_ERROR", "Unesite poštanski broj od pet cifara ili prefiks od dve do četiri cifre.", 422);
       normalized[key] = postalCodes;
     } else {
+      if (key.startsWith("announcement") && typeof value === "string" && !value.trim()) { normalized[key] = ""; continue; }
       const parsed = requiredString(value, key, textSettings.get(key) ?? 500);
       normalized[key] = urlSettings.has(key) ? safeLink(parsed, key) : parsed;
     }

@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocalize } from "@/app/lib/i18n/client";
 import type { ComponentProps } from "react";
 import { HeroLoop } from "./hero-loop";
 import { HeroScene } from "./hero-scene";
@@ -8,7 +11,8 @@ import { HeroScene } from "./hero-scene";
  * Choosing here keeps app/page.tsx unchanged whichever clip is live.
  */
 export function Hero(props: ComponentProps<typeof HeroScene>) {
+  const localize = useLocalize();
   const { media } = props;
-  if (media?.kind === "loop") return <HeroLoop {...props} media={media} deliveryHref="#proveri-dostavu" />;
-  return <HeroScene {...props} />;
+  if (media?.kind === "loop") return localize(<HeroLoop {...props} media={media} deliveryHref="#proveri-dostavu" />);
+  return localize(<HeroScene {...props} />);
 }

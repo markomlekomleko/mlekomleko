@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize } from "@/app/lib/i18n/client";
 import { useEffect, useRef, useState } from "react";
 import type { HeroMedia, HeroVariant } from "../lib/hero-media";
 import { createHeroPlayback } from "../lib/hero-playback";
@@ -11,6 +12,7 @@ type HeroSceneProps = {
 
 /** Two story steps, with timed playback rather than scroll scrubbing. */
 export function HeroScene({ media, offerHref }: HeroSceneProps) {
+  const localize = useLocalize();
   const sectionRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const pinRef = useRef<HTMLDivElement>(null);
@@ -241,7 +243,7 @@ export function HeroScene({ media, offerHref }: HeroSceneProps) {
       : { desktop: media.desktop.poster, mobile: media.mobile.poster }
     : null;
 
-  return (
+  return localize((
     <section
       ref={sectionRef}
       className="hero"
@@ -331,5 +333,5 @@ export function HeroScene({ media, offerHref }: HeroSceneProps) {
         </div>
       </div>
     </section>
-  );
+  ));
 }

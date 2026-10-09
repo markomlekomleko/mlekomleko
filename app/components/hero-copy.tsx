@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocalize } from "@/app/lib/i18n/client";
 import { homeCopy } from "../lib/content";
 
 type HeroCopyProps = {
@@ -13,8 +16,9 @@ type HeroCopyProps = {
  * h1 stays plain text: the rendered-HTML tests match it as a single string.
  */
 export function HeroCopy({ offerHref, deliveryHref, withRhythm = true }: HeroCopyProps) {
+  const localize = useLocalize();
   const copy = homeCopy.hero;
-  return (
+  return localize((
     <div className="scene-copy">
       <div className="page-shell scene-copy-shell">
         <div className="scene-intro">
@@ -41,5 +45,5 @@ export function HeroCopy({ offerHref, deliveryHref, withRhythm = true }: HeroCop
         ) : null}
       </div>
     </div>
-  );
+  ));
 }

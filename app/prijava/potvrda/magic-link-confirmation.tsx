@@ -1,9 +1,13 @@
 "use client";
 
+import { localizedPath } from "../../lib/i18n/routing";
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchJson } from "../../lib/frontend";
 
 export function MagicLinkConfirmation() {
+  const localize = useLocalize();
+  const locale = useLocale();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
   const exchangeStarted = useRef(false);
@@ -23,7 +27,7 @@ export function MagicLinkConfirmation() {
         method: "POST",
         body: JSON.stringify({ token: magicToken }),
       });
-      window.history.replaceState({}, "", "/prijava/potvrda");
+      window.history.replaceState({}, "", localizedPath("/prijava/potvrda", locale));
       setStatus("success");
     } catch (requestError) {
       setStatus("error");
@@ -33,7 +37,7 @@ export function MagicLinkConfirmation() {
           : "Link nije moguće potvrditi.",
       );
     }
-  }, []);
+  }, [locale]);
 
   useEffect(() => {
     if (exchangeStarted.current) return;
@@ -41,7 +45,7 @@ export function MagicLinkConfirmation() {
     queueMicrotask(() => void exchangeToken());
   }, [exchangeToken]);
 
-  return (
+  return localize((
     <div className="page-shell narrow login-page">
       {status === "loading" ? (
         <p className="loading-state" role="status">Potvrđujemo pristup nalogu…</p>
@@ -62,5 +66,5 @@ export function MagicLinkConfirmation() {
         </div>
       )}
     </div>
-  );
+  ));
 }

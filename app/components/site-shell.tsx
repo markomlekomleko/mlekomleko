@@ -1,12 +1,14 @@
 "use client";
 
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { useCart } from "./cart-provider";
 import { CookieSettingsButton } from "./analytics-provider";
-import { Marquee } from "./marquee";
 import { MotionToggle } from "./motion-toggle";
+import { LanguageSwitcher } from "./language-switcher";
+import { translate, toCyrillic } from "../lib/i18n/translate";
 import { shellCopy } from "../lib/content";
 
 // One source for the contact pair the footer and the mobile menu both show.
@@ -18,21 +20,27 @@ export type HeaderSettings = {
   announcementEnabled: boolean;
   announcementText: string;
   announcementLinkLabel: string;
+  announcementTextEn?: string;
+  announcementTextRu?: string;
+  announcementTextSrCyrl?: string;
   announcementUrl: string;
   storeDemoMode: boolean;
   serviceAreaNote: string;
 };
 
 export function SiteHeader({ settings }: { settings: HeaderSettings }) {
+  const localize = useLocalize();
+  const locale = useLocale();
   const { count, ready, openDrawer, drawerOpen } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
-  const isVideoAnnouncement = /(?:tiktok\.com|youtu\.?be)/i.test(settings.announcementUrl);
+  const announcementText = locale === "en" ? settings.announcementTextEn || translate(settings.announcementText, locale)
+    : locale === "ru" ? settings.announcementTextRu || translate(settings.announcementText, locale)
+    : locale === "sr-cyrl" ? settings.announcementTextSrCyrl || toCyrillic(settings.announcementText) : settings.announcementText;
+  const announcementUrl = settings.announcementUrl.trim();
+  const externalAnnouncement = /^https:\/\//i.test(announcementUrl);
   // Only one overlay is ever active: the cart takes precedence over the menu.
   const menuVisible = menuOpen && !drawerOpen;
-  // The real delivery days live in settings, so the copy deck never names a weekday.
-  const serviceNote = settings.serviceAreaNote.trim().replace(/\.$/, "");
-  const tickerItems = serviceNote ? [...shellCopy.tickerItems, serviceNote] : [...shellCopy.tickerItems];
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -45,26 +53,11 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
 
   // DOM order is the visual order at every width (menu button, links, logo, actions),
   // so the tab order never jumps around the bar.
-  return (
+  return localize((
     <div className="site-header-stack" data-hero-header>
-      <aside className="ticker-bar" aria-label="Obaveštenja">
-        <MotionToggle />
-        <Marquee variant="ticker" items={tickerItems} label={settings.storeName} className="ticker-bar-marquee" />
-        {settings.announcementEnabled && settings.announcementText ? (
-          <a
-            className="ticker-pin"
-            href={settings.announcementUrl}
-            target={isVideoAnnouncement ? "_blank" : undefined}
-            rel={isVideoAnnouncement ? "noreferrer" : undefined}
-          >
-            <span className="ticker-pin-text">{settings.announcementText}</span>{" "}
-            <span className="ticker-pin-label">
-              {settings.announcementLinkLabel}
-              <span aria-hidden="true"> →</span>
-            </span>
-          </a>
-        ) : null}
-      </aside>
+      {settings.announcementEnabled && announcementText.trim() ? <aside className="announcement-bar" aria-label="Obaveštenje">
+        {announcementUrl ? <a href={announcementUrl} target={externalAnnouncement ? "_blank" : undefined} rel={externalAnnouncement ? "noopener noreferrer" : undefined}>{announcementText}</a> : <p>{announcementText}</p>}
+      </aside> : null}
       <header className="site-header">
         <div className="nav-shell">
           <button ref={menuButton} id="menu-toggle" className="mobile-menu-button" type="button" aria-label="Meni" aria-expanded={menuVisible} aria-controls="glavna-navigacija" onClick={() => setMenuOpen((current) => !current)}>
@@ -103,6 +96,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
             />
           </Link>
           <div className="header-actions">
+            <LanguageSwitcher />
             <Link className="header-account" href="/nalog">Moj nalog</Link>
             <button className="cart-link" type="button" onClick={openDrawer} aria-label={ready && count > 0 ? `Korpa, ${count} jedinica` : "Korpa"}>
               Korpa
@@ -116,11 +110,12 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
         </div>
       </header>
     </div>
-  );
+  ));
 }
 
 export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string }) {
-  return (
+  const localize = useLocalize();
+  return localize((
     <footer className="site-footer">
       <div className="page-shell footer-grid">
         <div className="footer-brand-col">
@@ -158,6 +153,7 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
           <Link href="/reklamacije">Reklamacije i povraćaj</Link>
           <Link href="/pravila-pretplate">Pravila pretplate</Link>
           <CookieSettingsButton />
+          <MotionToggle />
         </nav>
       </div>
       {/* Decorative: the brand name is already the logo link's accessible name. */}
@@ -167,5 +163,5 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
         </div>
       </div>
     </footer>
-  );
+  ));
 }

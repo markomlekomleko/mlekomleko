@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { DeliveryCalendar } from "../components/delivery-calendar";
 import { DELIVERY_CITIES } from "../lib/delivery-area";
@@ -27,6 +28,8 @@ type CheckoutResult = {
 };
 
 export function CheckoutForm() {
+  const localize = useLocalize();
+  const locale = useLocale();
   const { items, ready, promoCode, clearCart } = useCart();
   const { track, consent: trackingConsent } = useAnalytics();
   const paymentMethod = "cash";
@@ -178,17 +181,17 @@ export function CheckoutForm() {
   }
 
   if (!ready) {
-    return (
+    return localize((
       <div className="page-shell checkout-page">
         <p className="loading-state" role="status">
           Pripremamo plaćanje…
         </p>
       </div>
-    );
+    ));
   }
 
   if (result) {
-    return (
+    return localize((
       <div className="page-shell narrow checkout-page">
         <div className="notice success" role="status">
           <p className="eyebrow">Porudžbina je primljena</p>
@@ -199,9 +202,9 @@ export function CheckoutForm() {
               <> Broj porudžbine: <strong>{result.order?.orderNumber ?? result.orderId ?? result.order?.id ?? result.id}</strong>.</>
             ) : null}
           </p>
-          {result.order?.deliveryDate ? <p>Prva dostava: <strong>{formatDate(result.order.deliveryDate)}</strong>.</p> : null}
+          {result.order?.deliveryDate ? <p>Prva dostava: <strong>{formatDate(result.order.deliveryDate, locale)}</strong>.</p> : null}
           <p className="muted small-text">Za prvi pristup nalogu dovoljan je kod poslat na email sa porudžbine. Lozinka nije potrebna.</p>
-          {result.subscriptionOffer ? <section className="post-purchase-offer" aria-labelledby="post-purchase-title"><p className="eyebrow">Jedan klik do mirnog frižidera</p><h2 id="post-purchase-title">Neka ista porudžbina stiže svake nedelje.</h2><p>Uključujemo {result.subscriptionOffer.eligibleItemCount} {result.subscriptionOffer.eligibleItemCount === 1 ? "proizvod" : "proizvoda"} u nedeljni ritam. Prva redovna dostava je sledeće nedelje, a sada nema nove naplate.{result.subscriptionOffer.savingPerDeliveryMinor > 0 ? <> Štedite <strong>{formatMoney(result.subscriptionOffer.savingPerDeliveryMinor / 100)}</strong> po dostavi.</> : null}</p>{conversionDone ? <p className="notice success">Redovna dostava je uključena. Možete je menjati iz naloga.</p> : <button className="button" type="button" disabled={conversionBusy} onClick={() => void convertToSubscription(result.subscriptionOffer!.token)}>{conversionBusy ? "Uključujemo…" : "Da, ponovi svake nedelje"}</button>}<small>Bez ugovorne obaveze · preskakanje i pauza online</small></section> : null}
+          {result.subscriptionOffer ? <section className="post-purchase-offer" aria-labelledby="post-purchase-title"><p className="eyebrow">Jedan klik do mirnog frižidera</p><h2 id="post-purchase-title">Neka ista porudžbina stiže svake nedelje.</h2><p>Uključujemo {result.subscriptionOffer.eligibleItemCount} {result.subscriptionOffer.eligibleItemCount === 1 ? "proizvod" : "proizvoda"} u nedeljni ritam. Prva redovna dostava je sledeće nedelje, a sada nema nove naplate.{result.subscriptionOffer.savingPerDeliveryMinor > 0 ? <> Štedite <strong>{formatMoney(result.subscriptionOffer.savingPerDeliveryMinor / 100, locale)}</strong> po dostavi.</> : null}</p>{conversionDone ? <p className="notice success">Redovna dostava je uključena. Možete je menjati iz naloga.</p> : <button className="button" type="button" disabled={conversionBusy} onClick={() => void convertToSubscription(result.subscriptionOffer!.token)}>{conversionBusy ? "Uključujemo…" : "Da, ponovi svake nedelje"}</button>}<small>Bez ugovorne obaveze · preskakanje i pauza online</small></section> : null}
           {error ? <p className="notice error" role="alert">{error}</p> : null}
           <div className="button-row">
             <a className="button" href="/nalog">
@@ -213,11 +216,11 @@ export function CheckoutForm() {
           </div>
         </div>
       </div>
-    );
+    ));
   }
 
   if (items.length === 0) {
-    return (
+    return localize((
       <div className="page-shell narrow checkout-page">
         <div className="empty-state">
           <p className="eyebrow">Plaćanje</p>
@@ -228,10 +231,10 @@ export function CheckoutForm() {
           </a>
         </div>
       </div>
-    );
+    ));
   }
 
-  return (
+  return localize((
     <div className="page-shell checkout-page">
       <header className="page-heading compact-heading">
         <p className="eyebrow">Plaćanje</p>
@@ -313,7 +316,7 @@ export function CheckoutForm() {
 
 
           {error ? <p className="notice error" role="alert">{error}</p> : null}
-          {quote?.minimumOrderMet === false ? <p className="notice error">Minimalna kupovina: {formatMoney(Number(quote.minimumOrderMinor)/100)}</p> : null}
+          {quote?.minimumOrderMet === false ? <p className="notice error">Minimalna kupovina: {formatMoney(Number(quote.minimumOrderMinor)/100, locale)}</p> : null}
           {quoteError ? <p className="notice error" role="alert">{quoteError}</p> : null}
         </div>
 
@@ -324,15 +327,15 @@ export function CheckoutForm() {
               <span>
                 {line.quantity} × {line.productName}<br />
                 <span className="muted">
-                  {line.purchaseType === "one_time" ? "Jednokratno" : `${cadenceLabel(line.cadence ?? undefined)} · ${formatMoney(line.unitPriceMinor * line.quantity / 100)} po dostavi · ${line.occurrences}× u paketu`}
+                  {line.purchaseType === "one_time" ? "Jednokratno" : `${cadenceLabel(line.cadence ?? undefined)} · ${formatMoney(line.unitPriceMinor * line.quantity / 100, locale)} po dostavi · ${line.occurrences}× u paketu`}
                   {line.purchaseType === "subscription" ? <><br />Ukupno u paketu: {line.quantity * line.occurrences} komada</> : null}
-                  {line.deliveryDates.length ? <><br />Termini: {line.deliveryDates.map((date) => formatDate(date)).join(", ")}</> : null}
+                  {line.deliveryDates.length ? <><br />Termini: {line.deliveryDates.map((date) => formatDate(date, locale)).join(", ")}</> : null}
                 </span>
               </span>
-              <strong>{formatMoney(line.lineTotalMinor / 100)}</strong>
+              <strong>{formatMoney(line.lineTotalMinor / 100, locale)}</strong>
             </div>
           ))}
-          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Ukupno za ceo paket" : "Danas plaćate"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Izmene do {formatDateTime(quote.cutoffAt)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
+          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100, locale)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100, locale)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100, locale)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100, locale) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Ukupno za ceo paket" : "Danas plaćate"}</span><span>{formatMoney(quote.totalMinor / 100, locale)}</span></div><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate, locale)}</strong><br /><small>Izmene do {formatDateTime(quote.cutoffAt, locale)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
           <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Paket obuhvata 4 nedeljne ili 2 dvonedeljne dostave. Pauza i preskakanje čuvaju plaćene količine.</p>
           <label className="checkbox-row">
             <input type="checkbox" required />
@@ -347,5 +350,5 @@ export function CheckoutForm() {
         </aside>
       </form>
     </div>
-  );
+  ));
 }

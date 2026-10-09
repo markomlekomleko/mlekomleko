@@ -1,3 +1,4 @@
+import { getLocalize, getLocale } from "@/app/lib/i18n/server";
 import Link from "next/link";
 import { DeliveryChecker } from "../components/delivery-checker";
 import { ContentStamp } from "../components/policy-page";
@@ -20,6 +21,8 @@ export async function CityDeliveryPage({
   postalCodeHint,
   localDetail,
 }: CityDeliveryPageProps) {
+  const localize = await getLocalize();
+  const locale = await getLocale();
   const storefront = await getStorefront();
   const { settings, delivery } = storefront;
   const pageUrl = canonicalUrl(`/dostava-mleka/${slug}`);
@@ -46,7 +49,7 @@ export async function CityDeliveryPage({
     },
   ];
 
-  return (
+  return localize((
     <>
       <div className="content-page city-delivery-page">
         <header className="content-band content-hero">
@@ -98,7 +101,7 @@ export async function CityDeliveryPage({
               <article className="city-detail">
                 <span className="city-detail-index" aria-hidden="true">02</span>
                 <h3>Cena</h3>
-                <p>{formatMoney(settings.deliveryFeeMinor / 100)} po terminu, prikazano i u korpi pre plaćanja.</p>
+                <p>{formatMoney(settings.deliveryFeeMinor / 100, locale)} po terminu, prikazano i u korpi pre plaćanja.</p>
               </article>
               <article className="city-detail">
                 <span className="city-detail-index" aria-hidden="true">03</span>
@@ -135,5 +138,5 @@ export async function CityDeliveryPage({
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
       />
     </>
-  );
+  ));
 }

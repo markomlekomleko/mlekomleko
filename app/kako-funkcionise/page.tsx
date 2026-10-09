@@ -1,15 +1,18 @@
+import { localizedMetadata } from "@/app/lib/i18n/server";
+import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
 import { ContentStamp } from "../components/policy-page";
 import { canonicalUrl } from "../lib/seo";
 
-export const metadata: Metadata = {
+export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
   title: "Kako funkcioniše",
   description: "Saznaj kako rade jednokratne porudžbine i redovna dostava.",
   alternates: { canonical: canonicalUrl("/kako-funkcionise") },
-};
+}); }
 
-export default function HowItWorksPage() {
-  return (
+export default async function HowItWorksPage() {
+  const localize = await getLocalize();
+  return localize((
     <div className="content-page">
       <header className="content-band content-hero">
         <div className="page-shell content-head">
@@ -40,5 +43,5 @@ export default function HowItWorksPage() {
         </div>
       </section>
     </div>
-  );
+  ));
 }

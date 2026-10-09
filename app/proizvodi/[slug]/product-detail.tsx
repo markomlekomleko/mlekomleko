@@ -1,4 +1,6 @@
 "use client";
+
+import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 /* eslint-disable @next/next/no-img-element -- Optimised catalog images and admin-managed image URLs are served directly. */
 
 import Link from "next/link";
@@ -18,6 +20,8 @@ export function ProductDetail({
   delivery: DeliveryWindow;
   recommendations: Product[];
 }) {
+  const localize = useLocalize();
+  const locale = useLocale();
   const { consent, track } = useAnalytics();
   const sentinel = useRef<HTMLDivElement>(null);
   const addToCart = useRef<() => void>(() => {});
@@ -26,7 +30,7 @@ export function ProductDetail({
   const [barVisible, setBarVisible] = useState(false);
 
   // Same format as the cart and checkout: weekday, date and time in Belgrade.
-  const cutoff = formatDateTime(delivery.cutoffAt);
+  const cutoff = formatDateTime(delivery.cutoffAt, locale);
 
   useEffect(() => {
     if ((!consent?.analytics && !consent?.marketing) || trackedProduct.current === product.id) return;
@@ -46,7 +50,7 @@ export function ProductDetail({
     return () => observer.disconnect();
   }, []);
 
-  return (
+  return localize((
     <div className="page-shell product-detail-page">
       <nav className="breadcrumbs" aria-label="Putanja">
         <Link href="/">Početna</Link>
@@ -115,7 +119,7 @@ export function ProductDetail({
           </div>
           <div ref={sentinel} aria-hidden="true" />
           <p className="next-delivery">
-            Sledeća dostava: <strong>{formatDate(delivery.deliveryDate)}</strong>
+            Sledeća dostava: <strong>{formatDate(delivery.deliveryDate, locale)}</strong>
           </p>
           <p className="purchase-footnote">Rok za izmene: {cutoff}</p>
         </div>
@@ -152,7 +156,7 @@ export function ProductDetail({
       <div className="buy-bar" data-visible={barVisible && !selection.disabled}>
         <div className="buy-bar-info">
           <small>{selection.label}</small>
-          <strong>{formatMoney(selection.totalRsd)}</strong>
+          <strong>{formatMoney(selection.totalRsd, locale)}</strong>
         </div>
         <button
           className="button"
@@ -164,5 +168,5 @@ export function ProductDetail({
         </button>
       </div>
     </div>
-  );
+  ));
 }
