@@ -100,9 +100,17 @@
   inset: 0;
   overflow: hidden;
   background: var(--bg);
-  transform: scale(calc(1 - var(--hero-fold) * 0.06)) rotate(calc(var(--hero-fold) * -1.5deg));
+  transform: scale(calc(1 - var(--hero-fold) * var(--hero-fold-shrink))) rotate(calc(var(--hero-fold) * -1.5deg));
   transform-origin: 50% 40%;
   will-change: transform;
+}
+
+/* A tall phone frame tilted by 1.5deg swings its corners sideways by more than 6% of a
+   narrow width leaves free, so phones fold smaller to keep orange on both sides. */
+.hero { --hero-fold-shrink: 0.14; }
+
+@media (min-width: 768px) {
+  .hero { --hero-fold-shrink: 0.06; }
 }
 
 .scene-frame::after {
@@ -254,6 +262,7 @@
 .scene-lead {
   max-width: 34ch;
   margin-bottom: var(--space-5);
+  text-wrap: balance;
   color: var(--ink);
   font-size: 1rem;
   font-weight: 500;

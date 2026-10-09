@@ -8,16 +8,19 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <div className="page-shell narrow">
-      <section className="empty-state" aria-labelledby="not-found-title">
-        <p className="eyebrow">Greška 404</p>
-        <h1 id="not-found-title">Ova stranica ne postoji.</h1>
-        <p className="lead">
-          Link je možda zastareo ili je proizvod povučen iz ponude.
-        </p>
-        <div className="button-row">
-          <a className="button" href="/prodavnica">Pogledajte ponudu</a>
-          <Link className="button secondary" href="/">Početna strana</Link>
+    <div className="content-page">
+      <section className="content-band status-page" aria-labelledby="not-found-title">
+        <div className="page-shell">
+          <p className="status-code" aria-hidden="true">404</p>
+          <p className="eyebrow">Greška 404</p>
+          <h1 id="not-found-title">Ova stranica ne postoji.</h1>
+          <p className="lead">
+            Link je možda zastareo ili je proizvod povučen iz ponude.
+          </p>
+          <div className="button-row">
+            <Link className="button" href="/">Nazad na početnu</Link>
+            <a className="button secondary" href="/prodavnica">Pogledaj ponudu</a>
+          </div>
         </div>
       </section>
     </div>

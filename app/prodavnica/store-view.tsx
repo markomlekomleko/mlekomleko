@@ -38,7 +38,7 @@ export function StoreView({
       ) : (
         <>
           {categories.length > 2 ? (
-            <div className="tabs" aria-label="Filter kategorija">
+            <div className="tabs" role="group" aria-label="Filter kategorija">
               {categories.map((item) => (
                 <button
                   className="tab"

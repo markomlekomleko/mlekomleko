@@ -1,11 +1,6 @@
 /* Owner: W-offer — home steps section */
 
-/* City pages (pages/content.css) put .number-card cards inside .steps-grid. Kept here:
-   .steps-grid h3 below overrides its font-size, so it has to stay ahead of that rule. */
-.number-card h3 { font-weight: 500; font-size: 1rem; }
-
-/* The shared list frame. The city pages reuse it for their number cards, so only the
-   frame lives at this level; the home look is scoped to `.steps` further down. */
+/* The list frame; the home look is scoped to `.steps` further down. */
 .steps-grid {
   display: grid;
   gap: 1rem;
@@ -96,9 +91,12 @@
   font-size: clamp(1.15rem, 2vw, 1.5rem);
 }
 
+/* Centred captions want even lines, not just a fixed last line. */
 .steps .steps-grid p {
-  max-width: 34ch;
+  max-width: 32ch;
+  margin-inline: auto;
   color: var(--ink);
+  text-wrap: balance;
   font-size: 1rem;
   line-height: 1.45;
 }

@@ -140,21 +140,21 @@ export function AccountView() {
       setAuthenticated(false);
       setAccount(null);
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : "Odjava nije uspela. Pokušajte ponovo.");
+      setError(requestError instanceof Error ? requestError.message : "Odjava nije uspela. Pokušaj ponovo.");
     }
   }
 
   if (loading) {
-    return <div className="page-shell"><p className="loading-state" role="status">Učitavamo vaš nalog…</p></div>;
+    return <div className="page-shell account-page"><p className="loading-state" role="status">Učitavamo tvoj nalog…</p></div>;
   }
 
   if (!authenticated) {
     return (
-      <div className="page-shell narrow">
+      <div className="page-shell narrow account-page">
         <div className="empty-state">
           <p className="eyebrow">Korisnički nalog</p>
-          <h1>Prijavite se bez lozinke.</h1>
-          <p className="lead">Poslaćemo vam siguran jednokratni link putem emaila.</p>
+          <h1>Prijavi se bez lozinke.</h1>
+          <p className="lead">Poslaćemo ti siguran jednokratni link putem emaila.</p>
           <a className="button" href="/prijava">Pošalji link za prijavu</a>
         </div>
       </div>
@@ -163,7 +163,7 @@ export function AccountView() {
 
   if (error && !account) {
     return (
-      <div className="page-shell narrow">
+      <div className="page-shell narrow account-page">
         <div className="notice error" role="alert">
           <h1>Nalog nije učitan.</h1>
           <p>{error}</p>
@@ -177,8 +177,8 @@ export function AccountView() {
   }
 
   return (
-    <div className="page-shell">
-      <header className="page-heading">
+    <div className="page-shell account-page">
+      <header className="page-heading compact-heading">
         <p className="eyebrow">Korisnički nalog</p>
         <h1>Zdravo, {string(customer.fullName ?? customer.full_name ?? customer.name, "kupče")}.</h1>
         <div className="button-row">
@@ -190,7 +190,7 @@ export function AccountView() {
       {notice ? <p className="notice success" role="status">{notice}</p> : null}
       {error ? <p className="notice error" role="alert">{error}</p> : null}
 
-      <div className="account-layout" style={{ marginTop: "1rem" }}>
+      <div className="account-layout">
         <div className="form-stack">
           <section className="card" aria-labelledby="orders-title">
             <h2 id="orders-title">Moje porudžbine</h2>
@@ -229,8 +229,8 @@ export function AccountView() {
             <h2 id="pretplate-title">Pretplate</h2>
             {subscriptions.length === 0 ? (
               <div className="empty-state">
-                <p>Nemate aktivne ili prethodne pretplate.</p>
-                <a className="button small" href="/prodavnica">Izaberite proizvode</a>
+                <p>Nemaš aktivne ili prethodne pretplate.</p>
+                <a className="button small" href="/prodavnica">Izaberi proizvode</a>
               </div>
             ) : (
               <div className="form-stack">
@@ -241,10 +241,10 @@ export function AccountView() {
                   const disabled = Boolean(busy) || status !== "active";
                   return (
                     <article className="card form-stack" key={subscriptionId}>
-                      <div className="summary-row">
+                      <div className="summary-row account-subscription-head">
                         <div>
                           <span className="tag">{statusLabel(status)}</span>
-                          <h3 style={{ marginTop: "0.7rem" }}>Pretplata {subscriptionId}</h3>
+                          <h3>Pretplata {subscriptionId}</h3>
                         </div>
                         <strong>{cadenceLabel(string(subscription.cadence ?? subscription.frequency, "weekly"))}</strong>
                       </div>
@@ -254,8 +254,8 @@ export function AccountView() {
                             const itemId = string(item.id ?? item.subscriptionItemId ?? item.subscription_item_id, String(index));
                             return (
                               <li className="inline-controls" key={itemId}>
-                                <span style={{ minWidth: "160px", flex: 1 }}>{string(item.name ?? item.productName ?? item.product_name)}</span>
-                                <label className="field" style={{ width: "100px" }}>
+                                <span className="account-item-name">{string(item.name ?? item.productName ?? item.product_name)}</span>
+                                <label className="field account-item-qty">
                                   <span>Količina</span>
                                   <input
                                     type="number"
@@ -271,7 +271,7 @@ export function AccountView() {
                                     }}
                                   />
                                 </label>
-                                <label className="field" style={{ width: "180px" }}>
+                                <label className="field account-item-cadence">
                                   <span>Ritam</span>
                                   <select
                                     defaultValue={string(item.cadence ?? item.frequency, "weekly")}
@@ -290,7 +290,7 @@ export function AccountView() {
                         </ul>
                       ) : null}
                       {unwrapList(subscription, ["nextOnlyAddons", "next_only_addons"]).length ? <div className="next-addon-summary"><strong>Dodato samo sledećoj dostavi</strong>{unwrapList(subscription, ["nextOnlyAddons", "next_only_addons"]).map(row).map((addon, index) => <span key={string(addon.id, String(index))}>{number(addon.quantity)}× {string(addon.product_name ?? addon.productName)} · {formatMoney(number(addon.unit_price_minor ?? addon.unitPriceMinor, 0) * number(addon.quantity) / 100)} · {statusLabel(string(addon.payment_status, "pending"))}</span>)}</div> : null}
-                      {status === "active" && addonProducts.length ? <section className="next-addon-picker" aria-label="Dodajte sledećoj dostavi"><div><p className="eyebrow">Bez nove dostave</p><h3>Dodajte samo sledećoj dostavi</h3></div><div>{addonProducts.slice(0, 3).map((product) => <button type="button" disabled={disabled} key={product.id} onClick={() => void mutate(subscriptionId, "add_next_only", { productId: product.id, quantity: 1 })}><span><strong>{product.name}</strong><small>{product.unit}</small></span><b>＋ {formatMoney(product.priceRsd)}</b></button>)}</div></section> : null}
+                      {status === "active" && addonProducts.length ? <section className="next-addon-picker" aria-label="Dodaj sledećoj dostavi"><div><p className="eyebrow">Bez nove dostave</p><h3>Dodaj samo sledećoj dostavi</h3></div><div>{addonProducts.slice(0, 3).map((product) => <button type="button" disabled={disabled} key={product.id} onClick={() => void mutate(subscriptionId, "add_next_only", { productId: product.id, quantity: 1 })}><span><strong>{product.name}</strong><small>{product.unit}</small></span><b>＋ {formatMoney(product.priceRsd)}</b></button>)}</div></section> : null}
                       <div className="inline-controls">
                         <button className="button secondary small" type="button" disabled={disabled} onClick={() => mutate(subscriptionId, "skip_next")}>Preskoči sledeću</button>
                         {status === "paused" ? (
@@ -308,7 +308,7 @@ export function AccountView() {
                         )}
                         <button className="button danger small" type="button" disabled={Boolean(busy) || status === "cancelled" || status === "canceled"} onClick={() => { setCancellingId(subscriptionId); track("subscription_cancel_started", { subscriptionId }); }}>Razmišljam o otkazivanju</button>
                       </div>
-                      {cancellingId === subscriptionId ? <section className="cancel-saver" aria-labelledby={`cancel-${subscriptionId}`}><div><p className="eyebrow">Pre nego što odete</p><h3 id={`cancel-${subscriptionId}`}>Šta bi vam više odgovaralo?</h3><p>Izaberite lakšu opciju ili nastavite na trajno otkazivanje. Nema skrivenih koraka.</p></div><div className="cancel-save-grid"><button className="button secondary small" type="button" onClick={() => void mutate(subscriptionId, "skip_next")}>Preskoči samo sledeću</button><button className="button secondary small" type="button" onClick={() => void mutate(subscriptionId, "slow_down")}>Prebaci sve na 2 nedelje</button><button className="button secondary small" type="button" onClick={() => void mutate(subscriptionId, "pause", { pauseUntil: pauseDate(subscription) })}>Pauziraj oko mesec dana</button></div><label className="field"><span>Zašto želite da otkažete?</span><select value={cancelReason} onChange={(event) => setCancelReason(event.target.value)}><option value="too_frequent">Prečesto stiže</option><option value="too_expensive">Preskupo mi je</option><option value="too_much_product">Ostaje mi proizvoda</option><option value="delivery_issue">Problem sa dostavom</option><option value="quality_issue">Problem sa kvalitetom</option><option value="other">Drugi razlog</option></select></label><div className="inline-controls"><button className="text-button danger-text" type="button" onClick={() => void mutate(subscriptionId, "cancel", { reason: cancelReason })}>Ipak trajno otkaži</button><button className="text-button" type="button" onClick={() => setCancellingId("")}>Zadrži pretplatu</button></div></section> : null}
+                      {cancellingId === subscriptionId ? <section className="cancel-saver" aria-labelledby={`cancel-${subscriptionId}`}><div><p className="eyebrow">Pre nego što odeš</p><h3 id={`cancel-${subscriptionId}`}>Šta bi ti više odgovaralo?</h3><p>Izaberi lakšu opciju ili nastavi na trajno otkazivanje. Nema skrivenih koraka.</p></div><div className="cancel-save-grid"><button className="button secondary small" type="button" onClick={() => void mutate(subscriptionId, "skip_next")}>Preskoči samo sledeću</button><button className="button secondary small" type="button" onClick={() => void mutate(subscriptionId, "slow_down")}>Prebaci sve na 2 nedelje</button><button className="button secondary small" type="button" onClick={() => void mutate(subscriptionId, "pause", { pauseUntil: pauseDate(subscription) })}>Pauziraj oko mesec dana</button></div><label className="field"><span>Zašto želiš da otkažeš?</span><select value={cancelReason} onChange={(event) => setCancelReason(event.target.value)}><option value="too_frequent">Prečesto stiže</option><option value="too_expensive">Preskupo mi je</option><option value="too_much_product">Ostaje mi proizvoda</option><option value="delivery_issue">Problem sa dostavom</option><option value="quality_issue">Problem sa kvalitetom</option><option value="other">Drugi razlog</option></select></label><div className="inline-controls"><button className="text-button danger-text" type="button" onClick={() => void mutate(subscriptionId, "cancel", { reason: cancelReason })}>Ipak trajno otkaži</button><button className="text-button" type="button" onClick={() => setCancellingId("")}>Zadrži pretplatu</button></div></section> : null}
                     </article>
                   );
                 })}
@@ -317,7 +317,7 @@ export function AccountView() {
           </section>
         </div>
 
-        <aside className="card" style={{ alignSelf: "start" }}>
+        <aside className="card account-details">
           <h2>Podaci</h2>
           <dl>
             <dt className="muted small-text">Email</dt>
@@ -332,7 +332,7 @@ export function AccountView() {
               customer.city,
             ].filter(Boolean).join(", ") || string(customer.address ?? customer.deliveryAddress ?? customer.delivery_address)}</dd>
           </dl>
-          <p className="muted small-text">Za promenu kontakt podataka javite nam se putem kontakt stranice.</p>
+          <p className="muted small-text">Za promenu kontakt podataka javi nam se putem kontakt stranice.</p>
           <a className="button secondary small" href="/kontakt">Kontakt</a>
         </aside>
       </div>

@@ -91,21 +91,31 @@ export function ProductDetail({
         </div>
 
         <div className="product-buy-column">
-          <ProductConfigurator
-            product={product}
-            delivery={delivery}
-            layout="panel"
-            onSelectionChange={(value) => {
-              addToCart.current = value.addToCart;
-              setSelection((current) =>
-                current.label === value.label &&
-                current.totalRsd === value.totalRsd &&
-                current.disabled === value.disabled
-                  ? current
-                  : { label: value.label, totalRsd: value.totalRsd, disabled: value.disabled },
-              );
-            }}
-          />
+          {/* The page's one h1 is the product name, at the top of the purchase card and
+              joined to the configurator below it. commerce.css hides the configurator's
+              own (h3) name and category inside this card, so the name is not announced
+              twice. */}
+          <div className="product-buy-card">
+            <header className="product-buy-head">
+              <p className="product-buy-category">{product.category}</p>
+              <h1 className="product-buy-title">{product.name}</h1>
+            </header>
+            <ProductConfigurator
+              product={product}
+              delivery={delivery}
+              layout="panel"
+              onSelectionChange={(value) => {
+                addToCart.current = value.addToCart;
+                setSelection((current) =>
+                  current.label === value.label &&
+                  current.totalRsd === value.totalRsd &&
+                  current.disabled === value.disabled
+                    ? current
+                    : { label: value.label, totalRsd: value.totalRsd, disabled: value.disabled },
+                );
+              }}
+            />
+          </div>
           <div ref={sentinel} aria-hidden="true" />
           <p className="next-delivery">
             Sledeća dostava: <strong>{formatDate(delivery.deliveryDate)}</strong>

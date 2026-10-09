@@ -46,7 +46,7 @@
 
   .offer-stamp {
     display: block;
-    width: clamp(9rem, 16vw, 14rem);
+    width: clamp(11rem, 26vw, 19rem);
     height: auto;
     overflow: visible;
     transform: rotate(-8deg);

@@ -161,7 +161,26 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
     height: 1px;
   }
 
-  .ticker-pin-text::after { content: "\00a0→" / ""; }
+  /* The pin gets more of the bar, the arrow sits outside the span that truncates, and
+     the sentence carries the underline that marks it as a link. */
+  .ticker-pin {
+    max-width: 64%;
+    gap: 6px;
+    padding-inline-end: var(--space-3);
+    letter-spacing: 0.03em;
+  }
+
+  .ticker-pin-text {
+    padding-block: 4px;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  .ticker-pin::after {
+    flex: none;
+    content: "→" / "";
+  }
 }
 
 /* With reduced motion the rail never moves, so a pause control would do nothing. */

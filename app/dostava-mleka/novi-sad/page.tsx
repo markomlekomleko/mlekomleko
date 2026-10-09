@@ -15,7 +15,7 @@ export default function NoviSadDeliveryPage() {
       city="Novi Sad"
       slug="novi-sad"
       deliveryDays="Dostava petkom"
-      postalCodeHint="Unesite novosadski poštanski broj."
+      postalCodeHint="Unesi novosadski poštanski broj."
       localDetail="Aktuelna zona obuhvata podržane poštanske brojeve sa prefiksom 21."
     />
   );

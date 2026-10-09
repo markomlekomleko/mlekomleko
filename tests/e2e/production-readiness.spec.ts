@@ -50,7 +50,7 @@ test("mixed cart checkout, magic-link login and subscription mutation work", asy
   await cards.nth(1).locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
   await expect(page.locator(".drawer-item")).toHaveCount(2);
   await page.locator(".cart-drawer").getByRole("link", { name: "Otvori celu korpu" }).click();
-  await expect(page.getByText("Danas plaćate za ovaj mesec")).toBeVisible();
+  await expect(page.getByText("Danas plaćaš za ovaj mesec")).toBeVisible();
   await page.getByRole("link", { name: /Nastavi na podatke/ }).click();
   await page.getByLabel("Ime i prezime").fill("Fiktivni E2E Kupac");
   await page.getByRole("textbox", { name: "Email", exact: true }).fill(email);
@@ -65,11 +65,11 @@ test("mixed cart checkout, magic-link login and subscription mutation work", asy
   await page.goto("/prijava");
   await page.getByLabel("Email adresa").fill(email);
   await page.getByRole("button", { name: "Pošalji link za prijavu" }).click();
-  const magicLink = page.getByRole("link", { name: "otvorite generisani link" });
+  const magicLink = page.getByRole("link", { name: "otvori generisani link" });
   const magicHref = await magicLink.getAttribute("href");
   const magicToken = new URL(magicHref!, page.url()).searchParams.get("token")!;
   await magicLink.click();
-  await expect(page.getByRole("heading", { name: "Uspešno ste prijavljeni." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Prijava je uspela." })).toBeVisible();
   expect(await page.evaluate(() => window.localStorage.getItem("mleko-i-mleko-session"))).toBeNull();
   expect(await page.evaluate(() => document.cookie)).not.toContain("mm_session");
   const replay = await page.request.post("/api/auth/magic-link/exchange", { data: { token: magicToken } });
@@ -108,7 +108,7 @@ test("mixed cart checkout, magic-link login and subscription mutation work", asy
   await subscription.getByRole("combobox").selectOption("biweekly");
   await expect(subscription.getByRole("combobox")).toHaveValue("biweekly");
   await expect(page.getByRole("status").filter({ hasText: "Izmena je sačuvana" })).toBeVisible();
-  await subscription.getByRole("region", { name: "Dodajte sledećoj dostavi" }).getByRole("button").first().click();
+  await subscription.getByRole("region", { name: "Dodaj sledećoj dostavi" }).getByRole("button").first().click();
   await expect(subscription.locator(".next-addon-summary")).toContainText("Dodato samo sledećoj dostavi");
   const pauseUntil = new Date(Date.now() + 40 * 86400000).toISOString().slice(0, 10);
   await subscription.getByLabel("Pauziraj do").fill(pauseUntil);
@@ -124,10 +124,10 @@ test("mixed cart checkout, magic-link login and subscription mutation work", asy
   await page.reload();
   await expect(subscription.getByRole("spinbutton")).toBeDisabled();
   await page.getByRole("button", { name: "Odjavi se", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Prijavite se bez lozinke." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Prijavi se bez lozinke." })).toBeVisible();
   expect((await page.request.get("/api/account")).status()).toBe(401);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Prijavite se bez lozinke." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Prijavi se bez lozinke." })).toBeVisible();
 
 });
 

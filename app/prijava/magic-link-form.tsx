@@ -39,25 +39,25 @@ export function MagicLinkForm() {
   const localLink = response?.magicLink ?? response?.magic_link;
 
   return (
-    <div className="page-shell narrow">
-      <header className="page-heading">
+    <div className="page-shell narrow login-page">
+      <header className="page-heading compact-heading">
         <p className="eyebrow">Korisnički nalog</p>
         <h1>Prijava bez lozinke</h1>
         <p className="lead">
-          Unesite email korišćen pri poručivanju. Poslaćemo vam jednokratni link
+          Unesi email korišćen pri poručivanju. Poslaćemo ti jednokratni link
           za upravljanje isporukama.
         </p>
       </header>
 
       {response ? (
         <div className="notice success" role="status">
-          <h2>Proverite email</h2>
+          <h2>Proveri email</h2>
           <p>
             Ako nalog postoji za <strong>{email}</strong>, link za prijavu je pripremljen.
           </p>
           {localLink ? (
             <p>
-              Lokalni razvoj: <a href={localLink}>otvorite generisani link</a>.
+              Lokalni razvoj: <a href={localLink}>otvori generisani link</a>.
             </p>
           ) : null}
           <button className="button secondary" type="button" onClick={() => setResponse(null)}>

@@ -4,7 +4,7 @@ import { canonicalUrl } from "../lib/seo";
 
 export const metadata: Metadata = {
   title: "Prijava",
-  description: "Zatražite jednokratni link za pristup svom nalogu i dostavama.",
+  description: "Zatraži jednokratni link za pristup svom nalogu i dostavama.",
   alternates: { canonical: canonicalUrl("/prijava") },
   robots: { index: false, follow: true },
 };

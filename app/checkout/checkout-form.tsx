@@ -118,7 +118,7 @@ export function CheckoutForm() {
       setError(
         requestError instanceof Error
           ? requestError.message
-          : "Porudžbina nije sačuvana. Pokušajte ponovo.",
+          : "Porudžbina nije sačuvana. Pokušaj ponovo.",
       );
     } finally {
       setSubmitting(false);
@@ -127,7 +127,7 @@ export function CheckoutForm() {
 
   if (!ready) {
     return (
-      <div className="page-shell">
+      <div className="page-shell checkout-page">
         <p className="loading-state" role="status">
           Pripremamo plaćanje…
         </p>
@@ -137,17 +137,17 @@ export function CheckoutForm() {
 
   if (result) {
     return (
-      <div className="page-shell narrow">
+      <div className="page-shell narrow checkout-page">
         <div className="notice success" role="status">
           <p className="eyebrow">Porudžbina je primljena</p>
           <h1>Hvala na porudžbini.</h1>
           <p>
-            Porudžbina je sačuvana. Status i redovnu dostavu možete pratiti iz svog naloga.
+            Porudžbina je sačuvana. Status i redovnu dostavu možeš da pratiš iz svog naloga.
             {result.order?.orderNumber || result.orderId || result.order?.id || result.id ? (
               <> Broj porudžbine: <strong>{result.order?.orderNumber ?? result.orderId ?? result.order?.id ?? result.id}</strong>.</>
             ) : null}
           </p>
-          {result.subscriptionOffer ? <section className="post-purchase-offer" aria-labelledby="post-purchase-title"><p className="eyebrow">Jedan klik do mirnog frižidera</p><h2 id="post-purchase-title">Neka ista porudžbina stiže svake nedelje.</h2><p>Uključujemo {result.subscriptionOffer.eligibleItemCount} {result.subscriptionOffer.eligibleItemCount === 1 ? "proizvod" : "proizvoda"} u nedeljni ritam. Prva redovna dostava je sledeće nedelje, a sada nema nove naplate.{result.subscriptionOffer.savingPerDeliveryMinor > 0 ? <> Štedite <strong>{formatMoney(result.subscriptionOffer.savingPerDeliveryMinor / 100)}</strong> po dostavi.</> : null}</p>{conversionDone ? <p className="notice success">Redovna dostava je uključena. Možete je menjati iz naloga.</p> : <button className="button" type="button" disabled={conversionBusy} onClick={() => void convertToSubscription(result.subscriptionOffer!.token)}>{conversionBusy ? "Uključujemo…" : "Da, ponovi svake nedelje"}</button>}<small>Bez ugovorne obaveze · preskakanje i pauza online</small></section> : null}
+          {result.subscriptionOffer ? <section className="post-purchase-offer" aria-labelledby="post-purchase-title"><p className="eyebrow">Jedan klik do mirnog frižidera</p><h2 id="post-purchase-title">Neka ista porudžbina stiže svake nedelje.</h2><p>Uključujemo {result.subscriptionOffer.eligibleItemCount} {result.subscriptionOffer.eligibleItemCount === 1 ? "proizvod" : "proizvoda"} u nedeljni ritam. Prva redovna dostava je sledeće nedelje, a sada nema nove naplate.{result.subscriptionOffer.savingPerDeliveryMinor > 0 ? <> Štediš <strong>{formatMoney(result.subscriptionOffer.savingPerDeliveryMinor / 100)}</strong> po dostavi.</> : null}</p>{conversionDone ? <p className="notice success">Redovna dostava je uključena. Možeš da je menjaš iz naloga.</p> : <button className="button" type="button" disabled={conversionBusy} onClick={() => void convertToSubscription(result.subscriptionOffer!.token)}>{conversionBusy ? "Uključujemo…" : "Da, ponovi svake nedelje"}</button>}<small>Bez ugovorne obaveze · preskakanje i pauza online</small></section> : null}
           {error ? <p className="notice error" role="alert">{error}</p> : null}
           <div className="button-row">
             <a className="button" href="/nalog">
@@ -164,10 +164,10 @@ export function CheckoutForm() {
 
   if (items.length === 0) {
     return (
-      <div className="page-shell narrow">
+      <div className="page-shell narrow checkout-page">
         <div className="empty-state">
           <h1>Nema stavki za plaćanje.</h1>
-          <p className="muted">Dodajte proizvode u korpu pre nastavka.</p>
+          <p className="muted">Dodaj proizvode u korpu pre nastavka.</p>
           <a className="button" href="/prodavnica">
             Otvori prodavnicu
           </a>
@@ -177,8 +177,8 @@ export function CheckoutForm() {
   }
 
   return (
-    <div className="page-shell">
-      <header className="page-heading">
+    <div className="page-shell checkout-page">
+      <header className="page-heading compact-heading">
         <p className="eyebrow">Plaćanje</p>
         <h1>Podaci za dostavu</h1>
       </header>
@@ -230,7 +230,10 @@ export function CheckoutForm() {
             </label>
           </section>
 
-          <fieldset className="card fieldset">
+          {/* Not .fieldset: base.css zeroes that class's border and padding, which left the
+              legend on a bare white strip. The card keeps its frame; the legend floats
+              inside it (see commerce.css). */}
+          <fieldset className="card payment-fieldset">
             <legend><h2>Način plaćanja</h2></legend>
             <div className="radio-group">
               <label className="radio-card" htmlFor="placanje-gotovina">
@@ -272,8 +275,8 @@ export function CheckoutForm() {
               <strong>{formatMoney(line.lineTotalMinor / 100)}</strong>
             </div>
           ))}
-          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Danas plaćate za tekući mesec" : "Danas plaćate"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Izmene do {formatDate(quote.cutoffAt)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
-          <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Plaćate samo isporuke planirane za tekući mesec.</p>
+          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Danas plaćaš za tekući mesec" : "Danas plaćaš"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Izmene do {formatDate(quote.cutoffAt)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
+          <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Plaćaš samo isporuke planirane za tekući mesec.</p>
           <button className="button" type="submit" disabled={submitting || !quote || quote.serviceable === false}>
             {submitting ? "Čuvamo porudžbinu…" : "Potvrdi porudžbinu"}
           </button>

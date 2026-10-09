@@ -40,8 +40,8 @@ code { background: var(--alt); color: var(--ink); font-size: .86em; }
 .danger-text { color: var(--danger) !important; }
 .input-action { display: flex; gap: .5rem; }
 .check-result { margin: .7rem 0 0; padding: .65rem .75rem; font-size: .86rem; }
-.check-result.success { background: #edf7ef; color: var(--success); }
-.check-result.error { background: #fff0ef; color: var(--danger); }
+.check-result.success { border-left: 6px solid var(--ink); background: var(--surface); color: var(--ink); }
+.check-result.error { border-left: 6px solid var(--danger); background: var(--blush); color: var(--ink); }
 
 .section { border-bottom: 1px solid var(--rule); }
 .section-heading { max-width: 720px; }
@@ -74,8 +74,8 @@ textarea { min-height: 118px; resize: vertical; }
 .form-grid, .check-grid { display: grid; gap: 1rem; }
 
 .notice, .empty-state, .loading-state { padding: 1rem; border: 1px solid var(--rule); }
-.notice.error { border-color: #e2c7c4; background: #fff4f3; color: #812e28; }
-.notice.success { border-color: #bbd9c3; background: #f0f8f1; color: var(--success); }
+.notice.error { border-left: 6px solid var(--danger); background: var(--blush); color: var(--ink); }
+.notice.success { border-left: 6px solid var(--ink); background: var(--surface); color: var(--ink); }
 .loading-state { color: var(--ink-2); }
 /* The pulse is the one round mark in base: a dot, not a control or a surface. */
 .loading-state::before { display: inline-block; width: .7rem; height: .7rem; margin-right: .6rem; animation: pulse 1s ease-in-out infinite alternate; border-radius: 50%; background: var(--brand); content: ""; }
@@ -104,9 +104,6 @@ tr:last-child td { border-bottom: 0; }
 td select { min-width: 125px; min-height: 38px; padding-block: .4rem; }
 .inline-controls { display: flex; flex-wrap: wrap; gap: .6rem; align-items: end; }
 
-/* Belongs to /farme (pages/content.css) but is kept here: .page-shell's max-width further
-   down overrides it on the same element, so it has to stay ahead of that rule. */
-.farm-page { max-width: 1180px; }
 
 @media (min-width: 660px) {
   .grid-2, .form-grid, .check-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

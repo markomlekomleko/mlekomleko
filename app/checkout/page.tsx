@@ -4,7 +4,7 @@ import { canonicalUrl } from "../lib/seo";
 
 export const metadata: Metadata = {
   title: "Plaćanje",
-  description: "Unesite podatke za dostavu i izaberite način plaćanja.",
+  description: "Unesi podatke za dostavu i izaberi način plaćanja.",
   alternates: { canonical: canonicalUrl("/checkout") },
   robots: { index: false, follow: true },
 };
