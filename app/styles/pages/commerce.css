@@ -1,0 +1,1002 @@
+/* Owner: W-commerce-pages — /prodavnica, /proizvodi (incl. .buy-bar), /korpa, /checkout, /nalog, /prijava */
+
+/* ---------------------------------------------------------------------------------
+   Shared frame for the commerce screens
+   --------------------------------------------------------------------------------- */
+
+/* base.css declares .narrow ahead of .page-shell's own max-width, so on its own it never
+   narrows anything: the login form and the empty cart stretched across a laptop. The
+   single-column commerce screens read as one centred column instead. */
+.page-shell.narrow:is(.cart-page, .checkout-page, .account-page, .login-page) { max-width: 52rem; }
+
+/* Card padding matches the configurator body (20px, 24px from tablet), so a cart line,
+   a checkout section and the product card share one inner edge. */
+:is(.cart-page, .checkout-page, .account-page, .login-page) .card { padding: 20px; }
+
+@media (min-width: 768px) {
+  :is(.cart-page, .checkout-page, .account-page, .login-page) .card { padding: var(--space-5); }
+}
+
+/* base.css paints notices in legacy greens and pinks. Here they follow the system: a
+   white card with a black rule and a token-coloured bar on top that says which kind. */
+:is(.cart-page, .checkout-page, .account-page, .login-page) :is(.notice.success, .notice.error) {
+  border: 1px solid var(--rule);
+  border-top-width: 6px;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+:is(.cart-page, .checkout-page, .account-page, .login-page) .notice.success { border-top-color: var(--go); }
+:is(.cart-page, .checkout-page, .account-page, .login-page) .notice.error { border-top-color: var(--danger); }
+
+/* Result screens (order received, login confirmed, link invalid) are a notice that holds
+   the page's h1; at the display size "PORUDŽBINI." would not fit a phone card. */
+:is(.checkout-page, .account-page, .login-page) > .notice { padding: clamp(1.25rem, 4vw, 2.5rem); }
+
+:is(.checkout-page, .account-page, .login-page) > .notice h1 {
+  max-width: 20ch;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+}
+
+:is(.checkout-page, .account-page, .login-page) > .notice h2 { font-size: clamp(1.6rem, 3.2vw, 2.25rem); }
+
+/* The drawer's select: own black chevron, since the native one is wide and sits on the
+   text ("Jednokrat…") in a narrow column. */
+:is(.cart-page, .account-page) select {
+  padding-right: 2.25rem;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 0.75rem center / 12px 8px;
+  appearance: none;
+}
+
+/* A forced palette may paint the ground black, where the black chevron would vanish. */
+@media (forced-colors: active) {
+  :is(.cart-page, .account-page) select {
+    padding-right: 0.76rem;
+    background-image: none;
+    appearance: auto;
+  }
+}
+
+/* ---------------------------------------------------------------------------------
+   /prodavnica
+   --------------------------------------------------------------------------------- */
+
+.store-page { padding-block: var(--space-6) var(--section-y); }
+.store-page .section-head { margin-bottom: var(--space-5); }
+
+/* Category filters speak the configurator chips' voice and get a full 44px target. The
+   row wraps instead of scrolling, so no overflow box clips the first chip's focus ring. */
+.store-page .tabs {
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+  padding-bottom: 0;
+  overflow: visible;
+}
+
+.store-page .tab {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* On a phone the three filters wrapped 2 + 1. One row instead: "Sve" keeps its own
+   width, the categories share the rest; a long category name wraps inside its chip
+   rather than pushing a chip onto a second row. */
+@media (max-width: 479px) {
+  .store-page .tabs {
+    display: grid;
+    grid-template-columns: auto;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+  }
+
+  .store-page .tab {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+    line-height: 1.1;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ---------------------------------------------------------------------------------
+   /proizvodi/[slug]
+   --------------------------------------------------------------------------------- */
+
+.product-detail-page { padding-block: var(--space-5) var(--section-y); }
+
+/* Small type, but each link carries a 44px target: the padding is cancelled by equal
+   negative margins, so the row keeps the height of one line. */
+.product-detail-page .breadcrumbs {
+  align-items: center;
+  margin-bottom: var(--space-4);
+  font-size: 0.8125rem;
+}
+
+.product-detail-page .breadcrumbs a {
+  display: inline-block;
+  padding-block: 13px;
+  margin-block: -13px;
+}
+
+/* Up to a laptop the page is one column: the facts follow the purchase card, so the
+   name and price come straight after the photograph; the visual column steps aside
+   (display: contents) for that. Side by side at tablet width, the narrow photo column
+   left a long empty stretch under the photo while the card ran on. */
+.product-detail {
+  display: grid;
+  grid-template-areas: "media" "buy" "facts";
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.product-visual-column { display: contents; }
+.product-buy-column { grid-area: buy; }
+.product-quick-facts { grid-area: facts; }
+
+/* Capped so the square photo stays under three quarters of a tablet screen
+   (compact-commerce spec) and the price within reach below it. It keeps the page's
+   left edge, like the breadcrumb, buy card and facts around it. */
+.product-detail-media {
+  grid-area: media;
+  max-width: 35rem;
+  justify-self: start;
+}
+
+@media (min-width: 1024px) {
+  .product-detail {
+    grid-template-areas: "visual buy";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    gap: var(--space-6);
+  }
+
+  .product-visual-column {
+    position: sticky;
+    top: calc(var(--header-stack) + var(--space-4));
+    display: grid;
+    grid-area: visual;
+    gap: var(--space-4);
+    align-content: start;
+    min-width: 0;
+  }
+
+  .product-detail-media,
+  .product-quick-facts { grid-area: auto; }
+}
+
+/* The photo column is capped so the square photograph stays under three quarters of a
+   720px laptop screen (compact-commerce spec) and the price stays near the top. */
+@media (min-width: 1100px) {
+  .product-detail {
+    grid-template-columns: minmax(0, 30rem) minmax(0, 1fr);
+    gap: var(--space-7);
+  }
+}
+
+/* The catalog photograph is square with the bottle upright in it; a square frame keeps
+   the cap and the base in view. A 1px black frame, like JM's bordered photos. */
+.product-detail-media {
+  overflow: hidden;
+  width: 100%;
+  border: 1px solid var(--rule);
+  background: var(--alt);
+}
+
+.product-detail-media > img {
+  width: 100%;
+  max-width: none;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+}
+
+.product-placeholder {
+  display: grid;
+  aspect-ratio: 1 / 1;
+  place-items: center;
+  color: var(--ink-2);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* One white strip, split by single rules. A fact gets a column only where it has room
+   for its value on one line ("1 L · povratna staklena flaša" broke before "flaša" in
+   half a phone); otherwise the facts stack. The 1px gap over the black ground draws the
+   rule between them, across or down, without knowing which. */
+.product-quick-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1px;
+  border: 1px solid var(--rule);
+  background: var(--rule);
+  font-size: 0.88rem;
+}
+
+.product-quick-facts > span {
+  display: grid;
+  gap: var(--space-1);
+  align-content: start;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface);
+  text-wrap: balance;
+}
+
+.product-quick-facts strong {
+  color: var(--ink-2);
+  font-size: var(--fs-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.product-buy-column {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  min-width: 0;
+}
+
+/* The h1 block and the configurator panel form one card: the head carries the frame's
+   top and sides, the configurator drops its top rule underneath it. */
+.product-buy-card { display: grid; min-width: 0; }
+
+.product-buy-head {
+  display: grid;
+  container-type: inline-size;
+  gap: var(--space-2);
+  padding: 20px 20px 0;
+  border: 1px solid var(--rule);
+  border-bottom: 0;
+  background: var(--surface);
+}
+
+@media (min-width: 768px) {
+  .product-buy-head { padding: var(--space-5) var(--space-5) 0; }
+}
+
+.product-buy-card > .configurator { border-top: 0; }
+
+/* The configurator repeats the name (as an h3) and the category; the head above already
+   shows both, and display:none also keeps the duplicate heading out of the outline. */
+.product-buy-card .configurator-category,
+.product-buy-card .configurator-title { display: none; }
+
+/* The title-to-description gap the configurator head had before the name moved up. */
+.product-buy-card .configurator-body { padding-top: var(--space-2); }
+
+/* "Detalji proizvoda" would link to this very page. */
+.product-buy-card .configurator-actions .text-link { display: none; }
+
+.product-buy-category {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: var(--fs-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* The card serif in capitals, scaled to the card's own width. As the page's h1 it never
+   drops below a product card's name (at most 2.25rem): the floor sits above the cards'
+   size at phone width and still keeps "DOMAĆE KRAVLJE MLEKO" to two lines there. */
+.product-detail-page .product-buy-title {
+  max-width: none;
+  margin: 0;
+  font-family: var(--ff-card);
+  font-size: clamp(2rem, 9cqi, 2.6rem);
+  font-variation-settings: normal;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  overflow-wrap: anywhere;
+  word-spacing: normal;
+}
+
+/* "Sledeća dostava" on the product page and in the cart and checkout summaries. */
+.next-delivery,
+.delivery-summary {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--rule);
+  background: var(--alt);
+  color: var(--ink);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.delivery-summary small { color: var(--ink-2); }
+
+.purchase-footnote {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.8rem;
+}
+
+/* Section rhythm as on the home page: content, --section-y, a black rule, --section-y. */
+.product-story-section {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--section-y);
+  padding-top: var(--section-y);
+  border-top: 1px solid var(--rule);
+}
+
+.product-story-section h2 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.5rem);
+}
+
+.product-story-section .lead {
+  max-width: 60ch;
+  margin: 0;
+}
+
+@media (min-width: 900px) {
+  .product-story-section {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    gap: var(--space-7);
+  }
+}
+
+.cross-sell-section {
+  margin-top: var(--section-y);
+  padding-block: var(--section-y) 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 0;
+}
+
+/* A single recommendation sat in a 620px column with the right half of the row empty.
+   From a laptop it takes the story section's grid instead, so the two headings and the
+   lead and card line up: heading left, the card across the wider right column. */
+@media (min-width: 1024px) {
+  .cross-sell-section[data-count="1"] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+    gap: var(--space-7);
+    align-items: start;
+  }
+
+  .cross-sell-section[data-count="1"] .section-head { margin: 0; }
+
+  .cross-sell-section[data-count="1"] .section-head h2 {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+  }
+
+  .cross-sell-section[data-count="1"] .offer-grid {
+    max-width: none;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------------------------------------------------------------------------------
+   Mobile buy bar (/proizvodi)
+   --------------------------------------------------------------------------------- */
+
+/* Solid ground and one black rule: no blur, no translucent off-palette mix. Hidden is
+   also invisible, so its button cannot take focus while the bar is off screen;
+   visibility flips only after the slide-out, like the cart drawer. */
+.buy-bar {
+  position: fixed;
+  z-index: 40;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-3) 20px max(var(--space-3), env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rule);
+  background: var(--bg);
+  transform: translateY(110%);
+  transition: transform 0.2s ease, visibility 0s linear 0.2s;
+  visibility: hidden;
+}
+
+.buy-bar[data-visible="true"] {
+  transform: none;
+  transition: transform 0.2s ease, visibility 0s;
+  visibility: visible;
+}
+
+body[data-drawer="open"] .buy-bar {
+  transform: translateY(110%);
+  transition: transform 0.2s ease, visibility 0s linear 0.2s;
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buy-bar,
+  .buy-bar[data-visible="true"],
+  body[data-drawer="open"] .buy-bar { transition: none; }
+}
+
+.buy-bar-info { display: grid; min-width: 0; }
+
+.buy-bar-info small {
+  overflow: hidden;
+  color: var(--ink-2);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.buy-bar-info strong {
+  font-family: var(--ff-display);
+  font-size: 1.25rem;
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.buy-bar .button {
+  flex: none;
+  min-height: 48px;
+  padding-inline: 20px;
+}
+
+@media (min-width: 768px) {
+  .buy-bar { display: none; }
+}
+
+/* Keep the bar from covering the last line of the page. */
+body:has(.buy-bar[data-visible="true"]) .site-footer { padding-bottom: 5.5rem; }
+
+/* ---------------------------------------------------------------------------------
+   /korpa and /checkout layout
+   --------------------------------------------------------------------------------- */
+
+.checkout-layout,
+.account-layout {
+  display: grid;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .checkout-layout,
+  .account-layout {
+    grid-template-columns: minmax(0, 1.45fr) minmax(330px, 0.75fr);
+    gap: var(--space-7);
+  }
+
+  /* Clears the ticker + header stack, with a little air under it. */
+  .cart-summary {
+    position: sticky;
+    top: calc(var(--header-stack) + var(--space-4));
+  }
+}
+
+/* The cart list is a size container: a line's controls lay out by the room the list
+   actually has (a phone, the full tablet width, or the left column next to the summary),
+   so a select is never squeezed into clipping "Redovna dostava". */
+.cart-list {
+  display: grid;
+  container-type: inline-size;
+  gap: var(--space-3);
+  align-content: start;
+  min-width: 0;
+}
+
+/* Phone: name and line total, then each control on its own row. */
+.cart-item {
+  display: grid;
+  grid-template-areas:
+    "head total"
+    "type type"
+    "cadence cadence"
+    "qty remove";
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-4) var(--space-3);
+  align-items: end;
+}
+
+.cart-item > * { min-width: 0; }
+.cart-item-head { grid-area: head; align-self: start; }
+.cart-item-type { grid-area: type; }
+.cart-item-cadence { grid-area: cadence; }
+.cart-item-qty { grid-area: qty; }
+.cart-item-qty input { max-width: 8rem; }
+
+.cart-line-total {
+  display: grid;
+  grid-area: total;
+  gap: var(--space-1);
+  align-self: start;
+  justify-items: end;
+  text-align: right;
+}
+
+@container (min-width: 26rem) {
+  .cart-item {
+    grid-template-areas:
+      "head total"
+      "type cadence"
+      "qty remove";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* Wide: one head row (name, line total), one controls row (type, rhythm, quantity, Ukloni). */
+@container (min-width: 40rem) {
+  .cart-item {
+    grid-template-areas:
+      "head head head total"
+      "type cadence qty remove";
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 6.5rem auto;
+  }
+}
+
+/* Item names in the card serif, as in the drawer and on the product cards. */
+.cart-item h2 {
+  max-width: none;
+  margin: 0 0 var(--space-1);
+  font-family: var(--ff-card);
+  font-size: clamp(1.15rem, 1rem + 0.8vw, 1.5rem);
+  font-variation-settings: normal;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+  word-spacing: normal;
+}
+
+.cart-item h2 a { text-decoration: none; }
+
+.cart-item h2 a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+.cart-item-head p { margin: 0; }
+
+.cart-line-total .price {
+  margin: 0;
+  font-family: var(--ff-display);
+  font-size: 1.25rem;
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cart-line-total small {
+  max-width: 10rem;
+  color: var(--ink-2);
+  font-size: 0.75rem;
+}
+
+/* Ukloni: a full 44px target with the label centred in it, as in the drawer. */
+.cart-item-remove {
+  display: inline-flex;
+  grid-area: remove;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  justify-self: end;
+}
+
+/* Summary card (cart and checkout). */
+.cart-summary {
+  display: grid;
+  gap: var(--space-3);
+  align-self: start;
+}
+
+.cart-summary > * { min-width: 0; }
+
+.cart-summary > .eyebrow,
+.cart-summary > h2 { margin: 0; }
+
+/* "Nastavi na podatke za dostavu →" wraps on a phone; the lines stay centred and even. */
+.cart-summary .button {
+  width: 100%;
+  padding-block: var(--space-3);
+  line-height: 1.15;
+  text-align: center;
+  text-wrap: balance;
+}
+.cart-summary .summary-row small { color: var(--ink-2); }
+
+.cart-summary .summary-total {
+  font-family: var(--ff-display);
+  font-size: 1.125rem;
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+/* Pulled up under the total it qualifies. */
+.cart-summary .summary-total-note {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  color: var(--ink-2);
+  font-size: 0.8rem;
+}
+
+.promo-form {
+  padding-block: var(--space-4);
+  border-block: 1px solid var(--rule);
+}
+
+/* The button sits flush with the 48px field beside it. */
+.promo-form .input-action .button { min-height: 48px; }
+
+/* The one cross-sell in the cart: blush ground, black frame, standard black button,
+   like the drawer's offer. */
+.order-bump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border: 1px solid var(--rule);
+  background: var(--blush);
+}
+
+.order-bump > div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.order-bump small {
+  font-size: var(--fs-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.order-bump strong {
+  font-family: var(--ff-card);
+  font-size: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.order-bump span { font-size: 0.85rem; }
+
+.cart-upsell {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-4);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+}
+
+@media (hover: hover) {
+  .cart-upsell:hover { background: var(--blush); }
+}
+
+.cart-upsell strong {
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.cart-upsell span { font-size: 0.85rem; }
+
+/* Progress to the delivery threshold: a square bar in a black frame. The fill scales
+   (transform), so the change animates without layout work. */
+.delivery-progress {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+.delivery-progress .summary-row { font-size: 0.8rem; }
+
+.delivery-progress > span {
+  display: block;
+  overflow: hidden;
+  height: 10px;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+.delivery-progress > span i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--brand);
+  transform-origin: left center;
+  transition: transform 0.3s ease;
+}
+
+.delivery-progress.complete > span i { background: var(--go); }
+
+.secure-note {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------------------------
+   /checkout
+   --------------------------------------------------------------------------------- */
+
+/* The legend floats inside the card's frame instead of cutting through its top rule. */
+.payment-fieldset {
+  min-width: 0;
+  margin: 0;
+}
+
+.payment-fieldset > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: var(--space-4);
+  padding: 0;
+}
+
+.payment-fieldset > legend + * { clear: both; }
+.payment-fieldset > legend h2 { margin: 0; }
+
+.checkout-page .radio-card {
+  column-gap: var(--space-3);
+  align-items: center;
+  padding: var(--space-4);
+}
+
+.checkout-page .checkbox-row {
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+/* Radio and checkbox: 24px square boxes in a black rule. The chosen radio gets a black
+   square, the ticked box goes black with a white check; both are SVG grounds, so no
+   rounded native mark is left. */
+.checkout-page :is(input[type="radio"], input[type="checkbox"]) {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ink);
+  background: var(--surface) no-repeat center / 100%;
+  appearance: none;
+}
+
+.checkout-page input[type="radio"]:checked {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='6' y='6' width='12' height='12'/%3E%3C/svg%3E");
+}
+
+.checkout-page input[type="checkbox"]:checked {
+  background: var(--ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5' fill='none' stroke='%23fff' stroke-width='2.5'/%3E%3C/svg%3E") no-repeat center / 100%;
+}
+
+.checkout-page :is(input[type="radio"], input[type="checkbox"]):focus-visible { outline-offset: 2px; }
+
+@media (forced-colors: active) {
+  .checkout-page :is(input[type="radio"], input[type="checkbox"]) { appearance: auto; }
+}
+
+/* The terms links sit inside a sentence; the padding gives them a taller hit area
+   without changing the line. */
+.checkout-page .checkbox-row a { padding-block: 0.3rem; }
+
+/* Links inside a sentence are told apart by an underline, not by colour (WCAG 1.4.1);
+   the preflight resets the line, so it is set here, as on the content pages. */
+:is(.checkout-page .checkbox-row, .login-page .notice) a:not([class]) {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+:is(.checkout-page .checkbox-row, .login-page .notice) a:not([class]):hover { text-decoration-thickness: 2px; }
+
+/* base.css tints the postcode result in legacy pastels; here it is a framed line in the
+   success or danger token. */
+.checkout-page .check-result {
+  border: 1px solid currentColor;
+  background: var(--surface);
+}
+
+.checkout-page .check-result.success { color: var(--success); }
+.checkout-page .check-result.error { color: var(--danger); }
+
+/* After the order: the one-click switch to a weekly delivery. */
+.post-purchase-offer {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid var(--rule);
+  background: var(--blush);
+}
+
+/* Its h2 takes the result-notice h2 size set at the top of this file. */
+.post-purchase-offer h2,
+.post-purchase-offer p,
+.post-purchase-offer .eyebrow { margin: 0; }
+
+/* --ink-2 on blush is under 4.5:1 at this size. */
+.post-purchase-offer > small { color: var(--ink); }
+
+/* ---------------------------------------------------------------------------------
+   /nalog
+   --------------------------------------------------------------------------------- */
+
+.account-layout { margin-top: var(--space-4); }
+
+/* Section titles share the card-heading size, in a card or not ("Pretplate"). */
+.account-page h2 { font-size: clamp(1.6rem, 3.2vw, 2.25rem); }
+
+.account-orders { gap: 0; }
+
+.account-orders > li {
+  padding-block: var(--space-4);
+  border-bottom: 1px solid var(--rule);
+}
+
+.account-orders > li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.account-orders p { margin: var(--space-1) 0 0; }
+.account-orders .summary-row { flex-wrap: wrap; }
+
+.account-orders .button-row {
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.account-subscription-head { align-items: flex-start; }
+
+.account-subscription-head h3 {
+  margin: var(--space-3) 0 0;
+  overflow-wrap: anywhere;
+}
+
+/* One subscription line: the name on its own row, then quantity, rhythm and Ukloni. */
+.account-item-name {
+  flex: 1 1 100%;
+  min-width: 0;
+  font-family: var(--ff-card);
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.account-item-qty { flex: 0 0 6.5rem; }
+
+.account-item-cadence {
+  flex: 1 1 11rem;
+  max-width: 15rem;
+}
+
+.next-addon-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--rule);
+  background: var(--blush);
+  font-size: 0.8rem;
+}
+
+.next-addon-summary strong { flex-basis: 100%; }
+
+.next-addon-summary span {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+.next-addon-picker {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--rule);
+  background: var(--bg);
+}
+
+.next-addon-picker h3,
+.next-addon-picker .eyebrow { margin: 0; }
+
+.next-addon-picker > div:first-child {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.next-addon-picker > div:last-child {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.next-addon-picker button {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-3);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+}
+
+@media (hover: hover) {
+  .next-addon-picker button:not(:disabled):hover { background: var(--alt); }
+}
+
+.next-addon-picker button span { display: grid; }
+
+.next-addon-picker button strong {
+  font-family: var(--ff-card);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.next-addon-picker button small { color: var(--ink-2); }
+
+.next-addon-picker button b {
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* Cream rather than blush: the danger-red "Ipak trajno otkaži" keeps 5.8:1 on it. */
+.cancel-saver {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--rule);
+  background: var(--bg);
+}
+
+.cancel-saver h3,
+.cancel-saver p { margin-bottom: var(--space-1); }
+
+.cancel-save-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.cancel-save-grid .button { text-align: center; }
+
+@media (max-width: 560px) {
+  .cancel-save-grid { grid-template-columns: 1fr; }
+}
+
+.account-page .text-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+}
+
+.account-details {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.account-details > h2,
+.account-details > p { margin: 0; }
+
+.account-details dl { margin: 0; }
+.account-details dt + dd { margin: var(--space-1) 0 0; }
+.account-details dd { overflow-wrap: anywhere; }
+.account-details dd + dt { margin-top: var(--space-3); }
+.account-details .button { justify-self: start; }
+
+.product-detail-media { padding: 20px; background: var(--blush); }
+.product-detail-media img { object-fit: contain; }

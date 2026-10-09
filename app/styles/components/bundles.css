@@ -1,0 +1,131 @@
+/* Owner: W-offer — bundle offers */
+
+/* Same card language as the configurator: white square card, black rule, chunky serif
+   name, heavy display price. A featured package gets a small tilted teal sticker. */
+
+.bundles { margin-top: var(--space-8); }
+.bundles .section-head { margin-bottom: var(--space-6); }
+
+.bundles .section-head h3 {
+  max-width: 18ch;
+  margin-bottom: 0.75rem;
+  font-size: clamp(1.9rem, 5vw, 3.25rem);
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: var(--display-leading);
+  word-spacing: 0.06em;
+}
+
+.bundle-grid { display: grid; gap: var(--space-5); }
+
+/* Grid and flex children default to a min-content floor, which pushes the page wider
+   than the viewport once the reader enlarges text. Everything in the offer opts out
+   and wraps instead (acceptance UI-03). */
+.bundle-grid > * { min-width: 0; }
+
+@media (min-width: 660px) {
+  .bundle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1024px) {
+  .bundle-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* A column, so the call to action sits on the card's bottom edge and a row of cards
+   lines its buttons up whatever the length of the description. */
+.bundle-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-5);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+/* Sticker over the top edge. White on logo teal is 4.55:1. */
+.bundle-flag {
+  position: absolute;
+  z-index: 1;
+  top: calc(var(--space-3) * -1);
+  right: var(--space-4);
+  margin: 0;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--rule);
+  background: var(--brand);
+  color: #fff;
+  font-family: var(--ff-display);
+  font-size: 0.8rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  transform: rotate(4deg);
+}
+
+.bundle-card h4 {
+  margin: 0;
+  font-family: var(--ff-card);
+  font-size: clamp(1.4rem, 2.4vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  overflow-wrap: anywhere;
+  text-transform: uppercase;
+}
+
+.bundle-card > .muted { margin: 0; font-size: 0.92rem; line-height: 1.45; }
+
+.bundle-card ul {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.85rem 0;
+  border-block: 1px solid var(--rule);
+  list-style: none;
+}
+
+.bundle-card li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+}
+
+.bundle-card li > * { min-width: 0; }
+.bundle-card li small { color: var(--ink-2); text-align: right; }
+
+.bundle-price { display: grid; gap: 0.15rem; margin: 0; }
+
+.bundle-price strong {
+  font-family: var(--ff-display);
+  font-size: 1.75rem;
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.bundle-price span { color: var(--ink-2); font-size: 0.8rem; }
+.bundle-price small { margin-top: 0.3rem; color: var(--ink-2); font-size: 0.75rem; font-weight: 700; }
+
+.bundle-card > .button,
+.bundle-preview { margin-top: auto; }
+
+.bundle-card > .button { width: 100%; }
+
+/* --ink-2 on blush is under 4.5:1, so everything in the preview stays full black. */
+.bundle-preview {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  padding: 0.85rem;
+  border: 1px solid var(--rule);
+  background: var(--blush);
+  color: var(--ink);
+}
+
+.bundle-preview p { margin: 0; font-size: 0.88rem; }
+.bundle-preview .button { width: 100%; }

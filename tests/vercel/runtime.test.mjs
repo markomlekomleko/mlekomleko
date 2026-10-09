@@ -133,7 +133,7 @@ test('production admin requires username and password; expired, revoked and rota
   for (const body of [{ username: 'wrong', password: adminSecret }, { username: adminUsername, password: 'wrong' }]) {
     assert.equal((await api('/api/admin/access', { method: 'POST', body })).status, 403);
   }
-  assert.deepEqual((await api('/api/admin/access', { admin: true })).body, { authenticated: true, configured: true, mode: 'password' });
+  assert.deepEqual((await api('/api/admin/access', { admin: true })).body, { authenticated: true, configured: true, mode: 'password', role: 'owner' });
   const stored = (await client.execute('SELECT * FROM admin_sessions')).rows[0];
   assert.ok(stored.token_hash && stored.token_hash !== adminSession);
   await client.execute({ sql: 'UPDATE admin_sessions SET expires_at = ? WHERE token_hash = ?', args: ['2000-01-01T00:00:00.000Z', stored.token_hash] });
@@ -242,11 +242,11 @@ test('the redesigned homepage ships the headline, the poster and purchase naviga
   assert.equal(response.status, 200);
   const html = await response.text();
   // Nothing in the first screen may wait for the hero video to decode.
-  assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Jutro po/);
+  assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Jutro počinje ovde/);
   assert.match(html, /scene-poster/);
   assert.match(html, /href="#izaberite-mleko"/);
   assert.match(html, /Izaberi svoje mleko/);
-  assert.match(html, /id="products-title"/);
+  assert.match(html, /id="offer-title"/);
   assert.match(html, /Da li moram da se pretplatim/);
   for (const asset of ['/media/hero/poster-mobile.webp', '/media/hero/poster-desktop.webp', '/images/farma.webp']) {
     const image = await fetch(origin + asset);

@@ -1,0 +1,411 @@
+/* Owner: W-foundation — Tailwind preflight, elements, layout, buttons, forms, cards, notices, tables, tabs, utilities */
+@import "tailwindcss";
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { min-height: 100vh; margin: 0; color: var(--ink); font-family: var(--ff-body); }
+::selection { background: var(--brand); color: #fff; }
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { text-decoration-thickness: 2px; }
+button, input, select, textarea { color: inherit; font: inherit; }
+button, input[type="checkbox"], input[type="radio"], select { cursor: pointer; }
+button:disabled, input:disabled, select:disabled { cursor: not-allowed; opacity: .55; }
+img { display: block; max-width: 100%; }
+h1, h2, h3, p, figure { margin-top: 0; }
+h1 { margin-bottom: 1rem; }
+h2 { margin-bottom: .75rem; }
+h3 { margin-bottom: .45rem; font-family: var(--ff-display); font-size: var(--fs-h3); font-weight: 800; line-height: 1.05; text-transform: uppercase; }
+code { background: var(--alt); color: var(--ink); font-size: .86em; }
+
+.skip-link { position: fixed; z-index: 1000; top: .5rem; left: .5rem; padding: .7rem 1rem; transform: translateY(-160%); background: var(--ink); color: white; }
+.skip-link:focus { transform: translateY(0); }
+.page-shell { margin-inline: auto; }
+.narrow { max-width: 760px; }
+.small-text { font-size: .86rem; }
+.muted { color: var(--ink-2); }
+
+.eyebrow { margin-bottom: .72rem; text-transform: uppercase; }
+.lead { max-width: 680px; }
+.button-row { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.4rem; }
+.button-row.compact { margin-top: 0; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1px solid var(--ink); background: var(--ink); color: var(--on-ink); text-decoration: none; }
+/* White on teal is 4.55:1. On a teal ground --button-hover is navy, so a hovered
+   button never melts into the section behind it. */
+.button:not(:disabled):hover { border-color: var(--button-hover); background: var(--button-hover); color: #fff; }
+.button.danger { border-color: var(--danger); background: var(--surface); color: var(--danger); }
+.button.danger:not(:disabled):hover { border-color: var(--danger); background: var(--danger); color: white; }
+.button.small { min-height: 44px; padding: .55rem .75rem; font-size: .84rem; }
+.disabled-link { pointer-events: none; opacity: .55; }
+.text-link, .text-button { border: 0; background: transparent; color: var(--ink); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.text-button { padding: .2rem; }
+.danger-text { color: var(--danger) !important; }
+.input-action { display: flex; gap: .5rem; }
+.check-result { margin: .7rem 0 0; padding: .65rem .75rem; font-size: .86rem; }
+.check-result.success { border-left: 6px solid var(--ink); background: var(--surface); color: var(--ink); }
+.check-result.error { border-left: 6px solid var(--danger); background: var(--blush); color: var(--ink); }
+
+.section { border-bottom: 1px solid var(--rule); }
+.section-heading { max-width: 720px; }
+.grid-2, .grid-3 { display: grid; gap: 1rem; }
+.card { padding: 1.15rem; border: 1px solid var(--rule); border-radius: var(--radius); }
+.card p:last-child { margin-bottom: 0; }
+/* A heading inside a card sits in a third or half of the page: at the section size,
+   heavy uppercase words like "DRUŠTVENE" no longer fit a 768px three-up card. */
+.card h2 { font-size: clamp(1.6rem, 3.2vw, 2.25rem); }
+.tag { display: inline-flex; padding: .25rem .5rem; border: 1px solid var(--rule); background: var(--blush); color: var(--ink); font-size: .72rem; font-weight: 750; }
+
+.page-heading { max-width: 820px; margin-bottom: 2.6rem; }
+.compact-heading h1 { font-size: clamp(2.3rem, 5vw, 4rem); }
+.breadcrumbs { margin-bottom: 1.4rem; color: var(--ink-2); }
+.breadcrumbs a:hover { color: var(--ink); }
+
+.field, .fieldset { display: grid; gap: .42rem; margin: 0; }
+.field > span, .fieldset > legend { font-size: .84rem; font-weight: 750; }
+.fieldset { padding: 0; border: 0; }
+input, select, textarea { width: 100%; min-height: 48px; padding: .68rem .76rem; border: 1px solid var(--rule); }
+input:focus, select:focus, textarea:focus { border-color: var(--ink); }
+textarea { min-height: 118px; resize: vertical; }
+.radio-group { display: grid; gap: .55rem; }
+.radio-card { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: .62rem; align-items: start; padding: .9rem; border: 1px solid var(--rule); font-weight: 750; }
+.radio-card.disabled { background: var(--alt); }
+.radio-card .small-text { grid-column: 2; font-weight: 400; }
+.checkbox-row { display: flex; align-items: flex-start; gap: .6rem; padding: .8rem; border: 1px solid var(--rule); }
+.radio-card input, .checkbox-row input { width: auto; min-height: auto; margin-top: .22rem; }
+.form-stack { display: grid; gap: 1rem; }
+.form-grid, .check-grid { display: grid; gap: 1rem; }
+
+.notice, .empty-state, .loading-state { padding: 1rem; border: 1px solid var(--rule); }
+.notice.error { border-left: 6px solid var(--danger); background: var(--blush); color: var(--ink); }
+.notice.success { border-left: 6px solid var(--ink); background: var(--surface); color: var(--ink); }
+.loading-state { color: var(--ink-2); }
+/* The pulse is the one round mark in base: a dot, not a control or a surface. */
+.loading-state::before { display: inline-block; width: .7rem; height: .7rem; margin-right: .6rem; animation: pulse 1s ease-in-out infinite alternate; border-radius: 50%; background: var(--brand); content: ""; }
+@keyframes pulse { to { opacity: .25; } }
+.empty-state { padding: clamp(2rem, 5vw, 4rem); text-align: center; }
+.empty-state h1 { margin-inline: auto; font-size: clamp(2rem, 5vw, 3.5rem); }
+.empty-state .lead { margin-inline: auto; margin-bottom: 1.5rem; }
+.summary-row { display: flex; justify-content: space-between; gap: 1rem; }
+.summary-total { margin-top: .4rem; padding-top: .8rem; border-top: 1px solid var(--rule); font-size: 1.08rem; font-weight: 850; }
+.discount-row { color: var(--success); }
+
+.tabs { display: flex; gap: .4rem; margin-bottom: 1.3rem; padding-bottom: .25rem; overflow-x: auto; }
+.tab { flex: 0 0 auto; min-height: 40px; padding: .5rem .75rem; border: 1px solid var(--rule); }
+/* Selected = black frame doubled inside plus blush ground, the same mark for every
+   chip and radio card, so "chosen" reads the same way everywhere. */
+.tab[aria-selected="true"], .tab[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--surface); }
+.details-list details { padding: 1rem 0; border-bottom: 1px solid var(--rule); }
+.details-list summary { cursor: pointer; font-weight: 750; }
+.list-clean { display: grid; gap: .7rem; padding: 0; list-style: none; }
+
+.table-wrap { width: 100%; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .86rem; }
+th, td { padding: .78rem; border-bottom: 1px solid var(--rule); text-align: left; vertical-align: top; }
+th { color: var(--ink-2); font-size: .7rem; letter-spacing: .06em; text-transform: uppercase; }
+tr:last-child td { border-bottom: 0; }
+td select { min-width: 125px; min-height: 38px; padding-block: .4rem; }
+.inline-controls { display: flex; flex-wrap: wrap; gap: .6rem; align-items: end; }
+
+
+@media (min-width: 660px) {
+  .grid-2, .form-grid, .check-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .page-shell { width: min(100% - 1.15rem, 1180px); }
+  .page-shell { padding-top: 2rem; }
+  .input-action { display: grid; }
+}
+
+/* Infinite loops (marquees, pulses) must stop, not just run very fast: a .01ms
+   infinite animation still flickers. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+body { -webkit-font-smoothing: antialiased; }
+.page-shell h1, .page-shell h2 { font-family: var(--ff-display); font-weight: 900; letter-spacing: -.035em; }
+.section-heading h2 { font-size: var(--fs-h2); line-height: var(--display-leading); }
+.lead { font-size: 1.06rem; line-height: 1.5; }
+.text-link, .text-button { font-size: .9rem; font-weight: 500; }
+.text-link { display: inline-flex; min-height: 44px; align-items: center; }
+
+.section { padding-block: var(--section-y); }
+.section-heading { margin-bottom: 2rem; }
+.section-heading h2 { margin-bottom: 0; }
+.breadcrumbs { display: flex; flex-wrap: wrap; gap: .5rem; font-size: .75rem; }
+
+@media (max-width: 600px) {
+  .page-shell { width: calc(100% - 2.5rem); }
+  .page-shell { padding-bottom: 3.5rem; }
+  .section-heading { margin-bottom: 1.4rem; }
+}
+
+@media (max-width: 359px) {
+  .page-shell { width: calc(100% - 2rem); }
+}
+
+@media (max-width: 1100px) {
+  .page-shell { width: calc(100% - 4rem); }
+}
+
+@media (max-width: 760px) {
+  .page-shell { width: calc(100% - 2.5rem); }
+}
+
+body {
+  background: var(--bg);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.page-shell {
+  width: 100%;
+  max-width: 1360px;
+  padding-inline: 20px;
+}
+
+@media (max-width: 380px) {
+  .page-shell { padding-inline: 16px; }
+}
+
+@media (min-width: 768px) {
+  body { font-size: 17px; }
+  .page-shell { padding-inline: 32px; }
+}
+
+@media (min-width: 1200px) {
+  body { font-size: 18px; }
+  .page-shell { padding-inline: 48px; }
+}
+
+.page-shell { padding-block: 0; }
+
+/* Display type: heavy, uppercase, tight. The width axis condenses on phones
+   (--display-wdth) so long Serbian words keep to one line at 390px. The negative
+   tracking also narrows the spaces; word-spacing gives them back so short words
+   ("ILI", "ZA") do not run into their neighbours. */
+h1,
+h2 {
+  font-family: var(--ff-display);
+  font-weight: 900;
+  font-variation-settings: "wdth" var(--display-wdth);
+  letter-spacing: -0.035em;
+  line-height: var(--display-leading);
+  text-transform: uppercase;
+  word-spacing: 0.06em;
+}
+
+h1 {
+  max-width: 14ch;
+  font-size: var(--fs-h1);
+}
+
+h2 {
+  max-width: 18ch;
+  font-size: var(--fs-h2);
+}
+
+h2 em,
+h1 em { font-style: italic; }
+
+/* Serbian compounds are long; at large text sizes they must break rather than push
+   the page sideways. Heavy uppercase is wider still, so this matters more here. */
+h1,
+h2,
+h3,
+h4 { overflow-wrap: break-word; }
+
+/* Greedy breaking leaves a lone "I" or "TO." on the last line of big headings and
+   leads; balancing evens the lines out, pretty only fixes the last one. */
+h1,
+h2,
+h3,
+h4 { text-wrap: balance; }
+
+p,
+.lead { text-wrap: pretty; }
+
+.eyebrow {
+  color: var(--ink);
+  font-family: var(--ff-body);
+  font-size: var(--fs-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+/* Display headings run at a 0.92 line height, so an accent on a capital (Č, Š, Ž, Đ)
+   climbs into the eyebrow above; a little air proportional to the heading clears it. */
+.eyebrow + :is(h1, h2) { margin-top: 0.16em; }
+
+.lead { color: var(--ink-2); }
+
+.visually-hidden {
+  position: absolute;
+  overflow: hidden;
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  white-space: nowrap;
+}
+
+/* Black ring with air around it on controls; flush on fields, where the offset would
+   float the ring over the label above. */
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible { outline-offset: 0; }
+
+.button {
+  min-height: var(--tap);
+  padding: 0 28px;
+  font-family: var(--ff-body);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.button.secondary {
+  border-color: var(--ink);
+  background: transparent;
+  color: var(--ink);
+}
+
+.button.secondary:not(:disabled):hover {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--on-ink);
+}
+
+/* The logo-teal call to action (white on teal 4.55:1); its hover goes navy. */
+.button.go {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+}
+
+.button.go:not(:disabled):hover {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: #fff;
+}
+
+.icon-button {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  font-size: 1rem;
+}
+
+/* Surfaces that used to sit on a white page need their own ground now. */
+.card,
+.checkbox-row,
+input,
+select,
+textarea,
+.tab {
+  background: var(--surface);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+.home > section { padding-block: var(--section-y); }
+.home > section + section { border-top: 1px solid var(--rule); }
+
+/* Standalone pages (FAQ, Kontakt, Uslovi kupovine, prodavnica, nalog, korpa …) render
+   `.page-shell` as the only wrapper straight under <main>, with no section of its own
+   to carry the padding `.page-shell` gives up above. Without this, an opened <details>
+   or a longer cart pushes the last element flush against the footer's top border.
+   `:where(main)` keeps this at .page-shell's own specificity (0,1,0): it must still lose
+   to .store-page/.product-detail-page's own padding-block further down the file, and it
+   must not touch the home page's per-section .page-shell wrappers, which `.home > section`
+   already pads — matched here by the plain `>` combinator, not by specificity. */
+:where(main) > .page-shell { padding-block: var(--section-y); }
+
+/* The measure caps the lead, not the block: 46ch of body type is far narrower than
+   one heavy display word such as "KOMPLIKOVANJA.", which would then break mid-word. */
+.section-head { margin-bottom: 2rem; }
+
+.section-head h2 { margin-bottom: 0.75rem; }
+.section-head .lead { max-width: 46ch; margin-bottom: 0; }
+
+/* The postcode field and its button wrap rather than widen the page at large text. */
+.input-action { flex-wrap: wrap; }
+.input-action input { flex: 1 1 8rem; min-width: 0; }
+.input-action .button { flex: 0 1 auto; }
+
+.page-heading h1 { max-width: 20ch; }
+.radio-card:has(input:checked) { border-color: var(--ink); background: var(--blush); box-shadow: inset 0 0 0 1px var(--ink); }
+/* --ink-2 on blush is 4.3:1, under the 4.5:1 floor for small text: a chosen card's
+   secondary line goes full black. */
+.radio-card:has(input:checked) .muted { color: var(--ink); }
+.empty-state,
+.notice,
+.loading-state { background: var(--surface); }
+
+/* Anchors must clear the sticky header when the offer is jumped to. */
+
+/* One easing and one pair of durations across every control, so the storefront
+   reacts as a single system rather than a set of unrelated effects. */
+/* Selection chips: quantity, purchase type, cadence, catalog filters. Flat: no lift
+   and no shadow; hover only greys the ground of an unchosen chip. */
+.tab {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.24s cubic-bezier(0.22, 0.7, 0.25, 1);
+}
+
+/* Behind `hover: hover`: on a touch screen the hover state sticks after a tap. */
+@media (hover: hover) {
+  .tab:not([aria-selected="true"], [aria-pressed="true"], :disabled):hover { background: var(--alt); }
+}
+
+/* A press should read as a press, not as a repaint. */
+.tab:active:not(:disabled),
+.button:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: none;
+  transition-duration: 0.08s;
+}
+
+.button {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.24s cubic-bezier(0.22, 0.7, 0.25, 1);
+}
+
+/* Text links: the underline thickens under the pointer; colour stays black. */
+.text-link,
+.text-button { transition: text-decoration-thickness 0.2s ease; }
+
+.text-link:hover,
+.text-button:hover { text-decoration-thickness: 2px; }
+
+.icon-button {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+@media (hover: hover) {
+  .icon-button:hover { background: var(--ink); color: var(--on-ink); }
+}
+
+/* Consent options introduced with the customer privacy controls. */
+.consent-banner { max-height: calc(100dvh - 2rem); overflow-y: auto; }
+.consent-options { display: grid; gap: .8rem; min-width: 0; margin: 0; padding: .8rem; border: 1px solid var(--rule); }
+.consent-options legend { padding: 0 .3rem; font-weight: 600; }
+.consent-options label { display: flex; align-items: flex-start; gap: .6rem; font-size: .84rem; cursor: pointer; }
+.consent-options input { flex: 0 0 auto; width: 18px; height: 18px; min-height: 18px; padding: 0; margin: 2px 0 0; accent-color: var(--brand); }

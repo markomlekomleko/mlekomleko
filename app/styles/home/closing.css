@@ -1,0 +1,89 @@
+/* Owner: W-story — home closing section */
+
+/* Logo-teal ground stamped with navy brand glyphs (the tile comes from closing-section.tsx
+   as --closing-pattern). The pattern is decorative and never sits behind text: all copy
+   is inside the white card. Denser on phones, as in the reference. */
+.home > .closing {
+  background-color: var(--brand);
+  background-image: var(--closing-pattern, none);
+  background-position: center top;
+  background-size: 180px;
+  color: #fff;
+}
+
+@media (min-width: 768px) {
+  .home > .closing { background-size: 228px; }
+}
+
+@media (min-width: 1200px) {
+  .home > .closing { background-size: 264px; }
+}
+
+.closing-card {
+  position: relative;
+  display: grid;
+  max-width: 880px;
+  justify-items: start;
+  margin-inline: auto;
+  padding: clamp(24px, 4.5vw, 56px);
+  border: 1px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* The logo as a crooked sticker half off the card's top-right corner. */
+.closing-logo {
+  position: absolute;
+  top: clamp(-44px, -4vw, -28px);
+  right: clamp(12px, 4vw, 40px);
+  width: clamp(88px, 12vw, 148px);
+  height: auto;
+  transform: rotate(8deg);
+  pointer-events: none;
+}
+
+.closing-card .eyebrow { margin-bottom: var(--space-4); }
+
+/* A card heading, so it takes the card face: the chunky serif, which ships at 800 only. */
+.closing-card h2 {
+  max-width: 18ch;
+  margin-bottom: var(--space-4);
+  font-family: var(--ff-card);
+  font-size: clamp(2.1rem, 5.4vw, 4rem);
+  font-variation-settings: normal;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: var(--display-leading);
+  text-wrap: balance;
+  word-spacing: normal;
+}
+
+.closing-text {
+  max-width: 56ch;
+  margin: 0 0 var(--space-6);
+  color: var(--ink);
+  font-size: clamp(1rem, 1.4vw, 1.15rem);
+  line-height: 1.5;
+}
+
+.closing-cta { width: 100%; }
+
+@media (min-width: 600px) {
+  .closing-cta { width: auto; }
+}
+
+/* Wide, the stacked card left its right third empty. As in the reference newsletter
+   card, the text and the action share the last row, the button bottom-aligned with
+   the paragraph's last line. */
+@media (min-width: 1024px) {
+  .closing-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--space-7);
+    align-items: end;
+  }
+
+  .closing-card .eyebrow,
+  .closing-card h2 { grid-column: 1 / -1; }
+
+  .closing-text { margin-bottom: 0; }
+}

@@ -1,0 +1,79 @@
+/* Owner: W-story — home rhythm section */
+
+/* Pastel-pink band with white cards, like the reference's press section. */
+.home > .rhythm { background: var(--blush); }
+
+.rhythm-head h2 {
+  max-width: 16ch;
+  font-size: var(--fs-h2);
+}
+
+.rhythm-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* Three-up only from 900px: in a 768px third, "JEDNOKRATNO" in the chunky serif no
+   longer fits a line and would break mid-word. Each card spans the grid's two rows as a
+   subgrid, so if a name still wraps (900–1000px, a fallback face, enlarged text) all
+   three bodies keep starting on one line. The row gap matches the card's own. */
+@media (min-width: 900px) {
+  .rhythm-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3) var(--space-5);
+  }
+
+  .rhythm-card {
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+  }
+}
+
+/* Grid children default to a min-content floor, which pushes the page wider than the
+   viewport once the reader enlarges text; the cards opt out and wrap instead. */
+.rhythm-card {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--space-3);
+  padding: clamp(20px, 2.4vw, 32px);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+/* Stacked full-width cards on a tablet put the name beside its text, not above it. */
+@media (min-width: 680px) and (max-width: 899px) {
+  .rhythm-card {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    align-items: baseline;
+    gap: var(--space-5);
+  }
+}
+
+/* Chunky serif card names, as on the reference product cards. "SVAKE 2 NEDELJE" is
+   about 9.5em wide, so this size keeps all three names on one line in a three-up card
+   from 1024px up (the tightest fit, about 4% to spare, is at 1024). */
+.rhythm-card h3 {
+  margin: 0;
+  font-family: var(--ff-card);
+  font-size: clamp(1.6rem, 2.2vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 0.95;
+}
+
+.rhythm-card p {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* --ink-2 on blush is only 4.3:1, so the note under the cards stays full black. */
+.rhythm-note {
+  max-width: 62ch;
+  margin: var(--space-6) 0 0;
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 500;
+}

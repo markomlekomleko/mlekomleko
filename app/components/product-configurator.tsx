@@ -171,7 +171,7 @@ export function ProductConfigurator({
       <div className="configurator-body">
         <div className="configurator-head">
           <p className="configurator-category">{product.category}</p>
-          {layout === "panel" ? <h1 className="configurator-title">{product.name}</h1> : (
+          {layout === "panel" ? <h3 className="configurator-title">{product.name}</h3> : (
             <h3 className="configurator-title">
               <a href={href}>{product.name}</a>
             </h3>
@@ -280,7 +280,7 @@ export function ProductConfigurator({
                   ))}
                 </div>
                 <p className="configurator-hint">
-                  Prva dostava {formatDate(delivery.deliveryDate)}.
+                  Prva dostava: {formatDate(delivery.deliveryDate)}
                 </p>
               </fieldset>
             ) : null}

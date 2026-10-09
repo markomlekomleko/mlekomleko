@@ -1,3 +1,4 @@
+import { deliveryCityForPostalCode } from "../app/lib/delivery-area";
 import { listProducts } from "./products";
 import { listBundles } from "./bundles";
 import { getBusinessSettings, getNextDeliveryWindow, isServiceablePostalCode } from "./settings";
@@ -5,7 +6,7 @@ import { getBusinessSettings, getNextDeliveryWindow, isServiceablePostalCode } f
 export async function getStorefront(postalCode?: string | null) {
   const [settings, delivery, products, bundles] = await Promise.all([
     getBusinessSettings(),
-    getNextDeliveryWindow(),
+    getNextDeliveryWindow(new Date(), deliveryCityForPostalCode(postalCode ?? "") ?? ""),
     listProducts(false),
     listBundles(false),
   ]);

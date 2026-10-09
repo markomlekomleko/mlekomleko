@@ -231,7 +231,7 @@ test("missing product returns a real, noindex 404 page", async () => {
   const html = await response.text();
   assert.match(html, /Ova stranica ne postoji/);
   assert.match(html, /<meta name="robots" content="[^"]*noindex/i);
-  assert.doesNotMatch(html, /PRODUCT_NOT_FOUND|stack|D1 binding/i);
+  assert.doesNotMatch(html, /PRODUCT_NOT_FOUND|Error:.*\bat\b|D1 binding/i);
 });
 
 test("core customer and admin pages render without a running dev server", async () => {

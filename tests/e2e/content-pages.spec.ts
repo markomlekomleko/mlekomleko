@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-const origin = "http://localhost:4173";
+const origin = `http://localhost:${process.env.E2E_PORT || "4173"}`;
 test("admin writes draft, previews, publishes, updates and unpublishes SEO page", async ({ page, request, context }) => {
   await context.setExtraHTTPHeaders({ "cf-connecting-ip": `2001:db8:abcd:${crypto.randomUUID().slice(0,4)}::1` });
   await page.goto("/admin");

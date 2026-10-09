@@ -112,5 +112,5 @@ test("a failed hero export still leaves a usable poster and a working offer link
   await page.waitForTimeout(1500);
   await expect(page.locator(".hero")).toHaveAttribute("data-mode", "static");
   await page.locator(".scene-actions .button").click();
-  await expect(page.locator("#products-title")).toBeInViewport();
+  await expect(page.locator("#offer-title")).toBeInViewport();
 });

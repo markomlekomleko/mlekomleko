@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAnalytics } from "../../components/analytics-provider";
 import { ProductConfigurator } from "../../components/product-configurator";
-import { formatDate, formatMoney, type DeliveryWindow, type Product } from "../../lib/frontend";
+import { formatDate, formatDateTime, formatMoney, type DeliveryWindow, type Product } from "../../lib/frontend";
 
 type Selection = { label: string; totalRsd: number; disabled: boolean };
 
@@ -25,13 +25,8 @@ export function ProductDetail({
   const [selection, setSelection] = useState<Selection>({ label: "", totalRsd: 0, disabled: true });
   const [barVisible, setBarVisible] = useState(false);
 
-  const cutoff = new Intl.DateTimeFormat("sr-Latn-RS", {
-    timeZone: "Europe/Belgrade",
-    day: "numeric",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(delivery.cutoffAt));
+  // Same format as the cart and checkout: weekday, date and time in Belgrade.
+  const cutoff = formatDateTime(delivery.cutoffAt);
 
   useEffect(() => {
     if ((!consent?.analytics && !consent?.marketing) || trackedProduct.current === product.id) return;
@@ -76,7 +71,7 @@ export function ProductDetail({
               <div className="product-placeholder">Fotografija uskoro</div>
             )}
           </div>
-          {product.gallery?.length ? <div className="product-gallery" style={{display:"flex",gap:12,overflowX:"auto"}}>{product.gallery.map((url,i)=><img key={`${url}-${i}`} src={url} alt={`${product.name} — fotografija ${i+2}`} width={180} height={180} loading="lazy" style={{objectFit:"contain",borderRadius:16}} />)}</div> : null}
+          {product.gallery?.length ? <div className="product-gallery" style={{display:"flex",gap:12,overflowX:"auto"}}>{product.gallery.map((url,i)=><img key={`${url}-${i}`} src={url} alt={`${product.name} — fotografija ${i+2}`} width={180} height={180} loading="lazy" style={{objectFit:"contain",borderRadius:0}} />)}</div> : null}
           {product.ingredients || product.allergens || Object.keys(product.nutrition ?? {}).length ? <section className="admin-panel"><h2>Deklaracija</h2>{product.ingredients?<p>Sastojci: {product.ingredients}</p>:null}{product.allergens?<p><strong>Alergeni: {product.allergens}</strong></p>:null}{Object.keys(product.nutrition??{}).length?<table><caption>Nutritivne vrednosti na 100 ml/g</caption><tbody>{Object.entries(product.nutrition??{}).map(([key,value])=><tr key={key}><th>{key}</th><td>{value}</td></tr>)}</tbody></table>:null}</section>:null}
           <div className="product-quick-facts">
             <span>
@@ -93,26 +88,36 @@ export function ProductDetail({
         </div>
 
         <div className="product-buy-column">
-          <ProductConfigurator
-            product={product}
-            delivery={delivery}
-            layout="panel"
-            onSelectionChange={(value) => {
-              addToCart.current = value.addToCart;
-              setSelection((current) =>
-                current.label === value.label &&
-                current.totalRsd === value.totalRsd &&
-                current.disabled === value.disabled
-                  ? current
-                  : { label: value.label, totalRsd: value.totalRsd, disabled: value.disabled },
-              );
-            }}
-          />
+          {/* The page's one h1 is the product name, at the top of the purchase card and
+              joined to the configurator below it. commerce.css hides the configurator's
+              own (h3) name and category inside this card, so the name is not announced
+              twice. */}
+          <div className="product-buy-card">
+            <header className="product-buy-head">
+              <p className="product-buy-category">{product.category}</p>
+              <h1 className="product-buy-title">{product.name}</h1>
+            </header>
+            <ProductConfigurator
+              product={product}
+              delivery={delivery}
+              layout="panel"
+              onSelectionChange={(value) => {
+                addToCart.current = value.addToCart;
+                setSelection((current) =>
+                  current.label === value.label &&
+                  current.totalRsd === value.totalRsd &&
+                  current.disabled === value.disabled
+                    ? current
+                    : { label: value.label, totalRsd: value.totalRsd, disabled: value.disabled },
+                );
+              }}
+            />
+          </div>
           <div ref={sentinel} aria-hidden="true" />
           <p className="next-delivery">
             Sledeća dostava: <strong>{formatDate(delivery.deliveryDate)}</strong>
           </p>
-          <p className="purchase-footnote">Izmene za tu dostavu moguće su do {cutoff} h.</p>
+          <p className="purchase-footnote">Rok za izmene: {cutoff}</p>
         </div>
       </div>
 
@@ -127,7 +132,11 @@ export function ProductDetail({
       </section>
 
       {recommendations.length ? (
-        <section className="section cross-sell-section" aria-labelledby="cross-sell-title">
+        <section
+          className="section cross-sell-section"
+          aria-labelledby="cross-sell-title"
+          data-count={recommendations.length}
+        >
           <div className="section-head">
             <p className="eyebrow">Još iz naše ponude</p>
             <h2 id="cross-sell-title">Probaj i drugi ukus.</h2>

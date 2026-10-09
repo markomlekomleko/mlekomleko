@@ -123,7 +123,7 @@ export function BundleOffers({
               {open ? (
                 <div className="bundle-preview">
                   <p>
-                    Prva dostava <strong>{formatDate(delivery.deliveryDate)}</strong>.
+                    Prva dostava: <strong>{formatDate(delivery.deliveryDate)}</strong>
                     {hasSubscription
                       ? " Redovne stavke se ponavljaju do izmene ili pauze."
                       : " Stavke su jednokratne, samo za ovu dostavu."}

@@ -15,7 +15,7 @@ export default function BelgradeDeliveryPage() {
       city="Beograd"
       slug="beograd"
       deliveryDays="Dostava utorkom i petkom"
-      postalCodeHint="Unesite beogradski poštanski broj."
+      postalCodeHint="Unesi beogradski poštanski broj."
       localDetail="Aktuelna zona obuhvata podržane poštanske brojeve sa prefiksom 11."
     />
   );

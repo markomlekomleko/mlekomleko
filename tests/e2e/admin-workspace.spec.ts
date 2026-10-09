@@ -5,7 +5,7 @@ import {
   type Page,
 } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-const origin = "http://localhost:4173";
+const origin = `http://localhost:${process.env.E2E_PORT || "4173"}`;
 const testIp = () =>
   `2001:db8:${crypto
     .randomUUID()
@@ -168,7 +168,9 @@ test("admin manages subscription quantities, skips and pauses with version prote
     },
   });
   expect(response.status()).toBe(201);
-  const { subscription } = await response.json();
+  const { subscription, order } = await response.json();
+  // Prepaid packages enter the route only after payment is recorded.
+  expect((await request.patch("/api/admin/orders", { headers, data: { id: order.id, paymentStatus: "paid" } })).ok()).toBe(true);
   const list = await (
     await request.get("/api/admin/subscriptions", { headers })
   ).json();
@@ -471,6 +473,8 @@ test("admin UI manages an existing customer subscription and confirms a locked d
     },
   });
   expect(created.status()).toBe(201);
+  const initial = await created.json();
+  expect((await request.patch("/api/admin/orders", { headers, data: { id: initial.order.id, paymentStatus: "paid" } })).ok()).toBe(true);
   await login(page);
   await page
     .getByRole("navigation", { name: "Administracija" })
@@ -528,7 +532,10 @@ test("admin UI manages an existing customer subscription and confirms a locked d
   await expect(
     manual.getByRole("button", { name: "Sačuvaj porudžbinu" }),
   ).toBeEnabled();
+  const savedResponse = page.waitForResponse(response => response.url().endsWith("/api/admin/orders") && response.request().method() === "POST");
   await manual.getByRole("button", { name: "Sačuvaj porudžbinu" }).click();
+  const saved = await (await savedResponse).json();
+  expect((await request.patch("/api/admin/orders", { headers, data: { id: saved.order.id, paymentStatus: "paid" } })).ok()).toBe(true);
   await page
     .getByRole("button", { name: "Otvori dostave", exact: true })
     .click();

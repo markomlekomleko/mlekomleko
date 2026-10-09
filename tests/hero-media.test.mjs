@@ -51,3 +51,29 @@ test("the manifest records whether the hero material is temporary or final", asy
     "app/lib/hero-media.ts and public/media/hero/manifest.json disagree about the media status",
   );
 });
+
+/**
+ * The value assigned to `key` in the heroMedia object literal. Anchored to a line that
+ * ends in a comma, so the union in the type declaration (`kind: "scrub" | "loop";`)
+ * can never satisfy it.
+ */
+function declared(source, key) {
+  return new RegExp(`^\\s*${key}:\\s*"([a-z]+)",\\s*$`, "m").exec(source)?.[1] ?? null;
+}
+
+test("the manifest and app/lib/hero-media.ts agree on the hero kind and tone", async () => {
+  const manifest = JSON.parse(await readFile(path.join(root, "public/media/hero/manifest.json"), "utf8"));
+  assert.ok(["scrub", "loop"].includes(manifest.kind), `unknown hero kind: ${manifest.kind}`);
+  assert.ok(["light", "dark"].includes(manifest.tone), `unknown hero tone: ${manifest.tone}`);
+  const source = await readFile(path.join(root, "app/lib/hero-media.ts"), "utf8");
+  assert.equal(
+    declared(source, "kind"),
+    manifest.kind,
+    "app/lib/hero-media.ts and public/media/hero/manifest.json disagree about the hero kind",
+  );
+  assert.equal(
+    declared(source, "tone"),
+    manifest.tone,
+    "app/lib/hero-media.ts and public/media/hero/manifest.json disagree about the hero tone",
+  );
+});

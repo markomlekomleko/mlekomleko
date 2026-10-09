@@ -21,6 +21,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Gitignored local working and QA output folders, and throwaway debug probes.
+    "work/**",
+    "output/**",
+    "scripts-tmp-*.mjs",
   ]),
   eslint.configs.recommended,
   ...tseslint.configs.recommended,

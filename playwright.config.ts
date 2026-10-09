@@ -3,6 +3,8 @@ import { defineConfig } from "@playwright/test";
 const chromium = process.env.CI
   ? { browserName: "chromium" as const }
   : { browserName: "chromium" as const, channel: "chrome" as const };
+const e2ePort = process.env.E2E_PORT || "4173";
+const e2eOrigin = `http://localhost:${e2ePort}`;
 const e2eDatabaseUrl = `file:.data/e2e-${process.pid}.sqlite`;
 
 export default defineConfig({
@@ -12,7 +14,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["line"], ["html", { open: "never" }]] : "line",
   use: {
-    baseURL: "http://localhost:4173",
+    baseURL: e2eOrigin,
     actionTimeout: 15_000,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
@@ -20,7 +22,7 @@ export default defineConfig({
     timezoneId: "Europe/Belgrade",
   },
   webServer: {
-    command: "node scripts/migrate.mjs --local && npm run dev -- --port 4173",
+    command: `node scripts/migrate.mjs --local && npm run dev -- --port ${e2ePort}`,
     env: {
       E2E_DIST_DIR: ".next-e2e",
       TURSO_DATABASE_URL: e2eDatabaseUrl,
@@ -31,8 +33,8 @@ export default defineConfig({
       POSTGRES_SCHEMA: "",
       APP_ENV: "local",
       AUTH_MODE: "local",
-      APP_ORIGIN: "http://localhost:4173",
-      NEXT_PUBLIC_SITE_URL: "http://localhost:4173",
+      APP_ORIGIN: e2eOrigin,
+      NEXT_PUBLIC_SITE_URL: e2eOrigin,
       ADMIN_EMAIL: "admin@example.test",
       ADMIN_PASSWORD: "e2e-admin-password",
       PAYMENT_WEBHOOK_SECRET: "e2e-webhook-secret",
@@ -50,7 +52,7 @@ export default defineConfig({
       META_CONVERSIONS_ACCESS_TOKEN: "",
       NEXT_PUBLIC_GOOGLE_ADS_ID: "",
     },
-    url: "http://localhost:4173",
+    url: e2eOrigin,
     reuseExistingServer: false,
     timeout: 120_000,
     stdout: "ignore",

@@ -1,5 +1,8 @@
 {
   "status": "temporary",
+  "kind": "scrub",
+  "tone": "light",
+  "kindNote": "kind: scrub = video se vrti skrolom (zakacena scena), loop = ambijentalni snimak koji se sam vrti u kracem heroju (za klijentov snimak). tone: light = crn tekst na svetloj kremastoj podlozi, dark = beo tekst preko crnog sloja. Mora da se slaze sa app/lib/hero-media.ts.",
   "statusNote": "Razvojni materijal. Scena je generisana, a ambalaza je preuzeta iz 3D brend rendera public/images/3d/milk-bottles.png, ne iz potvrdjene fotografije fizicke flase. Pre finalnog objavljivanja potrebna je potvrda vlasnika ili zamena stvarnom fotografijom.",
   "generatedAt": "2026-09-11",
   "source": {

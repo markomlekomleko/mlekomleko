@@ -21,16 +21,16 @@ export function ApplicationShell({
   const content = <main id="glavni-sadrzaj">{children}</main>;
   if (path === "/admin" || path.startsWith("/admin/"))
     return (
-      <>
+      <div className="market-theme">
         {skip}
         {content}
-      </>
+      </div>
     );
   return (
     <AnalyticsProvider>
       <CartProvider>
         {skip}
-        <SiteHeader settings={settings} />
+        <SiteHeader key={path} settings={settings} />
         {content}
         <SiteFooter storeName={settings.storeName} />
         <CartDrawer />

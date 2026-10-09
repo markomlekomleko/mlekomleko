@@ -1,0 +1,91 @@
+/* Owner: W-offer — home offer section */
+
+/* The rule is drawn here rather than left to `.home > section + section`: the marquee
+   band between the hero and the offer is not a section, so that rule never fires. */
+.offer {
+  border-top: 1px solid var(--rule);
+  background: var(--bg);
+}
+
+/* The tilted band's low end reaches into this section (about 43px at 390, 72px at
+   1440); the extra step keeps the eyebrow well clear of it at every width. */
+.home > .offer { padding-top: calc(var(--section-y) + var(--space-4)); }
+
+/* JM's intro head: a giant left-aligned headline, a short lead and an outline button,
+   with the round house stamp to the right on wider screens. */
+.offer-head {
+  display: grid;
+  gap: var(--space-6);
+  align-items: center;
+  margin-bottom: var(--space-7);
+}
+
+.offer-head .section-head { margin-bottom: 0; }
+
+/* Balanced lines: "TIM KRAVA ILI / TIM KOZA?" rather than one short orphan word. */
+.offer-head h2 {
+  margin-bottom: var(--space-4);
+  font-size: var(--fs-h2);
+  text-wrap: balance;
+}
+
+.offer-head .lead {
+  max-width: 40ch;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.offer-store-link { margin-top: var(--space-5); }
+
+/* The stamp only earns its space beside the headline; on a phone it would push the
+   first product card a screen further down. */
+.offer-stamp { display: none; }
+
+@media (min-width: 768px) {
+  .offer-head { grid-template-columns: minmax(0, 1fr) auto; }
+
+  .offer-stamp {
+    display: block;
+    width: clamp(11rem, 26vw, 19rem);
+    height: auto;
+    overflow: visible;
+    transform: rotate(-8deg);
+  }
+}
+
+/* White on logo teal (4.55:1), like the logo's wordmark and cow. The blob has no
+   outline, as on the logo; the inner ring is a thin white line. */
+.offer-stamp-disc { fill: var(--brand); }
+
+.offer-stamp-inner {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.5;
+}
+
+.offer-stamp-glyph { fill: #fff; }
+
+.offer-stamp-text {
+  fill: #fff;
+  font-family: var(--ff-display);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* Only the ring of words turns; the disc and the cow stay put. */
+.offer-stamp-spin {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: offer-stamp-spin 48s linear infinite;
+}
+
+@keyframes offer-stamp-spin {
+  to { transform: rotate(360deg); }
+}
+
+:root[data-motion="paused"] .offer-stamp-spin { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .offer-stamp-spin { animation: none; }
+}

@@ -250,7 +250,7 @@ export function CartDrawer() {
                           {line && line.occurrences > 1 ? ` · ${line.occurrences} dostave u paketu` : ""}
                         </p>
                         <div className="drawer-item-controls">
-                          <label className="field">
+                          <label className="field drawer-item-qty">
                             <span className="visually-hidden">{`Količina za ${item.name}`}</span>
                             <input
                               type="number"
@@ -283,7 +283,7 @@ export function CartDrawer() {
                             </select>
                           </label>
                           {item.purchaseType === "subscription" ? (
-                            <label className="field">
+                            <label className="field drawer-item-cadence">
                               <span className="visually-hidden">{`Ritam za ${item.name}`}</span>
                               <select
                                 value={item.cadence ?? "weekly"}
@@ -318,7 +318,7 @@ export function CartDrawer() {
                       </span>
                     </div>
                     <div className="drawer-offer-actions">
-                      <button type="button" disabled={offerBusy} onClick={() => addOffer(offer)}>
+                      <button type="button" className="button small" disabled={offerBusy} onClick={() => addOffer(offer)}>
                         Dodaj u korpu
                       </button>
                       <button
@@ -393,9 +393,9 @@ export function CartDrawer() {
                     </p>
                   ) : null}
                   <p className="muted small-text">
-                    Sledeća dostava {formatDate(quote.deliveryDate)}
+                    Sledeća dostava: {formatDate(quote.deliveryDate)}
                     <br />
-                    Izmene su moguće do {formatDateTime(quote.cutoffAt)}
+                    Rok za izmene: {formatDateTime(quote.cutoffAt)}
                   </p>
                 </>
               ) : (

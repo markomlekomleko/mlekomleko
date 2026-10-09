@@ -4,7 +4,7 @@ test("guest email code unlocks permanent subscription additions and one-time edi
   page,
   context,
 }) => {
-  const origin = "http://localhost:4173";
+  const origin = `http://localhost:${process.env.E2E_PORT || "4173"}`;
   const ip = `2001:db8:${crypto
     .randomUUID()
     .replaceAll("-", "")
@@ -142,7 +142,7 @@ test("admin edits an existing one-time order using the same server quote", async
   page,
   context,
 }) => {
-  const origin = "http://localhost:4173";
+  const origin = `http://localhost:${process.env.E2E_PORT || "4173"}`;
   await context.setExtraHTTPHeaders({
     "cf-connecting-ip": `2001:db8:${crypto
       .randomUUID()

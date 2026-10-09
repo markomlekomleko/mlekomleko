@@ -32,5 +32,5 @@ test("a video network failure releases the pinned hero and keeps navigation usab
   await expect(page.locator(".scene-video")).toHaveCount(0);
   await expect(page.locator(".scene-poster img")).toBeVisible();
   await page.locator(".scene-actions .button").click();
-  await expect(page.locator("#products-title")).toBeInViewport();
+  await expect(page.locator("#offer-title")).toBeInViewport();
 });

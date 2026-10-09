@@ -1,16 +1,68 @@
 import type { Metadata } from "next";
+import { Archivo, Fraunces, Geist, Vollkorn } from "next/font/google";
 import { ApplicationShell } from "./components/application-shell";
 import { absoluteUrl, canonicalUrl, getSiteUrl, serializeJsonLd } from "./lib/seo";
 import { getStorefront } from "../server/storefront";
-import "./globals.css";
-import "./storefront.css";
-import "./pastoral.css";
-import "./conversion.css";
-import "./redesign.css";
-import "./market-theme.css";
+import "./styles/tokens.css";
+import "./styles/base.css";
+import "./styles/marquee.css";
+import "./styles/shell.css";
+import "./styles/drawer.css";
+import "./styles/components/configurator.css";
+import "./styles/components/bundles.css";
+import "./styles/components/delivery-checker.css";
+import "./styles/components/delivery-calendar.css";
+import "./styles/home/hero.css";
+import "./styles/home/offer.css";
+import "./styles/home/steps.css";
+import "./styles/home/band.css";
+import "./styles/home/origin.css";
+import "./styles/home/rhythm.css";
+import "./styles/home/faq.css";
+import "./styles/home/closing.css";
+import "./styles/pages/commerce.css";
+import "./styles/pages/content.css";
+import "./styles/admin.css";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+const geist = Geist({
+  variable: "--font-geist",
+  subsets: ["latin", "latin-ext"],
+});
+
+// Headlines: heavy uppercase. The width axis lets phones condense long Serbian words
+// (tokens.css --display-wdth) without a second font file.
+const archivo = Archivo({
+  variable: "--font-display",
+  subsets: ["latin", "latin-ext"],
+  axes: ["wdth"],
+  display: "swap",
+  preload: true,
+});
+
+// Card and product names, at the one weight they are set in. Static 800 rather than the
+// variable font with its SOFT axis: that file is about 118 KB against 36 KB here and took
+// the home page's fonts to 340 KB, over the 300 KB budget. Not preloaded: it only sets
+// names, so it must not compete with the headline and body faces for bandwidth.
+const fraunces = Fraunces({
+  variable: "--font-card",
+  subsets: ["latin", "latin-ext"],
+  weight: "800",
+  display: "swap",
+  preload: false,
+});
+
+// Only /admin still sets type in Vollkorn (admin.css binds it to --font-editorial there).
+// Not preloaded, and no storefront element names it, so the storefront never downloads it.
+const vollkorn = Vollkorn({
+  variable: "--font-vollkorn",
+  subsets: ["latin", "latin-ext"],
+  style: ["normal", "italic"],
+  display: "swap",
+  preload: false,
+});
 
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
@@ -75,8 +127,14 @@ export default async function RootLayout({
     ],
   };
   return (
-    <html lang="sr-Latn" data-scroll-behavior="smooth">
-      <body className="market-theme">
+    // The font variables sit on <html> so the :root stacks in tokens.css (--ff-display …)
+    // can resolve them: a custom property referencing another resolves where it is declared.
+    <html
+      lang="sr-Latn"
+      data-scroll-behavior="smooth"
+      className={`${geist.variable} ${archivo.variable} ${fraunces.variable} ${vollkorn.variable}`}
+    >
+      <body>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(organizationJsonLd) }}

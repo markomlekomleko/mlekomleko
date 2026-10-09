@@ -1,6 +1,7 @@
 import type { ServiceRegion, DeliverySlot } from "./service-policy";
+import { assertDomain } from "./domain";
 import { all } from "./sql";
-import { deliveryCityForPostalCode } from "../app/lib/delivery-area";
+import { deliveryCityForPostalCode, normalizeDeliveryCity } from "../app/lib/delivery-area";
 import { addLocalDays, cutoffForDelivery, nextWeekday } from "./time";
 
 export interface BusinessSettings {
@@ -93,13 +94,20 @@ export async function getBusinessSettings(): Promise<BusinessSettings> {
   } as BusinessSettings;
 }
 
-export async function getNextDeliveryWindow(now = new Date()) {
+/** The Novi Sad route runs Fridays only; Belgrade uses the configured route days.
+ * Confirmed against the shop linked by mlekoimleko.rs: https://take.app/mlekoimleko. */
+export function deliveryWeekdaysForCity(settings: BusinessSettings, city = "") {
+  return settings.deliveryWeekdays.filter(day => normalizeDeliveryCity(city) !== "Novi Sad" || day === 5);
+}
+
+export async function getNextDeliveryWindow(now = new Date(), city = "") {
   const settings = await getBusinessSettings();
-  const candidates = settings.deliveryWeekdays.map((weekday) => {
+  const candidates = deliveryWeekdaysForCity(settings, city).map((weekday) => {
     let date = nextWeekday(now, weekday);
     while (settings.holidays.includes(date) || now.getTime() >= Date.parse(cutoffForDelivery(date, settings.cutoffHours, settings.deliveryLocalTime))) date = addLocalDays(date, 7);
     return date;
   }).sort();
+  assertDomain(candidates.length, "DELIVERY_UNAVAILABLE", "Trenutno nema dostupnih dana dostave za izabrani grad.", 422);
   const deliveryDate = candidates[0];
   const cutoffAt = cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime);
   return {

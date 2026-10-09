@@ -4,7 +4,7 @@ import { resolvePromotions, reservePromotions } from "./promotions";
 import { effectivePrice } from "./product-details";
 import { billingSnapshot } from "./address-snapshot";
 import { createPackageStatements, openPackage, packageDates, packageOccurrences, packageProgress, packageSchedule, maximumPauseDate } from "./packages";
-import { normalizeDeliveryCity } from "../app/lib/delivery-area";
+import { normalizeDeliveryCity, deliveryCityForPostalCode } from "../app/lib/delivery-area";
 import { randomToken, sha256, stableJsonHash } from "./crypto";
 import { DomainError, assertDomain, emailAddress, enumValue, optionalString, positiveInt, rejectCardData, requiredString } from "./domain";
 import { localPaymentGateway } from "./integrations";
@@ -12,7 +12,7 @@ import { audit, enqueue } from "./outbox";
 import { ProductRow, publicProduct } from "./products";
 import { all, batch, first, sqlPlaceholders, type SqlValue } from "./sql";
 import { addLocalDays, assertBeforeCutoff, assertLocalDate, cutoffForDelivery, isCadenceDue, localDateAt, nextWeekday } from "./time";
-import { getBusinessSettings, getNextDeliveryWindow, isServiceablePostalCode } from "./settings";
+import { getBusinessSettings, getNextDeliveryWindow, isServiceablePostalCode, deliveryWeekdaysForCity } from "./settings";
 import { generateDelivery, lockOverdueDeliveries } from "./deliveries";
 import { assertDeliveryEditable } from "./delivery-cutoff";
 import { purchaseAnalyticsEvent } from "./analytics";
@@ -119,9 +119,9 @@ function productUnitPrice(product: ProductRow, purchaseType: "one_time" | "subsc
 export async function quoteCart(input: Record<string, unknown>) {
   const items = parseCheckoutItems(input.items);
   const settings = await getBusinessSettings();
-  const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow()).deliveryDate : assertLocalDate(input.deliveryDate);
+  const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow(new Date(), String(input.city ?? deliveryCityForPostalCode(String(input.postalCode ?? "")) ?? ""))).deliveryDate : assertLocalDate(input.deliveryDate);
   assertSaleDate(settings, deliveryDate);
-  assertDomain(settings.deliveryWeekdays.includes(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay()), "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
+  assertDomain(deliveryWeekdaysForCity(settings, String(input.city ?? deliveryCityForPostalCode(String(input.postalCode ?? "")) ?? "")).includes(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay()), "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
   assertBeforeCutoff(cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime));
   const productIds = [...new Set(items.map((item) => item.productId))];
   const rows = await all<ProductRow>(`SELECT * FROM products WHERE id IN (${sqlPlaceholders(productIds.length)}) AND is_active = 1`, ...productIds);
@@ -211,9 +211,9 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   assertDomain(!addressError, "DELIVERY_AREA_UNAVAILABLE", addressError ?? "Adresa nije u zoni dostave.", 422, { field: "customer.postalCode" });
   customer.city = normalizedCity!;
   assertDomain(isServiceablePostalCode(settings, customer.postalCode), "DELIVERY_AREA_UNAVAILABLE", "Dostava trenutno nije dostupna za uneti poštanski broj.", 422, { field: "customer.postalCode" });
-  const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow()).deliveryDate : assertLocalDate(input.deliveryDate);
+  const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow(new Date(), customer.city)).deliveryDate : assertLocalDate(input.deliveryDate);
   assertSaleDate(settings, deliveryDate);
-  assertDomain(settings.deliveryWeekdays.includes(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay()), "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
+  assertDomain(deliveryWeekdaysForCity(settings, customer.city).includes(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay()), "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
   const cutoffAt = cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime);
   await assertDeliveryEditable(deliveryDate);
 

@@ -79,6 +79,13 @@ export type StorefrontSettings = {
   storeDemoMode: boolean;
 };
 
+export type DeliverySchedule = {
+  city: string;
+  weekdays: number[];
+  dates: string[];
+  cutoffHours: number;
+};
+
 export type DeliveryWindow = {
   deliveryDate: string;
   billingMonth: string;
@@ -306,6 +313,7 @@ export function formatDate(value: string | number | Date | undefined) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
   return new Intl.DateTimeFormat("sr-Latn-RS", {
+    timeZone: "Europe/Belgrade",
     weekday: "long",
     day: "2-digit",
     month: "long",

@@ -8,6 +8,12 @@
  *
  * `status: "temporary"` marks development material: generated scene, packaging shown
  * from the 3D brand render rather than a confirmed photograph of the physical bottle.
+ *
+ * `kind` picks the hero: "scrub" is the scroll-linked clip, "loop" an ambient clip
+ * that plays by itself in a shorter, unpinned hero (for the client's own footage).
+ * `tone` says what the clip looks like behind the copy: "light" keeps black type on a
+ * cream scrim, "dark" sets white type on a black scrim. Both are mirrored in
+ * public/media/hero/manifest.json and checked by tests/hero-media.test.mjs.
  */
 export type HeroVariant = {
   video: string | null;
@@ -26,6 +32,8 @@ export type HeroVariant = {
 
 export type HeroMedia = {
   status: "temporary" | "final";
+  kind: "scrub" | "loop";
+  tone: "light" | "dark";
   desktop: HeroVariant;
   mobile: HeroVariant;
 };
@@ -35,6 +43,8 @@ const alt =
 
 export const heroMedia: HeroMedia | null = {
   status: "temporary",
+  kind: "scrub",
+  tone: "light",
   desktop: {
     video: "/media/hero/hero-desktop.mp4",
     poster: "/media/hero/poster-desktop.webp",

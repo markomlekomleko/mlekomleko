@@ -20,8 +20,8 @@ test("responsive navigation has no overflow and exposes every primary destinatio
     await page.waitForTimeout(300);
     await menu.click();
     await expect(menu).toHaveAttribute("aria-expanded", "true");
-    const nav = page.getByRole("navigation", { name: "Mobilna navigacija" });
-    for (const label of ["Prodavnica", "Kako funkcioniše", "Dostava", "Gde kupiti", "Naše farme", "Česta pitanja", "Kontakt"]) {
+    const nav = page.getByRole("navigation", { name: "Glavna navigacija" });
+    for (const label of ["Mleko", "Kako dostavljamo", "Naše poreklo", "Česta pitanja", "Kontakt"]) {
       await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
     }
     await expect(page.getByRole("link", { name: "Moj nalog", exact: true })).toBeVisible();
@@ -52,16 +52,38 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   await cards.nth(1).locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
   await expect(page.locator(".drawer-item")).toHaveCount(2);
   await page.locator(".cart-drawer").getByRole("link", { name: "Otvori celu korpu" }).click();
-  await expect(page.getByText("Danas plaćate za ovaj mesec")).toBeVisible();
+  await expect(page.getByText("Ukupno za ceo paket")).toBeVisible();
   await page.getByRole("link", { name: /Nastavi na podatke/ }).click();
   await page.getByLabel("Ime i prezime").fill("Fiktivni E2E Kupac");
   await page.getByRole("textbox", { name: "Email", exact: true }).fill(email);
   await page.getByLabel("Broj telefona").fill("+381600000001");
   await page.getByLabel("Ulica i broj").fill("Test ulica 1");
-  await page.getByLabel("Grad").selectOption("Beograd");
-  await page.getByLabel("Poštanski broj").fill("11000");
+  await page.getByLabel("Grad", { exact: true }).fill("Beograd");
+  await page.getByLabel("Poštanski broj", { exact: true }).fill("11000");
+  await expect(page.getByRole("radio", { name: "Utorak", exact: true })).toBeVisible();
+  // Changing the address invalidates the previous quote and updates allowed days.
+  await page.getByLabel("Grad", { exact: true }).fill("Novi Sad");
+  await page.getByLabel("Poštanski broj", { exact: true }).fill("21000");
+  await expect(page.getByRole("radio", { name: "Petak", exact: true })).toBeChecked();
+  await expect(page.getByRole("radio", { name: "Utorak", exact: true })).toHaveCount(0);
+  await page.getByLabel("Poštanski broj", { exact: true }).fill("00000");
+  await expect(page.getByRole("button", { name: "Potvrdi porudžbinu" })).toBeDisabled();
+  await page.getByLabel("Grad", { exact: true }).fill("Beograd");
+  await page.getByLabel("Poštanski broj", { exact: true }).fill("11000");
+  await page.getByRole("radio", { name: "Petak", exact: true }).check();
+  await page.locator(".calendar-trigger").click();
+  const calendar = page.getByRole("region", { name: "Kalendar dostave" });
+  await expect(calendar.locator(".calendar-grid button:disabled").first()).toBeDisabled();
+  await calendar.getByRole("button", { name: "Sledeći mesec" }).click();
+  const quoteResponse = page.waitForResponse(response => response.url().endsWith("/api/cart") && response.request().method() === "POST");
+  await calendar.locator(".calendar-grid button:not(:disabled)").first().click();
+  const selectedQuote = await (await quoteResponse).json();
+  expect(new Date(`${selectedQuote.deliveryDate}T12:00:00Z`).getUTCDay()).toBe(5);
+  for (const line of selectedQuote.lines) expect(line.deliveryDates[0]).toBe(selectedQuote.deliveryDate);
   await page.locator('input[type="checkbox"][required]').check();
+  const createdResponse = page.waitForResponse(response => response.url().endsWith("/api/checkout") && response.request().method() === "POST");
   await page.getByRole("button", { name: "Potvrdi porudžbinu" }).click();
+  expect((await (await createdResponse).json()).order.deliveryDate).toBe(selectedQuote.deliveryDate);
   await expect(page.getByRole("heading", { name: "Hvala na porudžbini." })).toBeVisible();
 
   await page.goto("/prijava");
@@ -124,7 +146,8 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   await subscription.getByRole("region", { name: "Dodajte sledećoj dostavi" }).getByRole("button").first().click();
   await expect(subscription.locator(".next-addon-summary")).toContainText("Dodato samo sledećoj dostavi");
   await subscription.getByRole("button", { name: /Pauziraj dostave/ }).click();
-  const pauseUntil = new Date(Date.now() + 40 * 86400000).toISOString().slice(0, 10);
+  const currentSubscription = (await (await page.request.get("/api/account")).json()).subscriptions[0];
+  const pauseUntil = new Date(new Date(`${currentSubscription.nextDeliveryDate}T12:00:00Z`).getTime() + 14 * 86400000).toISOString().slice(0, 10);
   await subscription.getByLabel("Pauziraj do").fill(pauseUntil);
   expect((await (await page.request.get("/api/account")).json()).subscriptions[0].status).toBe("active");
   await subscription.getByRole("button", { name: "Potvrdi pauzu" }).click();
@@ -192,7 +215,7 @@ test("hero priorities remain visible and a custom milk selection survives the ca
   await expect(page.locator(".scene-poster img")).toBeAttached();
 
   await page.locator(".scene-actions .button").click();
-  await expect(page.locator("#products-title")).toBeInViewport();
+  await expect(page.locator("#offer-title")).toBeInViewport();
 
   const card = page.locator(".configurator").first();
   await card.getByRole("button", { name: "4 L", exact: true }).click();

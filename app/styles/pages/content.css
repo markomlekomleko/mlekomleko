@@ -1,0 +1,608 @@
+/* Owner: W-content-pages — /farme, /o-nama, /kako-funkcionise, /gde-kupiti, /kontakt, /faq, /dostava-mleka/*, policy pages, 404/error/loading */
+
+/* ---------------------------------------------------------------------------------
+   Page frame: content pages are a stack of full-bleed bands, like the home page. Each
+   band carries the section rhythm and the 1px black rule between bands spans the whole
+   window; the .page-shell inside each band only sets the gutters and the measure.
+   --------------------------------------------------------------------------------- */
+
+.content-band { padding-block: var(--section-y); }
+.content-band + .content-band { border-top: 1px solid var(--rule); }
+
+/* The logo-teal feature ground. Everything on it is white (4.55:1); tokens.css flips
+   the ink on its children, grey secondary type included. */
+.content-band--brand {
+  background: var(--brand);
+  color: #fff;
+}
+
+/* The page title block: eyebrow, display h1, lead and actions, flush to the band. */
+.content-hero .page-heading { margin-bottom: 0; }
+
+/* Links set inside running text are underlined, or they read as plain words: the
+   preflight strips every underline. The vertical padding grows the tap area without
+   changing the line; buttons and the shared text-link style bring their own. */
+.content-page p a:not([class]) {
+  padding-block: 0.3em;
+  font-weight: 700;
+  text-decoration-line: underline;
+}
+
+/* Text and a bordered photo side by side. Two columns only from 1024px: at 768 a half
+   column is about 330px and the page-title size broke "TRADICIJA" mid-word (round 3). */
+.content-split {
+  display: grid;
+  gap: var(--space-7);
+  align-items: center;
+}
+
+.content-split > * { min-width: 0; }
+
+@media (min-width: 1024px) {
+  .content-split {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-8);
+  }
+
+  /* Sized to the half column instead of the window: about 61px at 1024 and 86px at
+     1440, where the widest word ("TRADICIJA", 5.7em) still has room in its column. */
+  .content-split h1 { font-size: clamp(2.6rem, 6vw, 5.5rem); }
+}
+
+/* JM's bordered photos: a 1px black frame and square corners. */
+.content-media { margin: 0; }
+
+.content-media img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--rule);
+  object-fit: cover;
+  object-position: 50% 60%;
+}
+
+@media (min-width: 1024px) {
+  .content-media img { aspect-ratio: 4 / 5; }
+}
+
+.content-text {
+  max-width: 60ch;
+  margin-top: var(--space-4);
+  line-height: 1.6;
+}
+
+/* /o-nama: the lead is the statement and the paragraph under it supports it, so the
+   lead goes black and larger and the paragraph steps down to body size in grey. */
+.about-intro .lead {
+  color: var(--ink);
+  font-size: 1.25rem;
+}
+
+.about-intro .content-text {
+  color: var(--ink-2);
+  font-size: 1rem;
+}
+
+/* Action row closing a band's content. */
+.content-actions { margin-top: var(--space-6); }
+
+/* On a phone a pair of CTAs wraps onto two lines; each takes the full row so the stack
+   has one clean edge instead of two ragged button widths. */
+@media (max-width: 479px) {
+  .content-page .button-row > .button { flex: 1 1 100%; }
+}
+
+/* ---------------------------------------------------------------------------------
+   Text-only page heads: from 1024px the title shares the band with the house stamp
+   (ContentStamp), so the right half of a wide screen is not left empty.
+   --------------------------------------------------------------------------------- */
+
+.content-stamp { display: none; }
+
+@media (min-width: 1024px) {
+  .content-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-7);
+    align-items: center;
+  }
+
+  /* The stamp narrows the title column below the old 820px measure. 9vw keeps the
+     widest title word ("REKLAMACIJE", about 7.7em) whole at 1024 and reaches the full
+     h1 size by about 1160px, where the column has room for it again. */
+  .content-head h1 { font-size: min(var(--fs-h1), 9vw); }
+
+  .content-stamp {
+    display: block;
+    width: clamp(10rem, 30vw - 8rem, 18rem);
+    height: auto;
+    overflow: visible;
+    transform: rotate(-8deg);
+  }
+}
+
+/* Black on orange (6.1:1), the home offer stamp's sticker treatment. */
+.content-stamp-disc {
+  fill: var(--brand);
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.content-stamp-inner {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.5;
+}
+
+.content-stamp path { fill: var(--ink); }
+
+/* Only the ring of glyphs turns; the disc and the centre glyph stay put. */
+.content-stamp-spin {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: content-stamp-spin 48s linear infinite;
+}
+
+@keyframes content-stamp-spin {
+  to { transform: rotate(360deg); }
+}
+
+:root[data-motion="paused"] .content-stamp-spin { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .content-stamp-spin { animation: none; }
+}
+
+/* ---------------------------------------------------------------------------------
+   Cards: white, 1px black rule, square — the home page's rhythm cards.
+   --------------------------------------------------------------------------------- */
+
+.content-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+/* Grid children default to a min-content floor, which pushes the page wider than the
+   viewport once the reader enlarges text; the cards opt out and wrap instead. */
+.content-grid > * { min-width: 0; }
+
+@media (min-width: 768px) {
+  .content-grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* One column until 1024px, then three up. A third at 768 (about 184px inside the
+   padding) cannot hold "DOKUMENTOVAN" (225px in the card serif), and two up left the
+   third card stretched alone across the row. */
+@media (min-width: 1024px) {
+  .content-grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.content-card {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  padding: clamp(20px, 2.4vw, 32px);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.content-card > * { margin: 0; }
+
+/* Card names in the chunky serif, as on the home page's cards and the product names. */
+.content-card h2,
+.content-card h3 {
+  max-width: none;
+  font-family: var(--ff-card);
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  font-variation-settings: normal;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: var(--display-leading);
+  text-transform: uppercase;
+}
+
+.content-card p {
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+.content-card .button-row { margin-top: var(--space-2); }
+.content-card > .button { justify-self: start; }
+
+.content-card-index {
+  font-family: var(--ff-display);
+  font-size: clamp(2.25rem, 4vw, 3rem);
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+}
+
+/* Name-and-detail rows between black rules (the Belgrade milk machines). */
+.content-list {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+  list-style: none;
+}
+
+.content-list li {
+  display: grid;
+  gap: 2px;
+  padding-block: var(--space-3);
+  border-bottom: 1px solid var(--rule);
+}
+
+.content-list strong { font-weight: 700; }
+.content-list span { color: var(--ink-2); font-size: 0.9rem; }
+
+/* ---------------------------------------------------------------------------------
+   /farme
+   --------------------------------------------------------------------------------- */
+
+/* The route on the orange ground: heading beside the four steps from 1024px. */
+.farm-route-grid {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.farm-route-grid > * { min-width: 0; }
+
+/* Smaller than the section size: from 1024px the heading shares the band with the
+   list, and "POTVRĐENE" must still fit its column whole. The 12ch measure belongs to
+   that column only; stacked above the list it squeezed the heading to five lines. */
+.farm-route h2 {
+  max-width: 18ch;
+  margin: 0;
+  font-size: clamp(2.25rem, 4.4vw, 4rem);
+}
+
+@media (min-width: 1024px) {
+  .farm-route-grid {
+    grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
+    gap: var(--space-7);
+  }
+
+  .farm-route h2 { max-width: 12ch; }
+}
+
+.farm-route ol {
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+  list-style: none;
+}
+
+.farm-route li {
+  display: grid;
+  gap: var(--space-1);
+  padding-block: var(--space-4);
+  border-bottom: 1px solid var(--rule);
+}
+
+.farm-route li strong {
+  font-family: var(--ff-display);
+  font-size: var(--fs-h3);
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+@media (min-width: 600px) {
+  .farm-route li {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: var(--space-4);
+    align-items: baseline;
+  }
+}
+
+/* A white card on the teal, like the delivery checker on the home page's steps. */
+.farm-disclosure {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-7);
+  padding: var(--space-5);
+  border: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.farm-disclosure strong {
+  font-family: var(--ff-display);
+  font-size: 0.875rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.farm-disclosure p {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+@media (min-width: 768px) {
+  .farm-disclosure {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--space-5);
+    align-items: baseline;
+  }
+}
+
+/* ---------------------------------------------------------------------------------
+   /kako-funkcionise: the three steps as columns between black rules on the orange.
+   --------------------------------------------------------------------------------- */
+
+.how-steps {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how-step {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-width: 0;
+  padding-block: var(--space-6);
+}
+
+.how-step:first-child { padding-top: 0; }
+.how-step:last-child { padding-bottom: 0; }
+.how-step + .how-step { border-top: 1px solid var(--rule); }
+
+.how-step-number {
+  font-family: var(--ff-display);
+  font-size: clamp(4rem, 9vw, 7.5rem);
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+}
+
+.how-step h2 {
+  max-width: 16ch;
+  margin: 0;
+  font-size: clamp(1.5rem, 2.6vw, 2.25rem);
+}
+
+.how-step p {
+  max-width: 40ch;
+  margin: 0;
+  line-height: 1.5;
+}
+
+@media (min-width: 900px) {
+  .how-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  .how-step { padding: 0 var(--space-5); }
+  .how-step:first-child { padding-left: 0; }
+  .how-step:last-child { padding-right: 0; }
+
+  .how-step + .how-step {
+    border-top: 0;
+    border-left: 1px solid var(--rule);
+  }
+}
+
+.how-price { max-width: 46rem; }
+
+/* From 1024px the price card and its CTAs share one row, the buttons centred beside the
+   card, instead of a half-width card stacked over a short button row. */
+@media (min-width: 1024px) {
+  .how-price-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--space-7);
+    align-items: center;
+  }
+
+  .how-price { max-width: none; }
+
+  .how-price-row .content-actions {
+    flex-wrap: nowrap;
+    margin-top: 0;
+  }
+}
+
+/* ---------------------------------------------------------------------------------
+   /kontakt
+   --------------------------------------------------------------------------------- */
+
+/* The number is the point of the card: display type, a full 44px target. */
+.contact-phone {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-self: start;
+  font-family: var(--ff-display);
+  font-size: clamp(1.6rem, 2.6vw, 2.25rem);
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+}
+
+.contact-phone:hover { text-decoration-thickness: 4px; }
+
+.contact-links {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Social links as ruled rows at body size, so the card carries the same weight as the
+   phone card beside it. */
+.contact-links li + li { border-top: 1px solid var(--rule); }
+
+.contact-links .text-link {
+  min-height: 52px;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------------------------
+   Policy pages: each section a ruled row, heading beside the text from 900px.
+   --------------------------------------------------------------------------------- */
+
+.policy-updated {
+  margin-top: var(--space-4);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+}
+
+.policy-list { border-top: 1px solid var(--rule); }
+
+.policy-row {
+  display: grid;
+  gap: var(--space-4);
+  padding-block: var(--space-6);
+  border-bottom: 1px solid var(--rule);
+}
+
+.policy-row > * { min-width: 0; }
+
+.policy-row h2 {
+  max-width: 16ch;
+  margin: 0;
+  font-size: clamp(1.5rem, 2.6vw, 2.25rem);
+}
+
+/* Legal text stays full black at a reading measure; the old full-width cards ran to
+   about 150 characters a line at 1440. */
+.policy-text p {
+  max-width: 68ch;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.policy-text p + p { margin-top: var(--space-4); }
+
+@media (min-width: 900px) {
+  .policy-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+    gap: var(--space-7);
+  }
+}
+
+.policy-contact {
+  margin: var(--space-6) 0 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------------
+   /dostava-mleka/* — scoped to the city page wrapper; the home steps CSS is separate.
+   --------------------------------------------------------------------------------- */
+
+/* The crumbs keep their small type and the line keeps its height: the padding, taken
+   back by the negative margin, only grows each link's tap area to 44px. */
+.city-delivery-page .breadcrumbs {
+  align-items: center;
+  margin-bottom: var(--space-5);
+}
+
+.city-delivery-page .breadcrumbs a {
+  display: inline-block;
+  margin-block: -14px;
+  padding-block: 14px;
+  color: var(--ink);
+  text-decoration-line: underline;
+}
+
+/* The checker card centred on the orange band, as on the home page. */
+.city-checker .delivery-checker { margin-inline: auto; }
+
+.city-details {
+  display: grid;
+  border-block: 1px solid var(--rule);
+}
+
+.city-detail {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+  padding-block: var(--space-5);
+}
+
+.city-detail + .city-detail { border-top: 1px solid var(--rule); }
+
+/* Square numerals in display type; the old round tinted dots are gone. */
+.city-detail-index {
+  margin-bottom: var(--space-3);
+  font-family: var(--ff-display);
+  font-size: clamp(2.75rem, 5vw, 4rem);
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+}
+
+.city-detail h3 { margin: 0; }
+
+.city-detail p {
+  max-width: 36ch;
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+
+@media (min-width: 768px) {
+  .city-details { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  .city-detail { padding: var(--space-5) var(--space-5) var(--space-6); }
+  .city-detail:first-child { padding-left: 0; }
+
+  .city-detail + .city-detail {
+    border-top: 0;
+    border-left: 1px solid var(--rule);
+  }
+}
+
+/* ---------------------------------------------------------------------------------
+   404 and error: one centred statement, big display type, black button home.
+   --------------------------------------------------------------------------------- */
+
+.status-page { text-align: center; }
+
+.status-page h1,
+.status-page .lead { margin-inline: auto; }
+
+.status-page h1 { max-width: 16ch; }
+.status-page .button-row { justify-content: center; }
+
+/* The code as a picture, like the footer's giant wordmark; the eyebrow already says
+   it in words, so the numerals are hidden from assistive technology. */
+.status-code {
+  margin: 0 0 var(--space-5);
+  font-family: var(--ff-display);
+  font-size: clamp(8rem, 34vw, 20rem);
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+}
+
+.status-detail {
+  margin-top: var(--space-3);
+  color: var(--ink-2);
+  font-size: 0.875rem;
+}
+.contact-form { display: grid; gap: 20px; }
+.contact-form-row { display: grid; gap: 16px; }
+.contact-form .field { min-width: 0; }
+.contact-form input, .contact-form select, .contact-form textarea { min-width: 0; font-size: 16px; }
+.contact-form textarea { min-height: 160px; }
+.contact-trap { display: none; }
+.contact-privacy { color: var(--ink-2); font-size: .85rem; }
+.contact-submit { width: 100%; justify-content: space-between; }
+.contact-form-error { padding: 16px; color: var(--danger); border: 1px solid currentColor; }
+@media (min-width: 540px) { .contact-form-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

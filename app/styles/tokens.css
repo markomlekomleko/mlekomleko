@@ -1,0 +1,139 @@
+/* Owner: W-foundation — design tokens: the single :root (legacy names kept) */
+
+/* Juicy Marbles–style system in the Mleko i Mleko logo colours: one milk-white ground,
+   logo-navy ink and rules, square corners, flat surfaces, and the logo's teal used as
+   the single loud ground. Semantic names first; every legacy name below is an alias
+   onto them, so partials that still say --cobalt or --milk inherit the look untouched.
+   /admin rebinds the legacy values in admin.css and keeps its old look. */
+:root {
+  /* Colour, sampled from mleko-i-mleko-logo.png. Contrast (WCAG, computed) decides what
+     may sit on what: white on --brand 4.55:1 and navy on --brand only 2.5:1, so teal is
+     a ground for WHITE type (see .on-brand below); --brand as text on --bg is 4.2:1
+     (large type and icons only, never body text); navy on --bg 10.4:1; white on --navy
+     11.3:1; white on --teal 6.3:1; navy on --blush 9.3:1; navy on --go 4.8:1. */
+  --navy: #353a4a;
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --alt: #eeefec;
+  --brand: #357f94;
+  --brand-dark: #2a6779;
+  --brand-light: #6fa9b8;
+  --blush: #dcebef;
+  --teal: #2a6779;
+  --go: #66bd15;
+  --ink: var(--navy);
+  --ink-2: #5d6675;
+  /* Type on a filled --ink control: white on the page, navy once .on-brand flips --ink. */
+  --on-ink: #ffffff;
+  /* Ground a filled button turns on hover: teal on the page, navy on a teal ground. */
+  --button-hover: var(--brand);
+  --rule: var(--navy);
+  --rule-soft: rgb(53 58 74 / 15%);
+  --danger: #a33b33;
+  --success: #1f6b4d;
+
+  /* Legacy aliases. */
+  --milk: var(--bg);
+  --cream: var(--bg);
+  --paper: var(--surface);
+  --white: var(--surface);
+  --wash: var(--alt);
+  --cobalt: var(--ink);
+  --cobalt-dark: var(--ink);
+  --forest: var(--ink);
+  --forest-dark: var(--ink);
+  --orange: var(--ink);
+  --orange-dark: var(--ink);
+  --brand-teal: var(--teal);
+  --cobalt-wash: var(--blush);
+  --leaf: var(--blush);
+  --butter: var(--go);
+  --yellow: var(--go);
+  --ink-soft: var(--ink-2);
+  --muted: var(--ink-2);
+  --line: var(--rule);
+  --shadow: none;
+  --radius: 0;
+  --control-radius: 0;
+  --photo-radius: 0;
+  --tap: 52px;
+
+  /* Type. The next/font variables live on <html>, the same element as this :root, so
+     these stacks resolve here; declared on <body> they would be empty at :root. */
+  --ff-display: var(--font-display), "Arial Black", Arial, sans-serif;
+  --ff-card: var(--font-card), Georgia, serif;
+  --ff-body: var(--font-geist), Arial, sans-serif;
+  /* The serif used to be Vollkorn; card and product names now get Fraunces. Vollkorn
+     stays bound only inside the admin scope (admin.css). */
+  --font-editorial: var(--ff-card);
+  --fs-h1: clamp(2.6rem, 10.5vw, 6.5rem);
+  /* One section-heading size for every home section; it stays under the hero h1,
+     which is sized to its own column (about 54px at 768, 87px at 1440). */
+  --fs-h2: clamp(2.25rem, 5.6vw, 4.75rem);
+  /* Leading for display type that can wrap. JM sets its headings at 1; tighter than
+     that, Serbian carons and acutes (Č, Š, Ž, Ć) on a second line touch the line above. */
+  --display-leading: 1;
+  --fs-h3: clamp(1.15rem, 2.4vw, 1.5rem);
+  --fs-eyebrow: 0.75rem;
+  /* Archivo's width axis: full width by default, condensed on phones so long Serbian
+     words still fit a 390px line in heavy uppercase. */
+  --display-wdth: 100;
+
+  /* Spacing. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --section-y: 56px;
+
+  /* Ticker strip and header bar heights: the only definition. Both bars have fixed
+     heights, so --header-stack equals the rendered stack by construction. */
+  --ticker-h: 40px;
+  --header-h: 64px;
+  /* Ticker plus sticky header; the hero copy clears this once pinned, and other sticky
+     columns (cart summary, product gallery) and every anchor use it as their offset. */
+  --header-stack: calc(var(--ticker-h) + var(--header-h));
+}
+
+/* Teal grounds carry white type. The tokens flip on the ground's children, not the
+   ground itself, so the navy rules that separate it from its neighbours stay navy. Grey
+   secondary type would fail on teal, so it goes white too. */
+.on-brand > *,
+:is(.steps, .content-band--brand, .home > .closing) > * {
+  --ink: #ffffff;
+  --ink-2: #ffffff;
+  --rule: #ffffff;
+  --rule-soft: rgb(255 255 255 / 30%);
+  --on-ink: var(--navy);
+  --button-hover: var(--navy);
+}
+
+/* White cards set on a teal ground go back to the page's ink. */
+:is(.steps, .content-band--brand, .home > .closing, .on-brand) :is(.delivery-checker, .closing-card, .farm-disclosure) {
+  --ink: var(--navy);
+  --ink-2: #5d6675;
+  --rule: var(--navy);
+  --rule-soft: rgb(53 58 74 / 15%);
+  --on-ink: #ffffff;
+  --button-hover: var(--brand);
+}
+
+@media (max-width: 480px) {
+  :root { --display-wdth: 86; }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --section-y: 80px;
+    --header-h: 76px;
+  }
+}
+
+@media (min-width: 1200px) {
+  :root { --section-y: 112px; }
+}

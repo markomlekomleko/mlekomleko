@@ -13,6 +13,7 @@
     "test:vercel": "npm run build && node --test tests/vercel/*.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:install": "playwright install chromium",
+    "test:visual": "playwright test -c playwright.visual.config.ts",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate",
     "db:migrate:local": "node --env-file-if-exists=.env.local scripts/migrate.mjs --local",

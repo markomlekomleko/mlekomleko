@@ -42,7 +42,7 @@ export function StoreView({
         <>
           <h2 className="sr-only">Proizvodi i izbor dostave</h2>
           {categories.length > 2 ? (
-            <div className="tabs" aria-label="Filter kategorija">
+            <div className="tabs" role="group" aria-label="Filter kategorija">
               {categories.map((item) => (
                 <button
                   className="tab"

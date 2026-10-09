@@ -206,7 +206,7 @@ test("order period and combined filters survive a status update and reset", asyn
   test.setTimeout(90_000);
   const email = `filters-${crypto.randomUUID()}@example.test`;
   const response = await page.request.post("/api/checkout", {
-    headers: { Origin: "http://localhost:4173", "Idempotency-Key": crypto.randomUUID() },
+    headers: { Origin: `http://localhost:${process.env.E2E_PORT || "4173"}`, "Idempotency-Key": crypto.randomUUID() },
     data: { items: [{ productId: "prod_kravlje_1l", quantity: 2, purchaseType: "one_time" }], paymentMethod: "cash", customer: { email, fullName: "Filter Kupac", phone: "+381601234567", addressLine1: "Test 1", city: "Beograd", postalCode: "11000" } },
   });
   expect(response.ok()).toBe(true);

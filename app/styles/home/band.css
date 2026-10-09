@@ -1,0 +1,57 @@
+/* Owner: W-story — home marquee band */
+
+/* The band is wider than the page and tilted, so the page has to clip sideways. `clip`,
+   not `hidden`: `hidden` would turn .home into a scroll container and the hero's
+   position: sticky would stop pinning. */
+.home {
+  --band-bleed: 64px;
+  overflow-x: clip;
+}
+
+/* Rotating about the centre lifts one end and drops the other by half the width times
+   tan(2deg), and pulls the corners inwards; the bleed on both sides is far wider than
+   that, so the ends never show a wedge of page behind them. The negative top margin
+   pulls the strip up across the bottom of the folded frame, as the reference band
+   crosses its hero picture. The folded frame leaves about 3.6% of the pinned screen's
+   height of teal below it, so the overlap is that plus the part that crosses the
+   frame; on teal alone the strip would sink into the ground. The hero's sticky pin
+   is a stacking context of its own, so a small z-index here is enough; the sticky
+   header (30) and every drawer or bar stay above it. */
+.home-band {
+  --band-overlap: calc(3.6svh + clamp(20px, 4.4vw, 64px));
+  position: relative;
+  z-index: 3;
+  margin: calc(-1 * var(--band-overlap)) calc(-1 * var(--band-bleed)) 0;
+  transform: rotate(-2deg);
+}
+
+/* The ambient loop never folds, and its copy is centred down to near its bottom edge,
+   so the strip only grazes it. */
+.hero[data-kind="loop"] + .home-band { --band-overlap: clamp(24px, 3.4vw, 52px); }
+
+/* The strip's own bottom edge is the seam. A straight top rule on the next section
+   would leave a cream wedge between two black lines under the tilt. This file loads
+   after offer.css, and the element in the selector outranks `.offer` anyway. */
+.home-band + section { border-top: 0; }
+
+/* The tilt lifts the strip's right end by half its width times tan(2deg) (0.035), which
+   would bare a wedge of the hero's teal fold ground between the strip and the next
+   section. That section tucks up under the strip by the lift, on its own cream ground
+   and below the strip's z-index, and adds the same amount back to its top padding so
+   its content does not move. */
+.home > .home-band + section {
+  --band-tuck: calc((50vw + var(--band-bleed)) * 0.035 + 8px);
+  position: relative;
+  z-index: 2;
+  margin-top: calc(-1 * var(--band-tuck));
+  padding-top: calc(var(--section-y) + var(--space-4) + var(--band-tuck));
+}
+
+/* More air between the words and the bottle stamps than the primitive's default, as in
+   the reference strip. */
+.home-band .marquee-item { padding-inline: 0.2em; }
+.home-band .marquee-sep { margin-inline: 0.45em; }
+
+@media (min-width: 768px) {
+  .home-band .marquee--band { padding-block: 18px; }
+}

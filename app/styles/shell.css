@@ -1,0 +1,738 @@
+/* Owner: W-shell — ticker, header stack, header, nav, mobile menu, footer, consent banner */
+
+/* --ticker-h, --header-h and --header-stack are defined once, in tokens.css. */
+
+/* Anchors, scrolled-to elements and controls reached by tabbing backwards all land
+   just under the sticky stack at every width (WCAG 2.4.11). */
+html { scroll-padding-top: calc(var(--header-stack) + 12px); }
+[id] { scroll-margin-top: calc(var(--header-stack) + 12px); }
+
+/* The ticker and the header stick together as one unit. */
+.site-header-stack {
+  --shell-gutter: 20px;
+  position: sticky;
+  z-index: 30;
+  top: 0;
+}
+
+@media (max-width: 380px) {
+  .site-header-stack { --shell-gutter: 16px; }
+}
+
+@media (min-width: 768px) {
+  .site-header-stack { --shell-gutter: 32px; }
+}
+
+@media (min-width: 1200px) {
+  .site-header-stack { --shell-gutter: 48px; }
+}
+
+/* ---------- Ticker: pause control, moving rail, pinned announcement ---------- */
+
+/* Clipped sideways so an over-long announcement can never widen the page; every focus
+   ring in the bar is inset, so nothing focusable is cut off. Only the x axis clips, so
+   the controls' hit areas can reach below the bar (see their ::before). */
+.ticker-bar {
+  display: flex;
+  overflow-x: clip;
+  height: var(--ticker-h);
+  border-bottom: 1px solid var(--rule);
+  background: var(--teal);
+  color: var(--surface);
+}
+
+/* The bar draws the rule and owns the height; the marquee just fills what is left.
+   Zero basis: an auto basis would be the rail's full max-content width and would
+   squeeze the pinned link down to nothing. */
+.ticker-bar .marquee--ticker {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  border-bottom: 0;
+  /* The rail fades out against the pause control and the pinned link instead of being
+     sliced off at their rules. */
+  mask-image: linear-gradient(90deg, transparent, var(--ink) 32px, var(--ink) calc(100% - 32px), transparent);
+}
+
+/* A still rail starts flush left, where a fade would eat the first letters. */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-bar .marquee--ticker {
+    mask-image: linear-gradient(90deg, var(--ink) calc(100% - 32px), transparent);
+  }
+}
+
+/* White on teal is 5.5:1; a black ring would only reach 3.8:1 here. Inset, so the
+   header below cannot paint over it. */
+.ticker-bar :focus-visible {
+  outline: 3px solid var(--surface);
+  outline-offset: -5px;
+}
+
+/* The bar is 40px tall including its 1px bottom rule, so each control's box is 39px; its
+   hit area runs 5px on into the header's empty top edge, so it is 44px without making
+   the bar itself taller. */
+.motion-toggle,
+.ticker-pin { position: relative; }
+
+.motion-toggle::before,
+.ticker-pin::before {
+  position: absolute;
+  inset: 0 0 -5px;
+  content: "";
+}
+
+.motion-toggle {
+  display: grid;
+  flex: none;
+  width: 44px;
+  height: 100%;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-right: 1px solid var(--rule);
+  background: var(--teal);
+  color: var(--surface);
+}
+
+.motion-toggle svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+}
+
+/* Static: it is a link, and a moving target cannot be read or clicked. Clipped on x
+   only, so its ::before hit area is not cut off at the bar's bottom. */
+.ticker-pin {
+  display: flex;
+  overflow-x: clip;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: min(55%, 560px);
+  align-items: center;
+  gap: var(--space-3);
+  padding-inline: var(--space-3) var(--shell-gutter);
+  border-left: 1px solid var(--rule);
+  background: var(--teal);
+  color: var(--surface);
+  font-family: var(--ff-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ticker-pin-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The sentence gives way first; the call to action only truncates when it alone is
+   wider than the pin. The block padding keeps the underline inside the clip. */
+.ticker-pin-label {
+  flex: none;
+  max-width: 100%;
+  overflow: hidden;
+  padding-block: 4px;
+  text-overflow: ellipsis;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.ticker-pin:hover .ticker-pin-label { text-decoration-thickness: 2px; }
+
+@media (hover: hover) {
+  .motion-toggle:hover,
+  .ticker-pin:hover { background: var(--ink); }
+}
+
+/* Phones show the announcement itself with an arrow: "Pogledaj video" alone says nothing
+   about what is waiting. The call to action stays in the link's accessible name. */
+@media (max-width: 767px) {
+  .ticker-pin-label {
+    position: absolute;
+    overflow: hidden;
+    clip-path: inset(50%);
+    width: 1px;
+    height: 1px;
+  }
+
+  /* The pin gets more of the bar, the arrow sits outside the span that truncates, and
+     the sentence carries the underline that marks it as a link. */
+  .ticker-pin {
+    max-width: 64%;
+    gap: 6px;
+    padding-inline-end: var(--space-3);
+    letter-spacing: 0.03em;
+  }
+
+  .ticker-pin-text {
+    padding-block: 4px;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  .ticker-pin::after {
+    flex: none;
+    content: "→" / "";
+  }
+}
+
+/* With reduced motion the rail never moves, so a pause control would do nothing. */
+@media (prefers-reduced-motion: reduce) {
+  .motion-toggle { display: none; }
+}
+
+/* ---------- Header bar ---------- */
+
+.site-header {
+  height: var(--header-h);
+  border-bottom: 1px solid var(--rule);
+  /* Milk white, not teal: the logo sticker is a teal blob and would vanish on it. */
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* Three columns with equal outer tracks keep the logo optically centred whatever the
+   side columns hold. */
+.nav-shell {
+  display: grid;
+  width: 100%;
+  max-width: 1360px;
+  height: 100%;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-4);
+  margin-inline: auto;
+  padding-inline: var(--shell-gutter);
+}
+
+.mobile-menu-button {
+  grid-area: 1 / 1;
+  justify-self: start;
+}
+
+.nav-shell > .brand {
+  grid-area: 1 / 2;
+}
+
+.header-actions {
+  display: flex;
+  grid-area: 1 / 3;
+  justify-self: end;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.brand {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* The mark is a sticker slapped on slightly crooked; it straightens under the pointer. */
+.brand-logo {
+  display: block;
+  aspect-ratio: 1;
+  object-fit: contain;
+  transform: rotate(-4deg);
+  transition: transform 0.25s cubic-bezier(0.22, 0.7, 0.25, 1);
+}
+
+.brand:hover .brand-logo,
+.brand:focus-visible .brand-logo { transform: rotate(0deg); }
+
+/* Both images keep their own aspect ratio from a fixed height. */
+.brand-animals,
+.brand-wordmark {
+  display: block;
+  width: auto;
+}
+
+.brand-animals { height: 32px; }
+.brand-wordmark { height: 40px; }
+
+/* Header links: condensed heavy caps (wdth 85) so the three links fit beside a
+   centred logo from 861px up. */
+.main-nav { font-size: 0.8125rem; }
+.header-actions { font-size: 0.875rem; }
+
+.main-nav > a,
+.header-account,
+.cart-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 var(--space-1);
+  color: var(--ink);
+  font-family: var(--ff-display);
+  font-size: inherit;
+  font-variation-settings: "wdth" 85;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.main-nav > a:hover,
+.header-account:hover,
+.cart-link:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
+
+.header-account { display: none; }
+
+.cart-link {
+  gap: 6px;
+  border: 0;
+  background: transparent;
+}
+
+/* The badge is one of the few round marks (with the logo and the glyphs). */
+.cart-count {
+  display: inline-grid;
+  min-width: 1.375rem;
+  height: 1.375rem;
+  place-items: center;
+  padding-inline: 5px;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  font-family: var(--ff-body);
+  font-size: 0.75rem;
+  font-variation-settings: normal;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.cart-link:active { transform: scale(0.98); }
+
+.mobile-menu-button,
+.nav-contact { display: none; }
+
+.menu-lines {
+  display: grid;
+  width: 24px;
+  gap: 6px;
+}
+
+.menu-lines > span {
+  display: block;
+  height: 2px;
+  background: currentColor;
+  transition: transform 0.32s cubic-bezier(0.22, 0.7, 0.25, 1);
+}
+
+.menu-lines.is-open > span:first-child { transform: translateY(4px) rotate(45deg); }
+.menu-lines.is-open > span:last-child { transform: translateY(-4px) rotate(-45deg); }
+
+/* Desktop: links left, sticker centred, account and cart right. */
+@media (min-width: 861px) {
+  .main-nav {
+    display: flex;
+    grid-area: 1 / 1;
+    justify-self: start;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .main-nav .nav-support,
+  .main-nav .mobile-account { display: none; }
+
+  .header-account { display: inline-flex; }
+}
+
+@media (min-width: 861px) and (max-width: 1099px) {
+  .header-actions { font-size: 0.8125rem; }
+
+  /* The links on both sides leave the centred logo no room for the animals here. */
+  .brand .brand-animals { display: none; }
+}
+
+@media (min-width: 768px) {
+  .brand-animals { height: 44px; }
+  .brand-wordmark { height: 52px; }
+}
+
+@media (min-width: 1100px) {
+  .main-nav {
+    gap: 20px;
+    font-size: 0.875rem;
+  }
+
+  .header-actions { gap: 20px; }
+}
+
+/* ---------- Mobile menu (≤ 860px) ---------- */
+
+@media (max-width: 860px) {
+  /* Meni sits left with its lines on the gutter; its hit area reaches into the
+     gutter instead of pushing the lines inwards. */
+  .mobile-menu-button {
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    margin-left: -10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .mobile-menu-button:hover {
+    background: var(--ink);
+    color: var(--on-ink);
+  }
+
+  /* A full-width milk-white sheet hung under the header. Positioned against the sticky
+     stack, so top: 100% is the header's bottom rule. It runs to the bottom of the
+     viewport, so no half-cut page shows under it; rows stack from the top and the
+     contact line sits at the bottom. The panel keeps its box and animates; visibility
+     does the hiding and keeps closed links out of the tab order. */
+  .main-nav {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100dvh - var(--header-stack));
+    max-height: calc(100dvh - var(--header-stack));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-bottom: 1px solid var(--rule);
+    background: var(--surface);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-8px);
+    pointer-events: none;
+    transition:
+      opacity 0.22s ease,
+      transform 0.3s cubic-bezier(0.22, 0.7, 0.25, 1),
+      visibility 0s linear 0.3s;
+  }
+
+  .main-nav.is-open {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+    transition-delay: 0s;
+  }
+
+  /* Condensed to a fixed width so "KAKO DOSTAVLJAMO" holds one line from 320px up. */
+  .main-nav > a {
+    display: flex;
+    min-height: 64px;
+    padding: var(--space-3) var(--shell-gutter);
+    font-size: clamp(1.75rem, 8.2vw, 2.5rem);
+    font-variation-settings: "wdth" 86;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+    line-height: 0.95;
+    white-space: normal;
+    word-spacing: 0.06em;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  .main-nav > a + a { border-top: 1px solid var(--rule); }
+
+  .main-nav > a:last-of-type { border-bottom: 1px solid var(--rule); }
+
+  .main-nav .nav-support,
+  .main-nav .mobile-account { display: flex; }
+
+  /* Phone and Instagram, the same pair as in the footer, fill the sheet's empty foot. */
+  .nav-contact {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: var(--space-5);
+    margin: auto 0 0;
+    padding: var(--space-4) var(--shell-gutter) calc(var(--space-4) + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--rule);
+  }
+
+  /* Teal row, white type (4.55:1) and a white ring inside it: the ring stays visible
+     on the teal ground. */
+  .main-nav > a:hover,
+  .main-nav > a:focus-visible {
+    background: var(--brand);
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .main-nav > a:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: -7px;
+  }
+
+  /* Rows arrive just behind the panel, fast enough that the menu still feels instant. */
+  .main-nav.is-open > a { animation: nav-row-in 0.3s cubic-bezier(0.22, 0.7, 0.25, 1) both; }
+  .main-nav.is-open > a:nth-child(2) { animation-delay: 0.03s; }
+  .main-nav.is-open > a:nth-child(3) { animation-delay: 0.06s; }
+  .main-nav.is-open > a:nth-child(4) { animation-delay: 0.09s; }
+  .main-nav.is-open > a:nth-child(5) { animation-delay: 0.12s; }
+  .main-nav.is-open > a:nth-child(6) { animation-delay: 0.15s; }
+}
+
+@keyframes nav-row-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* The motion toggle stops the shell's own decorative motion too. */
+:root[data-motion="paused"] .main-nav.is-open a { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-logo,
+  .menu-lines > span,
+  .main-nav,
+  .main-nav a { transition: none; }
+
+  .main-nav.is-open a { animation: none; }
+}
+
+/* ---------- Footer ---------- */
+
+/* Clipped on both axes: the giant wordmark's glyph box runs below its tight line box
+   and would otherwise leave a strip of page under the footer. */
+.site-footer {
+  overflow: clip;
+  border-top: 1px solid var(--rule);
+  /* Logo navy, so the teal logo sticker reads as a stamp on it. Its children take the
+     white ink of a dark ground (white on navy 11.3:1). */
+  background: var(--navy);
+  color: #fff;
+}
+
+.site-footer > * {
+  --ink: #ffffff;
+  --ink-2: #ffffff;
+  --rule: rgb(255 255 255 / 35%);
+  --rule-soft: rgb(255 255 255 / 20%);
+  --on-ink: var(--navy);
+  --button-hover: var(--brand);
+}
+
+.footer-grid {
+  display: grid;
+  gap: var(--space-6);
+  padding-block: var(--space-8) var(--space-7);
+}
+
+@media (min-width: 600px) {
+  .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .footer-brand-col { grid-column: 1 / -1; }
+}
+
+@media (min-width: 900px) {
+  .footer-grid {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-7);
+  }
+
+  .footer-brand-col { grid-column: auto; }
+}
+
+/* Wide screens: fractional tracks left the short link lists hugging the left of wide
+   columns, a big gap after the brand and an empty right side. Content-sized tracks
+   spread edge to edge instead: the brand on the page-shell's left edge, the last list
+   ending on its right edge, equal gaps between. */
+@media (min-width: 1024px) {
+  .footer-grid {
+    grid-template-columns: repeat(3, auto);
+    justify-content: space-between;
+  }
+}
+
+.footer-brand {
+  width: fit-content;
+  margin-bottom: var(--space-4);
+}
+
+.brand-logo-footer {
+  width: 88px;
+  height: 88px;
+}
+
+/* White on navy; the tagline closes on the old site's #pravomleko. */
+.footer-tagline {
+  max-width: 32ch;
+  margin: 0 0 var(--space-3);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.footer-contact {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--space-5);
+  margin: 0;
+}
+
+.footer-links {
+  display: grid;
+  align-content: start;
+  justify-items: start;
+}
+
+/* Column headings in the display system, small: base.css sizes every h2 as a section
+   title, so size, measure and tracking are all reset here. */
+.footer-links h2 {
+  max-width: none;
+  margin: 0 0 var(--space-2);
+  font-family: var(--ff-display);
+  font-size: 0.9375rem;
+  font-variation-settings: "wdth" 100;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.footer-contact a,
+.nav-contact a,
+.footer-links a,
+.footer-cookie-button {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--ink);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+
+.footer-cookie-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--ff-body);
+}
+
+.footer-contact a:hover,
+.nav-contact a:hover,
+.footer-links a:hover,
+.footer-cookie-button:hover { text-decoration-thickness: 2px; }
+
+.footer-bottom {
+  border-top: 1px solid var(--rule);
+}
+
+.footer-wordmark-wrap {
+  container-type: inline-size;
+  padding-block: var(--space-5) var(--space-4);
+}
+
+/* "MLEKO I MLEKO" in Archivo 900 at wdth 100 and −0.035em tracking is 8.33em wide, so
+   1/8.45 of the container width fills the line without overflowing it (kerning only
+   narrows it). The width axis is pinned so the divisor holds on phones as well. */
+.footer-wordmark {
+  margin: 0;
+  font-family: var(--ff-display);
+  font-size: 11vw;
+  font-size: calc(100cqi / 8.45);
+  font-variation-settings: "wdth" 100;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.8;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ---------- Consent banner ---------- */
+
+.consent-banner {
+  position: fixed;
+  z-index: 100;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-5) 20px calc(var(--space-5) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--rule);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* From 768px a card in the bottom-right corner: the hero copy and its calls to action
+   are left-aligned and end at 56vw (51vw from 1024px), so 44vw minus both margins
+   keeps the card clear of them. */
+@media (min-width: 768px) {
+  .consent-banner {
+    right: var(--space-4);
+    bottom: var(--space-4);
+    left: auto;
+    width: min(420px, calc(44vw - 2 * var(--space-4)));
+    padding: var(--space-5);
+    border: 1px solid var(--rule);
+  }
+}
+
+.consent-banner-title {
+  display: block;
+  font-family: var(--ff-display);
+  font-size: 1.25rem;
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.consent-banner p {
+  margin: var(--space-2) 0 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+/* Two outline choices side by side, the full accept under them. */
+.consent-banner-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.consent-banner-actions .button {
+  width: 100%;
+  padding-inline: var(--space-2);
+  line-height: 1.15;
+  text-align: center;
+  white-space: normal;
+}
+
+.consent-banner-actions .button:last-child { grid-column: 1 / -1; }
+
+/* On tablets the card stays narrow to clear the hero's buttons, too narrow for two
+   labels side by side; one button per row keeps each label on one line. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .consent-banner-actions { grid-template-columns: minmax(0, 1fr); }
+}
+
+.consent-banner .text-link { justify-self: start; }
+
+/* Tablets: the sheet is twice a phone's height, so the rows grow to carry it. */
+@media (min-width: 600px) and (max-width: 860px) {
+  .main-nav > a { font-size: clamp(2.5rem, 7vw, 3.5rem); }
+}

@@ -4,7 +4,7 @@ import { canonicalUrl } from "../lib/seo";
 
 export const metadata: Metadata = {
   title: "Moj nalog",
-  description: "Pregledajte sledeću dostavu i upravljajte pretplatama.",
+  description: "Pregledaj sledeću dostavu i upravljaj pretplatama.",
   alternates: { canonical: canonicalUrl("/nalog") },
   robots: { index: false, follow: false },
 };

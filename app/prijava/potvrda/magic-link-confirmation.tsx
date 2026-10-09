@@ -42,12 +42,12 @@ export function MagicLinkConfirmation() {
   }, [exchangeToken]);
 
   return (
-    <div className="page-shell narrow">
+    <div className="page-shell narrow login-page">
       {status === "loading" ? (
         <p className="loading-state" role="status">Potvrđujemo pristup nalogu…</p>
       ) : status === "success" ? (
         <div className="notice success" role="status">
-          <h1>Uspešno ste prijavljeni.</h1>
+          <h1>Prijava je uspela.</h1>
           <p>Bezbedna sesija je aktivna na ovom uređaju.</p>
           <a className="button" href="/nalog">Otvori nalog</a>
         </div>

@@ -16,7 +16,7 @@ test("no measurement storage before consent; SPA views and campaign survive navi
   const before = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), attributionKey);
   expect(before.lastTouch.parameters.utm_campaign).toBe("e2e-jesen");
   expect(JSON.stringify(before)).not.toContain("private@example.test");
-  await page.getByRole("navigation", {name:"Korisne informacije"}).getByRole("link", {name:"Česta pitanja",exact:true}).click();
+  await page.getByRole("navigation", {name:"Istraži"}).getByRole("link", {name:"Česta pitanja",exact:true}).click();
   await expect(page).toHaveURL(/\/faq$/);
   await expect.poll(() => events.filter(event => event.eventName === "page_view").length).toBe(2);
   const after = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), attributionKey);
@@ -40,7 +40,7 @@ test("campaign report counts real consented sessions once per step and rejects f
   }
   expect((await request.post("/api/events",{data:{...body,eventName:"purchase"}})).status()).toBe(422);
   expect((await request.post("/api/events",{data:{...body,consent:false,eventName:"page_view"}})).status()).toBe(403);
-  const auth = await request.post("/api/admin/access", { headers:{Origin:"http://localhost:4173","cf-connecting-ip":`2001:db8:${suffix.replaceAll("-","").match(/.{1,4}/g)!.slice(0,6).join(":")}`},data:{email:"admin@example.test",password:"e2e-admin-password"}});
+  const auth = await request.post("/api/admin/access", { headers:{Origin:`http://localhost:${process.env.E2E_PORT || "4173"}`,"cf-connecting-ip":`2001:db8:${suffix.replaceAll("-","").match(/.{1,4}/g)!.slice(0,6).join(":")}`},data:{email:"admin@example.test",password:"e2e-admin-password"}});
   expect(auth.ok()).toBe(true);
   const response = await request.get("/api/admin/insights",{headers:{Authorization:`Bearer ${(await auth.json()).sessionToken}`}});
   expect(response.ok()).toBe(true);

@@ -1,0 +1,108 @@
+/* Owner: W-offer — home steps section */
+
+/* The list frame; the home look is scoped to `.steps` further down. */
+.steps-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Grid and flex children default to a min-content floor, which pushes the page wider
+   than the viewport once the reader enlarges text. Everything in the offer opts out
+   and wraps instead (acceptance UI-03). */
+.steps-grid > * { min-width: 0; }
+
+@media (min-width: 768px) {
+  .steps-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 600px) {
+  .steps-grid { gap: 1.5rem; }
+}
+
+.steps-grid h3 { margin: 0; font-size: 1.15rem; }
+.steps-grid p { margin: 0; color: var(--ink-2); font-size: 0.92rem; }
+
+/* Home: the full-bleed logo-teal feature. Everything on it is white (4.55:1; tokens.css
+   flips the ink on its children); the top rule comes from `.home > section + section`,
+   the bottom one from the next section's top. */
+.steps {
+  background: var(--brand);
+  color: #fff;
+}
+
+.steps .section-head {
+  margin-bottom: var(--space-7);
+  text-align: center;
+}
+
+.steps .section-head h2 {
+  margin-inline: auto;
+  font-size: var(--fs-h2);
+  text-wrap: balance;
+}
+
+/* Columns divided by black rules: stacked rows on a phone, three upright columns from
+   768px. Centred like the reference, with a giant numeral as each column's picture. */
+.steps .steps-grid { gap: 0; }
+
+.steps .steps-grid li {
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  justify-items: center;
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+}
+
+.steps .steps-grid li + li { border-top: 1px solid var(--rule); }
+
+@media (min-width: 768px) {
+  .steps .steps-grid li { padding-block: var(--space-4); }
+
+  .steps .steps-grid li + li {
+    border-top: 0;
+    border-left: 1px solid var(--rule);
+  }
+
+  /* Side by side, the columns share their rows: when one title wraps to two lines and
+     its neighbours don't, the numerals, titles and body copy still line up across. */
+  @supports (grid-template-rows: subgrid) {
+    .steps .steps-grid li {
+      grid-row: span 3;
+      grid-template-rows: subgrid;
+    }
+  }
+}
+
+.steps-number {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-family: var(--ff-display);
+  font-size: clamp(4.5rem, 11vw, 9rem);
+  font-variation-settings: "wdth" var(--display-wdth);
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 0.8;
+}
+
+.steps .steps-grid h3 {
+  font-size: clamp(1.15rem, 2vw, 1.5rem);
+}
+
+/* Centred captions want even lines, not just a fixed last line. */
+.steps .steps-grid p {
+  max-width: 32ch;
+  margin-inline: auto;
+  color: var(--ink);
+  text-wrap: balance;
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+/* The checker card sits centred on the teal, like JM's newsletter card on its
+   pattern. */
+.steps-delivery { margin-top: var(--space-8); }
+.steps-delivery .delivery-checker { margin-inline: auto; }
