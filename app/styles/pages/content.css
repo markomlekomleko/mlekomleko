@@ -9,11 +9,11 @@
 .content-band { padding-block: var(--section-y); }
 .content-band + .content-band { border-top: 1px solid var(--rule); }
 
-/* JM's orange feature ground. Everything on it stays black (6.1:1): grey secondary type
-   would drop to about 2:1 here. */
+/* The logo-teal feature ground. Everything on it is white (4.55:1); tokens.css flips
+   the ink on its children, grey secondary type included. */
 .content-band--brand {
   background: var(--brand);
-  color: var(--ink);
+  color: #fff;
 }
 
 /* The page title block: eyebrow, display h1, lead and actions, flush to the band. */
@@ -297,7 +297,7 @@
   }
 }
 
-/* A white card on the orange, like the delivery checker on the home page's steps. */
+/* A white card on the teal, like the delivery checker on the home page's steps. */
 .farm-disclosure {
   display: grid;
   gap: var(--space-2);

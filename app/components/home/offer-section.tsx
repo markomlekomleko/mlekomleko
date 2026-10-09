@@ -6,16 +6,32 @@ import type { BundleOffer, DeliveryWindow, Product } from "../../lib/frontend";
 
 const copy = homeCopy.offer;
 
+// The logo's ragged teal blob, redrawn on the stamp's 160 grid: 72 points round a circle
+// of radius 76, each pushed in or out by a fixed pseudo-random amount (a sine hash, so
+// server and client draw the same edge) plus a slow wobble that keeps it from reading
+// as a gear.
+const blobPath = (() => {
+  const points = Array.from({ length: 72 }, (_, i) => {
+    const angle = (i / 72) * Math.PI * 2;
+    const hash = Math.sin(i * 12.9898) * 43758.5453;
+    const jitter = (hash - Math.floor(hash) - 0.5) * 3.2;
+    const radius = 76 + jitter + Math.sin(angle * 3 + 0.6) * 1.6;
+    return `${(80 + Math.cos(angle) * radius).toFixed(1)} ${(80 + Math.sin(angle) * radius).toFixed(1)}`;
+  });
+  return `M${points.join("L")}Z`;
+})();
+
 /**
- * The round "house stamp" beside the offer heading: an orange sticker with the band words
- * running around a cow glyph. Purely decorative, so it is hidden from assistive
- * technology and carries no text of its own beyond the approved band copy.
+ * The "house stamp" beside the offer heading: the logo's ragged teal blob with the band
+ * words running in white around a white cow glyph, as on the logo. Purely decorative, so
+ * it is hidden from assistive technology and carries no text of its own beyond the
+ * approved band copy.
  */
 function OfferStamp() {
   const ring = `${homeCopy.band.slice(0, 4).join(" • ")} • `;
   return (
     <svg className="offer-stamp" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
-      <circle className="offer-stamp-disc" cx="80" cy="80" r="78" />
+      <path className="offer-stamp-disc" d={blobPath} />
       <circle className="offer-stamp-inner" cx="80" cy="80" r="44" />
       <defs>
         <path id="offer-stamp-ring" d="M80 80m-60 0a60 60 0 1 1 120 0a60 60 0 1 1 -120 0" />

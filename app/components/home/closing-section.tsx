@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { CSSProperties } from "react";
 import { homeCopy } from "../../lib/content";
 import type { StorefrontSettings } from "../../lib/frontend";
@@ -41,15 +42,16 @@ function wrapOffsets(centre: number, size: number) {
 const glyphNames = Object.keys(glyphPaths) as BrandGlyphName[];
 
 // Built once from the shared glyph paths, so the pattern can never drift from the logo
-// marks. The section's CSS paints it over the orange ground through a custom property.
+// marks. The section's CSS paints it over the teal ground through a custom property.
+// Two-tone like the logo, whose goat is navy and cow white: cows white, the rest navy.
 const patternSvg = [
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${TILE}" height="${TILE}" viewBox="0 0 ${TILE} ${TILE}" fill="#000">`,
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${TILE}" height="${TILE}" viewBox="0 0 ${TILE} ${TILE}" fill="#353a4a">`,
   `<defs>${glyphNames.map((name) => `<path id="${name}" d="${glyphPaths[name]}"/>`).join("")}</defs>`,
   ...STAMPS.flatMap(([name, x, y, size, turn]) =>
     wrapOffsets(x, size).flatMap((dx) =>
       wrapOffsets(y, size).map(
         (dy) =>
-          `<use href="#${name}" transform="translate(${x + dx - size / 2} ${y + dy - size / 2}) scale(${size / 64}) rotate(${turn} 32 32)"/>`,
+          `<use href="#${name}"${name === "cow" ? ' fill="#fff"' : ""} transform="translate(${x + dx - size / 2} ${y + dy - size / 2}) scale(${size / 64}) rotate(${turn} 32 32)"/>`,
       ),
     ),
   ),
@@ -67,6 +69,16 @@ export function ClosingSection({ settings }: { settings: Pick<StorefrontSettings
     <section className="closing" aria-labelledby="closing-title" style={patternStyle}>
       <div className="page-shell">
         <div className="closing-card">
+          {/* The logo slapped on the card's corner like a sticker; the heading names the
+              brand already, so it is decorative. */}
+          <Image
+            className="closing-logo"
+            src="/images/mleko-i-mleko-logo-mark.png"
+            alt=""
+            width={148}
+            height={148}
+            sizes="(min-width: 1234px) 148px, 12vw"
+          />
           <p className="eyebrow">{copy.eyebrow}</p>
           <h2 id="closing-title">{copy.title}</h2>
           <p className="closing-text">{settings.guaranteeText}</p>

@@ -4,7 +4,7 @@
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { min-height: 100vh; margin: 0; color: var(--ink); font-family: var(--ff-body); }
-::selection { background: var(--brand); color: var(--ink); }
+::selection { background: var(--brand); color: #fff; }
 a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 a:hover { text-decoration-thickness: 2px; }
 button, input, select, textarea { color: inherit; font: inherit; }
@@ -28,9 +28,10 @@ code { background: var(--alt); color: var(--ink); font-size: .86em; }
 .lead { max-width: 680px; }
 .button-row { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1.4rem; }
 .button-row.compact { margin-top: 0; }
-.button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1px solid var(--ink); background: var(--ink); color: white; text-decoration: none; }
-/* Black type on orange is 6.1:1; white on orange would only pass at display sizes. */
-.button:not(:disabled):hover { border-color: var(--ink); background: var(--brand); color: var(--ink); }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1px solid var(--ink); background: var(--ink); color: var(--on-ink); text-decoration: none; }
+/* White on teal is 4.55:1. On a teal ground --button-hover is navy, so a hovered
+   button never melts into the section behind it. */
+.button:not(:disabled):hover { border-color: var(--button-hover); background: var(--button-hover); color: #fff; }
 .button.danger { border-color: var(--danger); background: var(--surface); color: var(--danger); }
 .button.danger:not(:disabled):hover { border-color: var(--danger); background: var(--danger); color: white; }
 .button.small { min-height: 44px; padding: .55rem .75rem; font-size: .84rem; }
@@ -278,20 +279,20 @@ textarea:focus-visible { outline-offset: 0; }
 .button.secondary:not(:disabled):hover {
   border-color: var(--ink);
   background: var(--ink);
-  color: white;
+  color: var(--on-ink);
 }
 
-/* The go-green call to action; its hover inverts to black like every other button. */
+/* The logo-teal call to action (white on teal 4.55:1); its hover goes navy. */
 .button.go {
-  border-color: var(--ink);
-  background: var(--go);
-  color: var(--ink);
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
 }
 
 .button.go:not(:disabled):hover {
-  border-color: var(--ink);
-  background: var(--ink);
-  color: var(--go);
+  border-color: var(--navy);
+  background: var(--navy);
+  color: #fff;
 }
 
 .icon-button {
@@ -399,5 +400,5 @@ textarea,
 }
 
 @media (hover: hover) {
-  .icon-button:hover { background: var(--ink); color: white; }
+  .icon-button:hover { background: var(--ink); color: var(--on-ink); }
 }

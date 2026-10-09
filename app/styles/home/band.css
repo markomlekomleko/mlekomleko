@@ -13,8 +13,8 @@
    that, so the ends never show a wedge of page behind them. The negative top margin
    pulls the strip up across the bottom of the folded frame, as the reference band
    crosses its hero picture. The folded frame leaves about 3.6% of the pinned screen's
-   height of orange below it, so the overlap is that plus the part that crosses the
-   frame; on orange alone the strip would sink into the ground. The hero's sticky pin
+   height of teal below it, so the overlap is that plus the part that crosses the
+   frame; on teal alone the strip would sink into the ground. The hero's sticky pin
    is a stacking context of its own, so a small z-index here is enough; the sticky
    header (30) and every drawer or bar stay above it. */
 .home-band {
@@ -35,7 +35,7 @@
 .home-band + section { border-top: 0; }
 
 /* The tilt lifts the strip's right end by half its width times tan(2deg) (0.035), which
-   would bare a wedge of the hero's orange fold ground between the strip and the next
+   would bare a wedge of the hero's teal fold ground between the strip and the next
    section. That section tucks up under the strip by the lift, on its own cream ground
    and below the strip's z-index, and adds the same amount back to its top padding so
    its content does not move. */

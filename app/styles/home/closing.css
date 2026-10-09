@@ -1,6 +1,6 @@
 /* Owner: W-story — home closing section */
 
-/* Orange ground stamped with black brand glyphs (the tile comes from closing-section.tsx
+/* Logo-teal ground stamped with navy brand glyphs (the tile comes from closing-section.tsx
    as --closing-pattern). The pattern is decorative and never sits behind text: all copy
    is inside the white card. Denser on phones, as in the reference. */
 .home > .closing {
@@ -8,7 +8,7 @@
   background-image: var(--closing-pattern, none);
   background-position: center top;
   background-size: 180px;
-  color: var(--ink);
+  color: #fff;
 }
 
 @media (min-width: 768px) {
@@ -20,6 +20,7 @@
 }
 
 .closing-card {
+  position: relative;
   display: grid;
   max-width: 880px;
   justify-items: start;
@@ -28,6 +29,17 @@
   border: 1px solid var(--ink);
   background: var(--surface);
   color: var(--ink);
+}
+
+/* The logo as a crooked sticker half off the card's top-right corner. */
+.closing-logo {
+  position: absolute;
+  top: clamp(-44px, -4vw, -28px);
+  right: clamp(12px, 4vw, 40px);
+  width: clamp(88px, 12vw, 148px);
+  height: auto;
+  transform: rotate(8deg);
+  pointer-events: none;
 }
 
 .closing-card .eyebrow { margin-bottom: var(--space-4); }

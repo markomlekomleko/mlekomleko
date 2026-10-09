@@ -1,30 +1,34 @@
 /* Owner: W-foundation — design tokens: the single :root (legacy names kept) */
 
-/* Juicy Marbles–style system: one warm off-white ground, black ink and rules, square
-   corners, flat surfaces, and a single loud orange used as a ground for black type.
-   Semantic names first; every legacy name below is an alias onto them, so partials
-   that still say --cobalt or --milk inherit the new look without being touched.
+/* Juicy Marbles–style system in the Mleko i Mleko logo colours: one milk-white ground,
+   logo-navy ink and rules, square corners, flat surfaces, and the logo's teal used as
+   the single loud ground. Semantic names first; every legacy name below is an alias
+   onto them, so partials that still say --cobalt or --milk inherit the look untouched.
    /admin rebinds the legacy values in admin.css and keeps its old look. */
 :root {
-  /* Colour. Contrast (WCAG, computed) decides what may sit on what:
-     black on --brand 6.1:1, so orange is a ground for black type; white on --brand is
-     only 3.4:1 (large display type only); --brand as text on --bg is 3.1:1 (never body
-     text or links); black on --brand-dark is 4.2:1, so an orange control's hover goes
-     black, never darker orange; black on --go 8.9:1; white on --teal 5.5:1 but black on
-     --teal only 3.8:1, so teal always carries white type. */
-  --bg: #f7f2f0;
+  /* Colour, sampled from mleko-i-mleko-logo.png. Contrast (WCAG, computed) decides what
+     may sit on what: white on --brand 4.55:1 and navy on --brand only 2.5:1, so teal is
+     a ground for WHITE type (see .on-brand below); --brand as text on --bg is 4.2:1
+     (large type and icons only, never body text); navy on --bg 10.4:1; white on --navy
+     11.3:1; white on --teal 6.3:1; navy on --blush 9.3:1; navy on --go 4.8:1. */
+  --navy: #353a4a;
+  --bg: #f6f5f1;
   --surface: #ffffff;
-  --alt: #f2f2f2;
-  --brand: #ff4612;
-  --brand-dark: #cb3a12;
-  --brand-light: #ff7e59;
-  --blush: #f9d0c4;
-  --teal: #2f7184;
+  --alt: #eeefec;
+  --brand: #357f94;
+  --brand-dark: #2a6779;
+  --brand-light: #6fa9b8;
+  --blush: #dcebef;
+  --teal: #2a6779;
   --go: #66bd15;
-  --ink: #000000;
-  --ink-2: #636160;
-  --rule: #000000;
-  --rule-soft: rgb(0 0 0 / 15%);
+  --ink: var(--navy);
+  --ink-2: #5d6675;
+  /* Type on a filled --ink control: white on the page, navy once .on-brand flips --ink. */
+  --on-ink: #ffffff;
+  /* Ground a filled button turns on hover: teal on the page, navy on a teal ground. */
+  --button-hover: var(--brand);
+  --rule: var(--navy);
+  --rule-soft: rgb(53 58 74 / 15%);
   --danger: #a33b33;
   --success: #1f6b4d;
 
@@ -94,6 +98,29 @@
   /* Ticker plus sticky header; the hero copy clears this once pinned, and other sticky
      columns (cart summary, product gallery) and every anchor use it as their offset. */
   --header-stack: calc(var(--ticker-h) + var(--header-h));
+}
+
+/* Teal grounds carry white type. The tokens flip on the ground's children, not the
+   ground itself, so the navy rules that separate it from its neighbours stay navy. Grey
+   secondary type would fail on teal, so it goes white too. */
+.on-brand > *,
+:is(.steps, .content-band--brand, .home > .closing) > * {
+  --ink: #ffffff;
+  --ink-2: #ffffff;
+  --rule: #ffffff;
+  --rule-soft: rgb(255 255 255 / 30%);
+  --on-ink: var(--navy);
+  --button-hover: var(--navy);
+}
+
+/* White cards set on a teal ground go back to the page's ink. */
+:is(.steps, .content-band--brand, .home > .closing, .on-brand) :is(.delivery-checker, .closing-card, .farm-disclosure) {
+  --ink: var(--navy);
+  --ink-2: #5d6675;
+  --rule: var(--navy);
+  --rule-soft: rgb(53 58 74 / 15%);
+  --on-ink: #ffffff;
+  --button-hover: var(--brand);
 }
 
 @media (max-width: 480px) {

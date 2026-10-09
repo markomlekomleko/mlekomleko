@@ -93,7 +93,7 @@
   position: relative;
 }
 
-/* The fold: the scene shrinks and tilts onto the orange ground, and its edge is drawn
+/* The fold: the scene shrinks and tilts onto the teal ground, and its edge is drawn
    in as it goes. Transform and opacity only. */
 .scene-frame {
   position: absolute;
@@ -106,7 +106,7 @@
 }
 
 /* A tall phone frame tilted by 1.5deg swings its corners sideways by more than 6% of a
-   narrow width leaves free, so phones fold smaller to keep orange on both sides. */
+   narrow width leaves free, so phones fold smaller to keep teal on both sides. */
 .hero { --hero-fold-shrink: 0.14; }
 
 @media (min-width: 768px) {
@@ -343,7 +343,7 @@
   padding: var(--space-4) var(--space-5);
   border: 1px solid var(--ink);
   background: var(--brand);
-  color: var(--ink);
+  color: #fff;
   container-type: inline-size;
   opacity: var(--hero-rhythm-o);
   transform: translate3d(0, calc(var(--hero-rhythm-y) * 1px), 0) rotate(-2deg);

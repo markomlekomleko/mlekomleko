@@ -53,23 +53,20 @@
   }
 }
 
-/* Black on orange (6.1:1), the same sticker treatment as the bundle flag. */
-.offer-stamp-disc {
-  fill: var(--brand);
-  stroke: var(--ink);
-  stroke-width: 1.5;
-}
+/* White on logo teal (4.55:1), like the logo's wordmark and cow. The blob has no
+   outline, as on the logo; the inner ring is a thin white line. */
+.offer-stamp-disc { fill: var(--brand); }
 
 .offer-stamp-inner {
   fill: none;
-  stroke: var(--ink);
+  stroke: #fff;
   stroke-width: 1.5;
 }
 
-.offer-stamp-glyph { fill: var(--ink); }
+.offer-stamp-glyph { fill: #fff; }
 
 .offer-stamp-text {
-  fill: var(--ink);
+  fill: #fff;
   font-family: var(--ff-display);
   font-size: 13px;
   font-weight: 800;

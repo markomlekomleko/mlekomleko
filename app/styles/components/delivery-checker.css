@@ -1,7 +1,7 @@
 /* Owner: W-offer — delivery checker */
 
 /* JM's newsletter card: a white square card with a black rule, a display-type title and
-   the postcode field joined edge to edge with its black button. It sits on the orange
+   the postcode field joined edge to edge with its black button. It sits on the teal
    steps band on the home page and on the cream ground of the city delivery pages. */
 .delivery-checker {
   display: grid;
@@ -80,7 +80,7 @@
 }
 
 /* Results: success on white with a heavy black rule, a miss on blush with a danger rule
-   down the side. Green stays reserved for the hero's call to action. Both keep black
+   down the side.  Both keep black
    text, so neither leans on colour alone. */
 .delivery-checker .check-result {
   margin: 0;

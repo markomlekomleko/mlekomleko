@@ -119,7 +119,7 @@
   place-items: center;
   border-right: 1px solid var(--ink);
   background: var(--brand);
-  color: var(--ink);
+  color: #fff;
 }
 
 .origin-video-icon svg {

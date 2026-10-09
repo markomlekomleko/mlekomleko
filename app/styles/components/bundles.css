@@ -1,7 +1,7 @@
 /* Owner: W-offer — bundle offers */
 
 /* Same card language as the configurator: white square card, black rule, chunky serif
-   name, heavy display price. A featured package gets a small tilted orange sticker. */
+   name, heavy display price. A featured package gets a small tilted teal sticker. */
 
 .bundles { margin-top: var(--space-8); }
 .bundles .section-head { margin-bottom: var(--space-6); }
@@ -45,7 +45,7 @@
   background: var(--surface);
 }
 
-/* Sticker over the top edge. Black on orange is 6.1:1. */
+/* Sticker over the top edge. White on logo teal is 4.55:1. */
 .bundle-flag {
   position: absolute;
   z-index: 1;
@@ -55,7 +55,7 @@
   padding: 0.3rem 0.6rem;
   border: 1px solid var(--rule);
   background: var(--brand);
-  color: var(--ink);
+  color: #fff;
   font-family: var(--ff-display);
   font-size: 0.8rem;
   font-weight: 900;

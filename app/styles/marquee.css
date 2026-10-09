@@ -95,12 +95,12 @@
   padding-inline: 1.25em;
 }
 
-/* Band: the loud display strip between sections. Black on orange is 6.1:1. */
+/* Band: the loud display strip between sections. White on logo teal is 4.55:1. */
 .marquee--band {
   padding-block: 14px;
   border-block: 1px solid var(--ink);
   background: var(--brand);
-  color: var(--ink);
+  color: #fff;
   font-family: var(--ff-display);
   font-size: clamp(1.75rem, 4.5vw, 3.5rem);
   font-variation-settings: "wdth" var(--display-wdth);

@@ -59,7 +59,7 @@ export const homeCopy = {
     rhythmTitle: "Ti biraš ritam, mi donosimo.",
     rhythmSub: "Kravlje. Kozje. Oba.",
   },
-  band: ["PUNOMASNO", "SIROVO", "U STAKLU", "KRAVLJE", "KOZJE", "DOMAĆE", "BEOGRAD", "NOVI SAD"],
+  band: ["PUNOMASNO", "SIROVO", "U STAKLU", "KRAVLJE", "KOZJE", "DOMAĆE", "UVEK SVEŽE", "BEOGRAD", "NOVI SAD", "#PRAVOMLEKO"],
   offer: {
     eyebrow: "01 / Na meniju",
     title: "Tim krava ili tim koza?",
@@ -135,7 +135,7 @@ export const shellCopy = {
     "Plaćanje gotovinom pri dostavi",
   ],
   footer: {
-    tagline: "Domaće kravlje i kozje mleko u staklu koje se vraća. Punomasno i ponosno.",
+    tagline: "Domaće kravlje i kozje mleko u staklu koje se vraća. Punomasno i ponosno. #pravomleko",
     exploreTitle: "Istraži",
     infoTitle: "Sitna slova",
     wordmark: "Mleko i Mleko",

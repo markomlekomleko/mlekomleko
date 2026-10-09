@@ -13,7 +13,7 @@ const styles = `
 .global-error h1 { margin: 0 0 16px; font-family: "Arial Black", Arial, sans-serif; font-size: clamp(2.25rem, 8vw, 4.5rem); font-weight: 900; letter-spacing: -.035em; line-height: .92; overflow-wrap: break-word; text-transform: uppercase; }
 .global-error p { margin: 0 0 8px; }
 .global-error-button { min-height: 52px; margin-top: 16px; padding: 0 28px; border: 1px solid var(--ink); border-radius: 0; background: var(--ink); color: var(--surface); cursor: pointer; font: inherit; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
-.global-error-button:hover { background: var(--brand); color: var(--ink); }
+.global-error-button:hover { border-color: var(--brand); background: var(--brand); color: #fff; }
 .global-error-button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 `;
 

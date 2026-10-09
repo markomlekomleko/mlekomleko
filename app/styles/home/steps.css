@@ -25,11 +25,12 @@
 .steps-grid h3 { margin: 0; font-size: 1.15rem; }
 .steps-grid p { margin: 0; color: var(--ink-2); font-size: 0.92rem; }
 
-/* Home: JM's full-bleed orange feature. Everything on it is black (6.1:1); the top rule
-   comes from `.home > section + section`, the bottom one from the next section's top. */
+/* Home: the full-bleed logo-teal feature. Everything on it is white (4.55:1; tokens.css
+   flips the ink on its children); the top rule comes from `.home > section + section`,
+   the bottom one from the next section's top. */
 .steps {
   background: var(--brand);
-  color: var(--ink);
+  color: #fff;
 }
 
 .steps .section-head {
@@ -101,7 +102,7 @@
   line-height: 1.45;
 }
 
-/* The checker card sits centred on the orange, like JM's newsletter card on its
+/* The checker card sits centred on the teal, like JM's newsletter card on its
    pattern. */
 .steps-delivery { margin-top: var(--space-8); }
 .steps-delivery .delivery-checker { margin-inline: auto; }

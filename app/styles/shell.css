@@ -193,7 +193,8 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
 .site-header {
   height: var(--header-h);
   border-bottom: 1px solid var(--rule);
-  background: var(--brand);
+  /* Milk white, not teal: the logo sticker is a teal blob and would vanish on it. */
+  background: var(--surface);
   color: var(--ink);
 }
 
@@ -314,8 +315,8 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
   place-items: center;
   padding-inline: 5px;
   border-radius: 999px;
-  background: var(--ink);
-  color: var(--surface);
+  background: var(--brand);
+  color: #fff;
   font-family: var(--ff-body);
   font-size: 0.75rem;
   font-variation-settings: normal;
@@ -403,13 +404,12 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  /* An orange control's hover goes black, never a darker orange. */
   .mobile-menu-button:hover {
     background: var(--ink);
-    color: var(--brand);
+    color: var(--on-ink);
   }
 
-  /* A full-width orange sheet hung under the header. Positioned against the sticky
+  /* A full-width milk-white sheet hung under the header. Positioned against the sticky
      stack, so top: 100% is the header's bottom rule. It runs to the bottom of the
      viewport, so no half-cut page shows under it; rows stack from the top and the
      contact line sits at the bottom. The panel keeps its box and animates; visibility
@@ -426,7 +426,7 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
     overflow-y: auto;
     overscroll-behavior: contain;
     border-bottom: 1px solid var(--rule);
-    background: var(--brand);
+    background: var(--surface);
     visibility: hidden;
     opacity: 0;
     transform: translateY(-8px);
@@ -477,17 +477,17 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
     border-top: 1px solid var(--rule);
   }
 
-  /* Black row, orange type (6.1:1) and an orange ring inside it: the ring stays
-     visible on the black ground. */
+  /* Teal row, white type (4.55:1) and a white ring inside it: the ring stays visible
+     on the teal ground. */
   .main-nav > a:hover,
   .main-nav > a:focus-visible {
-    background: var(--ink);
-    color: var(--brand);
+    background: var(--brand);
+    color: #fff;
     text-decoration: none;
   }
 
   .main-nav > a:focus-visible {
-    outline: 3px solid var(--brand);
+    outline: 3px solid #fff;
     outline-offset: -7px;
   }
 
@@ -524,8 +524,19 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
 .site-footer {
   overflow: clip;
   border-top: 1px solid var(--rule);
-  background: var(--brand);
-  color: var(--ink);
+  /* Logo navy, so the teal logo sticker reads as a stamp on it. Its children take the
+     white ink of a dark ground (white on navy 11.3:1). */
+  background: var(--navy);
+  color: #fff;
+}
+
+.site-footer > * {
+  --ink: #ffffff;
+  --ink-2: #ffffff;
+  --rule: rgb(255 255 255 / 35%);
+  --rule-soft: rgb(255 255 255 / 20%);
+  --on-ink: var(--navy);
+  --button-hover: var(--brand);
 }
 
 .footer-grid {
@@ -569,7 +580,7 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
   height: 88px;
 }
 
-/* Black on orange only: grey body text would fall to about 2.3:1 here. */
+/* White on navy; the tagline closes on the old site's #pravomleko. */
 .footer-tagline {
   max-width: 32ch;
   margin: 0 0 var(--space-3);

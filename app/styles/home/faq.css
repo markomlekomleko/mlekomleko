@@ -40,7 +40,7 @@
 }
 
 /* A drawn plus in a square box: the plus turns 45deg into a cross when the row opens
-   and the box goes orange (black bars on orange are 6.1:1). Only the bars turn, so the
+   and the box goes teal (white bars on teal are 4.55:1). Only the bars turn, so the
    box stays square. */
 .faq-icon {
   position: relative;
@@ -70,7 +70,7 @@
 
 .faq-list details[open] .faq-icon {
   background: var(--brand);
-  color: var(--ink);
+  color: #fff;
 }
 
 .faq-list details[open] .faq-icon::before { transform: rotate(45deg); }
