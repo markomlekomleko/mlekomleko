@@ -13,7 +13,7 @@
   font-variation-settings: "wdth" var(--display-wdth);
   font-weight: 900;
   letter-spacing: -0.035em;
-  line-height: 0.92;
+  line-height: var(--display-leading);
   word-spacing: 0.06em;
 }
 

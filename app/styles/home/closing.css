@@ -41,7 +41,7 @@
   font-variation-settings: normal;
   font-weight: 800;
   letter-spacing: -0.01em;
-  line-height: 0.95;
+  line-height: var(--display-leading);
   text-wrap: balance;
   word-spacing: normal;
 }

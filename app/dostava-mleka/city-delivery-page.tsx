@@ -78,6 +78,7 @@ export async function CityDeliveryPage({
               title={`Proveri adresu za ${city}`}
               note={`${postalCodeHint} ${localDetail}`}
               delivery={delivery}
+              placeholder={city === "Novi Sad" ? "21000" : "11000"}
             />
           </div>
         </div>

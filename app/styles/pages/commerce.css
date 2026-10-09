@@ -138,11 +138,12 @@
 .product-quick-facts { grid-area: facts; }
 
 /* Capped so the square photo stays under three quarters of a tablet screen
-   (compact-commerce spec) and the price within reach below it. */
+   (compact-commerce spec) and the price within reach below it. It keeps the page's
+   left edge, like the breadcrumb, buy card and facts around it. */
 .product-detail-media {
   grid-area: media;
   max-width: 35rem;
-  justify-self: center;
+  justify-self: start;
 }
 
 @media (min-width: 1024px) {

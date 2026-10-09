@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useAnalytics } from "../../components/analytics-provider";
 import { ProductConfigurator } from "../../components/product-configurator";
-import { formatDate, formatMoney, type DeliveryWindow, type Product } from "../../lib/frontend";
+import { formatDate, formatDateTime, formatMoney, type DeliveryWindow, type Product } from "../../lib/frontend";
 
 type Selection = { label: string; totalRsd: number; disabled: boolean };
 
@@ -25,13 +25,8 @@ export function ProductDetail({
   const [selection, setSelection] = useState<Selection>({ label: "", totalRsd: 0, disabled: true });
   const [barVisible, setBarVisible] = useState(false);
 
-  const cutoff = new Intl.DateTimeFormat("sr-Latn-RS", {
-    timeZone: "Europe/Belgrade",
-    day: "numeric",
-    month: "long",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(delivery.cutoffAt));
+  // Same format as the cart and checkout: weekday, date and time in Belgrade.
+  const cutoff = formatDateTime(delivery.cutoffAt);
 
   useEffect(() => {
     if (trackedProduct.current === product.id) return;

@@ -8,7 +8,18 @@ type CheckerPayload = {
   serviceability?: { postalCode: string; available: boolean };
 };
 
-export function DeliveryChecker({ title, note, delivery }: { title: string; note: string; delivery: DeliveryWindow }) {
+export function DeliveryChecker({
+  title,
+  note,
+  delivery,
+  placeholder = "11000",
+}: {
+  title: string;
+  note: string;
+  delivery: DeliveryWindow;
+  /** Example postcode for the city the checker sits on. */
+  placeholder?: string;
+}) {
   const [postalCode, setPostalCode] = useState("");
   const [result, setResult] = useState<{ available: boolean; postalCode: string } | null>(null);
   const [error, setError] = useState("");
@@ -43,7 +54,7 @@ export function DeliveryChecker({ title, note, delivery }: { title: string; note
         <div className="field">
           <label htmlFor={inputId}>Poštanski broj</label>
           <div className="input-action">
-            <input id={inputId} value={postalCode} onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 5))} inputMode="numeric" autoComplete="postal-code" pattern="\d{5}" placeholder="11000" required />
+            <input id={inputId} value={postalCode} onChange={(event) => setPostalCode(event.target.value.replace(/\D/g, "").slice(0, 5))} inputMode="numeric" autoComplete="postal-code" pattern="\d{5}" placeholder={placeholder} required />
             <button className="button" type="submit" disabled={busy}>{busy ? "Proveravamo…" : "Proveri"}</button>
           </div>
         </div>

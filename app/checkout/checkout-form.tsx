@@ -27,6 +27,8 @@ export function CheckoutForm() {
   const { items, ready, promoCode, clearCart } = useCart();
   const { track } = useAnalytics();
   const paymentMethod = "cash";
+  // Subscription-only notes stay off one-time orders, where they would not be true.
+  const hasSubscription = items.some((item) => item.purchaseType === "subscription");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<CheckoutResult | null>(null);
@@ -247,7 +249,7 @@ export function CheckoutForm() {
                   readOnly
                 />
                 Gotovina pri dostavi
-                <span className="muted small-text">Pretplata se plaća pri prvoj dostavi u mesecu.</span>
+                {hasSubscription ? <span className="muted small-text">Redovna dostava se plaća pri prvoj dostavi u mesecu.</span> : null}
               </label>
 
             </div>
@@ -271,14 +273,14 @@ export function CheckoutForm() {
                 {line.quantity} × {line.productName}<br />
                 <span className="muted">
                   {line.purchaseType === "one_time" ? "Jednokratno" : `${cadenceLabel(line.cadence ?? undefined)} · ${formatMoney(line.unitPriceMinor * line.quantity / 100)} po dostavi · ${line.occurrences}× ovog meseca`}
-                  {line.deliveryDates.length ? <><br />Termini: {line.deliveryDates.map((date) => formatDate(date)).join(", ")}</> : null}
+                  {line.deliveryDates.length ? <><br />{line.deliveryDates.length === 1 ? "Termin" : "Termini"}: {line.deliveryDates.map((date) => formatDate(date)).join(" · ")}</> : null}
                 </span>
               </span>
               <strong>{formatMoney(line.lineTotalMinor / 100)}</strong>
             </div>
           ))}
-          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Ukupno za ovaj mesec" : "Ukupno"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="summary-total-note">Plaćaš gotovinom pri dostavi.</p><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Rok za izmene: {formatDateTime(quote.cutoffAt)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
-          <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Plaćaš samo isporuke planirane za tekući mesec.</p>
+          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Ukupno za ovaj mesec" : "Ukupno"}</span><span>{formatMoney(quote.totalMinor / 100)}</span></div><p className="summary-total-note">Plaćaš gotovinom pri dostavi.</p><p className="delivery-summary">{hasSubscription ? "Prva dostava" : "Dostava"}: <strong>{formatDate(quote.deliveryDate)}</strong><br /><small>Rok za izmene: {formatDateTime(quote.cutoffAt)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
+          {hasSubscription ? <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Plaćaš samo isporuke planirane za tekući mesec.</p> : null}
           <button className="button" type="submit" disabled={submitting || !quote || quote.serviceable === false}>
             {submitting ? "Čuvamo porudžbinu…" : "Potvrdi porudžbinu"}
           </button>

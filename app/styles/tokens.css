@@ -66,6 +66,9 @@
   /* One section-heading size for every home section; it stays under the hero h1,
      which is sized to its own column (about 54px at 768, 87px at 1440). */
   --fs-h2: clamp(2.25rem, 5.6vw, 4.75rem);
+  /* Leading for display type that can wrap. JM sets its headings at 1; tighter than
+     that, Serbian carons and acutes (Č, Š, Ž, Ć) on a second line touch the line above. */
+  --display-leading: 1;
   --fs-h3: clamp(1.15rem, 2.4vw, 1.5rem);
   --fs-eyebrow: 0.75rem;
   /* Archivo's width axis: full width by default, condensed on phones so long Serbian

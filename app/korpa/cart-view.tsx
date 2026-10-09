@@ -122,7 +122,7 @@ export function CartView() {
       <header className="page-heading compact-heading">
         <p className="eyebrow">Korpa</p>
         <h1>Još samo dostava.</h1>
-        <p className="lead">Sve cene i termini proveravaju se direktno iz ponude pre plaćanja.</p>
+        <p className="lead">Sve cene i termini proveravaju se direktno iz ponude pre potvrde.</p>
       </header>
 
       <div className="checkout-layout">
@@ -144,7 +144,7 @@ export function CartView() {
 
         <aside className="card cart-summary" aria-labelledby="ukupno-title">
           <p className="eyebrow">Pregled</p>
-          <h2 id="ukupno-title">Tvoja prva porudžbina</h2>
+          <h2 id="ukupno-title">Tvoja porudžbina</h2>
           {quote?.lines.map((line, index) => <div className="summary-row small-text" key={`${line.productId}-${index}`}><span>{line.quantity} × {line.productName}<br /><small className="muted">{line.purchaseType === "one_time" ? "Jednokratno" : `${cadenceLabel(line.cadence ?? undefined)} · ${formatMoney(line.unitPriceMinor * line.quantity / 100)} po dostavi`}{line.occurrences > 1 ? ` · ${line.occurrences} dostave ovog meseca` : ""}</small></span><strong>{formatMoney(line.lineTotalMinor / 100)}</strong></div>)}
           <form className="promo-form" onSubmit={applyPromo}><label className="field"><span>Promo kod</span><div className="input-action"><input value={promoInput} onChange={(event) => setPromoInput(event.target.value)} placeholder="DOBRODOSLI10" /><button className="button secondary small" type="submit">Primeni</button></div></label></form>
           {orderBump ? <div className="order-bump"><div><small>Najbolje uz tvoju korpu</small><strong>＋ {orderBump.name}</strong><span>{formatMoney(orderBump.priceRsd)} / {orderBump.unit}</span></div><button className="button small" type="button" onClick={() => addOrderBump(orderBump)}>Dodaj</button></div> : null}

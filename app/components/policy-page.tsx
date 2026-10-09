@@ -3,7 +3,8 @@ import { glyphPaths, type BrandGlyphName } from "./brand-glyph";
 
 export type PolicySection = { title: string; paragraphs: string[] };
 
-const stampRing: readonly BrandGlyphName[] = ["bottle", "drop", "cow"];
+// The cow head turns to a speck at ring size, so the ring alternates bottle and drop.
+const stampRing: readonly BrandGlyphName[] = ["bottle", "drop"];
 
 /**
  * The house stamp beside a text-only page title: the home offer stamp with a ring of the
@@ -16,9 +17,9 @@ export function ContentStamp({ glyph = "cow" }: { glyph?: BrandGlyphName }) {
       <circle className="content-stamp-disc" cx="80" cy="80" r="78" />
       <circle className="content-stamp-inner" cx="80" cy="80" r="44" />
       <g className="content-stamp-spin">
-        {/* Twelve 16px glyphs, each drawn at the top of the ring and turned into place. */}
-        {Array.from({ length: 12 }, (_, index) => (
-          <path key={index} d={glyphPaths[stampRing[index % stampRing.length]]} transform={`rotate(${index * 30} 80 80) translate(72 12) scale(0.25)`} />
+        {/* Eight 22px glyphs centred on the ring band, each drawn at the top and turned into place. */}
+        {Array.from({ length: 8 }, (_, index) => (
+          <path key={index} d={glyphPaths[stampRing[index % stampRing.length]]} transform={`rotate(${index * 45} 80 80) translate(69.1 8.1) scale(0.34)`} />
         ))}
       </g>
       <path d={glyphPaths[glyph]} transform="translate(56 56) scale(0.75)" />

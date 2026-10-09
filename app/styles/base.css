@@ -124,7 +124,7 @@ td select { min-width: 125px; min-height: 38px; padding-block: .4rem; }
 
 body { -webkit-font-smoothing: antialiased; }
 .page-shell h1, .page-shell h2 { font-family: var(--ff-display); font-weight: 900; letter-spacing: -.035em; }
-.section-heading h2 { font-size: var(--fs-h2); line-height: .92; }
+.section-heading h2 { font-size: var(--fs-h2); line-height: var(--display-leading); }
 .lead { font-size: 1.06rem; line-height: 1.5; }
 .text-link, .text-button { font-size: .9rem; font-weight: 500; }
 .text-link { display: inline-flex; min-height: 44px; align-items: center; }
@@ -190,7 +190,7 @@ h2 {
   font-weight: 900;
   font-variation-settings: "wdth" var(--display-wdth);
   letter-spacing: -0.035em;
-  line-height: 0.92;
+  line-height: var(--display-leading);
   text-transform: uppercase;
   word-spacing: 0.06em;
 }
