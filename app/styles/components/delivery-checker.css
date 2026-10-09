@@ -79,8 +79,9 @@
   .delivery-checker .button { flex-basis: clamp(9rem, 36%, 15rem); }
 }
 
-/* Results: success on the go-green (black on it is 8.9:1), a miss on blush with a
-   danger rule down the side. Both keep black text, so neither leans on colour alone. */
+/* Results: success on white with a heavy black rule, a miss on blush with a danger rule
+   down the side. Green stays reserved for the hero's call to action. Both keep black
+   text, so neither leans on colour alone. */
 .delivery-checker .check-result {
   margin: 0;
   padding: var(--space-3) var(--space-4);
@@ -90,7 +91,10 @@
   font-weight: 600;
 }
 
-.delivery-checker .check-result.success { background: var(--go); }
+.delivery-checker .check-result.success {
+  border-left: 6px solid var(--ink);
+  background: var(--surface);
+}
 
 .delivery-checker .check-result.error {
   border-left: 6px solid var(--danger);

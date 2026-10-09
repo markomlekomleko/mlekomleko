@@ -3,7 +3,10 @@
 /* The band is wider than the page and tilted, so the page has to clip sideways. `clip`,
    not `hidden`: `hidden` would turn .home into a scroll container and the hero's
    position: sticky would stop pinning. */
-.home { overflow-x: clip; }
+.home {
+  --band-bleed: 64px;
+  overflow-x: clip;
+}
 
 /* Rotating about the centre lifts one end and drops the other by half the width times
    tan(2deg), and pulls the corners inwards; the bleed on both sides is far wider than
@@ -15,7 +18,6 @@
    is a stacking context of its own, so a small z-index here is enough; the sticky
    header (30) and every drawer or bar stay above it. */
 .home-band {
-  --band-bleed: 64px;
   --band-overlap: calc(3.6svh + clamp(20px, 4.4vw, 64px));
   position: relative;
   z-index: 3;
@@ -31,6 +33,19 @@
    would leave a cream wedge between two black lines under the tilt. This file loads
    after offer.css, and the element in the selector outranks `.offer` anyway. */
 .home-band + section { border-top: 0; }
+
+/* The tilt lifts the strip's right end by half its width times tan(2deg) (0.035), which
+   would bare a wedge of the hero's orange fold ground between the strip and the next
+   section. That section tucks up under the strip by the lift, on its own cream ground
+   and below the strip's z-index, and adds the same amount back to its top padding so
+   its content does not move. */
+.home > .home-band + section {
+  --band-tuck: calc((50vw + var(--band-bleed)) * 0.035 + 8px);
+  position: relative;
+  z-index: 2;
+  margin-top: calc(-1 * var(--band-tuck));
+  padding-top: calc(var(--section-y) + var(--space-4) + var(--band-tuck));
+}
 
 /* More air between the words and the bottle stamps than the primitive's default, as in
    the reference strip. */

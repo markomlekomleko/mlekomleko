@@ -386,9 +386,9 @@ export function CartDrawer() {
                     </p>
                   ) : null}
                   <p className="muted small-text">
-                    Sledeća dostava {formatDate(quote.deliveryDate)}
+                    Sledeća dostava: {formatDate(quote.deliveryDate)}
                     <br />
-                    Izmene su moguće do {formatDateTime(quote.cutoffAt)}
+                    Rok za izmene: {formatDateTime(quote.cutoffAt)}
                   </p>
                 </>
               ) : (

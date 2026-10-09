@@ -276,7 +276,7 @@ export function ProductConfigurator({
                   ))}
                 </div>
                 <p className="configurator-hint">
-                  Prva dostava {formatDate(delivery.deliveryDate)}.
+                  Prva dostava: {formatDate(delivery.deliveryDate)}
                 </p>
               </fieldset>
             ) : null}

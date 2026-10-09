@@ -2,7 +2,9 @@
 
 /* --ticker-h, --header-h and --header-stack are defined once, in tokens.css. */
 
-/* Anchors land just under the sticky stack at every width. */
+/* Anchors, scrolled-to elements and controls reached by tabbing backwards all land
+   just under the sticky stack at every width (WCAG 2.4.11). */
+html { scroll-padding-top: calc(var(--header-stack) + 12px); }
 [id] { scroll-margin-top: calc(var(--header-stack) + 12px); }
 
 /* The ticker and the header stick together as one unit. */
@@ -66,15 +68,16 @@
   outline-offset: -5px;
 }
 
-/* The bar is 40px tall; each control's hit area runs 4px on into the header's empty top
-   edge, so it is 44px without making the bar itself taller. */
+/* The bar is 40px tall including its 1px bottom rule, so each control's box is 39px; its
+   hit area runs 5px on into the header's empty top edge, so it is 44px without making
+   the bar itself taller. */
 .motion-toggle,
 .ticker-pin { position: relative; }
 
 .motion-toggle::before,
 .ticker-pin::before {
   position: absolute;
-  inset: 0 0 -4px;
+  inset: 0 0 -5px;
   content: "";
 }
 
@@ -147,16 +150,18 @@
   .ticker-pin:hover { background: var(--ink); }
 }
 
-/* Phones keep only the call to action visible; the full sentence stays in the link's
-   accessible name. */
+/* Phones show the announcement itself with an arrow: "Pogledaj video" alone says nothing
+   about what is waiting. The call to action stays in the link's accessible name. */
 @media (max-width: 767px) {
-  .ticker-pin-text {
+  .ticker-pin-label {
     position: absolute;
     overflow: hidden;
     clip-path: inset(50%);
     width: 1px;
     height: 1px;
   }
+
+  .ticker-pin-text::after { content: "\00a0→" / ""; }
 }
 
 /* With reduced motion the rail never moves, so a pause control would do nothing. */
@@ -438,6 +443,8 @@
 
   .main-nav > a + a { border-top: 1px solid var(--rule); }
 
+  .main-nav > a:last-of-type { border-bottom: 1px solid var(--rule); }
+
   .main-nav .nav-support,
   .main-nav .mobile-account { display: flex; }
 
@@ -493,8 +500,10 @@
 
 /* ---------- Footer ---------- */
 
+/* Clipped on both axes: the giant wordmark's glyph box runs below its tight line box
+   and would otherwise leave a strip of page under the footer. */
 .site-footer {
-  overflow-x: clip;
+  overflow: clip;
   border-top: 1px solid var(--rule);
   background: var(--brand);
   color: var(--ink);
@@ -695,4 +704,15 @@
 
 .consent-banner-actions .button:last-child { grid-column: 1 / -1; }
 
+/* On tablets the card stays narrow to clear the hero's buttons, too narrow for two
+   labels side by side; one button per row keeps each label on one line. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .consent-banner-actions { grid-template-columns: minmax(0, 1fr); }
+}
+
 .consent-banner .text-link { justify-self: start; }
+
+/* Tablets: the sheet is twice a phone's height, so the rows grow to carry it. */
+@media (min-width: 600px) and (max-width: 860px) {
+  .main-nav > a { font-size: clamp(2.5rem, 7vw, 3.5rem); }
+}

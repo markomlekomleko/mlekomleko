@@ -29,7 +29,11 @@
   text-wrap: balance;
 }
 
-.offer-head .lead { color: var(--ink); }
+.offer-head .lead {
+  max-width: 40ch;
+  color: var(--ink);
+  text-wrap: balance;
+}
 
 .offer-store-link { margin-top: var(--space-5); }
 
