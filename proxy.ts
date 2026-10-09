@@ -20,4 +20,6 @@ export function proxy(request: NextRequest) {
   }
   return NextResponse.next({ request: { headers } });
 }
-export const config = { matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"] };
+// APIs carry language-independent commerce data and must keep their request bodies
+// untouched. Prefixed API URLs still match and redirect to the unprefixed endpoint.
+export const config = { matcher: ["/((?!api(?:/|$)|_next/static|_next/image|favicon.ico).*)"] };
