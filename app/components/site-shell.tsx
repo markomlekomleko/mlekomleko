@@ -83,15 +83,24 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
             </p>
           </nav>
           <Link className="brand" href="/" aria-label={`${settings.storeName} - početna`}>
+            {/* The goat and cow and the hand-drawn wordmark from mlekoimleko.rs, their
+                white parts recoloured to logo teal so they read on the white header. */}
             <Image
-              className="brand-logo brand-logo-header"
-              src="/images/mleko-i-mleko-logo-mark.png"
+              className="brand-animals"
+              src="/images/mleko-i-mleko-animals.png"
               alt=""
-              width={120}
-              height={120}
-              sizes="56px"
+              width={600}
+              height={318}
+              sizes="104px"
             />
-            <span className="brand-name">{settings.storeName}</span>
+            <Image
+              className="brand-wordmark"
+              src="/images/mleko-i-mleko-wordmark.png"
+              alt=""
+              width={687}
+              height={286}
+              sizes="132px"
+            />
           </Link>
           <div className="header-actions">
             <a className="header-account" href="/nalog">Moj nalog</a>

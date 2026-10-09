@@ -3,7 +3,7 @@ export type BrandGlyphName = "bottle" | "drop" | "cow";
 /**
  * Raw path data per glyph on a 64 × 64 grid, drawn slightly off-true to match the
  * hand-printed logo. Each value is one `d` string: outlines run clockwise and the
- * knocked-out details (bottle label, drop highlight, cow eyes, patch and nostrils) run
+ * knocked-out details (bottle label, drop highlight, cow eyes and nostrils) run
  * counter-clockwise, so the default nonzero fill rule cuts them out without a
  * `fill-rule` — a CSS data-URI pattern can use the strings as they are.
  */
@@ -24,8 +24,6 @@ export const glyphPaths: Readonly<Record<BrandGlyphName, string>> = {
   cow: [
     // Horns, ears, head and muzzle in one outline.
     "M8.2 5.6C9.6 10.6 13.4 14.2 19.6 15.4C27.4 13.6 36.8 13.5 44.6 15.2C50.6 14 54.4 10.4 55.9 5.5C56.8 6.2 57.2 7.4 57 9C56.3 15.2 52.6 19.2 46.6 20.4C50.8 19.4 56.6 19.6 59.6 21.6C61 22.6 60.6 24.6 59.2 25.4C55.8 27.4 51.2 28.6 46.8 28.4C47.6 31.8 47.8 35.4 47.8 38.8C51.2 41.2 52.8 44.6 52.6 48.8C52.2 56.4 43.6 61.4 32.2 61.4C20.6 61.6 11.6 56.6 11.6 49C11.6 44.8 13.2 41.4 16.4 39C16.4 35.4 16.6 31.8 17.4 28.6C12.8 28.8 8.2 27.4 4.8 25.4C3.2 24.6 3 22.6 4.4 21.6C7.4 19.6 13.2 19.4 17.4 20.6C11.4 19.4 7.6 15.4 7 9.2C6.9 7.6 7.4 6.2 8.2 5.6Z",
-    // Forehead patch, knocked out.
-    "M40.5 19.2C37.8 17.6 33.6 18.4 33.2 21.4C32.8 24.2 35.6 25.8 38.2 25.2C40.6 24.6 42.6 20.6 40.5 19.2Z",
     // Eyes, knocked out.
     "M21.2 30.4A2.9 3.3 0 1 0 27 30.4A2.9 3.3 0 1 0 21.2 30.4Z",
     "M37.1 30A2.9 3.3 0 1 0 42.9 30A2.9 3.3 0 1 0 37.1 30Z",

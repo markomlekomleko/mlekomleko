@@ -250,22 +250,15 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
 .brand:hover .brand-logo,
 .brand:focus-visible .brand-logo { transform: rotate(0deg); }
 
-.brand-logo-header {
-  width: 48px;
-  height: 48px;
+/* Both images keep their own aspect ratio from a fixed height. */
+.brand-animals,
+.brand-wordmark {
+  display: block;
+  width: auto;
 }
 
-.brand-name {
-  display: none;
-  font-family: var(--ff-display);
-  font-size: clamp(1.5rem, 1.9vw, 1.875rem);
-  font-variation-settings: "wdth" 100;
-  font-weight: 900;
-  letter-spacing: -0.035em;
-  line-height: 1;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
+.brand-animals { height: 32px; }
+.brand-wordmark { height: 40px; }
 
 /* Header links: condensed heavy caps (wdth 85) so the three links fit beside a
    centred logo from 861px up. */
@@ -364,13 +357,14 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
 
 @media (min-width: 861px) and (max-width: 1099px) {
   .header-actions { font-size: 0.8125rem; }
+
+  /* The links on both sides leave the centred logo no room for the animals here. */
+  .brand .brand-animals { display: none; }
 }
 
 @media (min-width: 768px) {
-  .brand-logo-header {
-    width: 56px;
-    height: 56px;
-  }
+  .brand-animals { height: 44px; }
+  .brand-wordmark { height: 52px; }
 }
 
 @media (min-width: 1100px) {
@@ -380,10 +374,6 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
   }
 
   .header-actions { gap: 20px; }
-}
-
-@media (min-width: 1200px) {
-  .brand-name { display: inline; }
 }
 
 /* ---------- Mobile menu (≤ 860px) ---------- */
