@@ -1,0 +1,14 @@
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve, dirname, basename } from 'node:path';
+import { spawn } from 'node:child_process';
+import nextEnv from '@next/env';
+import { scenarioEnvironment } from './lib/scenario-env.mjs';
+const manifest=JSON.parse(readFileSync('.data/admin-scenarios-latest.json','utf8'));
+const path=resolve(manifest.databasePath);
+if(dirname(path)!==resolve('.data') || !/^admin-scenarios-[\dTZ.-]+\.sqlite$/.test(basename(path)) || !existsSync(path)) throw new Error('Only an existing isolated admin-scenarios database is allowed.');
+nextEnv.loadEnvConfig(process.cwd(),true,{info(){},error(){}});
+const env=scenarioEnvironment(path);
+console.log(`Local TEST admin: ${manifest.adminUrl}\n${manifest.customers} test customers; external fiscal/payment/message services disabled.`);
+const child=spawn(process.execPath,['node_modules/next/dist/bin/next','dev','--hostname','localhost','--port','4191'],{stdio:'inherit',env});
+for(const signal of ['SIGINT','SIGTERM']) process.on(signal,()=>child.kill(signal));
+child.on('exit',code=>{process.exitCode=code??0;});

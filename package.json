@@ -21,7 +21,9 @@
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
     "typecheck": "tsc --noEmit",
     "infobip:check": "node --env-file-if-exists=.env.local scripts/infobip-check.mjs",
-    "test:postgres": "npm run build && node --env-file-if-exists=.env.local scripts/test-postgres.mjs"
+    "test:postgres": "npm run build && node --env-file-if-exists=.env.local scripts/test-postgres.mjs",
+    "demo:seed": "node scripts/admin-scenarios.mjs",
+    "demo:admin": "node scripts/admin-scenarios-serve.mjs"
   },
   "dependencies": {
     "@libsql/client": "0.18.0",
