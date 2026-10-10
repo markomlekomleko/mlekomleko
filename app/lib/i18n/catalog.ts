@@ -957,6 +957,22 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Shop",
     "Магазин"
   ],
+  "Proizvodi po dostavi": [
+    "Products per delivery",
+    "Продукты в одной доставке"
+  ],
+  "Dobro sa farme. Pravo na sto.": [
+    "Farm goodness. Straight to your table.",
+    "Всё лучшее с фермы. Прямо к столу."
+  ],
+  "Domaći proizvodi, dostavljeni na tvoju adresu. Izaberi svoje favorite, količinu i ritam dostave.": [
+    "Local products, delivered to your door. Pick your favourites, quantity and delivery schedule.",
+    "Местные продукты с доставкой домой. Выбирай любимые продукты, количество и частоту доставки."
+  ],
+  "Domaći proizvodi sa dostavom na tvoju adresu. Istraži ponudu prodavnice Mleko i Mleko i izaberi količinu i ritam dostave.": [
+    "Local products delivered to your door. Explore the Mleko i Mleko shop and choose your quantity and delivery schedule.",
+    "Местные продукты с доставкой домой. Посмотри ассортимент магазина Mleko i Mleko и выбери количество и частоту доставки."
+  ],
   "Gde kupiti": [
     "Where to buy",
     "Где купить"

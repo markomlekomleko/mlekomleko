@@ -61,8 +61,16 @@
    /prodavnica
    --------------------------------------------------------------------------------- */
 
-.store-page { padding-block: var(--space-6) var(--section-y); }
-.store-page .section-head { margin-bottom: var(--space-5); }
+.store-page { padding-block: clamp(40px, 5vw, 72px) var(--section-y); }
+.store-page .section-head { margin-bottom: var(--space-6); }
+.store-page .section-head h1 {
+  max-width: 19ch;
+  font-size: clamp(2.6rem, 6.5vw, 6rem);
+  text-transform: none;
+  letter-spacing: -.04em;
+  line-height: 1.02;
+}
+.store-page .section-head .lead { max-width: 55ch; margin-top: var(--space-5); }
 
 /* Category filters speak the configurator chips' voice and get a full 44px target. The
    row wraps instead of scrolling, so no overflow box clips the first chip's focus ring. */

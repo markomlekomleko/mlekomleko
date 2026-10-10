@@ -223,7 +223,11 @@ export function normalizeProduct(value: unknown): Product {
     subscriptionPriceRsd:
       directSubscriptionPrice || minorSubscriptionPrice / 100 || priceRsd,
     compareAtPriceRsd: compareAtMinor > 0 ? compareAtMinor / 100 : null,
-    imageUrl: textValue(item.imageUrl, item.image_url),
+    // Refresh the bundled catalog photos without overriding custom admin uploads.
+    imageUrl: textValue(item.imageUrl, item.image_url).replace(
+      /^\/images\/catalog\/(kravlje|kozje)-mleko(?:-v2)?\.(?:webp|avif|jpg)$/,
+      "/images/catalog/$1-mleko-studio.webp",
+    ),
     gallery: Array.isArray(item.gallery) ? item.gallery.filter((x): x is string => typeof x === "string") : [], ingredients: textValue(item.ingredients), allergens: textValue(item.allergens), nutrition: item.nutrition && typeof item.nutrition === "object" ? item.nutrition as Record<string,string> : {}, inventoryEnabled: Boolean(item.inventoryEnabled), salePriceMinor: item.salePriceMinor == null ? null : Number(item.salePriceMinor), saleSubscriptionPriceMinor: item.saleSubscriptionPriceMinor == null ? null : Number(item.saleSubscriptionPriceMinor), saleStartsAt: typeof item.saleStartsAt === "string" ? item.saleStartsAt : null, saleEndsAt: typeof item.saleEndsAt === "string" ? item.saleEndsAt : null,
     imageAlt: textValue(item.imageAlt, item.image_alt, `Fotografija proizvoda ${name}`),
     badge: textValue(item.badge),

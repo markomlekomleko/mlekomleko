@@ -292,7 +292,7 @@ export function ProductConfigurator({
             <div className="configurator-total">
               <p>
                 <span>
-                  Mleko po dostavi
+                  Proizvodi po dostavi
                   <small>{selectionLabel}</small>
                 </span>
                 <strong>{formatMoney(perDelivery, locale)}</strong>

@@ -1,3 +1,18 @@
+@font-face {
+  font-family: "Market Grotesk";
+  src: url("/fonts/market/grotesk-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Market Grotesk";
+  src: url("/fonts/market/grotesk-bold-serbian.woff2") format("woff2");
+  font-weight: 700 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Owner: W-foundation — design tokens: the single :root (legacy names kept) */
 
 /* Juicy Marbles–style system in the Mleko i Mleko logo colours: one milk-white ground,
@@ -60,12 +75,10 @@
 
   /* Type. The next/font variables live on <html>, the same element as this :root, so
      these stacks resolve here; declared on <body> they would be empty at :root. */
-  --ff-display: var(--font-display), "Arial Black", Arial, sans-serif;
-  --ff-card: var(--font-card), Georgia, serif;
+  --ff-display: "Market Grotesk", var(--font-geist), Arial, sans-serif;
+  --ff-card: var(--ff-display);
   --ff-body: var(--font-geist), Arial, sans-serif;
-  /* The serif used to be Vollkorn; card and product names now get Fraunces. Vollkorn
-     stays bound only inside the admin scope (admin.css). */
-  --font-editorial: var(--ff-card);
+  --font-editorial: var(--ff-display);
   --fs-h1: clamp(2.6rem, 10.5vw, 6.5rem);
   /* One section-heading size for every home section; it stays under the hero h1,
      which is sized to its own column (about 54px at 768, 87px at 1440). */
@@ -75,8 +88,7 @@
   --display-leading: 1;
   --fs-h3: clamp(1.15rem, 2.4vw, 1.5rem);
   --fs-eyebrow: 0.75rem;
-  /* Archivo's width axis: full width by default, condensed on phones so long Serbian
-     words still fit a 390px line in heavy uppercase. */
+  /* Kept for existing heading rules; the shared display face has a fixed width. */
   --display-wdth: 100;
 
   /* Spacing. */

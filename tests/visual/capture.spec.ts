@@ -634,8 +634,8 @@ test("state checkout-item", async ({ page }, testInfo) => {
 });
 
 test("state delivery-checker results", async ({ page }, testInfo) => {
-  await openPage(page, "/", { home: true, cls: false });
-  const checker = page.locator("#proveri-dostavu");
+  await openPage(page, "/dostava-mleka/beograd", { home: false, cls: false });
+  const checker = page.locator(".city-checker");
   const input = checker.getByRole("textbox", { name: "Poštanski broj" });
   const submit = checker.locator('button[type="submit"]');
   const result = checker.locator(".check-result");
@@ -646,7 +646,7 @@ test("state delivery-checker results", async ({ page }, testInfo) => {
   await expect(result).toContainText(VALID_POSTAL_CODE);
   await expect(submit).toBeEnabled();
   await steady(page);
-  await captureState(page, testInfo, "delivery-valid", { route: "/", postalCode: VALID_POSTAL_CODE }, { element: "#proveri-dostavu" });
+  await captureState(page, testInfo, "delivery-valid", { route: "/dostava-mleka/beograd", postalCode: VALID_POSTAL_CODE }, { element: ".city-checker" });
 
   await input.fill(INVALID_POSTAL_CODE);
   await submit.click();
@@ -654,7 +654,7 @@ test("state delivery-checker results", async ({ page }, testInfo) => {
   await expect(result).toContainText(INVALID_POSTAL_CODE);
   await expect(submit).toBeEnabled();
   await steady(page);
-  await captureState(page, testInfo, "delivery-invalid", { route: "/", postalCode: INVALID_POSTAL_CODE }, { axe: true, element: "#proveri-dostavu" });
+  await captureState(page, testInfo, "delivery-invalid", { route: "/dostava-mleka/beograd", postalCode: INVALID_POSTAL_CODE }, { axe: true, element: ".city-checker" });
 });
 
 test("state faq-open", async ({ page }, testInfo) => {

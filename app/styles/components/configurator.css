@@ -2,7 +2,7 @@
 
 /* One card language for the home offer, /prodavnica and the cross-sell row on
    /proizvodi: a white square card with a black rule, the photograph behind a 1px
-   divider, the name in the chunky card serif and the price in heavy display type.
+   divider, the name in the shared bold display face and the price in heavy display type.
    The product page's buy panel is the same component with layout="panel". */
 
 .offer-grid {
@@ -134,9 +134,7 @@
   text-transform: uppercase;
 }
 
-/* The chunky serif in capitals is the product-name voice (JM's card names). Fraunces is
-   loaded at 800 only, so the weight is pinned there to avoid a synthesised bold. The
-   floor keeps "DOMAĆE KRAVLJE MLEKO" to two lines in a 390px card. */
+/* Product names share the homepage display face. */
 .configurator .configurator-title {
   max-width: none;
   margin: 0;
@@ -315,9 +313,9 @@
 /* Primary navy, hover teal (base .button). */
 .configurator-actions .button { width: 100%; }
 
-/* Give catalog photography a consistent mat without cropping the bottle or label. */
-.configurator-media { padding: 16px; background: var(--blush); }
-.configurator-media img { object-fit: contain; }
-
-.configurator-media { align-content: start; }
-.configurator-media img { height: auto; aspect-ratio: 1; align-self: start; }
+/* Custom uploads keep their full composition. The studio bottles fill the portrait
+   column with the same clean backdrop as their square mobile presentation. */
+.configurator-media { padding: 16px; background: var(--blush); align-content: start; }
+.configurator-media img { object-fit: contain; height: auto; aspect-ratio: 1; align-self: start; }
+.configurator-media:has(img[src$="-mleko-studio.webp"]) { padding: 0; align-content: stretch; }
+.configurator-media img[src$="-mleko-studio.webp"] { height: 100%; aspect-ratio: auto; object-fit: cover; }

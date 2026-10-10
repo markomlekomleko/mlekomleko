@@ -9,7 +9,7 @@ import { getStorefront } from "../../server/storefront";
 export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
   title: "Prodavnica",
   description:
-    "Domaće kravlje i kozje mleko po litru, sa izborom količine i ritma dostave.",
+    "Domaći proizvodi sa dostavom na tvoju adresu. Istraži ponudu prodavnice Mleko i Mleko i izaberi količinu i ritam dostave.",
   alternates: { canonical: canonicalUrl("/prodavnica") },
 }); }
 

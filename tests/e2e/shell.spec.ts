@@ -110,7 +110,7 @@ test("Escape closes the mobile menu and returns focus to Meni", async ({ page })
     await menu.click();
     await expect(menu).toHaveAttribute("aria-expanded", "true", { timeout: 1_000 });
   }).toPass();
-  await expect(page.getByRole("navigation", { name: "Glavna navigacija" }).getByRole("link", { name: "Mleko", exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Glavna navigacija" }).getByRole("link", { name: "Prodavnica", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(menu).toHaveAttribute("aria-expanded", "false");
   await expect(menu).toBeFocused();

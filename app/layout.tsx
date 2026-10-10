@@ -3,7 +3,7 @@ import { languageTags } from "./lib/i18n/routing";
 import { LocaleProvider } from "./lib/i18n/client";
 import { localizeSchema } from "./lib/i18n/render";
 import type { Metadata } from "next";
-import { Archivo, Fraunces, Geist, Vollkorn } from "next/font/google";
+import { Geist } from "next/font/google";
 import { ApplicationShell } from "./components/application-shell";
 import { absoluteUrl, canonicalUrl, getSiteUrl, serializeJsonLd } from "./lib/seo";
 import { getStorefront } from "../server/storefront";
@@ -34,38 +34,6 @@ export const runtime = "nodejs";
 const geist = Geist({
   variable: "--font-geist",
   subsets: ["latin", "latin-ext", "cyrillic"],
-});
-
-// Headlines: heavy uppercase. The width axis lets phones condense long Serbian words
-// (tokens.css --display-wdth) without a second font file.
-const archivo = Archivo({
-  variable: "--font-display",
-  subsets: ["latin", "latin-ext"],
-  axes: ["wdth"],
-  display: "swap",
-  preload: true,
-});
-
-// Card and product names, at the one weight they are set in. Static 800 rather than the
-// variable font with its SOFT axis: that file is about 118 KB against 36 KB here and took
-// the home page's fonts to 340 KB, over the 300 KB budget. Not preloaded: it only sets
-// names, so it must not compete with the headline and body faces for bandwidth.
-const fraunces = Fraunces({
-  variable: "--font-card",
-  subsets: ["latin", "latin-ext"],
-  weight: "800",
-  display: "swap",
-  preload: false,
-});
-
-// Vollkorn supports Cyrillic product names as well as the admin editorial style.
-// It loads only where used, keeping the Latin storefront font budget unchanged.
-const vollkorn = Vollkorn({
-  variable: "--font-vollkorn",
-  subsets: ["latin", "latin-ext", "cyrillic"],
-  style: ["normal", "italic"],
-  display: "swap",
-  preload: false,
 });
 
 const baseMetadata: Metadata = {
@@ -139,7 +107,7 @@ export default async function RootLayout({
     <html
       lang={languageTags[locale]}
       data-scroll-behavior="smooth"
-      className={`${geist.variable} ${archivo.variable} ${fraunces.variable} ${vollkorn.variable}`}
+      className={geist.variable}
     >
       <body>
         <script

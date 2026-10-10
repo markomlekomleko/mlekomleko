@@ -31,8 +31,8 @@ export function StoreView({
     <div className="page-shell store-page">
       <header className="section-head">
         <p className="eyebrow">Prodavnica</p>
-        <h1>Izaberi svoje mleko</h1>
-        <p className="lead">Odaberi količinu i koliko često želiš dostavu.</p>
+        <h1>Dobro sa farme. Pravo na sto.</h1>
+        <p className="lead">Domaći proizvodi, dostavljeni na tvoju adresu. Izaberi svoje favorite, količinu i ritam dostave.</p>
       </header>
 
       {products.length === 0 ? (

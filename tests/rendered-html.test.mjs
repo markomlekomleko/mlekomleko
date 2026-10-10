@@ -206,7 +206,7 @@ test("public catalog and product content are present in server-rendered HTML", a
 
   assert.equal(storeResponse.status, 200);
   const storeHtml = await storeResponse.text();
-  assert.match(storeHtml, /<h1[^>]*>Izaberi svoje mleko<\/h1>/);
+  assert.match(storeHtml, /<h1[^>]*>Dobro sa farme\. Pravo na sto\.<\/h1>/);
   assert.match(storeHtml, /href="\/proizvodi\/kravlje-mleko"/);
   assert.match(storeHtml, /Kravlje mleko/);
   assert.doesNotMatch(storeHtml, /Učitavamo proizvode/);

@@ -34,7 +34,7 @@ export default async function HomePage() {
       <Hero media={heroMedia} offerHref="#izaberite-mleko" />
       <MarqueeBand />
       <OfferSection products={products} bundles={storefront.bundles} delivery={delivery} />
-      <StepsSection settings={settings} delivery={delivery} />
+      <StepsSection />
       <OriginSection settings={settings} />
       <RhythmSection />
       <FaqSection />

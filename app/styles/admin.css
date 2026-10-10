@@ -36,7 +36,7 @@
   --radius: 16px;
   --control-radius: 12px;
   --photo-radius: 20px;
-  --font-editorial: var(--font-vollkorn);
+  --font-editorial: var(--ff-display);
 }
 
 @media (min-width: 768px) {
@@ -62,8 +62,8 @@
 
 :where(:root:has(.admin-app, .admin-access)) h1,
 :where(:root:has(.admin-app, .admin-access)) h2 {
-  font-family: var(--font-editorial), Georgia, serif;
-  font-weight: 400;
+  font-family: var(--font-editorial);
+  font-weight: 800;
   font-variation-settings: normal;
   text-transform: none;
   word-spacing: normal;

@@ -13,6 +13,6 @@ import { HeroScene } from "./hero-scene";
 export function Hero(props: ComponentProps<typeof HeroScene>) {
   const localize = useLocalize();
   const { media } = props;
-  if (media?.kind === "loop") return localize(<HeroLoop {...props} media={media} deliveryHref="#proveri-dostavu" />);
+  if (media?.kind === "loop") return localize(<HeroLoop {...props} media={media} deliveryHref="/dostava-mleka/beograd" />);
   return localize(<HeroScene {...props} />);
 }

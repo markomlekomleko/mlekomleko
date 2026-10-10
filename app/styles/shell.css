@@ -759,6 +759,6 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
   .nav-shell .brand-animals { display: none; }
   .nav-shell .brand-wordmark { width: 100%; }
 }
-html:lang(sr-Cyrl), html:lang(ru) { --ff-display: var(--font-geist), sans-serif; --ff-card: var(--font-vollkorn), Georgia, serif; }
+html:lang(sr-Cyrl), html:lang(ru) { --ff-display: var(--font-geist), Arial, sans-serif; }
 html:lang(sr-Cyrl) .scene-intro, html:lang(ru) .scene-intro { font-family: var(--font-geist), sans-serif; }
 .site-footer .motion-toggle { height: 44px; border: 1px solid currentColor; margin-top: 8px; }

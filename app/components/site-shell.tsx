@@ -64,7 +64,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
             <span className={`menu-lines ${menuVisible ? "is-open" : ""}`} aria-hidden="true"><span /><span /></span>
           </button>
           <nav id="glavna-navigacija" className={`main-nav ${menuVisible ? "is-open" : ""}`} aria-label="Glavna navigacija">
-            <Link href="/prodavnica">Mleko</Link>
+            <Link href="/prodavnica">Prodavnica</Link>
             <Link href="/kako-funkcionise">Kako dostavljamo</Link>
             <Link href="/farme">Naše poreklo</Link>
             <Link className="nav-support" href="/faq">Česta pitanja</Link>

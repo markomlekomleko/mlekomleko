@@ -101,8 +101,3 @@
   font-size: 1rem;
   line-height: 1.45;
 }
-
-/* The checker card sits centred on the teal, like JM's newsletter card on its
-   pattern. */
-.steps-delivery { margin-top: var(--space-8); }
-.steps-delivery .delivery-checker { margin-inline: auto; }
