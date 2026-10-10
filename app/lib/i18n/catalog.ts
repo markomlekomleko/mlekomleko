@@ -1,6 +1,10 @@
 // Serbian Latin source copy; English and Russian translations.
 // Keep identifiers, URLs and form values out of this render-only catalogue.
 export const catalog: Record<string, readonly [string, string]> = {
+  "Iznos porudžbine": ["Order total", "Сумма заказа"],
+  "Sa uračunatom dostavom i popustom.": ["Includes delivery and discounts.", "С учетом доставки и скидок."],
+  "Dodatni podaci za dostavu (opciono)": ["Additional delivery details (optional)", "Дополнительные сведения для доставки (необязательно)"],
+  "Termin dostave potvrđujemo nakon unosa adrese.": ["Your delivery date is confirmed after you enter your address.", "Дата доставки подтверждается после ввода адреса."],
   "Termini trenutno nisu dostupni.": [
     "Delivery dates are currently unavailable.",
     "Даты доставки сейчас недоступны."

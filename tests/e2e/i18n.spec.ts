@@ -40,6 +40,8 @@ test("switching language preserves the page, query and basket on every viewport"
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
   await page.goto("/prodavnica?source=language-test#top");
   await page.locator(".configurator-actions button").first().click();
+  await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
+  await page.locator(".cart-link").click();
   await expect(page.locator(".drawer-item")).toHaveCount(1);
   await page.keyboard.press("Escape");
   for (const [locale, label] of [["en", "English"], ["ru", "Русский"], ["sr-cyrl", "Српски · ћирилица"], ["sr-latn", "Srpski · latinica"]] as const) {
@@ -69,6 +71,7 @@ for (const locale of ["sr-cyrl", "en", "ru"] as const) test(`${locale}: purchase
   const card = page.locator(".configurator").first();
   await card.getByRole("button", { name: t("Redovna dostava"), exact: true }).click();
   await card.locator(".configurator-actions button").click();
+  await page.locator(".cart-link").click();
   await page.locator(".cart-drawer-foot .button").click();
   await expect(page).toHaveURL(new RegExp(`${locale}/checkout$`));
   for (const [name, value] of Object.entries({ fullName: "Mila Test", email, phone: "0601234567", street: "Test 12", city: "Beograd", postalCode: "11000" })) await page.locator(`input[name="${name}"]`).fill(value);

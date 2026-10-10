@@ -295,6 +295,8 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
 .header-account { display: none; }
 
 .cart-link {
+  min-width: 44px;
+  justify-content: center;
   gap: 6px;
   border: 0;
   background: transparent;

@@ -34,7 +34,7 @@ export function BundleOffers({
 }) {
   const localize = useLocalize();
   const locale = useLocale();
-  const { addItems, ready, openDrawer } = useCart();
+  const { addItems, ready } = useCart();
   const { track } = useAnalytics();
   const [preview, setPreview] = useState<string>("");
   const [error, setError] = useState("");
@@ -82,7 +82,6 @@ export function BundleOffers({
       amountBasis: "per_delivery",
     });
     setPreview("");
-    openDrawer();
   }
 
   return localize((

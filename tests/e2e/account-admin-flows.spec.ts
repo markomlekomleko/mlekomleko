@@ -123,6 +123,8 @@ test("the mobile buy bar appears below the panel and keeps the selected quantity
   await page.screenshot({ path: "test-results/mobile-buy-bar.png" });
 
   await bar.getByRole("button", { name: "Dodaj u korpu" }).click();
+  await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
+  await page.locator(".cart-link").click();
   await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "true");
   await page.locator(".cart-drawer").getByRole("link", { name: "Otvori celu korpu" }).click();
   await expect(page.getByRole("spinbutton", { name: "Količina za Domaće kravlje mleko" })).toHaveValue("4");

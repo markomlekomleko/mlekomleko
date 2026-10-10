@@ -45,7 +45,9 @@ export function CheckoutForm() {
   const [schedule, setSchedule] = useState<DeliverySchedule | null>(null);
   const [scheduleError, setScheduleError] = useState("");
   const [scheduleAttempt, setScheduleAttempt] = useState(0);
-  const quoteKey = JSON.stringify({ city, postalCode, deliveryDate, items, promoCode });
+  const quoteCity = city && postalCode.length === 5 ? city : "";
+  const quotePostalCode = quoteCity ? postalCode : "";
+  const quoteKey = JSON.stringify({ city: quoteCity, postalCode: quotePostalCode, deliveryDate, items, promoCode });
   function changeAddress(field: "city" | "postalCode", value: string) {
     if (field === "city") setCity(value); else setPostalCode(value);
     setDeliveryDate(""); setSchedule(null); setScheduleError("");
@@ -66,7 +68,8 @@ export function CheckoutForm() {
   const [phone, setPhone] = useState("");
   const [conversionBusy, setConversionBusy] = useState(false);
   const [conversionDone, setConversionDone] = useState(false);
-  const [quote, setQuote] = useState<CartQuote | null>(null);
+  const [quoted, setQuote] = useState<CartQuote | null>(null);
+  const quote = quotedRequest === quoteKey ? quoted : null;
   const [quoteError, setQuoteError] = useState("");
   const promoTracked = useRef("");
   const checkoutTracked = useRef(false);
@@ -96,7 +99,7 @@ export function CheckoutForm() {
   }
 
   useEffect(() => {
-    if (!ready || items.length === 0 || !deliveryDate) return;
+    if (!ready || items.length === 0) return;
     let active = true;
     const timer = window.setTimeout(() => {
       setQuoteError("");
@@ -104,10 +107,10 @@ export function CheckoutForm() {
         method: "POST",
         body: JSON.stringify({
           items: items.map((item) => ({ productId: item.productId, quantity: item.quantity, purchaseType: item.purchaseType, cadence: item.cadence })),
-          deliveryDate,
+          deliveryDate: deliveryDate || undefined,
           promoCode: promoCode || undefined,
-          city: city || undefined,
-          postalCode: postalCode.length === 5 ? postalCode : undefined,
+          city: quoteCity || undefined,
+          postalCode: quotePostalCode || undefined,
         }),
       }).then((value) => { if (active) { setQuote(value); setQuotedRequest(quoteKey); } }).catch((requestError) => {
         if (active) {
@@ -115,9 +118,9 @@ export function CheckoutForm() {
           setQuoteError(requestError instanceof Error ? requestError.message : "Obračun trenutno nije dostupan.");
         }
       });
-    }, 180);
+    }, 0);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [items, city, postalCode, promoCode, ready, deliveryDate, quoteKey]);
+  }, [items, quoteCity, quotePostalCode, promoCode, ready, deliveryDate, quoteKey]);
 
   async function submitCheckout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -240,24 +243,28 @@ export function CheckoutForm() {
         <p className="eyebrow">Plaćanje</p>
         <h1>Podaci za dostavu</h1>
       </header>
+      <div className="checkout-price-preview" role="status" aria-live="polite" aria-atomic="true">
+        <span>Iznos porudžbine <small>{quote ? "Sa uračunatom dostavom i popustom." : quoteError || "Računamo tačan iznos…"}</small></span>
+        <strong>{quote ? formatMoney(quote.totalMinor / 100, locale) : "…"}</strong>
+      </div>
       <form className="checkout-layout" onSubmit={submitCheckout}>
         <div className="form-stack">
           <section className="card form-stack" aria-labelledby="kontakt-title">
             <h2 id="kontakt-title">Kontakt</h2>
+            <label className="field">
+              <span>Ime i prezime</span>
+              <input name="fullName" autoComplete="name" required />
+            </label>
             <div className="form-grid">
-              <label className="field">
-                <span>Ime i prezime</span>
-                <input name="fullName" autoComplete="name" required />
-              </label>
               <label className="field">
                 <span>Email</span>
                 <input name="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
               </label>
+              <label className="field">
+                <span>Broj telefona</span>
+                <input name="phone" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required />
+              </label>
             </div>
-            <label className="field">
-              <span>Broj telefona</span>
-              <input name="phone" type="tel" autoComplete="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required />
-            </label>
 
           </section>
 
@@ -267,11 +274,7 @@ export function CheckoutForm() {
               <span>Ulica i broj</span>
               <input name="street" autoComplete="street-address" required />
             </label>
-            <label className="field">
-              <span>Sprat, stan ili dodatak adresi (opciono)</span>
-              <input name="addressLine2" autoComplete="address-line2" />
-            </label>
-            <div className="form-grid">
+            <div className="form-grid checkout-address-grid">
               <label className="field">
                 <span>Grad</span>
                 <input name="city" autoComplete="address-level2" list="delivery-cities" value={city} onChange={event=>changeAddress("city", event.target.value)} aria-describedby="delivery-area-help" required /><datalist id="delivery-cities">{DELIVERY_CITIES.map(name=><option key={name} value={name} />)}</datalist>
@@ -287,10 +290,19 @@ export function CheckoutForm() {
                 {addressError ?? (addressVerified ? "Grad i poštanski broj su u zoni dostave." : quotedRequest === quoteKey && quote?.serviceable === false ? "Ovaj poštanski broj trenutno nije u zoni dostave." : scheduleError || quoteError || "Proveravamo dostupnost dostave…")}
               </p> : null}
             </div>
-            <label className="field">
-              <span>Napomena za dostavu (opciono)</span>
-              <textarea name="note" />
-            </label>
+            <details className="checkout-extra-fields">
+              <summary>Dodatni podaci za dostavu (opciono)</summary>
+              <div className="form-stack">
+                <label className="field">
+                  <span>Sprat, stan ili dodatak adresi (opciono)</span>
+                  <input name="addressLine2" autoComplete="address-line2" />
+                </label>
+                <label className="field">
+                  <span>Napomena za dostavu (opciono)</span>
+                  <textarea name="note" rows={2} />
+                </label>
+              </div>
+            </details>
           </section>
 
           {schedule ? <DeliveryCalendar key={`${city}|${postalCode}`} schedule={schedule} value={deliveryDate} onChange={setDeliveryDate} recurring={hasSubscription} /> : <section className="card"><h2>Dan i početak dostave</h2><p role="status">{scheduleError || (city && postalCode.length === 5 ? "Učitavamo dostupne termine…" : "Prvo unesi grad i poštanski broj, pa izaberi dan i datum dostave.")}</p>{scheduleError ? <button type="button" className="button secondary" onClick={() => setScheduleAttempt(value => value + 1)}>Proveri ponovo</button> : null}</section>}
@@ -327,7 +339,7 @@ export function CheckoutForm() {
           {quoteError ? <p className="notice error" role="alert">{quoteError}</p> : null}
         </div>
 
-        <aside className="card cart-summary" aria-labelledby="porudzbina-title" aria-busy={Boolean(deliveryDate && quotedRequest !== quoteKey)}>
+        <aside className="card cart-summary" aria-labelledby="porudzbina-title" aria-busy={!quote && !quoteError}>
           <h2 id="porudzbina-title">Porudžbina</h2>
           {quote?.lines.map((line, index) => (
             <div className="summary-row small-text" key={`${line.productId}-${index}`}>
@@ -336,14 +348,26 @@ export function CheckoutForm() {
                 <span className="muted">
                   {line.purchaseType === "one_time" ? "Jednokratno" : `${cadenceLabel(line.cadence ?? undefined)} · ${formatMoney(line.unitPriceMinor * line.quantity / 100, locale)} po dostavi · ${line.occurrences}× u paketu`}
                   {line.purchaseType === "subscription" ? <><br />Ukupno u paketu: {line.quantity * line.occurrences} komada</> : null}
-                  {line.deliveryDates.length ? <><br />Termini: {line.deliveryDates.map((date) => formatDate(date, locale)).join(", ")}</> : null}
+                  {addressVerified && line.deliveryDates.length ? <><br />Termini: {line.deliveryDates.map((date) => formatDate(date, locale)).join(", ")}</> : null}
                 </span>
               </span>
               <strong>{formatMoney(line.lineTotalMinor / 100, locale)}</strong>
             </div>
           ))}
-          {quote ? <><div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100, locale)}</span></div>{quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100, locale)}</span></div> : null}<div className="summary-row"><span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100, locale)})` : ""}</span><span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100, locale) : "Besplatno"}</span></div><div className="summary-row summary-total"><span>{quote.lines.some((line) => line.purchaseType === "subscription") ? "Ukupno za ceo paket" : "Danas plaćate"}</span><span>{formatMoney(quote.totalMinor / 100, locale)}</span></div><p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate, locale)}</strong><br /><small>Izmene do {formatDateTime(quote.cutoffAt, locale)}</small></p></> : <p className="loading-state">Računamo tačan iznos…</p>}
-          <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Paket obuhvata 4 nedeljne ili 2 dvonedeljne dostave. Pauza i preskakanje čuvaju plaćene količine.</p>
+          {quote ? <>
+            <div className="summary-row"><span>Međuzbir</span><span>{formatMoney(quote.subtotalMinor / 100, locale)}</span></div>
+            {quote.discountMinor > 0 ? <div className="summary-row discount-row"><span>Popust {quote.promoCode}</span><span>−{formatMoney(quote.discountMinor / 100, locale)}</span></div> : null}
+            <div className="summary-row">
+              <span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100, locale)})` : ""}</span>
+              <span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100, locale) : "Besplatno"}</span>
+            </div>
+            <div className="summary-row summary-total">
+              <span>{hasSubscription ? "Ukupno za ceo paket" : "Danas plaćate"}</span>
+              <span>{formatMoney(quote.totalMinor / 100, locale)}</span>
+            </div>
+            {addressVerified ? <p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate, locale)}</strong><br /><small>Izmene do {formatDateTime(quote.cutoffAt, locale)}</small></p> : <p className="muted small-text">Termin dostave potvrđujemo nakon unosa adrese.</p>}
+          </> : <p className={quoteError ? "notice error" : "loading-state"}>{quoteError || "Računamo tačan iznos…"}</p>}
+          {hasSubscription ? <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Paket obuhvata 4 nedeljne ili 2 dvonedeljne dostave. Pauza i preskakanje čuvaju plaćene količine.</p> : null}
           <label className="checkbox-row">
             <input type="checkbox" required />
             <span>

@@ -47,14 +47,18 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   await cards.nth(0).getByRole("button", { name: "Redovna dostava" }).click();
   await expect(cards.nth(0).getByRole("button", { name: "Redovna dostava" })).toHaveAttribute("aria-pressed", "true");
   await cards.nth(0).locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
-  await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "true");
-  await page.keyboard.press("Escape");
+  await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
   await cards.nth(1).getByRole("button", { name: "Jednokratno" }).click();
   await cards.nth(1).locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
+  await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
+  await page.locator(".cart-link").click();
   await expect(page.locator(".drawer-item")).toHaveCount(2);
   await page.locator(".cart-drawer").getByRole("link", { name: "Otvori celu korpu" }).click();
   await expect(page.getByText("Ukupno za ceo paket")).toBeVisible();
+  const cartTotal = await page.locator(".cart-summary .summary-total > span").last().innerText();
   await page.getByRole("link", { name: /Nastavi na podatke/ }).click();
+  await expect(page.locator(".checkout-price-preview strong")).toHaveText(cartTotal);
+  await expect(page.getByRole("button", { name: "Potvrdi porudžbinu" })).toBeDisabled();
   await page.getByLabel("Ime i prezime").fill("Fiktivni E2E Kupac");
   await page.getByRole("textbox", { name: "Email", exact: true }).fill(email);
   await page.getByLabel("Broj telefona").fill("+381600000001");
@@ -232,6 +236,8 @@ test("hero priorities remain visible and a custom milk selection survives the ca
   await card.getByRole("button", { name: "Svake 2 nedelje" }).click();
   await expect(card.locator(".configurator-total")).toContainText("750");
   await card.locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
+  await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
+  await page.locator(".cart-link").click();
 
   await expect(page.locator(".drawer-item-meta").first()).toContainText("3 L po dostavi · svake 2 nedelje");
   await page.locator(".cart-drawer").getByRole("link", { name: "Otvori celu korpu" }).click();

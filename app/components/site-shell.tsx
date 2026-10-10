@@ -99,7 +99,11 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
             <LanguageSwitcher />
             <Link className="header-account" href="/nalog">Moj nalog</Link>
             <button className="cart-link" type="button" onClick={openDrawer} aria-label={ready && count > 0 ? `Korpa, ${count} jedinica` : "Korpa"}>
-              Korpa
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+                <path d="M3 3h2l2.4 12h11.2l2-8H6" />
+                <circle cx="9" cy="20" r="1" />
+                <circle cx="18" cy="20" r="1" />
+              </svg>
               {ready && count > 0 ? (
                 <span className="cart-count" aria-hidden="true">
                   {count}

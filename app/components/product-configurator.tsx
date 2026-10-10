@@ -59,7 +59,7 @@ export function ProductConfigurator({
 }) {
   const localize = useLocalize();
   const locale = useLocale();
-  const { addItem, ready, openDrawer } = useCart();
+  const { addItem, ready } = useCart();
   const { track } = useAnalytics();
   const fieldId = useId();
   // New customers start on the one-time purchase, per docs/OPUS-DETALJNA-SPECIFIKACIJA.md D07.
@@ -114,7 +114,6 @@ export function ProductConfigurator({
       items: [{ item_id: product.id, item_name: product.name, price: unitPrice, quantity }],
       amountBasis: "per_delivery",
     });
-    openDrawer();
   }
 
   useEffect(() => {

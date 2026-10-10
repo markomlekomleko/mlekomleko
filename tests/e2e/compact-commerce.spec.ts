@@ -24,6 +24,10 @@ test("the product page reaches price and purchase controls without a long scroll
   await expect(add).toBeEnabled();
   await add.click();
 
+  await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
+  await expect(page.locator(".cart-count")).toHaveText("2");
+  await expect(page.locator(".cart-link svg")).toBeVisible();
+  await page.getByRole("button", { name: "Korpa, 2 jedinica", exact: true }).click();
   await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "true");
   await expect(page.locator(".drawer-item")).toHaveCount(1);
   await expect(page.locator(".cart-drawer-foot .button")).toHaveAttribute("href", "/checkout");
@@ -35,6 +39,21 @@ test("the product page reaches price and purchase controls without a long scroll
     "href",
     "/checkout",
   );
+  const cartTotal = await page.locator(".cart-summary .summary-total > span").last().innerText();
+  await page.getByRole("link", { name: "Nastavi na podatke za dostavu →" }).click();
+  await expect(page.locator(".checkout-price-preview strong")).toHaveText(cartTotal);
+  await expect(page.locator(".checkout-price-preview")).toBeInViewport();
+  await expect(page.getByLabel("Grad", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Poštanski broj", { exact: true })).toHaveValue("");
+  await expect(page.getByRole("button", { name: "Potvrdi porudžbinu" })).toBeDisabled();
+  await expect(page.locator(".cart-summary .delivery-summary")).toHaveCount(0);
+  const nameInput = await page.getByLabel("Ime i prezime").boundingBox();
+  expect(nameInput!.height).toBeLessThanOrEqual(46);
+  expect(nameInput!.height).toBeGreaterThanOrEqual(44);
+  await expect(page.getByLabel("Napomena za dostavu (opciono)")).toBeHidden();
+  await page.locator(".checkout-extra-fields summary").click();
+  await page.getByLabel("Napomena za dostavu (opciono)").fill("Pozovi pre dolaska.");
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
 test("the shop offers every active product with its own buying controls", async ({ page }) => {
