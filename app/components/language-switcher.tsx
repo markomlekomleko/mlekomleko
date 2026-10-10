@@ -15,10 +15,23 @@ export function LanguageSwitcher() {
         menu.current.querySelector("summary")?.focus();
       }
     };
+    const dismissOutside = (event: PointerEvent) => {
+      if (menu.current && !menu.current.contains(event.target as Node)) {
+        menu.current.open = false;
+      }
+    };
     document.addEventListener("keydown", dismiss);
-    return () => document.removeEventListener("keydown", dismiss);
+    document.addEventListener("pointerdown", dismissOutside);
+    return () => {
+      document.removeEventListener("keydown", dismiss);
+      document.removeEventListener("pointerdown", dismissOutside);
+    };
   }, []);
-  return <details ref={menu} className="language-switcher" data-no-translate onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) event.currentTarget.open = false; }}>
+  return <details ref={menu} className="language-switcher" data-no-translate onBlur={event => {
+    // Safari blurs the summary with no focus target before clicking a link.
+    // Keep the menu open for that click; outside pointer presses close it above.
+    if (event.relatedTarget && !event.currentTarget.contains(event.relatedTarget as Node)) event.currentTarget.open = false;
+  }}>
     <summary aria-label={translate("Izaberi jezik", locale)}><span aria-hidden="true">◎</span> {({ "sr-latn": "SR", "sr-cyrl": "СР", en: "EN", ru: "РУ" })[locale]}</summary>
     <nav aria-label={translate("Jezik sajta", locale)}>
       {locales.map(item => <a key={item} href={localizedPath(path, item)} hrefLang={languageTags[item]} lang={languageTags[item]} aria-current={item === locale ? "true" : undefined} onClick={event => {
