@@ -767,6 +767,11 @@ body:has(.buy-bar[data-visible="true"]) .site-footer { padding-bottom: 5.5rem; }
   padding: var(--space-4);
 }
 
+.payment-option-heading { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .75rem; }
+.payment-provider { font-size: .8rem; font-weight: 600; }
+.checkout-page .radio-card.disabled { cursor: not-allowed; }
+.payment-subscription-note { margin-bottom: 0; }
+
 /* Radio and checkbox: 24px square boxes in a black rule. The chosen radio gets a black
    square, the ticked box goes black with a white check; both are SVG grounds, so no
    rounded native mark is left. */

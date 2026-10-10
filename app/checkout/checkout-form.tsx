@@ -304,14 +304,21 @@ export function CheckoutForm() {
                   id="placanje-gotovina"
                   type="radio"
                   name="paymentMethod"
+                  value="cash"
                   checked={paymentMethod === "cash"}
                   readOnly
                 />
-                Gotovina pri dostavi
+                {hasSubscription ? "Gotovina — uplata paketa unapred" : "Gotovina pri dostavi"}
                 {hasSubscription ? <span className="muted small-text">Ceo paket se plaća unapred, pre početka isporuka.</span> : null}
               </label>
-
+              <label className="radio-card disabled" htmlFor="placanje-kartica">
+                <input id="placanje-kartica" type="radio" name="paymentMethod" value="card" disabled aria-describedby="kartica-status" />
+                <span className="payment-option-heading">Karticom <span className="payment-provider">Raiffeisen · RaiAccept</span></span>
+                <span className="small-text" id="kartica-status">Trenutno nije dostupno. Povezivanje sa bankom je u pripremi.</span>
+                {hasSubscription ? <span className="muted small-text">Plaćanje celog paketa karticom biće dostupno nakon povezivanja.</span> : null}
+              </label>
             </div>
+            {hasSubscription ? <p className="muted small-text payment-subscription-note">Redovna dostava se plaća po paketu. Automatska obnova uz naplatu kartice trenutno nije dostupna.</p> : null}
           </fieldset>
 
 

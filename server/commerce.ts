@@ -7,7 +7,7 @@ import { createPackageStatements, openPackage, packageDates, packageOccurrences,
 import { normalizeDeliveryCity, deliveryCityForPostalCode } from "../app/lib/delivery-area";
 import { randomToken, sha256, stableJsonHash } from "./crypto";
 import { DomainError, assertDomain, emailAddress, enumValue, optionalString, positiveInt, rejectCardData, requiredString } from "./domain";
-import { localPaymentGateway } from "./integrations";
+import { assertCardPaymentAvailable, localPaymentGateway } from "./integrations";
 import { audit, enqueue } from "./outbox";
 import { ProductRow, publicProduct } from "./products";
 import { all, batch, first, sqlPlaceholders, type SqlValue } from "./sql";
@@ -201,6 +201,7 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   };
   const items = parseCheckoutItems(input.items);
   const paymentMethod = enumValue(input.paymentMethod, "paymentMethod", ["card", "cash"] as const);
+  if (paymentMethod === "card") assertCardPaymentAvailable();
   const paymentToken = optionalString(input.paymentToken, "paymentToken", 300) ?? undefined;
   if (paymentMethod === "card") assertDomain(paymentToken, "PAYMENT_TOKEN_REQUIRED", "A provider paymentToken is required for card checkout. Raw card data is not accepted.", 422);
   if (paymentToken) assertDomain(!/^\d{12,19}$/.test(paymentToken.replace(/[ -]/g, "")), "CARD_DATA_REJECTED", "paymentToken looks like raw card data and was rejected.", 422);
