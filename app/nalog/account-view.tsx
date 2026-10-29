@@ -32,6 +32,7 @@ type Delivery = {
   items: { product_name: string; unit_label: string; quantity: number }[];
 };
 type AccountPayload = {
+  demo?: boolean;
   currentDate: string;
   customer: {
     fullName: string;
@@ -269,6 +270,9 @@ export function AccountView() {
           </a>
         </header>
         <div className="account-feedback">
+          {account.demo && (
+            <p className="notice" role="status">Pregledate demo nalog sa primerima podataka. Za izmene i poručivanje odjavite se i prijavite na svoj nalog.</p>
+          )}
           {notice && (
             <p className="notice success" role="status">
               {notice}
@@ -312,6 +316,7 @@ export function AccountView() {
                   subscription={sub}
                   products={account.addonProducts.map(normalizeProduct)}
                   busy={busy}
+                  readOnly={account.demo}
                   mutate={mutate}
                   index={index}
                 />
@@ -530,9 +535,11 @@ export function AccountView() {
           <h2 id="settings-title">Podaci i obaveštenja</h2>
           <details className="card">
             <summary>Prijava, email i WhatsApp</summary>
-            <ProfileEditor customer={account.customer} />
-            <RefundRequest orders={account.orders} />
-            <LoginSettings />
+            {account.demo ? <p>Demo nalog služi za pregled. Za izmene i poručivanje prijavite se na svoj nalog.</p> : <>
+              <ProfileEditor customer={account.customer} />
+              <RefundRequest orders={account.orders} />
+              <LoginSettings />
+            </>}
           </details>
           <details className="card">
             <summary>Moji kontakt podaci</summary>

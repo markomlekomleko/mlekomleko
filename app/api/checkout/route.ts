@@ -2,9 +2,11 @@ import { checkout } from "../../../server/commerce";
 import { jsonResponse, readJson, rejectCardData, withRoute } from "../../../server/domain";
 import { processOutboxFor } from "../../../server/integration-jobs";
 import { enforceRateLimit } from "../../../server/rate-limit";
+import { assertNotDemoCheckout } from "@/server/auth";
 
 export function POST(request: Request) {
   return withRoute(async () => {
+    await assertNotDemoCheckout(request);
     const body = await readJson(request);
     rejectCardData(body);
     await enforceRateLimit(request, "checkout", 20, 10 * 60);

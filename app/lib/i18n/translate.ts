@@ -1,5 +1,7 @@
-import { catalog } from "./catalog";
+import { catalog as mainCatalog } from "./catalog";
+import { demoCatalog } from "./demo-catalog";
 import { defaultLocale, type Locale } from "./routing";
+const catalog = { ...mainCatalog, ...demoCatalog };
 const latin = "abvgdđežzijk lmnoprstćufhcčš".replaceAll(" ", "");
 const cyrillic = "абвгдђежзијклмнопрстћуфхцчш";
 const letters = Object.fromEntries([...latin].map((letter, i) => [letter, cyrillic[i]]));

@@ -1,4 +1,5 @@
 import { reserveInventory } from "./inventory";
+import { DEMO_CUSTOMER_EMAIL, DEMO_READ_ONLY_MESSAGE } from "./demo-identity";
 import { serviceCity, assertSaleDate, selectSlot, slotGuard } from "./service-policy";
 import { resolvePromotions, reservePromotions } from "./promotions";
 import { effectivePrice } from "./product-details";
@@ -189,6 +190,7 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   const customerInput = input.customer;
   assertDomain(customerInput && typeof customerInput === "object" && !Array.isArray(customerInput), "VALIDATION_ERROR", "customer is required.", 422);
   const customerData = customerInput as Record<string, unknown>;
+  assertDomain(emailAddress(customerData.email) !== DEMO_CUSTOMER_EMAIL, "DEMO_READ_ONLY", DEMO_READ_ONLY_MESSAGE, 403);
   const customer = {
     email: emailAddress(customerData.email),
     fullName: requiredString(customerData.fullName, "customer.fullName", 160),

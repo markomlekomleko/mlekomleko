@@ -34,6 +34,7 @@ before(async () => {
   const url = pathToFileURL(join(directory, 'test.sqlite')).href;
   const env = {
     ...process.env, NODE_ENV: 'production', APP_ENV: 'local', AUTH_MODE: 'local', VERCEL: '',
+    DEMO_LOGIN_ENABLED: 'true',
     APP_ORIGIN: origin, NEXT_PUBLIC_SITE_URL: origin,
     TURSO_DATABASE_URL: url, TURSO_AUTH_TOKEN: '', DATABASE_URL: url,
     POSTGRES_URL: '', POSTGRES_PRISMA_URL: '', POSTGRES_URL_NON_POOLING: '', POSTGRES_SCHEMA: '',
@@ -123,6 +124,59 @@ async function api(path, { admin = false, body, headers = {}, ...options } = {})
   });
   return { status: response.status, headers: response.headers, body: await response.json() };
 }
+
+test('demo login has isolated sample data, secure sessions and no business side effects', async () => {
+  assert.equal((await api('/api/auth/code')).body.demo, true);
+  const counts = async () => Promise.all(['orders', 'subscriptions', 'delivery_orders', 'outbox'].map(async table =>
+    Number((await client.execute(`SELECT COUNT(*) AS n FROM ${table}`)).rows[0].n)));
+  const before = await counts();
+  assert.equal((await api('/api/auth/demo', { method: 'POST', headers: { origin: 'https://wrong.example' } })).status, 403);
+  const login = await api('/api/auth/demo', { method: 'POST', body: { email: 'somebody-else@example.test', customerId: 'other-customer' } });
+  assert.equal(login.status, 200, JSON.stringify(login.body));
+  assert.equal(login.body.demo, true);
+  assert.equal(login.body.sessionToken, undefined);
+  assert.match(login.headers.get('set-cookie'), /HttpOnly; SameSite=Lax/);
+  const cookie = login.headers.get('set-cookie').split(';')[0];
+  const headers = { cookie };
+  const account = await api('/api/account', { headers });
+  assert.equal(account.status, 200, JSON.stringify(account.body));
+  assert.equal(account.body.demo, true);
+  assert.equal(account.body.customer.email, 'demo@example.invalid');
+  assert.equal(account.body.subscriptions.length, 1);
+  assert.ok(account.body.subscriptions[0].nextDeliveryDate > account.body.currentDate);
+  assert.ok(account.body.deliveryHistory.every(delivery => delivery.date < account.body.currentDate));
+  const token = cookie.slice(cookie.indexOf('=') + 1);
+  const stored = (await client.execute("SELECT token_hash FROM auth_tokens WHERE customer_id = 'mm-public-demo-customer'")).rows[0];
+  assert.notEqual(stored.token_hash, token);
+  assert.deepEqual(await counts(), before);
+  for (const [path, method, body] of [
+    ['/api/account', 'PATCH', { fullName: 'Changed' }],
+    ['/api/account/subscriptions/demo-subscription', 'PATCH', { action: 'pause' }],
+    ['/api/account/orders/demo-order', 'PATCH', {}],
+    ['/api/account/refunds', 'POST', {}],
+    ['/api/account/login-settings', 'PATCH', { action: 'disconnect' }],
+    ['/api/account/whatsapp', 'POST', { phone: '+381601234567', consent: true }],
+    ['/api/checkout', 'POST', {}],
+  ]) {
+    const result = await api(path, { method, body, headers });
+    assert.equal(result.status, 403, `${path}: ${JSON.stringify(result.body)}`);
+    assert.equal(result.body.error.code, 'DEMO_READ_ONLY', path);
+  }
+  const reserved = await api('/api/checkout', { method: 'POST', body: { customer: { email: 'DEMO@example.invalid' } }, headers: { 'idempotency-key': randomUUID() } });
+  assert.equal(reserved.status, 403);
+  assert.equal(reserved.body.error.code, 'DEMO_READ_ONLY');
+  assert.equal((await api('/api/admin/customers', { headers })).status, 403);
+  assert.deepEqual(await counts(), before);
+  const second = await api('/api/auth/demo', { method: 'POST' });
+  assert.equal(second.status, 200);
+  const secondHeaders = { cookie: second.headers.get('set-cookie').split(';')[0] };
+  assert.notEqual(secondHeaders.cookie, cookie);
+  assert.equal((await api('/api/auth/logout', { method: 'POST', headers })).status, 200);
+  assert.equal((await api('/api/account', { headers })).status, 401);
+  assert.equal((await api('/api/account', { headers: secondHeaders })).status, 200);
+  await client.execute("UPDATE auth_tokens SET expires_at = '2000-01-01T00:00:00.000Z' WHERE customer_id = 'mm-public-demo-customer'");
+  assert.equal((await api('/api/account', { headers: secondHeaders })).status, 401);
+});
 
 test('production admin requires username and password; expired, revoked and rotated sessions fail', async () => {
   const access = await api('/api/admin/access', { headers: { 'x-forwarded-for': '127.0.0.1' } });

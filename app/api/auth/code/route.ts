@@ -1,8 +1,9 @@
 import { loginOptions, requestLoginCode } from "@/server/customer-login";
 import { jsonResponse, readJson, withRoute } from "@/server/domain";
+import { demoLoginAvailable } from "@/server/demo-account";
 
 export function GET(request: Request) {
-  return jsonResponse(loginOptions(request));
+  return jsonResponse({ ...loginOptions(request), demo: demoLoginAvailable() });
 }
 
 export function POST(request: Request) {

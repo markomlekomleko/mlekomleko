@@ -202,12 +202,14 @@ export function SubscriptionCard({
   subscription: sub,
   products,
   busy,
+  readOnly = false,
   mutate,
   index,
 }: {
   subscription: Subscription;
   products: Product[];
   busy: boolean;
+  readOnly?: boolean;
   mutate: Mutate;
   index: number;
 }) {
@@ -239,7 +241,7 @@ export function SubscriptionCard({
   const paused = sub.status === "paused";
   const cancelled = sub.status === "cancelled";
   const locked = sub.locked || now >= Date.parse(sub.cutoffAt);
-  const disabled = busy || sub.status !== "active" || locked;
+  const disabled = busy || readOnly || sub.status !== "active" || locked;
   const nextTotal =
     items
       .filter((item) => item.dueNext)
@@ -297,7 +299,7 @@ export function SubscriptionCard({
           </p>
           <button
             className="button secondary small"
-            disabled={busy}
+            disabled={busy || readOnly}
             onClick={() => void mutate(sub.id, "resume")}
           >
             Nastavi pretplatu
@@ -526,7 +528,7 @@ export function SubscriptionCard({
             <button
               className="button small"
               disabled={
-                busy ||
+                busy || readOnly ||
                 (action !== "resume" && locked) ||
                 (action === "pause" &&
                   (!pauseUntil ||
@@ -547,7 +549,7 @@ export function SubscriptionCard({
             </button>
             <button
               className="text-button"
-              disabled={busy}
+              disabled={busy || readOnly}
               onClick={() => setAction("")}
             >
               Odustani
@@ -639,7 +641,7 @@ export function SubscriptionCard({
           <a href="/kontakt">Pomoć oko dostave</a>
           <button
             className="text-button"
-            disabled={busy || locked}
+            disabled={busy || readOnly || locked}
             onClick={() => setAction("cancel")}
           >
             Otkaži pretplatu

@@ -7,6 +7,7 @@ import { enqueue } from "./outbox";
 import { processOutboxFor } from "./integration-jobs";
 import { enforceRateLimit } from "./rate-limit";
 import { emailConfigured } from "./messaging";
+import { DEMO_CUSTOMER_ID, DEMO_READ_ONLY_MESSAGE } from "./demo-identity";
 
 interface AuthRow extends Record<string, unknown> {
   id: string;
@@ -107,7 +108,18 @@ export async function authenticateCustomer(request: Request): Promise<{ customer
   const hash = await sha256(token);
   const row = await first<AuthRow>("SELECT id, customer_id, email, kind, expires_at, used_at FROM auth_tokens WHERE token_hash = ?", hash);
   assertDomain(row?.kind === "session" && row.customer_id && !row.used_at && Date.parse(row.expires_at) > Date.now(), "INVALID_SESSION", "Customer session is invalid or expired.", 401);
+  if (row.customer_id === DEMO_CUSTOMER_ID) {
+    assertDomain(runtimeEnv().DEMO_LOGIN_ENABLED !== "false", "INVALID_SESSION", "Demo sesija je istekla.", 401);
+    assertDomain(request.method === "GET" || request.method === "HEAD", "DEMO_READ_ONLY", DEMO_READ_ONLY_MESSAGE, 403);
+  }
   return { customerId: row.customer_id, email: row.email };
+}
+
+export async function assertNotDemoCheckout(request: Request): Promise<void> {
+  const token = sessionTokenFromRequest(request);
+  if (!token) return;
+  const demo = await first("SELECT id FROM auth_tokens WHERE token_hash = ? AND customer_id = ? AND kind = 'session' AND used_at IS NULL AND expires_at > ?", await sha256(token), DEMO_CUSTOMER_ID, new Date().toISOString());
+  assertDomain(!demo, "DEMO_READ_ONLY", DEMO_READ_ONLY_MESSAGE, 403);
 }
 
 function adminCredentials() {

@@ -17,17 +17,29 @@ export function LoginForm() {
   const [options, setOptions] = useState<{
     email: boolean;
     whatsapp: boolean;
+    demo?: boolean;
   } | null>(null);
   const [challenge, setChallenge] = useState<CodeChallenge | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
-    fetchJson<{ email: boolean; whatsapp: boolean }>("/api/auth/code")
+    fetchJson<{ email: boolean; whatsapp: boolean; demo?: boolean }>("/api/auth/code")
       .then(setOptions)
       .catch(() =>
         setError("Prijava trenutno nije dostupna. Osvežite stranicu."),
       );
   }, []);
+  async function openDemo() {
+    setBusy(true);
+    setError("");
+    try {
+      await fetchJson("/api/auth/demo", { method: "POST" });
+      window.location.assign(localizedPath("/nalog", locale));
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Demo nalog trenutno nije dostupan.");
+      setBusy(false);
+    }
+  }
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -189,6 +201,16 @@ export function LoginForm() {
               </p>
             )}
           </form>
+          {options?.demo && (
+            <section className="card form-stack" style={{ marginTop: "1.5rem" }} aria-labelledby="demo-title">
+              <h2 id="demo-title">Pogledajte kako izgleda nalog</h2>
+              <p>Isprobajte pregled pretplate, naredne dostave i istorije porudžbina sa primerima podataka. Email i lozinka nisu potrebni.</p>
+              <button className="button secondary" type="button" disabled={busy} onClick={() => void openDemo()}>
+                {busy ? "Otvaramo nalog…" : "Isprobaj demo nalog"}
+              </button>
+              <p className="muted">Demo nalog služi za pregled. Za izmene i poručivanje prijavite se na svoj nalog.</p>
+            </section>
+          )}
         </>
       )}
     </div>

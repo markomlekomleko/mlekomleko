@@ -2,10 +2,13 @@ import { updateProfile } from "../../../server/profile";
 import { authenticateCustomer, assertSameOrigin } from "../../../server/auth";
 import { getAccount } from "../../../server/commerce";
 import { jsonResponse, readJson, withRoute } from "../../../server/domain";
+import { getDemoAccount } from "@/server/demo-account";
+import { DEMO_CUSTOMER_ID } from "@/server/demo-identity";
 
 export function GET(request: Request) {
   return withRoute(async () => {
     const auth = await authenticateCustomer(request);
+    if (auth.customerId === DEMO_CUSTOMER_ID) return jsonResponse(getDemoAccount());
     return jsonResponse(await getAccount(auth.customerId));
   });
 }
