@@ -4,13 +4,17 @@ import { listBundles } from "./bundles";
 import { getBusinessSettings, getNextDeliveryWindow, isServiceablePostalCode } from "./settings";
 
 export async function getStorefront(postalCode?: string | null) {
-  const [settings, delivery, products, bundles] = await Promise.all([
-    getBusinessSettings(),
-    getNextDeliveryWindow(new Date(), deliveryCityForPostalCode(postalCode ?? "") ?? ""),
+  const settings = await getBusinessSettings();
+  const available = postalCode ? isServiceablePostalCode(settings,postalCode) : undefined;
+  const [delivery, products, bundles] = await Promise.all([
+    getNextDeliveryWindow(new Date(), available ? deliveryCityForPostalCode(postalCode ?? "") ?? "" : ""),
     listProducts(false),
     listBundles(false),
   ]);
   const publicSettings = {
+    indjijaEnabled: settings.indjijaEnabled && settings.indjijaDeliveryWeekdays.length > 0,
+    originCowImageUrl: settings.originCowImageUrl,
+    originGoatImageUrl: settings.originGoatImageUrl,
     storeName: settings.storeName,
     announcementEnabled: settings.announcementEnabled,
     announcementText: settings.announcementText,
@@ -42,7 +46,7 @@ export async function getStorefront(postalCode?: string | null) {
     products,
     bundles,
     serviceability: postalCode
-      ? { postalCode, available: isServiceablePostalCode(settings, postalCode) }
+      ? { postalCode, available }
       : undefined,
   };
 }

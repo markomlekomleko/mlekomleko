@@ -1,5 +1,5 @@
 import { env } from "@/server/runtime";
-import { assertDomain, DomainError } from "./domain";
+import { assertDomain, DomainError, emailAddress } from "./domain";
 import type { TransactionalMessage } from "./notifications";
 
 const config = () => env as Record<string, string | undefined>;
@@ -48,6 +48,7 @@ function infobipReceipt(body: Record<string, unknown>): string {
 export async function sendEmailMessage(to: string, message: TransactionalMessage, id: string): Promise<string> {
   assertDomain(emailConfigured(), "EMAIL_NOT_CONFIGURED", "Slanje emaila još nije aktivirano.", 503);
   const c = config();
+  const replyTo = c.EMAIL_REPLY_TO?.trim() ? emailAddress(c.EMAIL_REPLY_TO) : undefined;
   if (c.EMAIL_PROVIDER === "infobip") {
     const form = new FormData();
     for (const [key, value] of Object.entries({ from: c.EMAIL_FROM!, to, subject: message.subject, text: message.text, html: message.html, bulkId: id, track: "false" })) form.set(key, value);
@@ -57,7 +58,7 @@ export async function sendEmailMessage(to: string, message: TransactionalMessage
   }
   const body = await providerRequest("https://api.resend.com/emails", {
     method: "POST", headers: { authorization: `Bearer ${c.EMAIL_API_KEY}`, "content-type": "application/json", "idempotency-key": id },
-    body: JSON.stringify({ from: c.EMAIL_FROM, to: [to], ...message }),
+    body: JSON.stringify({ from: c.EMAIL_FROM, to: [to], ...message, ...(replyTo ? {reply_to:replyTo} : {}) }),
   });
   assertDomain(typeof body.id === "string", "MESSAGE_SEND_FAILED", "Servis nije potvrdio prijem emaila.", 503);
   return body.id;

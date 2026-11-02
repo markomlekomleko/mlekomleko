@@ -13,6 +13,7 @@ import pg from 'pg';
 import { postgresConfig } from '../../db/postgres-config.mjs';
 import { postgresSql } from '../../db/postgres-sql.mjs';
 import { migratePostgres } from '../../scripts/migrate-postgres.mjs';
+import {prepareCustomerImport,applyCustomerImport} from '../../integrations/customer-import.mjs';
 
 let server, client, directory, origin;
 let pgClient, schema;
@@ -40,7 +41,7 @@ before(async () => {
     POSTGRES_URL: '', POSTGRES_PRISMA_URL: '', POSTGRES_URL_NON_POOLING: '', POSTGRES_SCHEMA: '',
     ADMIN_EMAIL: adminUsername, ADMIN_PASSWORD: adminSecret, ADMIN_SECRET: "ignored-legacy-key", ADMIN_LEGACY_ACCESS: "false", CRON_SECRET: cronSecret,
     PAYMENT_WEBHOOK_SECRET: randomUUID(), PAYMENT_PROVIDER: 'disabled', PAYMENT_MODE: 'disabled',
-    BADI_MODE: 'mock', EMAIL_MODE: 'console', WHATSAPP_MODE: 'queue',
+    BADI_MODE: 'mock', FISCAL_PROVIDER: '', FISCOMM_MODE: 'disabled', FISCOMM_API_KEY: '', EMAIL_MODE: 'console', WHATSAPP_MODE: 'queue', NEXT_PUBLIC_CLARITY_PROJECT_ID: '',
     ALLOW_PRODUCTION_INTEGRATIONS: 'false', GA4_API_SECRET: '', GA4_MEASUREMENT_ID: '', NEXT_PUBLIC_GA4_MEASUREMENT_ID: '', NEXT_PUBLIC_GTM_CONTAINER_ID: '', NEXT_PUBLIC_META_PIXEL_ID: '', META_CONVERSIONS_ACCESS_TOKEN: '', NEXT_PUBLIC_GOOGLE_ADS_ID: '',
   };
   const migration = spawnSync(process.execPath, ['scripts/migrate.mjs', '--local'], { env, encoding: 'utf8' });
@@ -495,4 +496,26 @@ test('localized pages ship translated HTML, canonical alternatives, schema and n
     assert.equal(admin.status, 308);
     assert.equal(new URL(admin.headers.get('location'), origin).pathname, '/admin');
   }
+});
+
+test('cash preparation, bulk payment and reviewed legacy import work on the persistent backend',async()=>{
+  const product=(await api('/api/products')).body.products[0];
+  const created=await api('/api/checkout',{method:'POST',headers:{'idempotency-key':randomUUID()},body:{items:[{productId:product.id,quantity:2,purchaseType:'subscription',cadence:'weekly'}],paymentMethod:'cash',customer:{email:'cash-first-runtime@example.test',fullName:'Test Prvi Paket',phone:'+381600000000',addressLine1:'Test 3',city:'Beograd',postalCode:'11000'}}});
+  assert.equal(created.status,201,JSON.stringify(created.body));
+  const order=(await client.execute({sql:'SELECT * FROM orders WHERE id=?',args:[created.body.order.id]})).rows[0];
+  const preview=await api('/api/admin/delivery-preview?date='+order.delivery_date,{admin:true});assert.equal(preview.status,200,JSON.stringify(preview.body));
+  const stop=preview.body.orders.find(row=>row.cash_orders?.some(cash=>cash.id===order.id));assert.ok(stop);assert.equal(stop.cash_due_minor,order.total_minor);
+  const body={confirmed:true,orders:[{id:order.id,expectedUpdatedAt:order.updated_at}]},headers={'idempotency-key':randomUUID()};
+  const paid=await api('/api/admin/orders/bulk-payment',{method:'POST',admin:true,headers,body});assert.equal(paid.status,200,JSON.stringify(paid.body));assert.equal(paid.body.succeeded,1);
+  const replay=await api('/api/admin/orders/bulk-payment',{method:'POST',admin:true,headers,body});assert.deepEqual(replay.body,paid.body);
+  const db={first:async(sql,...args)=>(await client.execute({sql,args})).rows[0],batch:async statements=>{
+    if(!pgClient)return client.batch(statements.map(s=>({sql:s.sql,args:s.bindings??[]})),'write');
+    await pgClient.query('BEGIN');try{for(const s of statements)await pgClient.query(postgresSql(s.sql),s.bindings??[]);await pgClient.query('COMMIT');}catch(error){await pgClient.query('ROLLBACK');throw error;}
+  }};
+  const row={external_customer_id:'old-runtime-1',full_name:'Test Stari Paket',email:'legacy-runtime@example.test',phone:'+381600000001',address:'Test 4',city:'Beograd',postal_code:'11000',external_order_id:'old-runtime-package',next_delivery_date:order.delivery_date,paid:'true',payment_method:'cash',advance_provider:'fiscomm',advance_mode:'live',advance_invoice_number:'TEST-LEGACY-RUNTIME',advance_time:'2020-01-01T10:00:00Z',purchased_at:'2020-01-01T10:00:00Z',total_rsd:'3400',delivery_fee_rsd:'1400',remaining_rsd:'1700',delivery_tax_label:'A',product_id:product.id,cadence:'weekly',quantity:'2',delivered_quantity:'4',unit_price_rsd:'250',net_product_rsd:'2000',allocated_delivery_rsd:'1400',tax_label:'A'};
+  const before=await db.first('SELECT COUNT(*) n FROM outbox');
+  const plan=await prepareCustomerImport([row],{db,batchId:'runtime-legacy',validatePackage:async()=>{}});assert.deepEqual(plan.errors,[]);assert.equal(plan.remainingMinor,170000);
+  await applyCustomerImport(plan,{db,approvedHash:plan.approvalHash});assert.equal((await db.first('SELECT COUNT(*) n FROM outbox')).n,before.n);
+  const repeated=await prepareCustomerImport([row],{db,batchId:'runtime-legacy',validatePackage:async()=>{}});assert.equal(repeated.alreadyImported,true);
+  const balance=await db.first('SELECT imported_delivered_quantity n FROM package_lines WHERE order_item_id=?',plan.statements.find(s=>s.sql.startsWith('INSERT INTO order_items')).bindings[0]);assert.equal(balance.n,4);
 });

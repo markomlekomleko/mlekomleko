@@ -16,7 +16,7 @@ export function commerceReadiness(env = {}) {
         'Implementacija adaptera izabranog provajdera i potvrđena sandbox transakcija.',
       ],
     },
-    fiscalization: value('FISCAL_PROVIDER') === 'fiscomm' ? {provider: 'fiscomm', mode: value('FISCOMM_MODE') || 'disabled', status: 'verification_required', missing: [...(!value('FISCOMM_API_KEY') ? ['Serverski Fiscomm API ključ.'] : []), ...(value('FISCOMM_MODE') !== 'live' ? ['Aktivacija izdavanja nakon potvrde poreskih oznaka.'] : []), 'Poreske oznake svakog proizvoda i dostave potvrđene sa knjigovođom.', 'Proveren avans, zatvaranje avansa i konačni dokument u sandbox okruženju.']} : {
+    fiscalization: value('FISCAL_PROVIDER') === 'fiscomm' ? {provider: 'fiscomm', mode: value('FISCOMM_MODE') || 'training', status: 'verification_required', missing: [...(!value('FISCOMM_API_KEY') ? ['Serverski Fiscomm API ključ.'] : []), ...(value('FISCOMM_MODE') !== 'live' ? ['Aktivacija izdavanja nakon potvrde poreskih oznaka.'] : []), 'Poreske oznake svakog proizvoda i dostave potvrđene sa knjigovođom.', 'Proveren avans, zatvaranje avansa i konačni dokument u sandbox okruženju.']} : {
       provider: 'badi', mode: fiscalMode,
       status: ['sandbox', 'production'].includes(fiscalMode) ? 'verification_required' : 'not_connected',
       missing: [

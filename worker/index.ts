@@ -33,7 +33,7 @@ function secureResponse(request: Request, response: Response): Response {
   headers.set("cross-origin-opener-policy", "same-origin");
   if (url.protocol === "https:" && !local) {
     headers.set("strict-transport-security", "max-age=31536000; includeSubDomains; preload");
-    headers.set("content-security-policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.google-analytics.com https://www.facebook.com; font-src 'self' data:; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com; frame-src https://www.youtube.com https://www.tiktok.com; upgrade-insecure-requests");
+    headers.set("content-security-policy", "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://www.clarity.ms https://scripts.clarity.ms https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.google-analytics.com https://www.facebook.com; font-src 'self' data:; connect-src 'self' https://*.clarity.ms https://c.bing.com https://www.google-analytics.com https://region1.google-analytics.com; frame-src https://www.youtube.com https://www.tiktok.com; upgrade-insecure-requests");
   }
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }

@@ -603,3 +603,23 @@ export const paymentAttempts = sqliteTable("payment_attempts",{id:text("id").pri
 export const messageDeliveries = sqliteTable("message_deliveries",{id:text("id").primaryKey(),outboxId:text("outbox_id"),channel:text("channel").notNull(),recipient:text("recipient").notNull(),subject:text("subject").notNull().default(""),body:text("body").notNull().default(""),provider:text("provider").notNull(),providerReference:text("provider_reference"),status:text("status").notNull().default("queued"),lastError:text("last_error"),...timestamps});
 export const messageWebhookEvents = sqliteTable("message_webhook_events",{id:text("id").primaryKey(),providerReference:text("provider_reference").notNull(),eventType:text("event_type").notNull(),eventAt:text("event_at").notNull(),createdAt:timestamps.createdAt});
 export const legacyReconciliations = sqliteTable("legacy_reconciliations",{id:text("id").primaryKey(),orderId:text("order_id").notNull().unique().references(()=>orders.id),subscriptionId:text("subscription_id").notNull().references(()=>subscriptions.id),detailsJson:text("details_json").notNull(),actorId:text("actor_id"),createdAt:timestamps.createdAt});
+
+// Immutable monetary snapshot and disjoint delivered unit ranges for fiscal receipts.
+export const fiscalOrderSnapshots = sqliteTable("fiscal_order_snapshots", {
+  orderId: text("order_id").primaryKey().references(() => orders.id),
+  snapshotJson: text("snapshot_json").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+export const fiscalDeliveryAllocations = sqliteTable("fiscal_delivery_allocations", {
+  deliveryOrderId: text("delivery_order_id").notNull().references(() => deliveryOrders.id),
+  orderItemId: text("order_item_id").notNull().references(() => orderItems.id),
+  quantity: integer("quantity").notNull(),
+  unitOffset: integer("unit_offset").notNull(),
+  prepaid: integer("prepaid").notNull(),
+}, table => [
+  uniqueIndex("fiscal_delivery_item_unique").on(table.deliveryOrderId, table.orderItemId),
+  uniqueIndex("fiscal_delivery_offset_unique").on(table.orderItemId, table.unitOffset),
+  check("fiscal_delivery_quantity_positive", sql`${table.quantity} > 0`),
+  check("fiscal_delivery_offset_nonnegative", sql`${table.unitOffset} >= 0`),
+  check("fiscal_delivery_prepaid_boolean", sql`${table.prepaid} IN (0,1)`),
+]);

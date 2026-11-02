@@ -13,7 +13,7 @@ import {
   quoteCart,
 } from "./commerce";
 import { stableJsonHash } from "./crypto";
-import { getBusinessSettings, getNextDeliveryWindow } from "./settings";
+import { allDeliveryWeekdays, deliveryWeekdaysForCity, getBusinessSettings, getNextDeliveryWindow } from "./settings";
 import {
   addLocalDays,
   assertLocalDate,
@@ -31,6 +31,7 @@ import {
 } from "./integration-jobs";
 import { contactEmail } from "./customer-contact";
 import { renderTransactionalMessage } from "./notifications";
+import { deliveryPaymentOrders } from "./cash-collection";
 
 export async function manualOrder(
   input: Record<string, unknown>,
@@ -106,7 +107,7 @@ export async function manualOptions() {
   for (let i = 0; i < 62; i++) {
     const date = addLocalDays(localDateAt(), i);
     if (
-      settings.deliveryWeekdays.includes(
+      allDeliveryWeekdays(settings).includes(
         new Date(`${date}T12:00:00Z`).getUTCDay(),
       ) &&
       Date.parse(
@@ -116,11 +117,11 @@ export async function manualOptions() {
           settings.deliveryLocalTime,
         ),
       ) > Date.now() &&
-      !locked.some((row) => row.delivery_date === date)
+      !settings.holidays.includes(date) && !locked.some((row) => row.delivery_date === date)
     )
       dates.push(date);
   }
-  return { dates, emailAvailable: emailConfigured() };
+  return { dates, emailAvailable: emailConfigured(), deliveryWeekdaysByCity:Object.fromEntries(["Beograd","Novi Sad","Inđija"].map(city=>[city,deliveryWeekdaysForCity(settings,city)])) };
 }
 
 export async function adminCustomer(id: string) {
@@ -289,16 +290,14 @@ export async function insights(params: URLSearchParams) {
   const settings = await getBusinessSettings();
   let nextDate = today;
   while (
-    !settings.deliveryWeekdays.includes(
+    !allDeliveryWeekdays(settings).includes(
       new Date(`${nextDate}T12:00:00Z`).getUTCDay(),
     )
   )
     nextDate = addLocalDays(nextDate, 1);
   const upcoming = await generateDelivery(nextDate, "admin-preview", true);
-  const due = await first<Row>(
-    "SELECT COALESCE(SUM(total_minor),0) AS amount FROM orders WHERE delivery_date = ? AND payment_method = 'cash' AND payment_status = 'pending' AND fulfillment_status != 'cancelled'",
-    nextDate,
-  );
+  const paymentRows = (await Promise.all(upcoming.orders.map(order=>deliveryPaymentOrders(String(order.id),order.items.map(item=>String(item.order_item_id ?? "")).filter(Boolean),order.source_order_id)))).flat();
+  const due = [...new Map(paymentRows.map(order=>[order.id,order])).values()].filter(order=>order.payment_method === "cash" && order.payment_status === "pending").reduce((sum,order)=>sum+Number(order.total_minor),0);
   return {
     from,
     to,
@@ -317,7 +316,7 @@ export async function insights(params: URLSearchParams) {
       orders: current.length,
       paidOrders: current.filter((o) => o.payment_status === "paid").length,
       newCustomers: Number(newCustomers?.count ?? 0),
-      cashDueMinor: Number(due?.amount ?? 0),
+      cashDueMinor: due,
     },
     kinds: [
       {
@@ -391,22 +390,12 @@ export async function adminDelivery(date: string) {
   const payload = await generateDelivery(date, "admin-delivery-preview", true);
   const orders = await Promise.all(
     payload.orders.map(async (order) => {
-      const due = order.source_order_id
-        ? await first<Row>(
-            "SELECT total_minor AS amount FROM orders WHERE id = ? AND payment_method = 'cash' AND payment_status = 'pending' AND fulfillment_status != 'cancelled'",
-            order.source_order_id,
-          )
-        : await first<Row>(
-            "SELECT COALESCE(SUM(total_minor),0) AS amount FROM orders WHERE subscription_id = ? AND payment_method = 'cash' AND payment_status = 'pending' AND fulfillment_status != 'cancelled' AND delivery_date <= ?",
-            order.subscription_id,
-            date,
-          );
+      const due = (await deliveryPaymentOrders(String(order.id), order.items.map(item=>String(item.order_item_id ?? "")).filter(Boolean), order.source_order_id)).filter(row=>row.payment_method === "cash" && row.payment_status === "pending");
       return {
         ...order,
-        cash_due_minor: Number(due?.amount ?? 0),
-        billing_label: order.subscription_id
-          ? "Preostali obračuni pretplate"
-          : "Ova porudžbina",
+        cash_due_minor: due.reduce((sum,row)=>sum+Number(row.total_minor),0),
+        cash_orders: due,
+        billing_label: due.some(row=>row.is_package) ? "Ceo paket pri prvoj dostavi" : "Ova porudžbina i dodaci",
       };
     }),
   );
@@ -430,7 +419,7 @@ export async function deliveryCalendar(params: URLSearchParams) {
   const dates: string[] = [];
   for (let date = from; date <= to; date = addLocalDays(date, 1)) {
     const scheduled = rhythms.some(rhythm => date >= String(rhythm.next_delivery_date) && (!rhythm.pause_until || date >= String(rhythm.pause_until)) && (Date.parse(date) - Date.parse(String(rhythm.cadence_anchor_date))) / 86400000 % (rhythm.cadence === "biweekly" ? 14 : 7) === 0);
-    if (settings.deliveryWeekdays.includes(new Date(`${date}T12:00:00Z`).getUTCDay()) || knownDates.has(date) || scheduled) dates.push(date);
+    if (allDeliveryWeekdays(settings).includes(new Date(`${date}T12:00:00Z`).getUTCDay()) || knownDates.has(date) || scheduled) dates.push(date);
   }
   const days: Row[] = [];
   // Sequential snapshots avoid racing automatic deadline locking for one customer.

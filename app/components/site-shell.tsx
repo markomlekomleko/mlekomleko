@@ -145,7 +145,7 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
           <Link href="/gde-kupiti">Gde kupiti</Link>
           <Link href="/dostava-mleka/beograd">Dostava Beograd</Link>
           <Link href="/dostava-mleka/novi-sad">Dostava Novi Sad</Link>
-          <Link href="/farme">Naše farme</Link>
+          <Link href="/farme">Kravlje i kozje</Link>
           <Link href="/faq">Česta pitanja</Link>
           <Link href="/kontakt">Kontakt</Link>
         </nav>

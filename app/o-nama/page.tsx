@@ -21,7 +21,7 @@ export default async function AboutPage() {
             <h1>Pravo mleko više nije daleko.</h1>
             <p className="lead">Mleko i Mleko donosi punomasno sirovo kravlje i kozje mleko sa domaćih farmi direktno na kućnu adresu.</p>
             <p className="content-text">Dostavljamo ga u povratnim staklenim flašama kako bismo čuvali ukus i zajedno smanjili nepotreban otpad. Posebne tvrdnje o poreklu i kontroli objavljujemo tek uz odgovarajuću dokumentaciju dobavljača.</p>
-            <div className="button-row"><a className="button" href="/farme">Naše farme</a></div>
+            <div className="button-row"><a className="button" href="/farme">Kravlje i kozje</a></div>
           </div>
           <figure className="content-media">
             <BrandIllustration />

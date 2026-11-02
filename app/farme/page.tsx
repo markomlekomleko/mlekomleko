@@ -1,30 +1,30 @@
 import { localizedMetadata } from "@/app/lib/i18n/server";
 import { getLocalize } from "@/app/lib/i18n/server";
-import { BrandIllustration } from "../components/brand-illustration";
+import { OriginGallery } from "../components/origin-gallery";
+import { getBusinessSettings } from "@/server/settings";
 import type { Metadata } from "next";
 import { canonicalUrl } from "../lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
-  title: "Naše farme",
+  title: "Kravlje i kozje",
   description: "Put domaćeg kravljeg i kozjeg mleka od farme do tvoje adrese.",
   alternates: { canonical: canonicalUrl("/farme") },
 }); }
 
 export default async function FarmsPage() {
   const localize = await getLocalize();
+  const settings = await getBusinessSettings();
   return localize((
     <div className="content-page">
       <header className="content-band content-hero">
         <div className="page-shell content-split">
           <div className="page-heading">
             <p className="eyebrow">Put našeg mleka</p>
-            <h1>Tradicija sa farme, dostava za danas.</h1>
-            <p className="lead">Sarađujemo sa domaćim farmama i organizujemo dostavu mleka u povratnim staklenim flašama.</p>
+            <h1>Glavne uloge: krave i koze.</h1>
+            <p className="lead">Dve vrste mleka, isti dogovor: biraš koliko i kada, a mi donosimo u povratnim staklenim flašama.</p>
             <div className="button-row"><a className="button" href="/prodavnica">Izaberi mleko →</a><a className="button secondary" href="/kontakt">Kontakt</a></div>
           </div>
-          <figure className="content-media">
-            <BrandIllustration />
-          </figure>
+          <div className="content-media"><OriginGallery cow={settings.originCowImageUrl} goat={settings.originGoatImageUrl} /></div>
         </div>
       </header>
 

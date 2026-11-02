@@ -10,7 +10,7 @@ import styles from "../market.module.css";
 const navigation = [
   { label: "Kako dostavljamo", links: [["Kako funkcioniše", "/kako-funkcionise"], ["Dostava", "/dostava"], ["Česta pitanja", "/faq"]] },
   { label: "Mleko", links: [["Prodavnica", "/prodavnica"], ["Gde kupiti", "/gde-kupiti"]] },
-  { label: "Naše poreklo", links: [["Naše farme", "/farme"]] },
+  { label: "Naše poreklo", links: [["Kravlje i kozje", "/farme"]] },
 ];
 
 export function MarketHeader({ storeName }: { storeName: string }) {
@@ -78,7 +78,7 @@ export function MarketFooter({ storeName }: { storeName: string }) {
           <Image className={styles.brandLogo} src="/images/mleko-i-mleko-logo-mark.png" alt="" width={208} height={208} sizes="104px" />
         </Link>
         <nav className={styles.footerNav} aria-label="Korisne informacije">
-          {[["Prodavnica", "/prodavnica"], ["Naše farme", "/farme"], ["Gde kupiti", "/gde-kupiti"], ["Dostava Beograd", "/dostava-mleka/beograd"], ["Dostava Novi Sad", "/dostava-mleka/novi-sad"], ["Česta pitanja", "/faq"], ["Kontakt", "/kontakt"], ["Dostava", "/dostava"], ["Pravila pretplate", "/pravila-pretplate"]].map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
+          {[["Prodavnica", "/prodavnica"], ["Kravlje i kozje", "/farme"], ["Gde kupiti", "/gde-kupiti"], ["Dostava Beograd", "/dostava-mleka/beograd"], ["Dostava Novi Sad", "/dostava-mleka/novi-sad"], ["Česta pitanja", "/faq"], ["Kontakt", "/kontakt"], ["Dostava", "/dostava"], ["Pravila pretplate", "/pravila-pretplate"]].map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
         </nav>
         <div className={styles.socials}>
           <a href="https://instagram.com/mleko_i_mleko" target="_blank" rel="noreferrer" aria-label="Instagram"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true"><rect x="4" y="4" width="24" height="24" rx="7" /><circle cx="16" cy="16" r="6" /><circle cx="23" cy="9" r="1.5" fill="currentColor" stroke="none" /></svg></a>

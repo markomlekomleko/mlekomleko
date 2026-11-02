@@ -31,6 +31,8 @@ export function CustomersPanel({
   onNew: (customer: Row) => void;
   onChanged: () => void;
 }) {
+  const [section, setSection] = useState("podaci");
+  const [notice, setNotice] = useState("");
   const [found, setFound] = useState<{
     customers: Row[];
     total: number;
@@ -109,6 +111,7 @@ export function CustomersPanel({
         ),
       });
       setEdit(false);
+      setNotice("Kontakt i adresa su sačuvani.");
       setRevision((v) => v + 1);
       onChanged();
     } catch (e) {
@@ -175,6 +178,8 @@ export function CustomersPanel({
               key={str(c.id)}
               className="work-customer-card"
               onClick={() => {
+                setSection("podaci");
+                setNotice("");
                 setAccount(null);
                 setError("");
                 onSelect(str(c.id));
@@ -199,7 +204,7 @@ export function CustomersPanel({
             </button>
           ))}
         </div>
-      ) : !loading ? (
+      ) : !loading && !error ? (
         <Empty title="Nema kupaca za ovu pretragu" />
       ) : null}
       {found && found.total > found.pageSize ? (
@@ -231,6 +236,8 @@ export function CustomersPanel({
             onSelect("");
             setAccount(null);
             setEdit(false);
+            setSection("podaci");
+            setNotice("");
           }}
         >
           {error ? (
@@ -240,6 +247,9 @@ export function CustomersPanel({
           ) : null}
           {account && customer.id === selectedId ? (
             <>
+              {notice ? <p role="status" className="notice success">{notice}</p> : null}
+              <nav className="work-section-nav" aria-label="Detalji kupca">{[["podaci", "Podaci"], ["porudzbine", "Porudžbine"], ["redovne", "Redovne dostave"], ["istorija", "Istorija"]].map(([id, label]) => <button key={id} aria-pressed={section === id} className={section === id ? "active" : ""} onClick={() => setSection(id)}>{label}</button>)}</nav>
+              <section hidden={section !== "podaci"} aria-label="Podaci kupca">
               <div className="work-contact">
                 <p>
                   {str(customer.phone)} ·{" "}
@@ -295,6 +305,7 @@ export function CustomersPanel({
                   </button>
                 </form>
               ) : null}
+              </section><section hidden={section !== "redovne"} aria-label="Redovne dostave kupca">
               <h3 className="work-section-title">Redovne dostave</h3>
               {rows(account.subscriptions).length ? (
                 rows(account.subscriptions).map((s) => (
@@ -302,7 +313,8 @@ export function CustomersPanel({
                     key={`${str(s.id)}-${num(s.version)}`}
                     subscription={s}
                     request={request}
-                    onChanged={() => {
+                    onChanged={(saved) => {
+                      if (saved) setNotice("Promena redovne dostave je sačuvana.");
                       setRevision((v) => v + 1);
                       onChanged();
                     }}
@@ -313,6 +325,7 @@ export function CustomersPanel({
                   Ovaj kupac još nema redovnu dostavu.
                 </p>
               )}
+              </section><section hidden={section !== "porudzbine"} aria-label="Porudžbine kupca">
               <h3 className="work-section-title">Porudžbine i naplata</h3>
               {rows(account.orders).map((o) => (
                 <div className="work-history-row" key={str(o.id)}>
@@ -332,6 +345,7 @@ export function CustomersPanel({
               {!rows(account.orders).length ? (
                 <p className="work-hint">Još nema porudžbina.</p>
               ) : null}
+              </section><section hidden={section !== "istorija"} aria-label="Istorija kupca">
               <h3 className="work-section-title">Pauze i promene</h3>
               {rows(account.changes).map((c) => (
                 <div className="work-history-row" key={str(c.id)}>
@@ -348,10 +362,12 @@ export function CustomersPanel({
                   <small>{formatDate(str(c.created_at))}</small>
                 </div>
               ))}
+              {!rows(account.changes).length ? <p>Još nema zabeleženih promena.</p> : null}
+              </section>
             </>
-          ) : (
+          ) : !error ? (
             <p role="status">Učitavamo podatke kupca…</p>
-          )}
+          ) : null}
         </Dialog>
       ) : null}
     </div>
@@ -364,7 +380,7 @@ function SubscriptionControl({
 }: {
   subscription: Row;
   request: Requester;
-  onChanged: () => void;
+  onChanged: (saved?: boolean) => void;
 }) {
   const [action, setAction] = useState(""),
     [date, setDate] = useState(plusDays(str(s.nextDeliveryDate), 14)),
@@ -405,7 +421,7 @@ function SubscriptionControl({
         }),
       });
       setAction("");
-      onChanged();
+      onChanged(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Promena nije sačuvana.");
       onChanged();

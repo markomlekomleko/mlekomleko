@@ -125,7 +125,7 @@ export function CheckoutForm() {
   async function submitCheckout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!addressVerified) {
-      setError(addressError ?? "Izaberite Beograd ili Novi Sad i unesite važeći poštanski broj. Sačekajte proveru dostave.");
+      setError(addressError ?? "Izaberite grad i unesite važeći poštanski broj. Sačekajte proveru dostave.");
       return;
     }
     track("add_payment_info", { payment_type: paymentMethod });
@@ -320,8 +320,8 @@ export function CheckoutForm() {
                   checked={paymentMethod === "cash"}
                   readOnly
                 />
-                {hasSubscription ? "Gotovina — uplata paketa unapred" : "Gotovina pri dostavi"}
-                {hasSubscription ? <span className="muted small-text">Ceo paket se plaća unapred, pre početka isporuka.</span> : null}
+                {hasSubscription ? "Gotovina — ceo paket pri prvoj dostavi" : "Gotovina pri dostavi"}
+                {hasSubscription ? <span className="muted small-text">Ceo paket plaćaš gotovinom pri prvoj dostavi. Ostale dostave tog paketa su već plaćene.</span> : null}
               </label>
               <label className="radio-card disabled" htmlFor="placanje-kartica">
                 <input id="placanje-kartica" type="radio" name="paymentMethod" value="card" disabled aria-describedby="kartica-status" />

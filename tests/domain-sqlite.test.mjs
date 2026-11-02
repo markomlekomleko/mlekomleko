@@ -196,11 +196,11 @@ test('live checkout rejects simulated cards and unconfigured email login', async
 
 test('Resend login sends a usable single-use link without exposing it in the production response', async () => {
  await create();
- const original = { APP_ENV: env.APP_ENV, EMAIL_MODE: env.EMAIL_MODE, EMAIL_PROVIDER: env.EMAIL_PROVIDER, EMAIL_API_KEY: env.EMAIL_API_KEY, EMAIL_FROM: env.EMAIL_FROM };
+ const original = { APP_ENV: env.APP_ENV, EMAIL_MODE: env.EMAIL_MODE, EMAIL_PROVIDER: env.EMAIL_PROVIDER, EMAIL_API_KEY: env.EMAIL_API_KEY, EMAIL_FROM: env.EMAIL_FROM, EMAIL_REPLY_TO: env.EMAIL_REPLY_TO };
  const originalFetch = globalThis.fetch;
  const sent = [];
  try {
-  Object.assign(env, { APP_ENV: 'production', EMAIL_MODE: 'provider', EMAIL_PROVIDER: 'resend', EMAIL_API_KEY: 'test-resend-key', EMAIL_FROM: 'Mleko <noreply@example.test>' });
+  Object.assign(env, { APP_ENV: 'production', EMAIL_MODE: 'provider', EMAIL_PROVIDER: 'resend', EMAIL_API_KEY: 'test-resend-key', EMAIL_FROM: 'Mleko <noreply@example.test>', EMAIL_REPLY_TO: 'marko@example.test' });
   globalThis.fetch = async (url, init) => {
    assert.equal(url, 'https://api.resend.com/emails');
    assert.equal(init.headers.authorization, 'Bearer test-resend-key');
@@ -211,6 +211,7 @@ test('Resend login sends a usable single-use link without exposing it in the pro
   assert.deepEqual(result, { accepted: true });
   assert.equal(sent.length, 1);
   assert.deepEqual(sent[0].to, ['qa@example.test']);
+  assert.equal(sent[0].reply_to, 'marko@example.test');
   const link = sent[0].text.match(/http:\/\/localhost\/prijava\/potvrda\?token=[A-Za-z0-9_-]+/)[0];
   const token = new URL(link).searchParams.get('token');
   expectStatus(await api('/api/auth/magic-link/exchange', { token }));

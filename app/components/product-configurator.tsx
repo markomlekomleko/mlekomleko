@@ -76,6 +76,10 @@ export function ProductConfigurator({
   const unitPrice = purchaseType === "subscription" ? product.subscriptionPriceRsd : product.priceRsd;
   const perDelivery = unitPrice * quantity;
   const occurrences = delivery.remainingOccurrences[cadence];
+  const visits = purchaseType === "subscription" ? occurrences : 1;
+  const goodsTotal = perDelivery * visits;
+  const shippingKnown = typeof delivery.deliveryFeeMinor === "number";
+  const shippingTotal = shippingKnown && !(Number(delivery.freeDeliveryThresholdMinor)>0 && goodsTotal*100 >= Number(delivery.freeDeliveryThresholdMinor)) ? Number(delivery.deliveryFeeMinor)/100*visits : 0;
   const href = `/proizvodi/${encodeURIComponent(product.slug)}`;
   const selectionLabel = `${quantityLabel(quantity, product.unit)} · ${
     purchaseType === "subscription" ? cadenceLabel(cadence).toLocaleLowerCase("sr-Latn") : "jednokratno"
@@ -118,14 +122,14 @@ export function ProductConfigurator({
 
   useEffect(() => {
     onSelectionChange?.({
-      label: selectionLabel,
-      totalRsd: perDelivery,
+      label: `${selectionLabel} · ${shippingKnown ? purchaseType === "subscription" ? "ceo paket sa dostavom" : "sa dostavom" : "proizvodi po dostavi"}`,
+      totalRsd: shippingKnown ? goodsTotal + shippingTotal : perDelivery,
       addToCart,
       disabled: !product.available || !ready,
     });
     // The callback only mirrors the current selection into a sticky bar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectionLabel, perDelivery, product.available, ready, purchaseType, cadence, quantity]);
+  }, [selectionLabel, perDelivery, goodsTotal, shippingTotal, shippingKnown, product.available, ready, purchaseType, cadence, quantity]);
 
   function choosePurchaseType(value: PurchaseType) {
     setPurchaseType(value);
@@ -174,6 +178,7 @@ export function ProductConfigurator({
       <div className="configurator-body">
         <div className="configurator-head">
           <p className="configurator-category">{product.category}</p>
+          {product.imageUrl && (/^\/images\/demo\//.test(product.imageUrl) || /^\/images\/catalog\/(kravlje|kozje)-mleko(-v2)?\.(webp|jpg|avif)$/.test(product.imageUrl)) ? <small className="configurator-occurrences">Ilustracija pakovanja</small> : null}
           {layout === "panel" ? <h3 className="configurator-title">{product.name}</h3> : (
             <h3 className="configurator-title">
               <a href={href}>{product.name}</a>
@@ -296,13 +301,13 @@ export function ProductConfigurator({
                 </span>
                 <strong>{formatMoney(perDelivery, locale)}</strong>
               </p>
-              {purchaseType === "subscription" && occurrences > 1 ? (
-                <p className="configurator-occurrences">
-                  {occurrences} dostave u plaćenom paketu. Ukupan obračun sa dostavom vidiš u korpi.
-                </p>
-              ) : (
-                <p className="configurator-occurrences">Dostava se obračunava u korpi.</p>
-              )}
+              {shippingKnown ? <>
+                <p className="configurator-occurrences">{visits} {visits === 1 ? "dostava" : "dostave"} · {quantityLabel(quantity*visits,product.unit)} ukupno</p>
+                <p className="configurator-occurrences">Dostava: {formatMoney(shippingTotal,locale)}{visits>1 ? ` (${formatMoney(shippingTotal/visits,locale)} po poseti)` : ""}</p>
+                <p className="configurator-package-total"><span>Ukupno za ovaj izbor</span> <strong>{formatMoney(goodsTotal+shippingTotal,locale)}</strong></p>
+                {purchaseType === "subscription" ? <p className="configurator-occurrences">Ceo paket plaćaš gotovinom pri prvoj dostavi.</p> : null}
+                <small className="configurator-occurrences">Zajednička dostava i popusti proveravaju se u korpi.</small>
+              </> : <p className="configurator-occurrences">Ukupan iznos sa dostavom vidiš u korpi pre potvrde.</p>}
             </div>
 
             <div className="configurator-actions">

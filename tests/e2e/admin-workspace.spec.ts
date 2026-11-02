@@ -16,6 +16,12 @@ const testIp = () =>
 test.beforeEach(async ({ context }) => {
   await context.setExtraHTTPHeaders({ "cf-connecting-ip": testIp() });
 });
+async function openReports(page: Page) {
+  const nav = page.getByRole("navigation", {name: "Administracija"});
+  const more = nav.getByRole("button", {name: "Još", exact: true});
+  if (await more.isVisible()) await more.click();
+  await nav.getByRole("button", {name: "Izveštaji", exact: true}).click();
+}
 async function access(request: APIRequestContext) {
   const response = await request.post("/api/admin/access", {
     headers: { Origin: origin, "cf-connecting-ip": testIp() },
@@ -35,8 +41,9 @@ async function login(page: Page) {
   await page.getByLabel("Lozinka", { exact: true }).fill("e2e-admin-password");
   await page.getByRole("button", { name: "Prijavi se", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Sve je na svom mestu." }),
+    page.getByRole("heading", { name: "Vaš posao danas" }),
   ).toBeVisible();
+  await expect(page.locator(".status-dot")).toHaveText("● Povezano");
 }
 const customer = (name: string) => ({
   fullName: name,
@@ -355,7 +362,9 @@ test("simple admin UI creates an order, shows customer details, charts and mobil
     page
       .getByRole("navigation", { name: "Administracija" })
       .getByRole("button"),
-  ).toHaveCount(5);
+  ).toHaveCount(testInfo.project.name === "mobile-390" ? 5 : 6);
+  await expect(page.getByRole("heading", {name: "Kako ide prodaja?"})).toHaveCount(0);
+  await openReports(page);
   await expect(
     page.getByRole("heading", { name: "Kako ide prodaja?" }),
   ).toBeVisible();
@@ -404,7 +413,7 @@ test("simple admin UI creates an order, shows customer details, charts and mobil
   await expect(
     page.getByRole("heading", { name: name, exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Za vozača", exact: true }).click();
+  await page.getByRole("button", { name: "Razvoz", exact: true }).click();
   await expect(
     page.locator(".work-route-card").filter({ hasText: name }),
   ).toContainText("Pozvati na ulazu");
@@ -420,16 +429,20 @@ test("simple admin UI creates an order, shows customer details, charts and mobil
   await page.getByRole("button", { name: "Zatvori", exact: true }).click();
   await page
     .getByRole("navigation", { name: "Administracija" })
-    .getByRole("button", { name: "Pregled", exact: true })
+    .getByRole("button", { name: "Početna", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Sve je na svom mestu." }),
+    page.getByRole("heading", { name: "Vaš posao danas" }),
   ).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth + 1,
     ),
   ).toBe(true);
+  await page.screenshot({path: testInfo.outputPath("admin-home.png"), fullPage: true});
+  const homeAudit = await new AxeBuilder({page}).include(".admin-app").withTags(["wcag2a", "wcag2aa"]).analyze();
+  expect(homeAudit.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
+  await openReports(page);
   await expect(page.locator('svg[role="group"] a').first()).toBeVisible();
   const audit = await new AxeBuilder({ page })
     .include(".admin-app")
@@ -441,7 +454,7 @@ test("simple admin UI creates an order, shows customer details, charts and mobil
     ),
   ).toEqual([]);
   await page.screenshot({
-    path: testInfo.outputPath("admin-overview.png"),
+    path: testInfo.outputPath("admin-reports.png"),
     fullPage: true,
   });
 });
@@ -483,6 +496,7 @@ test("admin UI manages an existing customer subscription and confirms a locked d
   await page.getByLabel("Pronađi kupca").fill(name);
   await page.locator(".work-customer-card").filter({ hasText: name }).click();
   const detail = page.getByRole("dialog");
+  await detail.getByRole("button", {name: "Redovne dostave", exact: true}).click();
   await detail.getByRole("button", { name: "Promeni količinu" }).click();
   await detail.getByLabel("Nova količina po dostavi").fill("6");
   await detail.getByRole("button", { name: "Potvrdi promenu" }).click();
@@ -490,12 +504,14 @@ test("admin UI manages an existing customer subscription and confirms a locked d
   await detail.getByRole("button", { name: "Preskoči termin" }).click();
   await expect(detail.locator(".work-review")).toContainText("Sledeći termin");
   await detail.getByRole("button", { name: "Potvrdi promenu" }).click();
+  await detail.getByRole("button", {name: "Istorija", exact: true}).click();
   await expect(
     detail.getByRole("heading", { name: "Pauze i promene" }),
   ).toBeVisible();
   await expect(
     detail.locator(".work-history-row").filter({ hasText: "Preskočen termin" }),
   ).toHaveCount(1);
+  await detail.getByRole("button", {name: "Redovne dostave", exact: true}).click();
   await detail.getByRole("button", { name: "Pauziraj", exact: true }).click();
   await expect(detail.locator(".work-review")).toContainText(
     "Sledeća dostava po rasporedu",
@@ -509,6 +525,7 @@ test("admin UI manages an existing customer subscription and confirms a locked d
   await expect(
     detail.getByRole("button", { name: "Pauziraj", exact: true }),
   ).toBeVisible();
+  await detail.getByRole("button", {name: "Podaci", exact: true}).click();
   await detail.getByRole("button", { name: "Izmeni kontakt i adresu" }).click();
   await detail.getByLabel("Adresa", { exact: true }).fill("Nova ulica 33");
   await detail.getByRole("button", { name: "Sačuvaj kontakt" }).click();
@@ -555,4 +572,83 @@ test("admin UI manages an existing customer subscription and confirms a locked d
   await expect(
     page.getByRole("button", { name: "Završi pripremu", exact: true }),
   ).toBeDisabled();
+});
+
+test("admin home merges today's next term and distinguishes a failed load from an empty day", async ({page}) => {
+  const date = new Intl.DateTimeFormat("en-CA", {timeZone: "Europe/Belgrade", year: "numeric", month: "2-digit", day: "2-digit"}).format(new Date());
+  let unavailable = true;
+  await page.route("**/api/admin/insights?*", route => route.fulfill({json: {nextDate: date, totals: {cashDueMinor: 0}, changes: [], failures: []}}));
+  await page.route("**/api/admin/delivery-preview?*", route => route.fulfill(unavailable
+    ? {status: 503, json: {error: {code: "UNAVAILABLE", message: "Spisak trenutno nije dostupan."}}}
+    : {json: {delivery: {status: "open"}, orders: [], preparation: []}}));
+  await login(page);
+  const day = page.locator(".today-preparation");
+  await expect(day).toHaveCount(1);
+  await expect(day.getByRole("alert")).toContainText("Spisak trenutno nije dostupan.");
+  await expect(day.locator(".work-day-summary")).toHaveCount(0);
+  await expect(day.getByText("Nema zakazanih dostava za ovaj datum.")).toHaveCount(0);
+  // The initial dashboard refresh can re-request this card. Wait until its
+  // retry button is stable before making the simulated service available.
+  await expect(page.locator(".status-dot")).toHaveText("● Povezano");
+  await day.getByRole("button", {name: "Pokušaj ponovo"}).click({trial: true});
+  unavailable = false;
+  await day.getByRole("button", {name: "Pokušaj ponovo"}).click();
+  await expect(day.getByRole("alert")).toHaveCount(0);
+  await expect(day.getByText("Nema zakazanih dostava za ovaj datum.")).toBeVisible();
+  await expect(day.locator(".work-day-summary")).toBeVisible();
+});
+
+test("admin delivery view submits full and partial handovers only from Razvoz", async ({page},testInfo) => {
+  const deliveryOrders = [2, 4].map((quantity, i) => ({id: `route-${i}`, customer_id: `customer-${i}`, status: "locked", cash_due_minor: 1000, billing_label: "Ova porudžbina", customer_snapshot: {fullName: `Primalac ${i + 1}`, addressLine1: "Primer 1", city: "Beograd", phone: "0601234567"}, items: [{id: `item-${i}`, order_item_id: `order-item-${i}`, product_id: "milk", product_name: "Mleko", unit_label: "1 L", quantity}]}));
+  const submitted: Array<{id: string; status: string; items: Array<{id: string; deliveredQuantity: number}>}> = [];
+  await page.route("**/api/admin/delivery-preview?*", route => route.fulfill({json: {delivery: {status: "locked"}, orders: deliveryOrders, preparation: [{product_id: "milk", product_name: "Mleko", unit_label: "1 L", total_quantity: 6}]}}));
+  await page.route("**/api/admin/deliveries", async route => {
+    if (route.request().method() !== "POST") return route.continue();
+    const body = route.request().postDataJSON();
+    submitted.push(body);
+    const order = deliveryOrders.find(item => item.id === body.id)!;
+    order.status = "delivered";
+    Object.assign(order.items[0], {delivered_quantity: body.items[0].deliveredQuantity});
+    await route.fulfill({json: {ok: true}});
+  });
+  await login(page);
+  await page.getByRole("navigation", {name: "Administracija"}).getByRole("button", {name: "Dostave", exact: true}).click();
+  await expect(page.getByRole("button", {name: "Potvrdi isporuku"})).toHaveCount(0);
+  await page.screenshot({path:`output/playwright/guide-pack-${testInfo.project.name}.png`,fullPage:true});
+  await page.getByRole("button", {name: "Razvoz", exact: true}).click();
+  await page.screenshot({path:`output/playwright/guide-route-${testInfo.project.name}.png`,fullPage:true});
+  const first = page.locator(".work-route-card").filter({hasText: "Primalac 1"});
+  await first.getByRole("button", {name: "Potvrdi isporuku"}).click();
+  await expect(first.getByText("Jednokratna · Isporučeno", {exact: true})).toBeVisible();
+  const second = page.locator(".work-route-card").filter({hasText: "Primalac 2"});
+  await second.getByLabel("Uručeno Mleko").fill("1");
+  await second.getByRole("button", {name: "Potvrdi isporuku"}).click();
+  await expect(second).toContainText("Delimično isporučeno");
+  expect(submitted.map(body => body.items[0].deliveredQuantity)).toEqual([2, 1]);
+  expect(submitted.every(body => body.status === "delivered")).toBe(true);
+  const audit = await new AxeBuilder({page}).include(".admin-app").withTags(["wcag2a", "wcag2aa"]).analyze();
+  expect(audit.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
+});
+
+test("admin settings expose every editor with keyboard navigation and no horizontal overflow", async ({page}, testInfo) => {
+  await login(page);
+  const nav = page.getByRole("navigation", {name: "Administracija"});
+  const more = nav.getByRole("button", {name: "Još", exact: true});
+  if (await more.isVisible()) await more.click();
+  await nav.getByRole("button", {name: "Podešavanja", exact: true}).click();
+  const settings = page.getByRole("navigation", {name: "Podešavanja prodavnice"});
+  await expect(settings.getByRole("button")).toHaveCount(9);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+  await page.screenshot({path: testInfo.outputPath("admin-settings.png"), fullPage: true});
+  for (const name of ["Dostava i naplata", "Proizvodi", "Paketi", "Popusti", "Sadržaj sajta", "Poslovanje", "Fiskalizacija", "Provera prodavnice", "Tehničke operacije"]) {
+    await settings.getByRole("button", {name, exact: true}).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator(".admin-topbar h1")).toHaveText(name);
+    await expect(settings).toHaveCount(0);
+    await expect(page.locator(".admin-content")).not.toBeEmpty();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
+    await page.getByRole("button", {name: "← Sva podešavanja", exact: true}).click();
+  }
+  const audit = await new AxeBuilder({page}).include(".admin-app").withTags(["wcag2a", "wcag2aa"]).analyze();
+  expect(audit.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
 });

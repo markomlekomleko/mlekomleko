@@ -107,6 +107,7 @@ export default async function RootLayout({
     <html
       lang={languageTags[locale]}
       data-scroll-behavior="smooth"
+      data-clarity-mask="true"
       className={geist.variable}
     >
       <body>

@@ -57,6 +57,9 @@ export type BundleOffer = {
 };
 
 export type StorefrontSettings = {
+  indjijaEnabled?: boolean;
+  originCowImageUrl?: string;
+  originGoatImageUrl?: string;
   storeName: string;
   announcementEnabled: boolean;
   announcementText: string;
@@ -88,6 +91,8 @@ export type DeliverySchedule = {
 };
 
 export type DeliveryWindow = {
+  deliveryFeeMinor?: number;
+  freeDeliveryThresholdMinor?: number;
   deliveryDate: string;
   billingMonth: string;
   deliveryLocalTime: string;

@@ -1,6 +1,47 @@
 // Serbian Latin source copy; English and Russian translations.
 // Keep identifiers, URLs and form values out of this render-only catalogue.
 export const catalog: Record<string, readonly [string, string]> = {
+  "Izaberite grad i unesite važeći poštanski broj. Sačekajte proveru dostave.": ["Select your city and enter a valid postcode. Wait for the delivery check.", "Выберите город и введите действительный почтовый индекс. Дождитесь проверки доставки."],
+  "Poštanski broj {0} trenutno nije u aktivnoj zoni dostave.": ["Postcode {0} is currently outside the active delivery area.", "Почтовый индекс {0} сейчас вне активной зоны доставки."],
+  "Uz analitičku saglasnost koristimo Microsoft Clarity za pregled interakcija na javnim stranicama. Tekst je maskiran. Prijava, nalog, checkout, kontakt i administracija izuzeti su iz snimanja.": ["With analytics consent, we use Microsoft Clarity to review interactions on public pages. Text is masked. Login, customer accounts, checkout, contact and administration are excluded from recordings.", "С согласия на аналитику мы используем Microsoft Clarity для анализа взаимодействий на публичных страницах. Текст скрыт. Вход, личный кабинет, оформление заказа, контакты и администрирование исключены из записи."],
+  "ceo paket sa dostavom": ["entire package including delivery", "весь пакет с доставкой"],
+  "sa dostavom": ["including delivery", "с доставкой"],
+  "proizvodi po dostavi": ["products per delivery", "товары на доставку"],
+  "Ilustracija pakovanja": ["Packaging illustration", "Иллюстрация упаковки"],
+  "Gotovina — ceo paket pri prvoj dostavi": ["Cash — entire package at first delivery", "Наличные — весь пакет при первой доставке"],
+  "Ceo paket plaćaš gotovinom pri prvoj dostavi. Ostale dostave tog paketa su već plaćene.": ["Pay for the entire package in cash at the first delivery. The remaining deliveries are already paid.", "Оплатите весь пакет наличными при первой доставке. Остальные доставки этого пакета уже оплачены."],
+  "Ceo paket plaćaš gotovinom pri prvoj dostavi.": ["Pay for the entire package in cash at the first delivery.", "Весь пакет оплачивается наличными при первой доставке."],
+  "Ukupno za ovaj izbor": ["Total for this selection", "Итого за выбранное"],
+  "Zajednička dostava i popusti proveravaju se u korpi.": ["Shared delivery and discounts are calculated in your basket.", "Общая доставка и скидки рассчитываются в корзине."],
+  "Ukupan iznos sa dostavom vidiš u korpi pre potvrde.": ["See the total including delivery in your basket before confirming.", "Итоговая сумма с доставкой указана в корзине до подтверждения."],
+  "Dostava:": ["Delivery:", "Доставка:"],
+  "po poseti": ["per visit", "за доставку"],
+  "ukupno": ["in total", "всего"],
+  "Kravlje i kozje": ["Cow and goat milk", "Коровье и козье молоко"],
+  "Kravlje": ["Cow milk", "Коровье"],
+  "Kozje": ["Goat milk", "Козье"],
+  "Ilustracija": ["Illustration", "Иллюстрация"],
+  "Dve vrste mleka, isti dogovor: biraš koliko i kada, a mi donosimo u povratnim staklenim flašama.": ["Two kinds of milk, one arrangement: choose how much and when, and we deliver in returnable glass bottles.", "Два вида молока, один порядок: вы выбираете количество и время, а мы привозим молоко в возвратных стеклянных бутылках."],
+  "03 / Kravlje i kozje": ["03 / Cow and goat milk", "03 / Коровье и козье молоко"],
+  "Kravlje, kozje ili oba — izaberi mleko koje voliš. Donosimo ga u povratnim staklenim flašama.": ["Cow milk, goat milk or both — choose your favourite. We deliver it in returnable glass bottles.", "Коровье, козье или оба вида — выбирайте любимое молоко. Мы привезём его в возвратных стеклянных бутылках."],
+  "Pogledaj kravlje i kozje": ["See cow and goat milk", "Посмотреть коровье и козье молоко"],
+  "TVOJE MLEKO": ["YOUR MILK", "ВАШЕ МОЛОКО"],
+  "TVOJ RITAM": ["YOUR RHYTHM", "ВАШ РИТМ"],
+  "POVRATNE FLAŠE": ["RETURNABLE BOTTLES", "ВОЗВРАТНЫЕ БУТЫЛКИ"],
+  "DOSTAVA DO VRATA": ["TO YOUR DOOR", "ДО ВАШЕЙ ДВЕРИ"],
+  "Jedna porudžbina, jedna dostava. Plaćaš pri uručenju.": ["One order, one delivery. Pay on arrival.", "Один заказ, одна доставка. Оплата при получении."],
+  "Četiri dostave u paketu. Plaćaš pri prvoj, a ostale stižu jednom nedeljno.": ["Four deliveries per package. Pay at the first; the rest arrive weekly.", "Четыре доставки в пакете. Оплата при первой, остальные приезжают еженедельно."],
+  "Dve dostave u paketu, na svake dve nedelje. Preskakanje i pauzu uređuješ na nalogu.": ["Two deliveries per package, two weeks apart. Manage skips and pauses in your account.", "Две доставки в пакете с интервалом две недели. Пропуски и паузы настраиваются в личном кабинете."],
+  "Brzo biraš 2, 4 ili 8 litara po dostavi, ili uneseš drugu količinu. Paket sadrži četiri nedeljne ili dve dvonedeljne dostave. Ukupnu količinu i cenu vidiš pre potvrde.": ["Choose 2, 4 or 8 litres per delivery, or enter another quantity. A package includes four weekly or two fortnightly deliveries. See the total quantity and price before confirming.", "Выберите 2, 4 или 8 литров на доставку или укажите другое количество. Пакет включает четыре еженедельные доставки или две с интервалом две недели. Общее количество и цена указаны до подтверждения."],
+  "Jednokratnu porudžbinu plaćaš gotovinom pri dostavi. Kod redovne dostave ceo paket plaćaš pri prvom uručenju; preostale dostave tog paketa već su plaćene.": ["Pay for a one-off order in cash on delivery. For recurring delivery, pay for the whole package at the first handover; the remaining deliveries are already paid.", "Разовый заказ оплачивается наличными при доставке. При регулярной доставке весь пакет оплачивается при первом получении; остальные доставки уже оплачены."],
+  "Biraš količinu po dostavi i ritam. Paket sadrži četiri nedeljne ili dve dvonedeljne dostave. Ceo paket plaćaš gotovinom pri prvoj dostavi.": ["Choose the quantity and frequency. A package contains four weekly or two fortnightly deliveries. Pay for the whole package in cash at the first delivery.", "Выберите количество и ритм. В пакете четыре еженедельные доставки или две с интервалом две недели. Весь пакет оплачивается наличными при первой доставке."],
+  "Pre potvrde prikazujemo količinu po isporuci, broj isporuka u paketu, trošak dostave, popust i ukupan iznos. Važe podaci iz završnog obračuna u korpi.": ["Before confirming, we show quantity per delivery, number of deliveries, shipping, discounts and the total. The final basket calculation applies.", "До подтверждения указаны количество на доставку, число доставок, стоимость доставки, скидка и общая сумма. Действует итоговый расчёт в корзине."],
+  "po poseti, ukupno": ["per visit, total", "за доставку, всего"],
+  "za četiri posete. Zajedničku dostavu i popuste računamo u korpi pre potvrde.": ["for four visits. Shared delivery and discounts are calculated in the basket before confirming.", "за четыре доставки. Общая доставка и скидки рассчитываются в корзине до подтверждения."],
+  "Izaberite grad iz ponude i proverite dostupnost dostave.": ["Select a listed city and check delivery availability.", "Выберите город из списка и проверьте доступность доставки."],
+  "Poštanski broj nije u podržanoj zoni dostave.": ["This postcode is outside the delivery area.", "Этот почтовый индекс вне зоны доставки."],
+  "Ceo paket plaća se gotovinom pri prvoj dostavi i sadrži četiri dostave za nedeljni ili dve za dvonedeljni ritam, bez obzira na kraj kalendarskog meseca. Korpa prikazuje početni raspored. Avansni račun izdaje se po potvrdi uplate, a račun za promet za svaku pojedinačnu isporuku, uz razduženje pripadajućeg dela avansa.": ["Pay for the entire package in cash at the first delivery. It includes four weekly or two fortnightly deliveries, regardless of calendar month. The basket shows the initial schedule. An advance receipt is issued when payment is confirmed, followed by a receipt for each delivery that offsets the corresponding advance amount.", "Весь пакет оплачивается наличными при первой доставке. Он включает четыре еженедельные доставки или две с интервалом две недели, независимо от календарного месяца. В корзине указан начальный график. После подтверждения оплаты выдаётся авансовый чек, а при каждой доставке — чек с зачётом соответствующей части аванса."],
+
   "Iznos porudžbine": ["Order total", "Сумма заказа"],
   "Sa uračunatom dostavom i popustom.": ["Includes delivery and discounts.", "С учетом доставки и скидок."],
   "Dodatni podaci za dostavu (opciono)": ["Additional delivery details (optional)", "Дополнительные сведения для доставки (необязательно)"],
@@ -2573,9 +2614,9 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Billing",
     "Расчёт"
   ],
-  "Paket se plaća unapred i sadrži četiri dostave za nedeljni ili dve za dvonedeljni ritam, bez obzira na kraj kalendarskog meseca. Korpa prikazuje početni raspored. Avansni račun izdaje se po potvrdi uplate, a konačni nakon svih izvršenih dostava.": [
-    "A package is paid in advance and includes four weekly deliveries or two fortnightly deliveries, regardless of the end of the calendar month. Your basket shows the initial schedule. An advance invoice is issued once payment is confirmed, and a final invoice after all deliveries are completed.",
-    "Пакет оплачивается заранее и включает четыре еженедельные доставки или две доставки раз в две недели независимо от конца календарного месяца. В корзине показано первоначальное расписание. Авансовый счёт выдаётся после подтверждения оплаты, итоговый — после выполнения всех доставок."
+  "Paket se plaća unapred i sadrži četiri dostave za nedeljni ili dve za dvonedeljni ritam, bez obzira na kraj kalendarskog meseca. Korpa prikazuje početni raspored. Avansni račun izdaje se po potvrdi uplate, a račun za promet za svaku pojedinačnu isporuku, uz razduženje pripadajućeg dela avansa.": [
+    "A package is paid in advance and includes four weekly deliveries or two fortnightly deliveries, regardless of the end of the calendar month. Your basket shows the initial schedule. An advance invoice is issued once payment is confirmed, and a sales receipt for each individual delivery, applying the corresponding part of the advance payment.",
+    "Пакет оплачивается заранее и включает четыре еженедельные доставки или две доставки раз в две недели независимо от конца календарного месяца. В корзине показано первоначальное расписание. Авансовый счёт выдаётся после подтверждения оплаты, а счёт за продажу — на каждую отдельную доставку с зачётом соответствующей части аванса."
   ],
   "Dostava i popusti se obračunavaju po pravilima prikazanim pre potvrde.": [
     "Delivery and discounts are calculated under the rules shown before confirmation.",

@@ -40,6 +40,15 @@ function live() {
 }
 function accepted(messageId = 'provider-id') { return Response.json({ messages: [{ messageId, status: { groupId: 1, name: 'PENDING_ENROUTE' } }] }); }
 
+test('Resend email code keeps the verified reply address and never exposes the code in production',async()=>{
+ await registered();tick();live();Object.assign(env,{EMAIL_PROVIDER:'resend',EMAIL_REPLY_TO:'marko@example.test',WHATSAPP_MODE:'disabled'});
+ let sent;
+ globalThis.fetch=async(url,init)=>{assert.equal(url,'https://api.resend.com/emails');sent=JSON.parse(init.body);return Response.json({id:'test-resend-code'});};
+ const challenge=ok(await api('/api/auth/code',{email:'kupac@example.test',channel:'email'}),202);
+ assert.equal(challenge.localDevelopment,undefined);assert.equal(sent.reply_to,'marko@example.test');
+ const code=sent.text.match(/Vaš kod je (\d{6})/)[1];ok(await api('/api/auth/code/verify',{challengeId:challenge.challengeId,code}));
+});
+
 test('legacy supplied passwords are validated and email proof is required; sessions work without an order', async () => {
   ok(await signup('bad@example.test', 'short'), 422);
   tick();

@@ -2,7 +2,7 @@ import { processPaymentRetries } from "./payment-attempts";
 import { generateMonthlyBilling } from "./billing";
 import { generateDelivery, lockOverdueDeliveries } from "./deliveries";
 import { processOutbox, queueDeliveryReminders } from "./integration-jobs";
-import { getBusinessSettings, getNextDeliveryWindow } from "./settings";
+import { allDeliveryWeekdays, getBusinessSettings, getNextDeliveryWindow } from "./settings";
 import { addLocalDays, cutoffForDelivery } from "./time";
 
 export async function runScheduledJobs(timestamp = Date.now()) {
@@ -18,12 +18,12 @@ export async function runScheduledJobs(timestamp = Date.now()) {
   const tomorrow = addLocalDays(today, 1);
   // Booking cutoff can move the checkout window past tomorrow. Still prepare tomorrow's route.
   const dates = new Set([nextWindow.deliveryDate]);
-  if (settings.deliveryWeekdays.includes(new Date(`${tomorrow}T12:00:00Z`).getUTCDay())) dates.add(tomorrow);
+  if (allDeliveryWeekdays(settings).includes(new Date(`${tomorrow}T12:00:00Z`).getUTCDay())) dates.add(tomorrow);
   // Daily cron scans the next cutoff window, including policies up to seven days before delivery.
   const deadlines = new Set<string>();
   for (let offset = 0; offset <= 9; offset++) {
     const candidate = addLocalDays(today, offset);
-    if (!settings.deliveryWeekdays.includes(new Date(`${candidate}T12:00:00Z`).getUTCDay())) continue;
+    if (!allDeliveryWeekdays(settings).includes(new Date(`${candidate}T12:00:00Z`).getUTCDay())) continue;
     const cutoff = Date.parse(cutoffForDelivery(candidate, settings.cutoffHours, settings.deliveryLocalTime));
     if (cutoff > timestamp && cutoff <= timestamp + 24 * 60 * 60 * 1000) { dates.add(candidate); deadlines.add(candidate); }
   }

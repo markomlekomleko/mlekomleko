@@ -65,7 +65,7 @@ export function DeliveryChecker({
           <p className={`check-result ${result.available ? "success" : "error"}`} role="status">
             {result.available
               ? `Dostavljamo na ${result.postalCode}. Možeš da sastaviš korpu.`
-              : `Poštanski broj ${result.postalCode} trenutno nije u zoni dostave za Beograd i Novi Sad.`}
+              : `Poštanski broj ${result.postalCode} trenutno nije u aktivnoj zoni dostave.`}
           </p>
         ) : null}
         {error ? <p className="check-result error" role="alert">{error}</p> : null}

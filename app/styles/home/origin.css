@@ -174,3 +174,11 @@
   .origin-banner-inner { grid-column: 1; grid-row: 1; padding-left: max(48px, calc(50vw - 632px)); }
 }
 .content-media { border: 1px solid var(--rule); overflow: hidden; }
+
+.origin-gallery { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:16px; }
+.origin-gallery figure { min-width:0; margin:0; border:1px solid var(--rule); background:var(--surface); }
+.origin-gallery img, .origin-gallery-illustration { width:100%; aspect-ratio:4/3; object-fit:cover; }
+.origin-gallery-illustration { display:grid; place-items:center; background:var(--alt); color:var(--brand); }
+.origin-gallery-illustration svg { width:40%; height:auto; }
+.origin-gallery figcaption { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; padding:12px; font-weight:700; }
+.origin-gallery figcaption small { font-weight:400; font-size:12px; }

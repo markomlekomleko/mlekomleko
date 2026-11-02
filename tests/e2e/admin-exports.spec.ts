@@ -49,21 +49,25 @@ test("admin requires fresh login on reload and downloads both delivery and indiv
   const nav = page.getByRole("navigation", { name: "Administracija" });
   await nav.getByRole("button", { name: "Porudžbine", exact: true }).click();
   const orderRow = page.getByRole("row").filter({ hasText: order.orderNumber });
-  const csv = await download(page, orderRow.getByRole("button", { name: "Potvrda CSV" }), testInfo, "potvrda.csv");
+  await orderRow.getByRole("button", {name: "Otvori porudžbinu"}).click();
+  const detail = page.getByRole("dialog");
+  const csv = await download(page, detail.getByRole("button", { name: "Potvrda CSV" }), testInfo, "potvrda.csv");
   expect(csv.subarray(0, 3).toString("hex")).toBe("efbbbf");
   const headers = csv.toString().split("\r\n")[0].split(",");
   expect(new Set(headers).size).toBe(headers.length);
   expect(csv.toString()).toContain(order.orderNumber);
   expect(csv.toString()).toContain('Željko ""Čolić"", QA');
   expect(csv.toString()).toContain('"0601234567"');
-  const xlsx = await download(page, orderRow.getByRole("button", { name: "Potvrda Excel" }), testInfo, "potvrda.xlsx");
+  const xlsx = await download(page, detail.getByRole("button", { name: "Potvrda Excel" }), testInfo, "potvrda.xlsx");
   expect(xlsx.readUInt32LE(0)).toBe(0x04034b50);
   expect(xlsx.toString()).toContain('name="Potvrda"');
   expect(xlsx.toString()).toContain('name="Stavke"');
   expect(xlsx.toString()).toContain(`<v>${order.totalMinor / 100}</v>`);
   expect(xlsx.toString()).toContain('0601234567');
 
+  await detail.getByRole("button", {name: "Zatvori", exact: true}).click();
   await nav.getByRole("button", { name: "Dostave", exact: true }).click();
+  await page.getByText("Promeni datum", {exact: true}).click();
   await page.getByLabel("Datum dostave", { exact: true }).fill(order.deliveryDate);
   await expect(page.locator(".status-dot")).toHaveText("● Povezano");
   const deliveryCsv = await download(page, page.getByRole("button", { name: "Spisak za vozača · CSV" }), testInfo, "dostave.csv");

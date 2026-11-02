@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef, useState } from "react";
 import { formatDate, formatMoney, type Product } from "../lib/frontend";
+import { normalizeDeliveryCity } from "../lib/delivery-area";
 import {
   Dialog,
   email,
@@ -81,6 +82,7 @@ export function ManualOrder({
     [options, setOptions] = useState<{
       dates: string[];
       emailAvailable: boolean;
+      deliveryWeekdaysByCity?: Record<string,number[]>;
     } | null>(null),
     [notify, setNotify] = useState(false);
   const [quoted, setQuoted] = useState<{ key: string; value: Quote } | null>(
@@ -93,7 +95,7 @@ export function ManualOrder({
     submitting = useRef(false);
   useEffect(() => {
     const controller = new AbortController();
-    void request<{ dates: string[]; emailAvailable: boolean }>(
+    void request<{ dates: string[]; emailAvailable: boolean; deliveryWeekdaysByCity?: Record<string,number[]> }>(
       "/api/admin/orders/quote",
       { signal: controller.signal },
     )
@@ -106,6 +108,10 @@ export function ManualOrder({
       });
     return () => controller.abort();
   }, [request]);
+  const routeDays = options?.deliveryWeekdaysByCity?.[normalizeDeliveryCity(customer.city) ?? customer.city];
+  const dates = options?.dates.filter(day=>!routeDays || routeDays.includes(new Date(`${day}T12:00:00Z`).getUTCDay())) ?? [];
+  const dateAvailable = dates.includes(date), firstAvailableDate = dates[0] ?? "";
+  useEffect(()=>{if(options && !dateAvailable)queueMicrotask(()=>setDate(firstAvailableDate));},[options,dateAvailable,firstAvailableDate]);
   const items = products
     .filter((p) => quantities[p.id] > 0)
     .map((p) => ({
@@ -422,7 +428,7 @@ export function ManualOrder({
                       required
                       onChange={(e) => setDate(e.target.value)}
                     >
-                      {options?.dates.map((d) => (
+                      {dates.map((d) => (
                         <option key={d} value={d}>
                           {formatDate(d)}
                         </option>
@@ -536,7 +542,7 @@ export function ManualOrder({
                   className="button"
                   disabled={
                     busy ||
-                    !options?.dates.length ||
+                    !dates.length ||
                     (step === 2 && (!quote || quote.serviceable === false))
                   }
                 >

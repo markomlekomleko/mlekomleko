@@ -60,3 +60,10 @@ test('readiness never equates populated credentials or mocks with real card avai
   assert.equal(result.fiscalization.status, 'not_connected');
   assert.doesNotMatch(JSON.stringify(result), /secret-value|fiscal-secret/);
 });
+
+test('Fiscomm readiness defaults to training and requires explicit live activation', () => {
+ const result = commerceReadiness({FISCAL_PROVIDER: 'fiscomm', FISCOMM_API_KEY: 'secret'});
+ assert.equal(result.fiscalization.mode, 'training');
+ assert.equal(result.fiscalization.status, 'verification_required');
+ assert.doesNotMatch(JSON.stringify(result), /secret/);
+});

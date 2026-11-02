@@ -58,19 +58,19 @@ test('fixed package quantity and price at month end; quote equals charged amount
  assert.equal(order.order.totalMinor,q.totalMinor);
  assert.equal(scalar('SELECT SUM(required_deliveries) FROM package_lines'),7);
 });
-test('weekly package issues advance on payment, final only on fourth confirmed handover, once',async()=>{
+test('weekly package issues advance on payment, a receipt on every confirmed handover, once',async()=>{
  const order=await paid();
  assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='advance' AND status='issued'"),1);
  await delivery('2027-01-01');
  assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final'"),0);
- for(const date of ['2027-01-01','2027-01-08','2027-01-15']) {await handover(date);assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final'"),0);}
+ let receipts=0; for(const date of ['2027-01-01','2027-01-08','2027-01-15']) {await handover(date);assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final'"),++receipts);}
  const last=await handover('2027-01-22');
  assert.equal(scalar("SELECT status FROM subscription_packages"),'completed');
- assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final' AND status='issued'"),1);
- assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='refund' AND status='issued'"),1);
+ assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final' AND status='issued'"),4);
+ assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='refund' AND status='issued'"),4);
  expectStatus(await api('/api/admin/deliveries',{action:'complete',id:last.orders[0].id,status:'delivered'},{admin:true}));
- assert.equal(scalar("SELECT COUNT(*) FROM outbox WHERE topic='fiscal.final.requested'"),1);
- assert.equal(scalar("SELECT COUNT(*) FROM outbox WHERE topic='email.fiscal_document.requested'"),3);
+ assert.equal(scalar("SELECT COUNT(*) FROM outbox WHERE topic='fiscal.delivery.requested'"),4);
+ assert.equal(scalar("SELECT COUNT(*) FROM outbox WHERE topic='email.fiscal_document.requested'"),9);
  assert.equal(scalar('SELECT fulfillment_status FROM orders WHERE id=?',order.order.id),'delivered');
 });
 test('biweekly package paused across months retains two deliveries and avoids duplicate billing',async()=>{
@@ -81,9 +81,9 @@ test('biweekly package paused across months retains two deliveries and avoids du
  assert.equal(scalar('SELECT COUNT(*) FROM credits_ledger'),0);
  assert.equal((await delivery('2027-02-12')).orders.length,0);
  await handover('2027-03-12');
- assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final'"),0);
+ assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final'"),1);
  await handover('2027-03-26');
- assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final' AND status='issued'"),1);
+ assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final' AND status='issued'"),2);
 });
 test('skip and failed delivery preserve entitlement; package takes five attempts after one failure',async()=>{
  const order=await paid();
@@ -91,9 +91,9 @@ test('skip and failed delivery preserve entitlement; package takes five attempts
  assert.equal((await delivery('2027-01-01')).orders.length,0);
  await handover('2027-01-08','failed');
  for(const date of ['2027-01-15','2027-01-22','2027-01-29']) await handover(date);
- assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final'"),0);
+ assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final'"),3);
  await handover('2027-02-05');
- assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final' AND status='issued'"),1);
+ assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final' AND status='issued'"),4);
  assert.equal(scalar('SELECT COUNT(*) FROM credits_ledger'),0);
 });
 test('mixed cart waits for both rhythms and one-time item; all actual quantities are conserved',async()=>{
@@ -101,7 +101,7 @@ test('mixed cart waits for both rhythms and one-time item; all actual quantities
  for(const date of ['2027-01-01','2027-01-08','2027-01-15','2027-01-22']) await handover(date);
  const totals=database.raw.prepare("SELECT product_id,SUM(quantity) AS quantity FROM delivery_items di JOIN delivery_orders dor ON dor.id=di.delivery_order_id WHERE dor.status='delivered' GROUP BY product_id ORDER BY product_id").all();
  assert.deepEqual(totals.map(row=>[row.product_id,row.quantity]),[['prod_jogurt_1l',4],['prod_kravlje_1l',12],['prod_sir_500g',1]]);
- assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final' AND status='issued'"),1);
+ assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final' AND status='issued'"),5);
 });
 test('future catalog and subscription edits never change purchased quantities, price or cadence',async()=>{
  const order=await paid(), id=scalar('SELECT id FROM subscription_items');
@@ -121,24 +121,26 @@ test('paid cancellation disables renewal and finishes remaining package; renewal
  expectStatus(await api('/api/jobs/billing',{month:'2027-02'},{admin:true}));
  assert.equal(scalar('SELECT COUNT(*) FROM orders'),1);
 });
-test('unpaid packages are visible to admin but never prepared or finalized',async()=>{
+test('unpaid card packages are visible to admin but never prepared or finalized',async()=>{
  const order=await create();
+ database.raw.exec("UPDATE orders SET payment_method='card',payment_status='failed'");
  assert.equal((await delivery()).orders.length,0);
  const progress=expectStatus(await api('/api/admin/packages',null,{admin:true,method:'GET'}));
- assert.equal(progress.lines[0].payment_status,'pending');
+ assert.equal(progress.lines[0].payment_status,'failed');
  expectStatus(await api('/api/admin/orders',{id:order.order.id,fulfillmentStatus:'delivered'},{admin:true,method:'PATCH'}),409);
  expectStatus(await api('/api/admin/orders',{id:order.order.id,paymentStatus:'paid'},{admin:true,method:'PATCH'}));
  assert.equal((await delivery()).preparation[0].total_quantity,3);
 });
 test('late payment moves an unused package past a locked route without losing any deliveries',async()=>{
  const order=await create();
+ database.raw.exec("UPDATE orders SET payment_method='card',payment_status='failed'");
  at('2027-01-01T10:00:00Z');
  assert.equal((await delivery()).orders.length,0);
  expectStatus(await api('/api/admin/orders',{id:order.order.id,paymentStatus:'paid'},{admin:true,method:'PATCH'}));
  assert.equal(scalar('SELECT next_delivery_date FROM subscriptions'),'2027-01-08');
  assert.equal(scalar('SELECT anchor_date FROM package_lines'),'2027-01-08');
  for(const date of ['2027-01-08','2027-01-15','2027-01-22','2027-01-29']) await handover(date);
- assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final' AND status='issued'"),1);
+ assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final' AND status='issued'"),4);
  assert.equal(scalar("SELECT SUM(quantity) FROM delivery_items di JOIN delivery_orders dor ON dor.id=di.delivery_order_id WHERE dor.status='delivered'"),12);
 });
 test('payment webhook respects paused package start and disallows reversing a paid package',async()=>{
@@ -150,7 +152,7 @@ test('payment webhook respects paused package start and disallows reversing a pa
  assert.equal(scalar('SELECT next_delivery_date FROM subscriptions'),'2027-03-12');
  expectStatus(await send('refunded'),409);
  await handover('2027-03-12'); await handover('2027-03-26');
- assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final' AND status='issued'"),1);
+ assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='final' AND status='issued'"),2);
 });
 test('unpaid cancelled packages cannot be reactivated by late payments',async()=>{
  const order=await create();
@@ -193,7 +195,7 @@ test('concurrent handovers of mixed package final delivery complete exactly once
  const outcomes=await Promise.all([oneTime.id,last.orders[0].id].map(id=>api('/api/admin/deliveries',{action:'complete',id,status:'delivered'},{admin:true})));
  outcomes.forEach(result=>expectStatus(result));
  assert.equal(scalar("SELECT status FROM subscription_packages"),'completed');
- assert.equal(scalar("SELECT COUNT(*) FROM outbox WHERE topic='fiscal.final.requested'"),1);
+ assert.equal(scalar("SELECT COUNT(*) FROM outbox WHERE topic='fiscal.delivery.requested'"),3);
 });
 test('failed mixed one-time item moves to a later visit without being charged again',async()=>{
  await paid([line(),line('prod_sir_500g',1,'one_time')]);

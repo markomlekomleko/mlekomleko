@@ -1,7 +1,8 @@
 "use client";
 
 import { useLocalize } from "@/app/lib/i18n/client";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { syncSessionReplay, updateReplayConsent } from "../lib/session-replay";
 import { usePathname } from "next/navigation";
 import { analyticsIdentity, captureAttribution, clearAnalyticsStorage, CONSENT_KEY, getConsentPreferences, readStoredConsent, saveConsentPreferences, syncStoredConsent } from "../lib/attribution";
 import { trackMarketingEvent, updateMarketingConsent } from "../lib/marketing-tags";
@@ -24,6 +25,10 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const lastPageView = useRef("");
 
+  useLayoutEffect(() => {
+    syncSessionReplay(consent?.analytics === true, consent?.marketing === true, pathname);
+  }, [consent, pathname]);
+
   useEffect(() => {
     updateMarketingConsent(getConsentPreferences());
     const stored = readStoredConsent();
@@ -32,6 +37,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
       if (event.key !== CONSENT_KEY && event.key !== null) return;
       const next = syncStoredConsent();
       updateMarketingConsent(next ?? DEFAULT_CONSENT);
+      updateReplayConsent(next?.analytics === true, next?.marketing === true);
       if (!next?.analytics || !next?.marketing) clearAnalyticsStorage();
       // Removes already loaded vendor listeners in this tab after changes elsewhere.
       window.location.reload();
@@ -58,7 +64,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
         sessionId: identity.sessionId,
         orderId,
         path: window.location.pathname,
-        properties: { ...properties, attribution },
+        properties: { ...properties, attribution, deviceCategory: window.innerWidth < 600 ? "mobile" : window.innerWidth < 1024 ? "tablet" : "desktop" },
       }),
     }).catch(() => { /* Analytics must never block shopping. */ });
   }, []);
@@ -73,6 +79,7 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     if ((previous.analytics && !value.analytics) || (previous.marketing && !value.marketing) || (!value.analytics && !value.marketing)) clearAnalyticsStorage();
     saveConsentPreferences(value);
     updateMarketingConsent(value);
+    updateReplayConsent(value.analytics, value.marketing);
     setConsent(value);
     setSettingsOpen(false);
     // Reload removes listeners installed by previously allowed vendor scripts.

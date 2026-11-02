@@ -48,7 +48,7 @@ async function orderData(orderId: string) {
 }
 
 function messageData(order: OrderRow, items: OrderItemRow[], payload: Record<string, unknown>) {
-  return { ...payload, fullName: order.full_name, email: order.email, orderId: order.id, orderNumber: order.order_number, deliveryDate: order.delivery_date, totalMinor: order.total_minor, items };
+  return { ...payload, kind:order.kind, paymentMethod:order.payment_method, paymentStatus:order.payment_status, fullName: order.full_name, email: order.email, orderId: order.id, orderNumber: order.order_number, deliveryDate: order.delivery_date, totalMinor: order.total_minor, items };
 }
 
 async function notificationData(row: OutboxRow, payload: Record<string, unknown>) {
@@ -123,6 +123,7 @@ async function dispatch(row: OutboxRow): Promise<string> {
   if (row.topic === "whatsapp.account_update") return sendWhatsAppUpdate(row, payload);
   if (row.topic === "analytics.purchase") return sendPurchaseAnalytics(row, payload);
   if (row.topic === "sms.account_update") return deliverSms(row, payload);
+  if (row.topic === "fiscal.delivery.requested") return (await issueFiscomm(row.aggregate_id, String(payload.deliveryOrderId))).externalId;
   if (row.topic === "fiscal.final.requested") return (await issueFiscomm(row.aggregate_id, true)).externalId;
   if (row.topic === "fiscal.receipt.requested") return (await issueFiscalReceipt(row)).externalId;
   if (isEmailTopic(row.topic)) {
@@ -158,8 +159,8 @@ async function processRows(candidates: OutboxRow[]) {
       // Badi does not document a provider idempotency key. An ambiguous fiscal failure
       // therefore needs reconciliation before an explicit admin retry, or it could create a duplicate receipt.
       const fiscal = row.topic.startsWith("fiscal.");
-      const operation = fiscal ? await receiptOperation(row.aggregate_id, row.topic === "fiscal.final.requested") : null;
-      const safeToRetry = ["FISCAL_NOT_CONFIGURED", "FISCAL_TAX_LABEL_MISSING", "ADVANCE_NOT_ISSUED", "FISCOMM_CONNECTION_FAILED"].includes(details.code);
+      const operation = fiscal ? await receiptOperation(row.aggregate_id, row.topic === "fiscal.delivery.requested" ? String(JSON.parse(row.payload_json).deliveryOrderId) : row.topic === "fiscal.final.requested") : null;
+      const safeToRetry = ["FISCAL_ORDER_BUSY", "FISCAL_NOT_CONFIGURED", "FISCAL_TAX_LABEL_MISSING", "ADVANCE_NOT_ISSUED", "PAYMENT_NOT_CAPTURED", "FISCOMM_CONNECTION_FAILED"].includes(details.code);
       const terminal = fiscal ? !safeToRetry : attempts >= 5;
       const retryAt = new Date(Date.now() + Math.min(60, 2 ** attempts) * 60_000).toISOString();
       await run("UPDATE outbox SET status = ?, available_at = ?, last_error_code = ?, last_error_message = ? WHERE id = ?", terminal ? "failed" : "pending", retryAt, details.code, details.message, row.id);
@@ -246,6 +247,6 @@ export async function processDeliveryReminders(date: string) {
 export async function resendFiscalDocument(id: string) {
   const receipt = await first<Record<string,unknown>>("SELECT * FROM fiscal_receipts WHERE id=? AND status='issued'",id);
   assertDomain(receipt,"RECEIPT_NOT_ISSUED","Najpre mora biti izdat račun.",409);
-  await batch([enqueueOnce("email.fiscal_document.requested","order",String(receipt.order_id),{invoiceNumber:receipt.invoice_number,documentKind:receipt.kind,documentUrl:receipt.pdf_url ?? receipt.verification_url},`resend:${id}:${crypto.randomUUID()}`)]);
+  await batch([enqueueOnce("email.fiscal_document.requested","order",String(receipt.order_id),{invoiceNumber:receipt.invoice_number,documentKind:receipt.kind,training:receipt.provider === "fiscomm-training",documentUrl:receipt.pdf_url ?? receipt.verification_url},`resend:${id}:${crypto.randomUUID()}`)]);
   return {queued:true};
 }

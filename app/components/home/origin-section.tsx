@@ -1,14 +1,14 @@
 "use client";
 
 import { useLocalize } from "@/app/lib/i18n/client";
-import { BrandIllustration } from "../brand-illustration";
+import { OriginGallery } from "../origin-gallery";
 import { homeCopy } from "../../lib/content";
 import type { StorefrontSettings } from "../../lib/frontend";
 
 export function OriginSection({
   settings,
 }: {
-  settings: Pick<StorefrontSettings, "announcementEnabled" | "announcementUrl" | "announcementText" | "announcementLinkLabel">;
+  settings: Pick<StorefrontSettings, "announcementEnabled" | "announcementUrl" | "announcementText" | "announcementLinkLabel" | "originCowImageUrl" | "originGoatImageUrl">;
 }) {
   const localize = useLocalize();
   const copy = homeCopy.origin;
@@ -20,7 +20,7 @@ export function OriginSection({
       {/* Only display-size white type and solid-ground controls sit on the photo; the
           body copy lives on the plain strip below it. */}
       <div className="origin-banner">
-        <div className="origin-art"><BrandIllustration /></div>
+        <div className="origin-art"><OriginGallery cow={settings.originCowImageUrl} goat={settings.originGoatImageUrl} /></div>
         <div className="page-shell origin-banner-inner">
           <p className="eyebrow origin-eyebrow">{copy.eyebrow}</p>
           <h2 id="origin-title">{copy.title}</h2>

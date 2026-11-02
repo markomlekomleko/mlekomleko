@@ -1,5 +1,9 @@
 # Paketi, isporuke i Fiscomm — 9. oktobar 2026.
 
+> Fiskalni deo je zamenjen [pravilom izdavanja po isporuci od 11. oktobra](fiscal-per-delivery-2026-10-11.md). Opis ispod je istorijski zapis prethodne implementacije; za aktuelne račune i migraciju koristiti novi dokument.
+
+> Gotovina je dopunjena [dogovorom od 2. novembra](marko-release-2026-11-02.md): ceo paket naplaćuje se pri prvoj dostavi; prva neplaćena gotovinska poseta ulazi u pripremu i čuva zaključani termin. Ograničenje pripreme za neplaćenu karticu ostaje.
+
 ## Pravilo koje je implementirano
 
 Paket nije kalendarski mesec. Svaka kupljena stavka ima nepromenljivu količinu po isporuci `qᵢ`, cenu `pᵢ` i broj isporuka `nᵢ ∈ {1, 2, 4}`. Jednokratna stavka ima 1, dvonedeljna 2, nedeljna 4. Kupac može kombinovati sva tri tipa, uključujući isti proizvod u različitim ritmovima.
@@ -77,7 +81,7 @@ Zvanična dokumentacija: [API vodič](https://fiscomm.rs/za-programere/dokumenta
 - Računanje popusta deli eventualnu razliku u parama između jedinica; zbir fiskalnih stavki mora biti jednak naplaćenom iznosu.
 - Svaka poreska oznaka proverava se prema aktivnim oznakama naloga pre izdavanja. Za proizvode se podešava u adminu; za dostavu kroz `FISCOMM_DELIVERY_TAX_LABEL`.
 - Ključ je sačuvan samo u ignorisanoj `.env.local`; nema ga u dokumentaciji ili klijentskom kodu. Na hosting se prenosi kao serverska tajna, nikad kao `NEXT_PUBLIC_*`.
-- `FISCAL_PROVIDER=fiscomm`; `FISCOMM_MODE=disabled` dok ne budu potvrđene oznake i test izdavanja. Lokalni izolovani test koristi `mock`. `live` šalje stvarne API zahteve, a nalog/certifikat kod Fiscomm određuje poresko okruženje.
+- `FISCAL_PROVIDER=fiscomm`; podrazumevani `FISCOMM_MODE=training` (i kada promenljiva nije zadata) šalje isključivo `/receipt/training/sale`: dokument nije fiskalni račun ni sa produkcionim ključem. Kod paketa početak i završetak daju dva zasebna training dokumenta, bez pravog avansa, refundacije ili `advance/finalize` poziva. Ovo ne proverava pravi avansni lanac. Dokumenti i emailovi označeni su kao test; prelazak između training i live režima zahteva novu porudžbinu. `disabled` zaustavlja izdavanje, lokalni izolovani test koristi `mock`, a samo izričiti `live` uključuje normal/advance/finalize zahteve. Za Vercel postaviti `FISCOMM_MODE=training` i ponovo deployovati aplikaciju; postojeći eksplicitni `disabled` ili `live` ima prednost nad podrazumevanom vrednošću.
 
 Read-only provera ključa i poreskih oznaka uspela je 9. oktobra 2026. za THREE & MORE DOO / Prodavnica - Online prodaja. Nijedan pravi račun, refundacija ili naplata nisu napravljeni tokom implementacije.
 

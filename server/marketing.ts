@@ -16,6 +16,7 @@ export function trackingReadiness() {
     metaPixel: Boolean(e.NEXT_PUBLIC_META_PIXEL_ID),
     metaConversions: Boolean(e.NEXT_PUBLIC_META_PIXEL_ID && e.META_CONVERSIONS_ACCESS_TOKEN && e.META_GRAPH_API_VERSION),
     googleAds: Boolean(e.NEXT_PUBLIC_GOOGLE_ADS_ID),
+    clarity: Boolean(e.NEXT_PUBLIC_CLARITY_PROJECT_ID),
     verification: "configuration_only",
   };
 }
@@ -40,6 +41,7 @@ export async function marketingReport(from: string, to: string) {
   const channels = new Map<string, Channel>();
   const sessionGroups = new Map<string, Channel>();
   const visited = new Set<string>();
+  const devices = {mobile:0,tablet:0,desktop:0,unknown:0};
   const bucket = (source: Record<string, unknown>, unmeasured = false) => {
     const attribution = unmeasured ? { channel: "unmeasured", source: "—", medium: "—", campaign: "—" } : classifySource(source);
     const key = JSON.stringify([attribution.channel, attribution.source, attribution.medium, attribution.campaign]);
@@ -48,6 +50,8 @@ export async function marketingReport(from: string, to: string) {
   };
   const sessionKey = (anonymousId: unknown, sessionId: unknown) => JSON.stringify([anonymousId, sessionId]);
   for (const session of sessions) {
+    const device = object(session.properties_json).deviceCategory;
+    if (session.visited) devices[device === "mobile" || device === "tablet" || device === "desktop" ? device : "unknown"]++;
     const group = bucket(object(object(session.properties_json).attribution));
     const id = sessionKey(session.anonymous_id, session.session_id);
     sessionGroups.set(id, group);
@@ -63,6 +67,7 @@ export async function marketingReport(from: string, to: string) {
     if (order.payment_status === "paid") { group.paidOrders++; group.paidMinor += Number(order.total_minor); if (visited.has(id)) group.convertedSessions.add(id); }
   }
   return {
+    devices,
     channels: [...channels.values()].map(group => ({ ...group, convertedSessions: group.convertedSessions.size, conversionRate: group.visits ? Math.round(group.convertedSessions.size / group.visits * 10000) / 100 : 0 })).sort((a,b) => b.paidMinor - a.paidMinor || b.visits - a.visits),
     readiness: trackingReadiness(),
     attribution: "Poslednji relevantan izvor, do 90 dana uz pristanak. Koraci su broj različitih sesija; plaćene porudžbine i prihod koriste datum nastanka porudžbine i trenutni status naplate. Konverzija povezuje samo posete i plaćene porudžbine istog browsera/sesije u izabranom periodu. Bez procene korisnika koji nisu pristali.",

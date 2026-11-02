@@ -9,6 +9,13 @@ tmp
 test-results
 playwright-report
 blob-report
+artifacts
+output
+work
+coverage
+.playwright-cli
+.next-e2e
+.next-*
 *.tsbuildinfo
 .env*
 !.env.example

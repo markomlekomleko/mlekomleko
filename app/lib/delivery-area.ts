@@ -5,10 +5,11 @@
  * Additional city offices: https://www.posta.rs/DocumentViewer.aspx?IdDokument=1000964
  * Unknown codes fail closed; extend this list when a new local office is confirmed.
  */
-export const DELIVERY_CITIES = ["Beograd", "Novi Sad"] as const;
+export const DELIVERY_CITIES = ["Beograd", "Novi Sad", "Inđija"] as const;
 export type DeliveryCity = (typeof DELIVERY_CITIES)[number];
 
 export const DELIVERY_POSTAL_CODES: Record<DeliveryCity, readonly string[]> = {
+  "Inđija": ["22319", "22320"],
   "Beograd": [
     "11000", "11010", "11011", "11030", "11032", "11040", "11041", "11042", "11043", "11050",
     "11051", "11052", "11053", "11054", "11055", "11056", "11060", "11061", "11062", "11070",
@@ -41,6 +42,7 @@ export const DELIVERY_POSTAL_CODES: Record<DeliveryCity, readonly string[]> = {
 };
 
 const cityAliases: Record<string, DeliveryCity> = {
+  "inđija": "Inđija", indjija: "Inđija", indija: "Inđija",
   beograd: "Beograd", belgrad: "Beograd", belgrade: "Beograd", "novi beograd": "Beograd", zemun: "Beograd",
   "novi sad": "Novi Sad", "novi-sad": "Novi Sad", petrovaradin: "Novi Sad", "sremska kamenica": "Novi Sad",
 };
@@ -64,9 +66,9 @@ export function deliveryCityForPostalCode(postalCode: string): DeliveryCity | nu
 
 export function deliveryAddressError(city: string, postalCode: string): string | null {
   const normalizedCity = normalizeDeliveryCity(city);
-  if (!normalizedCity) return "Dostavljamo samo na teritoriji Beograda i Novog Sada.";
+  if (!normalizedCity) return "Izaberite grad iz ponude i proverite dostupnost dostave.";
   const postalCity = deliveryCityForPostalCode(postalCode);
-  if (!postalCity) return "Poštanski broj nije u zoni dostave za Beograd i Novi Sad.";
+  if (!postalCity) return "Poštanski broj nije u podržanoj zoni dostave.";
   if (postalCity !== normalizedCity) return "Poštanski broj ne odgovara izabranom gradu.";
   return null;
 }

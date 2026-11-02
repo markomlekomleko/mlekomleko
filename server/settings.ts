@@ -5,6 +5,10 @@ import { deliveryCityForPostalCode, normalizeDeliveryCity } from "../app/lib/del
 import { addLocalDays, cutoffForDelivery, nextWeekday } from "./time";
 
 export interface BusinessSettings {
+  indjijaEnabled: boolean;
+  indjijaDeliveryWeekdays: number[];
+  originCowImageUrl: string;
+  originGoatImageUrl: string;
   minimumOrderMinor: number; holidays: string[]; serviceRegions: ServiceRegion[]; deliverySlots: DeliverySlot[];
   timezone: "Europe/Belgrade";
   currency: "RSD";
@@ -44,6 +48,7 @@ export interface BusinessSettings {
 }
 
 const defaults: BusinessSettings = {
+  indjijaEnabled: false, indjijaDeliveryWeekdays: [], originCowImageUrl: "", originGoatImageUrl: "",
   minimumOrderMinor: 0, holidays: [], serviceRegions: [], deliverySlots: [],
   timezone: "Europe/Belgrade",
   currency: "RSD",
@@ -102,7 +107,12 @@ export async function getBusinessSettings(): Promise<BusinessSettings> {
 
 /** The Novi Sad route runs Fridays only; Belgrade uses the configured route days.
  * Confirmed against the shop linked by mlekoimleko.rs: https://take.app/mlekoimleko. */
+export function allDeliveryWeekdays(settings: BusinessSettings) {
+  return [...new Set([...settings.deliveryWeekdays,...(settings.indjijaEnabled ? settings.indjijaDeliveryWeekdays : [])])].sort();
+}
 export function deliveryWeekdaysForCity(settings: BusinessSettings, city = "") {
+  if (!city.trim()) return allDeliveryWeekdays(settings);
+  if (normalizeDeliveryCity(city) === "Inđija") return settings.indjijaEnabled ? settings.indjijaDeliveryWeekdays : [];
   return settings.deliveryWeekdays.filter(day => normalizeDeliveryCity(city) !== "Novi Sad" || day === 5);
 }
 
@@ -122,6 +132,8 @@ export async function getNextDeliveryWindow(now = new Date(), city = "") {
     deliveryLocalTime: settings.deliveryLocalTime,
     cutoffAt,
     cutoffHours: settings.cutoffHours,
+    deliveryFeeMinor: settings.deliveryFeeMinor,
+    freeDeliveryThresholdMinor: settings.freeDeliveryThresholdMinor,
     remainingOccurrences: {
       weekly: 4,
       biweekly: 2,
@@ -131,6 +143,7 @@ export async function getNextDeliveryWindow(now = new Date(), city = "") {
 
 export function isServiceablePostalCode(settings: BusinessSettings, postalCode: string) {
   const normalized = postalCode.trim();
+  if (deliveryCityForPostalCode(normalized) === "Inđija" && (!settings.indjijaEnabled || !settings.indjijaDeliveryWeekdays.length)) return false;
   if (settings.serviceRegions.some(region => region.postalCodes.includes(normalized))) return true;
   if (!deliveryCityForPostalCode(normalized)) return false;
   if (settings.servicePostalCodes.length === 0) return true;

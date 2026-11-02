@@ -51,6 +51,7 @@ export default defineConfig({
       NEXT_PUBLIC_META_PIXEL_ID: "",
       META_CONVERSIONS_ACCESS_TOKEN: "",
       NEXT_PUBLIC_GOOGLE_ADS_ID: "",
+      NEXT_PUBLIC_CLARITY_PROJECT_ID: "",
     },
     url: e2eOrigin,
     reuseExistingServer: false,

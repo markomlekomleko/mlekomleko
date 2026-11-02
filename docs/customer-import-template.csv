@@ -1,0 +1,1 @@
+external_customer_id,email,full_name,phone,address,city,postal_code,external_order_id,next_delivery_date,paid,payment_method,advance_provider,advance_mode,advance_invoice_number,advance_time,purchased_at,total_rsd,delivery_fee_rsd,remaining_rsd,delivery_tax_label,product_id,cadence,quantity,delivered_quantity,unit_price_rsd,net_product_rsd,allocated_delivery_rsd,tax_label

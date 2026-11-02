@@ -44,14 +44,15 @@ export function renderTransactionalMessage(topic: string, data: Record<string, u
     return shell(beforeDeadline ? "Još možete izmeniti sledeću dostavu" : "Podsetnik za sutrašnju dostavu", [greeting, `Vaša sledeća isporuka je ${beforeDeadline ? "" : "sutra, "}${deliveryDay(deliveryDate)} (${formatDeliveryDate(deliveryDate)}).`, itemSummary ? `Stavke: ${itemSummary}.` : "", deadline ? locked ? `Rok za izmene i otkazivanje je istekao (${deadline}, vreme u Srbiji). Ova isporuka je zaključana.` : `Izmene i otkazivanje mogući su do ${deadline} (vreme u Srbiji). Nakon toga ova isporuka se zaključava.` : "", data.note ? `Napomena: ${data.note}` : ""].filter(Boolean), accountAction);
   }
   if (topic === "email.fiscal_document.requested") {
+    if (data.training) return shell("Test dokument — nije fiskalni račun", [greeting, `Test dokument za porudžbinu ${orderNumber}: ${data.invoiceNumber}.`, "OVO NIJE FISKALNI RAČUN. Dokument je izdat u režimu obuke i ne predstavlja novu naplatu."], data.documentUrl ? {label: "Otvori test dokument", url: String(data.documentUrl)} : accountAction);
     const label = data.documentKind === "advance" ? "Avansni fiskalni račun" : data.documentKind === "final" ? "Konačni fiskalni račun" : data.documentKind === "refund" ? "Zatvaranje avansa" : "Fiskalni račun";
-    return shell(label, [greeting, `${label} za porudžbinu ${orderNumber}: ${data.invoiceNumber}.`, data.documentKind === "advance" ? "Paket je plaćen unapred. Konačni račun sledi nakon svih kupljenih dostava." : data.documentKind === "refund" ? "Ovaj dokument zatvara avans. Ne predstavlja novu naplatu niti povraćaj novca kupcu." : "Ovo nije nova naplata."], data.documentUrl ? {label: "Otvori račun", url: String(data.documentUrl)} : accountAction);
+    return shell(label, [greeting, `${label} za porudžbinu ${orderNumber}: ${data.invoiceNumber}.`, data.documentKind === "advance" ? "Uplata je evidentirana unapred. Za svaku pojedinačnu isporuku sledi račun uz razduženje pripadajućeg dela avansa." : data.documentKind === "refund" ? "Ovaj dokument razdužuje deo avansa za konkretnu isporuku. Ne predstavlja novu naplatu niti povraćaj novca kupcu." : "Ovo nije nova naplata."], data.documentUrl ? {label: "Otvori račun", url: String(data.documentUrl)} : accountAction);
   }
   if (topic === "email.receipt.requested") {
     return shell("Uplata je evidentirana", [greeting, `Uplata za porudžbinu ${orderNumber} je evidentirana. Fiskalni račun se obrađuje i biće poslat na ovu email adresu.`], accountAction);
   }
   if (topic === "email.invoice.requested") {
-    return shell("Obračun novog paketa pretplate", [greeting, `Obračun ${orderNumber} iznosi ${total}.`, deliveryDate ? `Prva planirana dostava u ovom obračunu je ${deliveryDate}.` : "", itemSummary ? `Stavke: ${itemSummary}.` : ""].filter(Boolean), accountAction);
+    return shell("Obračun novog paketa pretplate", [greeting, `Obračun ${orderNumber} iznosi ${total}.`, data.paymentMethod === "cash" && data.paymentStatus !== "paid" ? "Ceo paket plaćate gotovinom pri prvoj dostavi. Preostale dostave tog paketa zatim su već plaćene." : "", deliveryDate ? `Prva planirana dostava u ovom obračunu je ${deliveryDate}.` : "", itemSummary ? `Stavke: ${itemSummary}.` : ""].filter(Boolean), accountAction);
   }
   if (topic === "payment.method_required") {
     return shell("Potrebna je provera načina plaćanja", [greeting, `Automatska naplata za ${orderNumber} nije uspela. Porudžbina je sačuvana, ali je potrebno ažurirati način plaćanja.`], accountAction);
@@ -83,7 +84,7 @@ export function renderTransactionalMessage(topic: string, data: Record<string, u
     return shell("Porudžbina je ažurirana", [greeting, `Porudžbina ${orderNumber}: ${statuses[String(data.fulfillmentStatus)] ?? "ažurirano"}.`, `Plaćanje: ${statuses[String(data.paymentStatus)] ?? "na čekanju"}.`, data.detailsChanged ? "Stavke ili adresa dostave su ažurirane." : "", itemSummary, `Ukupno: ${total}.`].filter(Boolean), accountAction);
   }
 
-  return shell("Potvrda porudžbine", [greeting, `Porudžbina ${orderNumber} je primljena. Ukupno: ${total}.`, deliveryDate ? `Planirana dostava: ${deliveryDate}.` : "", itemSummary ? `Stavke: ${itemSummary}.` : ""].filter(Boolean), accountAction);
+  return shell("Potvrda porudžbine", [greeting, `Porudžbina ${orderNumber} je primljena. Ukupno: ${total}.`, data.kind === "subscription_invoice" && data.paymentMethod === "cash" && data.paymentStatus !== "paid" ? "Ceo paket plaćate gotovinom pri prvoj dostavi. Preostale dostave tog paketa zatim su već plaćene." : "", deliveryDate ? `Planirana dostava: ${deliveryDate}.` : "", itemSummary ? `Stavke: ${itemSummary}.` : ""].filter(Boolean), accountAction);
 }
 
 function formatDeliveryDate(date: string) {

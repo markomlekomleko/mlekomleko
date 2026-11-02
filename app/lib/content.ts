@@ -11,7 +11,7 @@ export const frequentlyAskedQuestions = [
   },
   {
     question: "Koliko mleka mogu da poručim?",
-    answer: "Brzo biraš 2, 4 ili 8 litara po dostavi, ili uneseš drugu količinu. Mesečni zbir zavisi od stvarnog broja preostalih termina i prikazuje se pre potvrde.",
+    answer: "Brzo biraš 2, 4 ili 8 litara po dostavi, ili uneseš drugu količinu. Paket sadrži četiri nedeljne ili dve dvonedeljne dostave. Ukupnu količinu i cenu vidiš pre potvrde.",
   },
   {
     question: "Kada su dostave?",
@@ -31,7 +31,7 @@ export const frequentlyAskedQuestions = [
   },
   {
     question: "Kako se plaća?",
-    answer: "Jednokratna porudžbina se plaća gotovinom pri dostavi. Pretplata se plaća za ceo paket unapred. Sa prodavnicom dogovorite evidentiranje gotovinske uplate pre početka isporuka.",
+    answer: "Jednokratnu porudžbinu plaćaš gotovinom pri dostavi. Kod redovne dostave ceo paket plaćaš pri prvom uručenju; preostale dostave tog paketa već su plaćene.",
   },
   {
     question: "Koliko košta dostava?",
@@ -59,7 +59,7 @@ export const homeCopy = {
     rhythmTitle: "Ti biraš ritam, mi donosimo.",
     rhythmSub: "Kravlje. Kozje. Oba.",
   },
-  band: ["PUNOMASNO", "SIROVO", "U STAKLU", "KRAVLJE", "KOZJE", "DOMAĆE", "UVEK SVEŽE", "BEOGRAD", "NOVI SAD", "#PRAVOMLEKO"],
+  band: ["KRAVLJE", "KOZJE", "TVOJE MLEKO", "TVOJ RITAM", "POVRATNE FLAŠE", "DOSTAVA DO VRATA"],
   offer: {
     eyebrow: "01 / Na meniju",
     title: "Tim krava ili tim koza?",
@@ -85,10 +85,10 @@ export const homeCopy = {
     ],
   },
   origin: {
-    eyebrow: "03 / Pedigre",
+    eyebrow: "03 / Kravlje i kozje",
     title: "Glavne uloge: krave i koze.",
-    text: "Kravlje i kozje mleko dolazi sa domaćih farmi. Do tebe stiže punomasno i sirovo, u povratnoj staklenoj flaši. Ništa obrano.",
-    link: "Upoznaj ekipu sa farme",
+    text: "Kravlje, kozje ili oba — izaberi mleko koje voliš. Donosimo ga u povratnim staklenim flašama.",
+    link: "Pogledaj kravlje i kozje",
   },
   rhythm: {
     eyebrow: "04 / Tvoj tempo",
@@ -96,15 +96,15 @@ export const homeCopy = {
     items: [
       {
         title: "Jednokratno",
-        text: "Avantura za jednu dostavu. Bez pretplate, bez obaveze, bez ljutnje.",
+        text: "Jedna porudžbina, jedna dostava. Plaćaš pri uručenju.",
       },
       {
         title: "Svake nedelje",
-        text: "Ozbiljna veza: isti izbor stiže svake nedelje. Količinu menjaš do roka za izmene.",
+        text: "Četiri dostave u paketu. Plaćaš pri prvoj, a ostale stižu jednom nedeljno.",
       },
       {
         title: "Svake 2 nedelje",
-        text: "Veza bez pritiska, za manje domaćinstvo. Preskočiš ili pauziraš preko naloga.",
+        text: "Dve dostave u paketu, na svake dve nedelje. Preskakanje i pauzu uređuješ na nalogu.",
       },
     ],
     note: "Promena plana? Izmene, preskakanje i pauza mogući su do roka navedenog uz svaku dostavu, na tvom nalogu.",

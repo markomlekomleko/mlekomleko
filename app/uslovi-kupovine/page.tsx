@@ -9,7 +9,7 @@ export async function generateMetadata(): Promise<Metadata> { return localizedMe
 export default async function TermsPage() {
   const localize = await getLocalize();
   return localize(<PolicyPage eyebrow="Pravila kupovine" title="Uslovi kupovine" intro="Ovde su jasno opisani koraci od potvrde korpe do isporuke." sections={[
-    { title: "Porudžbina i cena", paragraphs: ["Pre potvrde prikazujemo cenu po isporuci, broj preostalih termina u obračunskom mesecu, trošak dostave, popust i ukupan iznos. Važe podaci iz završnog obračuna na checkout-u.", "Porudžbina je primljena kada se prikaže broj porudžbine i pošalje potvrda na navedeni email."] },
+    { title: "Porudžbina i cena", paragraphs: ["Pre potvrde prikazujemo količinu po isporuci, broj isporuka u paketu, trošak dostave, popust i ukupan iznos. Važe podaci iz završnog obračuna u korpi.", "Porudžbina je primljena kada se prikaže broj porudžbine i pošalje potvrda na navedeni email."] },
     { title: "Plaćanje", paragraphs: ["Gotovinska porudžbina ostaje na čekanju do evidentiranja naplate. Kartica se tereti samo kroz izabranog procesora plaćanja; Mleko i Mleko ne prima niti čuva broj kartice ili sigurnosni kod."] },
     { title: "Izmene i otkazivanje", paragraphs: ["Jednokratnu porudžbinu ili sledeći termin redovne dostave moguće je menjati do prikazanog roka. Posle zaključavanja rute zahtev rešavamo kroz podršku, u skladu sa stanjem pripreme i važećim propisima."] },
   ]} />);

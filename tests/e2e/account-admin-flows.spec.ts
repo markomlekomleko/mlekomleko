@@ -12,6 +12,8 @@ async function openAdmin(page: Page) {
 }
 
 async function adminTab(page: Page, name: string) {
+  const more = page.getByRole("navigation", {name: "Administracija"}).getByRole("button", {name: "Još", exact: true});
+  if (["Proizvodi", "Paketi", "Popusti", "Sadržaj sajta", "Podešavanja", "Izveštaji"].includes(name) && await more.isVisible() && await more.getAttribute("aria-expanded") === "false") await more.click();
   if (["Proizvodi", "Paketi", "Popusti", "Sadržaj sajta"].includes(name)) {
     await page.getByRole("navigation", { name: "Administracija" }).getByRole("button", { name: "Podešavanja", exact: true }).click();
     await page.getByRole("navigation", { name: "Podešavanja prodavnice" }).getByRole("button", { name, exact: true }).click();
@@ -33,7 +35,7 @@ test("every public destination and admin tab is connected without development la
     await assertNoDevelopmentLabels(page);
   }
   await openAdmin(page);
-  for (const name of ["Pregled", "Porudžbine", "Proizvodi", "Paketi", "Kupci", "Dostave", "Popusti", "Sadržaj sajta", "Podešavanja"]) {
+  for (const name of ["Početna", "Porudžbine", "Proizvodi", "Paketi", "Kupci", "Dostave", "Popusti", "Sadržaj sajta", "Podešavanja"]) {
     await adminTab(page, name);
     await assertNoDevelopmentLabels(page);
     await expect(page.locator(".notice.error")).toHaveCount(0);
@@ -119,7 +121,8 @@ test("the mobile buy bar appears below the panel and keeps the selected quantity
   const bar = page.locator(".buy-bar");
   await expect(bar).toHaveAttribute("data-visible", "true");
   await expect(bar).toContainText("4 L");
-  await expect(bar).toContainText("1.000");
+  await expect(bar).toContainText("1.350");
+  await expect(bar).toContainText("sa dostavom");
   await page.screenshot({ path: "test-results/mobile-buy-bar.png" });
 
   await bar.getByRole("button", { name: "Dodaj u korpu" }).click();
@@ -226,9 +229,15 @@ test("order period and combined filters survive a status update and reset", asyn
   await page.getByRole("button", { name: "Primeni filtere" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Pronađeno: 1 porudžbina" })).toBeVisible();
   const row = page.locator("tbody tr").filter({ hasText: email });
-  await row.locator("select").first().selectOption("paid");
-  await row.getByRole("button", { name: "Sačuvaj", exact: true }).click();
+  await row.getByRole("button", {name: "Otvori porudžbinu"}).click();
+  const detail = page.getByRole("dialog");
+  await detail.getByLabel(`Naplata porudžbine ${order.orderNumber}`).selectOption("paid");
+  await detail.getByRole("button", {name: "Sačuvaj status", exact: true}).click();
+  await expect(detail.getByLabel(`Naplata porudžbine ${order.orderNumber}`)).toBeEnabled();
+  await detail.getByRole("button", {name: "Zatvori", exact: true}).click();
   await expect(page.getByRole("status").filter({ hasText: "Pronađeno: 0 porudžbina" })).toBeVisible();
+  await adminTab(page, "Dostave");
+  await adminTab(page, "Porudžbine");
   await expect(page.getByLabel("Pretraga porudžbina")).toHaveValue(email);
   await page.getByLabel("Status naplate").selectOption("paid");
   await page.getByRole("button", { name: "Primeni filtere" }).click();

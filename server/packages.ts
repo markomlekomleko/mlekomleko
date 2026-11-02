@@ -35,6 +35,13 @@ export async function activatePaidPackage(orderId: string) {
     WHERE sp.order_id = ? GROUP BY sp.id, sp.status, s.id, s.status, s.version, s.next_delivery_date, s.pause_until, o.fulfillment_status`, orderId);
   if (!row) return null;
   assertDomain(row.package_status === "open" && row.status !== "cancelled" && row.fulfillment_status !== "cancelled", "PACKAGE_CANCELLED", "Otkazan paket ne može da se naplati. Napravite novu porudžbinu.", 409);
+  // Cash collected for an already packed first visit must not move that visit.
+  const packedCash = await first<Record<string, unknown>>(`SELECT d.delivery_date FROM orders o
+    JOIN order_items oi ON oi.order_id=o.id JOIN delivery_items di ON di.order_item_id=oi.id
+    JOIN delivery_orders dor ON dor.id=di.delivery_order_id JOIN deliveries d ON d.id=dor.delivery_id
+    WHERE o.id=? AND o.payment_method='cash' AND dor.status='locked' AND d.status='locked'
+    ORDER BY d.delivery_date LIMIT 1`, orderId);
+  if (packedCash) return {date: String(packedCash.delivery_date), statements: []};
   const anchor = String(row.anchor_date), interval = Number(row.interval_days);
   const earliest = [anchor, String(row.next_delivery_date), localDateAt(), String(row.pause_until ?? "")].sort().at(-1)!;
   let date = addLocalDays(anchor, Math.ceil(daysBetween(anchor, earliest) / interval) * interval);

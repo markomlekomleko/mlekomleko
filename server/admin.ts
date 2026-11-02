@@ -6,14 +6,16 @@ import { DomainError, assertDomain, enumValue, nonNegativeInt, optionalString, r
 import { orderFilters } from "./order-filters";
 import { audit, enqueue } from "./outbox";
 import { all, batch, first, type SqlValue } from "./sql";
-import { getBusinessSettings } from "./settings";
+import { getBusinessSettings, isServiceablePostalCode, deliveryWeekdaysForCity } from "./settings";
 import { purchaseAnalyticsEvent } from "./analytics";
 import { quoteCart } from "./commerce";
 import { generateDelivery, lockOverdueDeliveries } from "./deliveries";
 import { cutoffForDelivery } from "./time";
 import { assertDeliveryEditable } from "./delivery-cutoff";
 import { mutationGuard } from "./mutation-guard";
+import { fiscommSelected } from "./fiscomm";
 import { activatePaidPackage } from "./packages";
+import { actorContext } from "./staff";
 
 export async function dashboard() {
   const [counts, revenue, nextDeliveries, preparation, funnel, topProducts, orderStates, profitBase, retention, postalProfit, channelProfit] = await Promise.all([
@@ -172,6 +174,10 @@ export async function updateOrder(input: Record<string, unknown>, actor: { type:
     assertDomain(paymentStatus === before.payment_status || (before.payment_status !== "paid" && paymentStatus === "paid"), "PACKAGE_PAYMENT_IMMUTABLE", "Za povraćaj uplaćenog paketa potrebna je zasebna refundacija sa fiskalnim dokumentom.", 409);
     assertDomain(fulfillmentStatus === before.fulfillment_status, "PACKAGE_DELIVERY_MANAGED", "Isporuke paketa potvrđujete pojedinačno u odeljku Dostave.", 409);
   }
+  if (fiscommSelected()) {
+    assertDomain(fulfillmentStatus !== "delivered" || before.fulfillment_status === "delivered", "DELIVERY_CONFIRMATION_REQUIRED", "Isporuku potvrdite u odeljku Dostave da bi račun sadržao stvarno uručene količine.", 409);
+    assertDomain(before.payment_status !== "paid" || paymentStatus === "paid", "FISCAL_PAYMENT_IMMUTABLE", "Plaćena porudžbina zahteva zaseban postupak povraćaja sa fiskalnim dokumentima.", 409);
+  }
   const customerNote = input.customerNote === undefined
     ? (typeof before.customer_note === "string" ? before.customer_note : null)
     : optionalString(input.customerNote, "customerNote", 500);
@@ -255,6 +261,8 @@ export async function readSettings() {
 }
 
 const textSettings = new Map<string, number>([
+  ["originCowImageUrl", 2000],
+  ["originGoatImageUrl", 2000],
   ["storeName", 120],
   ["announcementText", 180],
   ["announcementTextEn", 180],
@@ -286,8 +294,8 @@ const numericSettings = new Map<string, number>([
   ["estimatedDeliveryCostMinor", 10_000_000],
   ["paymentFeeBps", 10_000],
 ]);
-const booleanSettings = new Set(["announcementEnabled"]);
-const urlSettings = new Set(["announcementUrl", "heroPrimaryUrl", "heroSecondaryUrl"]);
+const booleanSettings = new Set(["announcementEnabled", "indjijaEnabled"]);
+const urlSettings = new Set(["announcementUrl", "heroPrimaryUrl", "heroSecondaryUrl", "originCowImageUrl", "originGoatImageUrl"]);
 
 function safeLink(value: string, field: string) {
   assertDomain(
@@ -307,7 +315,7 @@ export async function updateSettings(input: Record<string, unknown>) {
     ...booleanSettings,
     "deliveryLocalTime",
     "servicePostalCodes",
-    "deliveryWeekdays", "minimumOrderMinor", "holidays", "serviceRegions", "deliverySlots",
+    "deliveryWeekdays", "indjijaDeliveryWeekdays", "minimumOrderMinor", "holidays", "serviceRegions", "deliverySlots",
   ]);
   const entries = Object.entries(input);
   assertDomain(
@@ -319,8 +327,8 @@ export async function updateSettings(input: Record<string, unknown>) {
   const normalized: Record<string, unknown> = {};
   for (const [key, value] of entries) {
     if (["minimumOrderMinor", "holidays", "serviceRegions", "deliverySlots"].includes(key)) { normalized[key] = validatePolicy(key,value);
-    } else if (key === "deliveryWeekdays") {
-      assertDomain(Array.isArray(value) && value.length > 0 && value.every((day) => Number.isInteger(day) && day >= 0 && day <= 6), "VALIDATION_ERROR", "Izaberite dane dostave.", 422);
+    } else if (key === "deliveryWeekdays" || key === "indjijaDeliveryWeekdays") {
+      assertDomain(Array.isArray(value) && (key === "indjijaDeliveryWeekdays" || value.length > 0) && value.every((day) => Number.isInteger(day) && day >= 0 && day <= 6), "VALIDATION_ERROR", "Izaberite dane dostave.", 422);
       normalized[key] = [...new Set(value as number[])].sort();
     } else if (numericSettings.has(key)) {
       normalized[key] = nonNegativeInt(value, key, numericSettings.get(key));
@@ -336,11 +344,20 @@ export async function updateSettings(input: Record<string, unknown>) {
       assertDomain(postalCodes.every((item) => /^\d{2,5}\*?$/.test(item)), "VALIDATION_ERROR", "Unesite poštanski broj od pet cifara ili prefiks od dve do četiri cifre.", 422);
       normalized[key] = postalCodes;
     } else {
-      if (key.startsWith("announcement") && typeof value === "string" && !value.trim()) { normalized[key] = ""; continue; }
+      if ((key.startsWith("announcement") || key.startsWith("origin")) && typeof value === "string" && !value.trim()) { normalized[key] = ""; continue; }
       const parsed = requiredString(value, key, textSettings.get(key) ?? 500);
       normalized[key] = urlSettings.has(key) ? safeLink(parsed, key) : parsed;
     }
   }
+  const currentSettings = await getBusinessSettings();
+  const role = actorContext.getStore()?.role;
+  for (const key of ["deliveryWeekdays", "indjijaDeliveryWeekdays", "indjijaEnabled"] as const) {
+    if (normalized[key] !== undefined && JSON.stringify(normalized[key]) !== JSON.stringify(currentSettings[key]))
+      assertDomain(!role || role === "owner", "ROLE_FORBIDDEN", "Samo vlasnik može da menja raspored i aktivira grad.", 403);
+  }
+  assertDomain(!(normalized.indjijaEnabled ?? currentSettings.indjijaEnabled) || ((normalized.indjijaDeliveryWeekdays ?? currentSettings.indjijaDeliveryWeekdays) as number[]).length > 0, "VALIDATION_ERROR", "Pre aktivacije Inđije potvrdite dane dostave.", 422);
+  const nextSettings = {...currentSettings,...normalized} as typeof currentSettings;
+  assertDomain(!nextSettings.indjijaEnabled || ["22319","22320"].some(code=>isServiceablePostalCode(nextSettings,code)), "VALIDATION_ERROR", "Pre aktivacije Inđije uključite potvrđene poštanske brojeve u područje dostave.", 422);
   const changingDeadline = normalized.cutoffHours !== undefined || normalized.deliveryLocalTime !== undefined;
   // Preserve deliveries that have already crossed the old deadline before changing the policy.
   if (changingDeadline || normalized.holidays !== undefined) await lockOverdueDeliveries();
@@ -353,10 +370,12 @@ export async function updateSettings(input: Record<string, unknown>) {
     const { addLocalDays, isCadenceDue } = await import("./time");
     const { packageSchedule } = await import("./packages");
     const settings = { ...await getBusinessSettings(), ...normalized } as Awaited<ReturnType<typeof getBusinessSettings>>;
-    const orders = await all<Record<string,unknown>>("SELECT * FROM orders WHERE fulfillment_status='planned'");
+    const orders = await all<Record<string,unknown>>("SELECT o.*,c.city FROM orders o JOIN customers c ON c.id=o.customer_id WHERE o.fulfillment_status='planned'");
     for (const order of orders) if (settings.holidays.includes(String(order.delivery_date))) {
       let date = addLocalDays(String(order.delivery_date),1);
-      while(settings.holidays.includes(date) || !settings.deliveryWeekdays.includes(new Date(`${date}T12:00:00Z`).getUTCDay())) date=addLocalDays(date,1);
+      const routeDays = deliveryWeekdaysForCity(settings,String(shippingSnapshot(order).city ?? ""));
+      const allowedDays = routeDays.length ? routeDays : [new Date(`${order.delivery_date}T12:00:00Z`).getUTCDay()];
+      while(settings.holidays.includes(date) || !allowedDays.includes(new Date(`${date}T12:00:00Z`).getUTCDay())) date=addLocalDays(date,1);
       const guard=mutationGuard("EXISTS(SELECT 1 FROM orders WHERE id=? AND updated_at=? AND fulfillment_status='planned')",[String(order.id),String(order.updated_at)]);
       statements.push(guard.check,{sql:'UPDATE orders SET delivery_date=?,updated_at=? WHERE id=?',bindings:[date,now,String(order.id)]},enqueue('email.order_updated.requested','order',String(order.id),{deliveryDate:date,reason:'holiday'}),guard.cleanup);
     }
