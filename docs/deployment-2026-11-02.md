@@ -10,7 +10,11 @@ Luka je izričito zatražio produkcionu objavu nove verzije i uputstvo za grupno
 - Postojeći režimi emaila, fiskalizacije i banke se ne menjaju ovom objavom. Nije zatraženo novo izdavanje fiskalnog dokumenta niti slanje poruke kupcima.
 - Raw materijali, snimci, lokalni izveštaji, rezultati browser provera i PDF izlazi isključeni su iz Vercel upload-a. U Git se šalju izvori, migracije, testovi i dokumentacija.
 
-Ovaj zapis prati pokretanje objave. Završni status se proverava preko GitHub/Vercel statusa i postojećeg javnog sajta nakon build-a. Prebacivanje domena `mlekoimleko.rs`, povezivanje email servisa i bankarska aktivacija ostaju zasebni koraci.
+Objava aplikacije iz commita `3de15d5` potvrđena je kao uspešna na Vercelu (`E4idEhzaxQKfAuGS5YDcrxJSWJu8`). Javni početni ekran, prodavnica, admin i prijava vraćaju HTTP 200. Prijava vlasnika i spisak porudžbina sa 100 redova rade. Obe nove grupne rute odbijaju zahtev bez potvrde kodom `CONFIRMATION_REQUIRED`, bez promene uplata/isporuka. Bankarske i fiskalne operacije nisu pokretane proverom.
+
+GitHub CI je uspešno izvršio lint, serverske testove i produkcioni build/runtime. Browser instalacija je stala jer je `ubuntu-latest` izabrao Ubuntu 26.04, koji instalirani Playwright 1.60 ne podržava. Runner je zato fiksiran na podržani Ubuntu 24.04; taj infrastrukturni ispravak ne menja funkcije sajta.
+
+Prebacivanje domena `mlekoimleko.rs`, povezivanje email servisa i bankarska aktivacija ostaju zasebni koraci.
 
 ## Markovo grupno označavanje
 
