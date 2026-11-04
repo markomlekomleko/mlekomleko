@@ -6,6 +6,10 @@ test("admin writes draft, previews, publishes, updates and unpublishes SEO page"
   await page.getByLabel("Email", { exact: true }).fill("admin@example.test");
   await page.getByLabel("Lozinka", { exact: true }).fill("e2e-admin-password");
   await page.getByRole("button", { name: "Prijavi se", exact: true }).click();
+  // Narrow admin layouts fold "Podešavanja" under the "Još" button.
+  const more = page.getByRole("button", { name: "Još", exact: true });
+  await expect(page.getByRole("heading", { name: "Vaš posao danas" })).toBeVisible();
+  if (await more.isVisible()) await more.click();
   await page.getByRole("button", { name: "Podešavanja", exact: true }).click();
   await page.getByRole("button", { name: "Sadržaj sajta", exact: true }).click();
   await page.getByRole("button", { name: "Nova stranica", exact: true }).click();

@@ -550,8 +550,17 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
       statements.push(purchaseAnalyticsEvent(addonOrderId, addonOrderNumber, "next-delivery-addon"));
     }
   } else if (action === "skip_next") {
+    // Like resume, land on the next date the customer can still change: due by cadence,
+    // not a holiday, and not a route that is already locked or past its cutoff.
+    const skipSettings = await getBusinessSettings();
     let nextDueDate = addLocalDays(subscription.next_delivery_date, 7);
-    for (let attempts = 0; attempts < 8 && activeItems.length && !schedule.some((item) => isCadenceDue(item.cadence_anchor_date, nextDueDate, item.cadence)); attempts += 1) nextDueDate = addLocalDays(nextDueDate, 7);
+    for (let attempts = 0; attempts < 12; attempts += 1) {
+      const due = !activeItems.length || schedule.some((item) => isCadenceDue(item.cadence_anchor_date, nextDueDate, item.cadence));
+      const route = await first<{ cutoff_at: string; locked_at: string | null } & Record<string, unknown>>("SELECT cutoff_at, locked_at FROM deliveries WHERE delivery_date = ?", nextDueDate);
+      const cutoffAt = route?.cutoff_at ?? cutoffForDelivery(nextDueDate, skipSettings.cutoffHours, skipSettings.deliveryLocalTime);
+      if (due && !skipSettings.holidays.includes(nextDueDate) && !route?.locked_at && Date.now() < Date.parse(cutoffAt)) break;
+      nextDueDate = addLocalDays(nextDueDate, 7);
+    }
     statements.push({ sql: "INSERT INTO subscription_skips (id, subscription_id, delivery_date) VALUES (?, ?, ?) ON CONFLICT(subscription_id, delivery_date) DO NOTHING", bindings: [crypto.randomUUID(), subscriptionId, subscription.next_delivery_date] });
     statements.push({ sql: "UPDATE subscriptions SET next_delivery_date = ?, updated_at = ? WHERE id = ?", bindings: [nextDueDate, now, subscriptionId] });
     resultingNextDeliveryDate = nextDueDate;

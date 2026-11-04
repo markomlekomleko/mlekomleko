@@ -22,7 +22,7 @@ test("responsive navigation has no overflow and exposes every primary destinatio
     await menu.click();
     await expect(menu).toHaveAttribute("aria-expanded", "true");
     const nav = page.getByRole("navigation", { name: "Glavna navigacija" });
-    for (const label of ["Mleko", "Kako dostavljamo", "Naše poreklo", "Česta pitanja", "Kontakt"]) {
+    for (const label of ["Prodavnica", "Kako dostavljamo", "Naše poreklo", "Česta pitanja", "Kontakt"]) {
       await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
     }
     await expect(page.getByRole("link", { name: "Moj nalog", exact: true })).toBeVisible();

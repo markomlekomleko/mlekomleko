@@ -8,6 +8,9 @@ import { expect, test, type APIRequestContext } from "@playwright/test";
 const ORIGIN = `http://localhost:${process.env.E2E_PORT || "4173"}`;
 const ADMIN = { email: "admin@example.test", password: "e2e-admin-password" };
 const unique = () => crypto.randomUUID().slice(0, 8);
+// All three viewport projects share one server and database, and rate-limit windows last
+// 15 minutes, so every test needs an address (and a throttled identity) of its own.
+const address = () => `2001:db8:f${unique().slice(0, 3)}::${unique().slice(0, 4)}`;
 const headers = (ip: string, extra: Record<string, string> = {}) => ({
   Origin: ORIGIN,
   "cf-connecting-ip": ip,
@@ -41,7 +44,7 @@ async function signIn(request: APIRequestContext, email: string, ip: string) {
 }
 
 test("F-E01 customer session: HttpOnly cookie, CSRF refusal, logout revokes the session server-side", async ({ request, page }) => {
-  const ip = "198.51.100.61";
+  const ip = address();
   const email = `test-f-${unique()}@example.test`;
   const { verified } = await signIn(request, email, ip);
   const cookie = verified.headers()["set-cookie"];
@@ -70,7 +73,7 @@ test("F-E01 customer session: HttpOnly cookie, CSRF refusal, logout revokes the 
 });
 
 test("F-E02 a challenge locks after five wrong codes and then rejects the right one; unknown email looks identical", async ({ request }) => {
-  const ip = "198.51.100.62";
+  const ip = address();
   const email = `test-f-${unique()}@example.test`;
   const registered = await request.post("/api/auth/register", { data: { email }, headers: headers(ip) });
   const challenge = await registered.json();
@@ -91,7 +94,7 @@ test("F-E02 a challenge locks after five wrong codes and then rejects the right 
 });
 
 test("F-E03 demo session is read-only through the real runtime", async ({ request }) => {
-  const ip = "198.51.100.63";
+  const ip = address();
   expect((await request.post("/api/auth/demo", { data: {}, headers: { "cf-connecting-ip": ip } })).status()).toBe(403);
   const login = await request.post("/api/auth/demo", { data: {}, headers: headers(ip) });
   expect(login.status()).toBe(200);
@@ -112,7 +115,7 @@ test("F-E03 demo session is read-only through the real runtime", async ({ reques
 });
 
 test("F-E04 checkout contract: idempotent replay, conflict, forged prices ignored, raw card data refused, card unavailable", async ({ request }) => {
-  const ip = "198.51.100.64";
+  const ip = address();
   const email = `test-f-${unique()}@example.test`;
   const key = `test-f-key-${unique()}`;
   const body = cashBody(email, 2, { totalMinor: 1, unitPriceMinor: 1, paymentStatus: "paid" });
@@ -146,7 +149,7 @@ test("F-E04 checkout contract: idempotent replay, conflict, forged prices ignore
 });
 
 test("F-E05 payment webhook is a local simulator only: 401 for a bad secret, 503 when PAYMENT_MODE is not mock", async ({ request }) => {
-  const ip = "198.51.100.65";
+  const ip = address();
   const event = { eventId: `test-f-${unique()}`, orderId: "ord_nepostojeci", status: "paid" };
   const bad = await request.post("/api/webhooks/payments", { data: event, headers: { "x-webhook-secret": "wrong", "cf-connecting-ip": ip } });
   expect(bad.status()).toBe(401);
@@ -156,9 +159,9 @@ test("F-E05 payment webhook is a local simulator only: 401 for a bad secret, 503
 });
 
 test("F-E06 admin: login throttle, role matrix, deactivation and revocation", async ({ request }) => {
-  const ip = "198.51.100.66";
+  const ip = address();
   for (let attempt = 0; attempt < 3; attempt++) {
-    const response = await request.post("/api/admin/access", { data: { email: ADMIN.email, password: `wrong-${attempt}` }, headers: headers(ip) });
+    const response = await request.post("/api/admin/access", { data: { email: `test-f-nobody-${unique()}@example.test`, password: `wrong-${attempt}` }, headers: headers(ip) });
     expect(response.status()).toBe(403);
   }
   const noOrigin = await request.post("/api/admin/access", { data: ADMIN, headers: { "cf-connecting-ip": ip } });
@@ -200,9 +203,9 @@ test("F-E06 admin: login throttle, role matrix, deactivation and revocation", as
 });
 
 test("F-E07 admin login: the 11th attempt from one address in 15 minutes is 429", async ({ request }) => {
-  const ip = "198.51.100.67";
+  const ip = address();
   for (let attempt = 0; attempt < 10; attempt++) {
-    const response = await request.post("/api/admin/access", { data: { email: ADMIN.email, password: `wrong-${attempt}` }, headers: headers(ip) });
+    const response = await request.post("/api/admin/access", { data: { email: `test-f-nobody-${unique()}@example.test`, password: `wrong-${attempt}` }, headers: headers(ip) });
     expect(response.status()).toBe(403);
   }
   const limited = await request.post("/api/admin/access", { data: ADMIN, headers: headers(ip) });

@@ -177,7 +177,13 @@ body:has(.admin-app, .admin-access) .site-header-stack, body:has(.admin-app, .ad
 .admin-topbar .eyebrow { margin-bottom: .2rem; }
 .admin-top-actions { display: flex; align-items: center; gap: .7rem; }
 .status-dot { color: var(--success); font-size: .78rem; font-weight: 700; }
-.admin-content { display: grid; gap: 1rem; }
+.admin-content { display: grid; gap: 1rem; min-width: 0; }
+/* Operational panels show identifiers, keys and error messages that have no break
+   opportunity; on narrow screens they must wrap inside the panel instead of widening it. */
+.admin-content .admin-panel { max-width: 100%; overflow-wrap: anywhere; }
+.admin-content .summary-row { flex-wrap: wrap; min-width: 0; }
+.admin-content .summary-row > * { min-width: 0; }
+.admin-content table { display: block; max-width: 100%; overflow-x: auto; }
 .admin-panel { min-width: 0; padding: 1rem; border: 1px solid #d7dcd7; border-radius: 12px; background: white; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
 .panel-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
 .panel-heading h2 { margin: 0; font-size: 1.08rem; letter-spacing: -.02em; }
