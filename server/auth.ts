@@ -5,7 +5,7 @@ import { DomainError, assertDomain, emailAddress } from "./domain";
 import { batch, first, run } from "./sql";
 import { enqueue } from "./outbox";
 import { processOutboxFor } from "./integration-jobs";
-import { enforceIdentityRateLimit, enforceRateLimit } from "./rate-limit";
+import { enforceIdentityRateLimit, enforceRateLimit, resetIdentityRateLimit } from "./rate-limit";
 import { emailConfigured } from "./messaging";
 import { DEMO_CUSTOMER_ID, DEMO_READ_ONLY_MESSAGE } from "./demo-identity";
 
@@ -150,7 +150,8 @@ export async function loginAdmin(request: Request, input: Record<string, unknown
   await enforceRateLimit(request, "admin-login", 10, 15 * 60);
   const identity = input.email ?? input.username;
   const username = typeof identity === "string" ? identity.trim().toLowerCase() : "";
-  // The IP limit alone can be dodged by rotating addresses; cap attempts per account too.
+  // The IP limit alone can be dodged by rotating addresses; cap consecutive failed
+  // attempts per account too. A successful login clears the account counter below.
   if (username) await enforceIdentityRateLimit(username, "admin-login-account", 20, 15 * 60);
   const password = typeof input.password === "string" ? input.password : "";
   const [nameMatches, passwordMatches] = await Promise.all([
@@ -159,6 +160,7 @@ export async function loginAdmin(request: Request, input: Record<string, unknown
   const staff = !(nameMatches && passwordMatches) ? await first<Record<string, unknown>>("SELECT * FROM admin_users WHERE email = ? AND is_active = 1", username) : null;
   const staffValid = staff && verifyStaffPassword(password, String(staff.password_hash));
   assertDomain((nameMatches && passwordMatches) || staffValid, "ADMIN_FORBIDDEN", "Email ili lozinka nisu ispravni.", 403);
+  await resetIdentityRateLimit(username, "admin-login-account");
   const sessionToken = randomToken();
   const expiresAt = new Date(Date.now() + 8 * 60 * 60_000).toISOString();
   await batch([

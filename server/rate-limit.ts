@@ -1,7 +1,7 @@
 import { sha256 } from "./crypto";
 import { DomainError } from "./domain";
 import { env } from "./runtime";
-import { first } from "./sql";
+import { first, run } from "./sql";
 
 type RateLimitRow = Record<string, unknown> & { request_count: number; expires_at: string };
 
@@ -32,6 +32,11 @@ export async function enforceRateLimit(request: Request, scope: string, limit: n
 // Recipient limits must survive IP changes and distributed requests.
 export async function enforceIdentityRateLimit(identity: string, scope: string, limit: number, windowSeconds: number) {
   return enforceKeyLimit(identity.trim().toLowerCase(), scope, limit, windowSeconds);
+}
+
+/** Clears a counter after a legitimate success so only consecutive failures accumulate. */
+export async function resetIdentityRateLimit(identity: string, scope: string) {
+  await run("DELETE FROM rate_limits WHERE key_hash = ? AND scope = ?", await sha256(`${scope}:${identity.trim().toLowerCase()}`), scope);
 }
 
 async function enforceKeyLimit(identity: string, scope: string, limit: number, windowSeconds: number) {
