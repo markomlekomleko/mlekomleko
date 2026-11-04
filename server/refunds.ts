@@ -4,16 +4,21 @@ import { mutationGuard } from './mutation-guard';
 import { audit } from './outbox';
 import { env } from './runtime';
 import { releaseInventory } from './inventory';
+import { fiscalRefundRemainder, fiscommSelected, issueFiscommRefund } from './fiscomm';
 export async function refundPreview(orderId:string,customerId?:string){
  const order=await first<Row>('SELECT * FROM orders WHERE id=?',orderId);
  assertDomain(order && (!customerId || order.customer_id===customerId),'ORDER_NOT_FOUND','Porudžbina nije pronađena.',404);
  assertDomain(order.payment_status==='paid','REFUND_PAYMENT_REQUIRED','Povraćaj je dostupan samo za naplaćenu porudžbinu.',409);
  const lines=await all<Row>(`SELECT oi.*,pl.id AS line_id,pl.required_deliveries,pl.cancelled_quantity,pl.imported_delivered_quantity,(SELECT COALESCE(SUM(CASE WHEN dor.status='delivered' THEN COALESCE(di.delivered_quantity,di.quantity) ELSE di.quantity END),0) FROM delivery_items di JOIN delivery_orders dor ON dor.id=di.delivery_order_id WHERE (di.package_line_id=pl.id OR di.order_item_id=oi.id) AND dor.status IN ('locked','delivered')) AS consumed FROM order_items oi LEFT JOIN package_lines pl ON pl.order_item_id=oi.id WHERE oi.order_id=? ORDER BY oi.id`,orderId);
  const available=lines.map(line=>{const total=Number(line.quantity)*Number(line.required_deliveries??1);const remaining=line.line_id?Math.max(0,total-Number(line.consumed)-Number(line.cancelled_quantity)-Number(line.imported_delivered_quantity)):order.fulfillment_status==='planned'?Math.max(0,total-Number(line.consumed)):0;return {lineId:line.line_id??line.id,productName:line.product_name,total,remaining,lineTotal:Number(line.line_total_minor),packageLine:Boolean(line.line_id)};});
- // Floor each refundable share. Never refund delivery fees or more than the paid net product amount.
+ // With Fiscomm the refund equals the fiscal remainder of the original document: the
+ // undelivered units at their documented prices, including their share of the delivery fee.
+ const fiscal=fiscommSelected()?await fiscalRefundRemainder(orderId):null;
+ if(fiscal)return {order,lines:available,amountMinor:fiscal.totalMinor,includesDelivery:true};
+ // Legacy path: floor each refundable share. Never refund delivery fees or more than the paid net product amount.
  const productNet=Math.max(0,Number(order.total_minor)-Number(order.delivery_fee_minor));
  const amountMinor=available.reduce((sum,line)=>sum+Number(BigInt(productNet)*BigInt(line.lineTotal)*BigInt(line.remaining)/(BigInt(Math.max(1,Number(order.subtotal_minor)))*BigInt(line.total))),0);
- return {order,lines:available,amountMinor};
+ return {order,lines:available,amountMinor,includesDelivery:false};
 }
 export async function requestRefund(input:Row,customerId?:string){
  const orderId=requiredString(input.orderId,'orderId',100),key=requiredString(input.idempotencyKey,'idempotencyKey',200);
@@ -34,9 +39,21 @@ export async function reviewRefund(input:Row){
  const statements: {sql:string;bindings?:SqlValue[]}[]=[guard.check];
  let paymentReference:string|null=null,fiscalReference:string|null=null;
  if(action==='execute'){
-   assertDomain(env.APP_ENV==='local' && (env as Record<string,string|undefined>).PAYMENT_MODE==='mock','REFUND_PROVIDER_NOT_CONNECTED','Povraćaj je odobren. Izvršenje čeka povezivanje banke i fiskalne korekcije.',503);
-   paymentReference=`MOCK-REFUND-${id}`;fiscalReference=`MOCK-FISCAL-REFUND-${id}`;
    const preview=await refundPreview(String(before.order_id));assertDomain(preview.amountMinor===Number(before.amount_minor),'REFUND_CHANGED','Isporuke su promenjene. Ponovo proverite zahtev.',409);
+   const mockBank=env.APP_ENV==='local' && (env as Record<string,string|undefined>).PAYMENT_MODE==='mock';
+   if(fiscommSelected()){
+     // Cash is returned by hand and recorded here; a card refund still needs the bank adapter.
+     const card=preview.order.payment_method==='card';
+     assertDomain(!card || mockBank,'REFUND_PROVIDER_NOT_CONNECTED','Povraćaj je odobren. Izvršenje za karticu čeka povezivanje banke.',503);
+     // The fiscal document goes first: its journal makes a repeat a replay, so a failure after
+     // this point can never produce a second document, and no money moves without one.
+     const fiscal=await issueFiscommRefund(String(before.order_id));
+     assertDomain(fiscal.amountMinor===Number(before.amount_minor),'REFUND_CHANGED','Fiskalni ostatak se razlikuje od odobrenog iznosa. Ponovo proverite zahtev.',409);
+     fiscalReference=fiscal.externalId;paymentReference=card?`MOCK-REFUND-${id}`:`manual-refund:${id}`;
+   } else {
+     assertDomain(mockBank,'REFUND_PROVIDER_NOT_CONNECTED','Povraćaj je odobren. Izvršenje čeka povezivanje banke i fiskalne korekcije.',503);
+     paymentReference=`MOCK-REFUND-${id}`;fiscalReference=`MOCK-FISCAL-REFUND-${id}`;
+   }
    for(const line of preview.lines)if(line.packageLine&&line.remaining)statements.push({sql:'UPDATE package_lines SET cancelled_quantity=cancelled_quantity+? WHERE id=?',bindings:[line.remaining,String(line.lineId)]});
    statements.push(...releaseInventory(String(before.order_id)),{sql:"UPDATE orders SET fulfillment_status='cancelled', payment_status=CASE WHEN total_minor=? THEN 'refunded' ELSE payment_status END,updated_at=? WHERE id=?",bindings:[Number(before.amount_minor),new Date().toISOString(),String(before.order_id)]},{sql:"UPDATE subscription_packages SET status='completed',completed_at=? WHERE order_id=?",bindings:[new Date().toISOString(),String(before.order_id)]},{sql:"UPDATE subscriptions SET renewal_enabled=0,status='cancelled',version=version+1 WHERE id=(SELECT subscription_id FROM orders WHERE id=?)",bindings:[String(before.order_id)]});
  }

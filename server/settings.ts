@@ -2,7 +2,7 @@ import type { ServiceRegion, DeliverySlot } from "./service-policy";
 import { assertDomain } from "./domain";
 import { all } from "./sql";
 import { deliveryCityForPostalCode, normalizeDeliveryCity } from "../app/lib/delivery-area";
-import { addLocalDays, cutoffForDelivery, nextWeekday } from "./time";
+import { addLocalDays, cutoffForDelivery, localDateAt, nextWeekday } from "./time";
 
 export interface BusinessSettings {
   indjijaEnabled: boolean;
@@ -118,9 +118,12 @@ export function deliveryWeekdaysForCity(settings: BusinessSettings, city = "") {
 
 export async function getNextDeliveryWindow(now = new Date(), city = "") {
   const settings = await getBusinessSettings();
+  // A route locked ahead of its formal cutoff (admin force-lock, a temporary cutoff change)
+  // can no longer accept orders; offering it only produces DELIVERY_LOCKED at checkout.
+  const closed = new Set((await all<{ delivery_date: string } & Record<string, unknown>>("SELECT delivery_date FROM deliveries WHERE status != 'open' AND delivery_date >= ?", localDateAt(now))).map((row) => row.delivery_date));
   const candidates = deliveryWeekdaysForCity(settings, city).map((weekday) => {
     let date = nextWeekday(now, weekday);
-    while (settings.holidays.includes(date) || now.getTime() >= Date.parse(cutoffForDelivery(date, settings.cutoffHours, settings.deliveryLocalTime))) date = addLocalDays(date, 7);
+    while (settings.holidays.includes(date) || closed.has(date) || now.getTime() >= Date.parse(cutoffForDelivery(date, settings.cutoffHours, settings.deliveryLocalTime))) date = addLocalDays(date, 7);
     return date;
   }).sort();
   assertDomain(candidates.length, "DELIVERY_UNAVAILABLE", "Trenutno nema dostupnih dana dostave za izabrani grad.", 422);

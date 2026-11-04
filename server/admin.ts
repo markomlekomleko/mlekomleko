@@ -13,7 +13,7 @@ import { generateDelivery, lockOverdueDeliveries } from "./deliveries";
 import { cutoffForDelivery } from "./time";
 import { assertDeliveryEditable } from "./delivery-cutoff";
 import { mutationGuard } from "./mutation-guard";
-import { fiscommSelected } from "./fiscomm";
+import { fiscommMode, fiscommSelected } from "./fiscomm";
 import { activatePaidPackage } from "./packages";
 import { actorContext } from "./staff";
 
@@ -177,6 +177,14 @@ export async function updateOrder(input: Record<string, unknown>, actor: { type:
   if (fiscommSelected()) {
     assertDomain(fulfillmentStatus !== "delivered" || before.fulfillment_status === "delivered", "DELIVERY_CONFIRMATION_REQUIRED", "Isporuku potvrdite u odeljku Dostave da bi račun sadržao stvarno uručene količine.", 409);
     assertDomain(before.payment_status !== "paid" || paymentStatus === "paid", "FISCAL_PAYMENT_IMMUTABLE", "Plaćena porudžbina zahteva zaseban postupak povraćaja sa fiskalnim dokumentima.", 409);
+  }
+  if (fulfillmentStatus === "cancelled" && before.fulfillment_status !== "cancelled" && before.payment_status === "paid") {
+    // Cancelling a paid order must return the money and close its fiscal document.
+    // Only the refund flow (request → approve → execute) does both atomically;
+    // training documents carry no fiscal obligation and stay cancellable.
+    const fiscal = await first<Record<string, unknown>>("SELECT provider FROM fiscal_receipts WHERE order_id = ? AND status = 'issued' AND kind IN ('advance','normal') AND provider != 'fiscomm-training' LIMIT 1", id);
+    const training = fiscommSelected() && fiscommMode() === "training";
+    assertDomain(!fiscal && (!fiscommSelected() || training), "FISCAL_REFUND_REQUIRED", "Plaćena porudžbina se otkazuje kroz povraćaj (Podešavanja → Povraćaji), da bi novac bio vraćen i izdat fiskalni dokument refundacije.", 409);
   }
   const customerNote = input.customerNote === undefined
     ? (typeof before.customer_note === "string" ? before.customer_note : null)

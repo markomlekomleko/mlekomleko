@@ -146,6 +146,12 @@
 .scene-intro h1 {
   margin-bottom: 0.75rem;
   color: var(--ink);
+  /* WebKit splits words ("poči / nje") when `text-wrap: balance` meets the global
+     `overflow-wrap: break-word`. The headline has only short words, so keep them whole. */
+  overflow-wrap: normal;
+  word-break: keep-all;
+  -webkit-hyphens: manual;
+  hyphens: manual;
 }
 
 .scene-lead {

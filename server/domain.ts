@@ -62,7 +62,9 @@ export function enumValue<T extends string>(value: unknown, field: string, value
 }
 
 export function rejectCardData(value: unknown): void {
-  const forbidden = /^(card(number)?|pan|cvc|cvv|expiry|expiration|cardholder)$/i;
+  // Covers the common spellings of PAN, CVC/CVV and expiry fields (card_number, cardNo,
+  // cc_number, securityCode, card_cvv, exp_month …), not only the canonical names.
+  const forbidden = /^(card([-_ ]?(number|num|no|cvv|cvc|holder|expiry|expiration))?|cc[-_ ]?(number|num|no)?|pan|cvc2?|cvv2?|expiry|expiration|exp[-_ ]?(month|year|date)|security[-_ ]?code|cardholder)$/i;
   const walk = (current: unknown): void => {
     if (!current || typeof current !== "object") return;
     for (const [key, child] of Object.entries(current as Record<string, unknown>)) {
