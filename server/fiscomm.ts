@@ -146,7 +146,89 @@ export async function issueFiscomm(orderId: string, deliveryId: string | boolean
     }) as Record<string, unknown>;
   }
   let referenceId = advance ? String(advance.id) : null;
-  if (final && !training) referenceId = await saveIssued(orderId, `${key}:advance_refund`, "refund", body.refundReceipt as Record<string, unknown>, referenceId);
+  // The nested refund receipt carries no mode of its own; label it like the final document.
+  if (final && !training) referenceId = await saveIssued(orderId, `${key}:advance_refund`, "refund", {...(body.refundReceipt as Record<string, unknown>), fiscommMode: body.fiscommMode}, referenceId);
   await saveIssued(orderId, key, kind, body, referenceId);
   return {externalId:String(body.invoiceNumber), status:"issued"};
+}
+
+/** Units of a paid order that no delivery has consumed yet, priced exactly as the original
+ * document priced them (per-unit split of discounts and the delivery fee). Null until the
+ * original document froze the snapshot. */
+export async function fiscalRefundRemainder(orderId: string): Promise<{items: Array<Record<string, unknown>>; totalMinor: number} | null> {
+  const saved = await first<Record<string, unknown>>("SELECT snapshot_json FROM fiscal_order_snapshots WHERE order_id = ?", orderId);
+  if (!saved) return null;
+  const snapshot = JSON.parse(String(saved.snapshot_json));
+  const used = new Map((await all<Record<string, unknown>>("SELECT order_item_id, COALESCE(SUM(quantity), 0) AS used FROM fiscal_delivery_allocations WHERE order_item_id IN (SELECT id FROM order_items WHERE order_id = ?) GROUP BY order_item_id", orderId)).map(row => [String(row.order_item_id), Number(row.used)]));
+  const remaining = (snapshot.lines as Array<{orderItemId: string; quantity: number}>)
+    .map(line => ({order_item_id: line.orderItemId, unit_offset: used.get(line.orderItemId) ?? 0, quantity: line.quantity - (used.get(line.orderItemId) ?? 0)}))
+    .filter(allocation => allocation.quantity > 0);
+  if (!remaining.length) return {items: [], totalMinor: 0};
+  return fiscalDeliveryItems(snapshot, remaining);
+}
+
+/** Refund document for the undelivered remainder of a paid order (Avans–Refundacija, or
+ * Promet–Refundacija when the original was a normal receipt). It references the original
+ * document and is issued at most once per order; the dispatch journal makes a repeat a replay. */
+export async function issueFiscommRefund(orderId: string): Promise<{externalId: string; status: "issued" | "skipped"; amountMinor: number}> {
+  const order = await first<Record<string, unknown>>("SELECT * FROM orders WHERE id = ?", orderId);
+  assertDomain(order, "ORDER_NOT_FOUND", "Porudžbina nije pronađena.", 404);
+  assertDomain(order.payment_status === "paid", "PAYMENT_NOT_CAPTURED", "Refundacija je moguća samo za naplaćenu porudžbinu.", 409);
+  const original = await first<Record<string, unknown>>("SELECT * FROM fiscal_receipts WHERE order_id = ? AND status = 'issued' AND kind IN ('advance','normal') ORDER BY issued_at LIMIT 1", orderId);
+  assertDomain(original, "FISCAL_ORIGINAL_MISSING", "Fiskalni dokument uplate još nije izdat; refundacija čeka njegovo izdavanje.", 409);
+  assertDomain(String(original.provider).startsWith("fiscomm"), "FISCAL_LEGACY_REVIEW_REQUIRED", "Originalni dokument nije izdat kroz Fiscomm; refundacija zahteva usaglašavanje.", 409);
+  const key = `receipt:${orderId}:refund`;
+  const remainder = await fiscalRefundRemainder(orderId);
+  assertDomain(remainder, "FISCAL_ORIGINAL_MISSING", "Nema sačuvanog fiskalnog snimka porudžbine.", 409);
+  const {items, totalMinor} = remainder;
+  assertDomain(totalMinor > 0, "NOTHING_TO_REFUND", "Nema neisporučene količine za fiskalnu refundaciju.", 409);
+  // Training documents represent no fiscal transaction, so there is nothing to refund fiscally.
+  if (original.provider === "fiscomm-training") return {externalId: `training-skip:${orderId}`, status: "skipped", amountMinor: totalMinor};
+  const mode = fiscommMode();
+  const mock = config().APP_ENV === "local" && (mode === "mock" || (!fiscommSelected() && (config().BADI_MODE ?? "mock") === "mock"));
+  assertDomain((original.provider === "fiscomm-mock") === mock, "FISCAL_MODE_MISMATCH", "Porudžbina već ima dokument iz drugog režima. Za test koristite novu porudžbinu.", 409);
+  await run("INSERT INTO fiscal_receipts (id, order_id, operation_key, kind, status, provider) VALUES (?, ?, ?, 'refund', 'pending', 'fiscomm') ON CONFLICT(operation_key) DO NOTHING", key, orderId, key);
+  const current = await first<Record<string, unknown>>("SELECT * FROM fiscal_receipts WHERE operation_key = ?", key);
+  if (current?.status === "issued") return {externalId: String(current.invoice_number), status: "issued", amountMinor: totalMinor};
+  let body: Record<string, unknown>;
+  const previous = await first<Record<string, unknown>>("SELECT * FROM fiscal_dispatches WHERE operation_key = ?", key);
+  if (previous) {
+    assertDomain(previous.status === "issued" && previous.response_json, dispatchInProgress(previous) ? "FISCAL_ORDER_BUSY" : "FISCAL_RECONCILIATION_REQUIRED", "Ishod slanja se prvo mora proveriti u Fiscomm servisu; novi dokument nije poslat.", 503);
+    body = JSON.parse(String(previous.response_json));
+  } else {
+    assertDomain(mock || (fiscommSelected() && mode === "live"), "FISCAL_NOT_CONFIGURED", "Fiscomm izdavanje čeka aktivaciju i potvrđene poreske oznake.", 503);
+    const unresolved = await first<Record<string, unknown>>("SELECT fd.* FROM fiscal_dispatches fd JOIN fiscal_receipts fr ON fr.operation_key=fd.operation_key WHERE fr.order_id=? AND fd.operation_key != ? AND fd.status != 'issued'", orderId, key);
+    assertDomain(!unresolved, dispatchInProgress(unresolved) ? "FISCAL_ORDER_BUSY" : "FISCAL_RECONCILIATION_REQUIRED", "Prethodni fiskalni zahtev ove porudžbine zahteva proveru pre novog izdavanja.", 503);
+    const billing = JSON.parse(String(order.billing_json ?? "{}"));
+    const request: Record<string, unknown> = {
+      orderNumber: `${order.order_number}-REFUND`,
+      items, payments: [{type: order.payment_method === "card" ? "card" : "cash", amount: totalMinor / 100}],
+      referentDocumentNumber: original.invoice_number, referentDocumentDt: original.pfr_time,
+      metaFields: {order_id: orderId, referent_operation_key: original.operation_key},
+      settings: {returnIfOrderNumberExists: true, ...(billing.taxId ? {} : {skipBuyerIdValidation: true})},
+      ...(billing.taxId ? {buyerId: `10:${billing.taxId}`} : {}),
+    };
+    body = await dispatchFiscalOnce({operationKey: key, requestJson: JSON.stringify(request), url: `${host}/receipt/${original.kind}/refund`,
+      headers: {"content-type": "application/json", Authorization: `Bearer ${config().FISCOMM_API_KEY}`},
+      ...(mock ? {fetcher: async () => Response.json({receipt: {invoiceNumber: `MOCK-${key}`, sdcDateTime: new Date().toISOString(), totalAmount: totalMinor / 100}})} : {}),
+      normalizeResponse(value: Record<string, unknown>) {
+        const receipt = value.receipt as Record<string, unknown> | undefined;
+        if (!receipt?.sdcDateTime || Math.round(Number(receipt.totalAmount) * 100) !== totalMinor) return {};
+        return {...value, ...receipt, fiscommMode: mock ? "mock" : "live"};
+      },
+      journal: {
+        async claim(operationKey: string, requestJson: string) { const result = await run("INSERT INTO fiscal_dispatches (operation_key, request_json, status, updated_at) VALUES (?, ?, 'sending', ?) ON CONFLICT(operation_key) DO NOTHING", operationKey, requestJson, new Date().toISOString()); return Number(result.meta?.changes ?? 0) === 1; },
+        async read(operationKey: string) { const row = await first<Record<string, unknown>>("SELECT * FROM fiscal_dispatches WHERE operation_key = ?", operationKey); return row ? {status: row.status, responseJson: row.response_json} : null; },
+        async finish(operationKey: string, status: string, responseJson: string | null) { await run("UPDATE fiscal_dispatches SET status = ?, response_json = ?, updated_at = ? WHERE operation_key = ?", status, responseJson, new Date().toISOString(), operationKey); },
+      },
+    }).catch(async (error: unknown) => {
+      if (error instanceof Error && "code" in error && error.code === "FISCAL_RECONCILIATION_REQUIRED") {
+        const active = await first<Record<string, unknown>>("SELECT * FROM fiscal_dispatches WHERE operation_key=?", key);
+        assertDomain(!dispatchInProgress(active), "FISCAL_ORDER_BUSY", "Fiskalni zahtev je u obradi. Provera će biti ponovljena bez duplog izdavanja.", 503);
+      }
+      throw error;
+    }) as Record<string, unknown>;
+  }
+  await saveIssued(orderId, key, "refund", body, String(original.id));
+  return {externalId: String(body.invoiceNumber), status: "issued", amountMinor: totalMinor};
 }

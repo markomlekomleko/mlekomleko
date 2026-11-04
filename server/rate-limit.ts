@@ -1,14 +1,28 @@
 import { sha256 } from "./crypto";
 import { DomainError } from "./domain";
+import { env } from "./runtime";
 import { first } from "./sql";
 
 type RateLimitRow = Record<string, unknown> & { request_count: number; expires_at: string };
 
-function clientAddress(request: Request): string {
-  return request.headers.get("cf-connecting-ip")
-    ?? request.headers.get("x-real-ip")
-    ?? request.headers.get("x-forwarded-for")?.split(",", 1)[0]?.trim()
-    ?? "unknown";
+function firstForwarded(value: string | null): string | undefined {
+  const address = value?.split(",", 1)[0]?.trim();
+  return address || undefined;
+}
+
+/** The client address must come from a header the platform itself overwrites, never
+ * from one the client may send. Vercel sets x-real-ip and x-forwarded-for; Cloudflare
+ * sets cf-connecting-ip only when it fronts the deployment (TRUSTED_PROXY=cloudflare).
+ * Local development and isolated tests set the header from the test harness. */
+export function clientAddress(request: Request): string {
+  const headers = request.headers;
+  const runtime = env as Record<string, string | undefined>;
+  const proxy = runtime.TRUSTED_PROXY?.trim().toLowerCase();
+  if (proxy === "cloudflare") return headers.get("cf-connecting-ip")?.trim() || firstForwarded(headers.get("x-forwarded-for")) || "unknown";
+  if (process.env.VERCEL || proxy === "vercel" || runtime.APP_ENV === "production") {
+    return headers.get("x-real-ip")?.trim() || firstForwarded(headers.get("x-vercel-forwarded-for")) || firstForwarded(headers.get("x-forwarded-for")) || "unknown";
+  }
+  return headers.get("cf-connecting-ip")?.trim() || headers.get("x-real-ip")?.trim() || firstForwarded(headers.get("x-forwarded-for")) || "unknown";
 }
 
 export async function enforceRateLimit(request: Request, scope: string, limit: number, windowSeconds: number, discriminator = "") {

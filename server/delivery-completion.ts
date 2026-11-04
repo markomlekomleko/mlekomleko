@@ -28,6 +28,9 @@ export async function completeDeliveryOrder(input: Record<string, unknown>) {
     return { id, status, replay: true };
   }
   const partial = status === "delivered" && quantities.some(item => item.quantity < Number(items.find(row => row.id === item.id)!.quantity));
+  // Partial handover is supported for package lines and one-time orders alike (Q060): the
+  // remainder moves to the next open route without another charge. Only an item that is
+  // linked to nothing can't carry a remainder.
   assertDomain(!partial || items.every(item => item.package_line_id || item.order_item_id), "PARTIAL_REQUIRES_PACKAGE", "Za delimičnu jednokratnu dostavu evidentirajte zamenu ili povraćaj pre potvrde.", 409);
   assertDomain(before.status === "locked" && before.route_status === "locked", "DELIVERY_STATE_INVALID", "Najpre završite pripremu. Potvrđena dostava ne može ponovo da se menja.", 409);
   assertDomain(String(before.delivery_date) <= localDateAt(), "DELIVERY_IN_FUTURE", "Buduća dostava ne može biti označena kao izvršena.", 409);
