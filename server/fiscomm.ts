@@ -44,7 +44,7 @@ async function saveIssued(orderId: string, key: string, kind: string, body: Reco
   ]);
   return id;
 }
-export async function issueFiscomm(orderId: string, deliveryId: string | boolean = false): Promise<{externalId: string; status: "issued"}> {
+export async function issueFiscomm(orderId: string, deliveryId: string | boolean = false): Promise<{externalId: string; status: "issued" | "skipped"}> {
   assertDomain(deliveryId !== true, "FISCAL_LEGACY_REVIEW_REQUIRED", "Stari završni događaj zahteva usaglašavanje; računi se sada izdaju po isporuci.", 409);
   const final = typeof deliveryId === "string";
   const {kind, key} = await receiptOperation(orderId, deliveryId);
@@ -58,6 +58,12 @@ export async function issueFiscomm(orderId: string, deliveryId: string | boolean
   assertDomain(order.payment_status === "paid", "PAYMENT_NOT_CAPTURED", "Najpre evidentirajte uplatu.", 409);
   if (final && (await receiptOperation(orderId)).kind === "normal") return issueFiscomm(orderId);
   await run("INSERT INTO fiscal_receipts (id, order_id, operation_key, kind, status, provider) VALUES (?, ?, ?, ?, 'pending', 'fiscomm') ON CONFLICT(operation_key) DO NOTHING", key, orderId, key, kind);
+  if (Number(order.total_minor) === 0) {
+    // Nothing was charged (credit or a 100% promo covered everything): no fiscal transaction exists.
+    const now = new Date().toISOString();
+    await run("UPDATE fiscal_receipts SET status = 'skipped', provider_reference = ?, attempts = attempts + 1, updated_at = ?, last_error_code = NULL, last_error_message = NULL WHERE operation_key = ? AND status != 'issued'", `zero-amount:${orderId}`, now, key);
+    return {externalId: `zero-amount:${orderId}`, status: "skipped"};
+  }
   if (final) {
     const owned = await first<Record<string, unknown>>("SELECT a.delivery_order_id FROM fiscal_delivery_allocations a JOIN order_items oi ON oi.id=a.order_item_id WHERE a.delivery_order_id=? AND oi.order_id=?", deliveryId, orderId);
     assertDomain(owned, "FISCAL_ALLOCATION_MISSING", "Isporuka nema sačuvanu raspodelu kupljenih količina.", 409);

@@ -33,9 +33,13 @@ export async function saveStaff(input: Row) {
   const email = emailAddress(input.email ?? before?.email);
   const name = requiredString(input.fullName ?? before?.full_name,'fullName',160);
   const role = enumValue(input.role ?? before?.role,'role',['manager','driver','finance'] as const);
-  const active = input.isActive === false ? 0 : 1;
+  // A partial update keeps the saved activation state; only an explicit isActive changes it.
+  const active = input.isActive === undefined ? (before ? Number(before.is_active) : 1) : input.isActive === false ? 0 : 1;
+  assertDomain(input.isActive === undefined || typeof input.isActive === 'boolean','VALIDATION_ERROR','isActive mora biti true ili false.',422);
   const passwordHash = input.password ? hashStaffPassword(input.password) : before?.password_hash;
   assertDomain(passwordHash,'PASSWORD_REQUIRED','Unesite početnu lozinku.',422);
+  const taken = await first<Row>('SELECT id FROM admin_users WHERE email = ? AND id != ?',email,id);
+  assertDomain(!taken,'STAFF_EMAIL_TAKEN','Nalog sa ovom email adresom već postoji.',409);
   await batch([
     {sql:'INSERT INTO admin_users(id,email,full_name,password_hash,role,is_active) VALUES(?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET email=excluded.email,full_name=excluded.full_name,password_hash=excluded.password_hash,role=excluded.role,is_active=excluded.is_active,version=admin_users.version+1',bindings:[id,email,name,String(passwordHash),role,active]},
     {sql:'UPDATE admin_sessions SET revoked_at = ? WHERE admin_user_id = ?',bindings:[new Date().toISOString(),id]},
