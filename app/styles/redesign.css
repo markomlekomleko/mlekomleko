@@ -518,18 +518,39 @@ img.offer-stamp {
 }
 .site-footer--k .footer-wordmark::before { content: attr(data-wordmark); }
 
-/* The carousel is the card's picture at every width: stacked on top, never squeezed
-   into the old 10rem photo column. */
+/* Product card picture: the frame always has the photo's own 4:5 shape, so the photo
+   fills it edge to edge with the whole bottle in view — no letterboxing, no cropping,
+   no vertical scrolling. From 640px the card is horizontal: the picture sits top-left
+   beside the choices instead of stretching the card. */
+.carousel-track { overflow-y: hidden; }
+.configurator-card[data-kind] .carousel-slide { aspect-ratio: 4 / 5; }
+.configurator-card[data-kind] .carousel-slide img { object-fit: cover; object-position: center; }
+
 @media (min-width: 640px) {
-  .configurator.configurator-card[data-kind] { grid-template-columns: minmax(0, 1fr); }
+  .configurator.configurator-card[data-kind] {
+    grid-template-columns: minmax(240px, 42%) minmax(0, 1fr);
+    align-items: start;
+  }
+  .configurator-card[data-kind] .carousel {
+    overflow: hidden;
+    border-right: 2px solid var(--navy);
+    border-bottom: 2px solid var(--navy);
+    border-bottom-right-radius: 18px;
+  }
+  .configurator-card[data-kind] .carousel-caption { left: 10px; bottom: 34px; font-size: 0.7rem; padding: 6px 10px; }
+  .configurator-card[data-kind] .carousel-nav { width: 32px; height: 32px; margin-top: -16px; font-size: 1.2rem; }
+  .configurator-card[data-kind] .carousel-prev { left: 6px; }
+  .configurator-card[data-kind] .carousel-next { right: 6px; }
+  .configurator-card[data-kind] .carousel-story { padding: 20px; gap: 10px; }
+  .configurator-card[data-kind] .carousel-story h4 { font-size: 1.3rem; }
+  .configurator-card[data-kind] .carousel-story li { font-size: 0.9rem; padding-top: 6px; }
+  .configurator-card[data-kind] .carousel-story-mark { width: 64px; }
 }
-/* Wide screens: two smaller cards side by side with a shorter picture, so the shop
-   section no longer fills a whole screen with one photo. */
-@media (min-width: 640px) {
-  .configurator-card[data-kind] .carousel-slide { aspect-ratio: 4 / 3; }
-}
-@media (min-width: 900px) {
-  .offer-grid[data-count="2"] { max-width: 960px; margin-inline: auto; }
+
+@media (min-width: 1100px) {
+  .offer-grid[data-count="2"] { max-width: 1200px; margin-inline: auto; gap: 24px; }
+  .configurator.configurator-card[data-kind] { grid-template-columns: 280px minmax(0, 1fr); }
+  .configurator-card[data-kind] .configurator-title { font-size: 1.5rem; }
 }
 
 /* ------------------------------------------------------------------- header */
