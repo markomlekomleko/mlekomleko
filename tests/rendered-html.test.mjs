@@ -180,7 +180,8 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
     /<title>Домаће кравље и козје млеко на твојој адреси \| Млеко и Млеко<\/title>/,
   );
   assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Млеко и Млеко — домаће кравље и козје млеко<\/h1>/);
-  assert.match(html, /Са паше до флаше/);
+  assert.match(html, /Млеко које знаш/);
+  assert.match(html, /Скролуј и откриј/);
   assert.match(html, /Изабери своје млеко/);
   assert.match(html, /href="\/#izaberite-mleko"/);
   assert.match(html, /href="\/kako-funkcionise"/);

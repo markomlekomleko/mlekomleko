@@ -13,7 +13,7 @@ type HeroCopyProps = {
 
 /**
  * The hero's words. The footage carries the story, so the only visible element is the
- * one action (meeting 17 Nov 2026: all hero copy removed, "Sa paše do flaše" button).
+ * one action (meeting 17 Nov 2026: all hero copy removed, "Mleko koje znaš" button and the "Skroluj i otkrij" hint).
  * The h1 stays for assistive technology and search, visually hidden.
  */
 export function HeroCopy({ offerHref }: HeroCopyProps) {
@@ -29,6 +29,7 @@ export function HeroCopy({ offerHref }: HeroCopyProps) {
               {copy.primaryCta}
             </a>
           </div>
+          <p className="hero-scroll-hint">{copy.hint}<span aria-hidden="true">↓</span></p>
         </div>
       </div>
     </div>

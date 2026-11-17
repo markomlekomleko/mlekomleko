@@ -21,7 +21,7 @@ test("four languages render on the server with reciprocal SEO links and protecte
       expect(html).toContain('hrefLang="x-default"');
       expect(html).toContain('property="og:image"');
       // The hero carries one call to action; its text follows the language.
-      if (path === "/") expect(html).toContain(translate("Sa paše do flaše", locale));
+      if (path === "/") expect(html).toContain(translate("Mleko koje znaš", locale));
     }
   }
   const sitemap = await (await request.get("/sitemap.xml")).text();

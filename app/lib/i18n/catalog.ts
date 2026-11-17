@@ -3402,6 +3402,10 @@ export const catalog: Record<string, readonly [string, string]> = {
     "A man drinking a glass of milk in the morning",
     "Мужчина утром пьёт стакан молока"
   ],
+  "Mleko koje znaš": [
+    "Milk you know",
+    "Молоко, которое вы знаете"
+  ],
   "Tri koraka.": [
     "Three steps.",
     "Три шага."

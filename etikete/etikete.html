@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="sr-Cyrl">
+<head>
+<meta charset="utf-8">
+<title>Млеко и Млеко — етикете за флаше</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=block&subset=cyrillic" rel="stylesheet">
+<style>
+  /* Brand colours from the site (app/styles/tokens.css) plus the light brand blue.
+     Cow's milk = teal, goat's milk = light blue, so they part at a glance. */
+  :root {
+    --navy: #353a4a;
+    --teal: #357f94;
+    --teal-dark: #2a6779;
+    --cream: #f7f3e9;
+    --sky: #a9d0da; /* the light brand blue of the site footer headings */
+    --white: #ffffff;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #e9e6df; font-family: "Montserrat", Arial, sans-serif; color: var(--navy); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  /* ---- preview sheet ---- */
+  .sheet { display: grid; grid-template-columns: repeat(3, auto); justify-content: center; align-items: center; gap: 12mm 14mm; padding: 14mm; }
+  .sheet h2 { grid-column: 1 / -1; font-size: 5mm; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
+  figure { display: grid; justify-items: center; gap: 3mm; }
+  figcaption { font-size: 3mm; font-weight: 600; color: #6b6f7a; }
+
+  .label { position: relative; overflow: hidden; flex: none; }
+  .label[data-milk="cow"]  { --accent: var(--teal);   --on-accent: var(--white); --animal-on-accent: url(assets/cow-white.png); }
+  .label[data-milk="goat"] { --accent: var(--sky); --on-accent: var(--navy);  --animal-on-accent: url(assets/goat-navy.png); }
+
+  .fine { font-size: 1.95mm; font-weight: 600; line-height: 1.3; }
+  .date { display: flex; align-items: flex-end; gap: 1.2mm; font-size: 2.1mm; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+  .date i { flex: 1; min-width: 14mm; border-bottom: .3mm solid currentColor; height: 3.4mm; }
+  .vol { display: inline-grid; place-items: center; font-weight: 900; border-radius: 99mm; }
+
+  /* =========================================================== 1. round seal 70 mm */
+  .round { width: 70mm; height: 70mm; border-radius: 50%; background: var(--accent); color: var(--on-accent);
+           display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 6mm; }
+  .round::before { content: ""; position: absolute; inset: 2.6mm; border: .45mm dashed currentColor; border-radius: 50%; opacity: .55; }
+  .round .brand { font-size: 2.5mm; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }
+  .round .animal { width: 17mm; height: 12mm; background: var(--animal-on-accent) center / contain no-repeat; margin: 1.6mm 0 1mm; }
+  .round .kind { font-size: 9.6mm; font-weight: 900; line-height: .9; letter-spacing: -.02em; text-transform: uppercase; }
+  .round .milk { font-size: 5.4mm; font-weight: 900; line-height: 1; letter-spacing: .14em; text-transform: uppercase; }
+  .round .sub { margin-top: 1.4mm; font-size: 2.3mm; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .round .vol { margin-top: 1.8mm; padding: .6mm 3mm; background: var(--on-accent); color: var(--accent); font-size: 3.2mm; }
+  .round .fine { margin-top: 1.6mm; max-width: 44mm; font-size: 1.85mm; }
+
+  /* ===================================================== 2. landscape band 95 × 60 mm */
+  .band { width: 95mm; height: 60mm; border-radius: 3mm; background: var(--cream); display: grid; grid-template-rows: 12mm 1fr auto; }
+  .band .top { background: var(--accent) url(assets/pattern-goat-cow.png) center / 22mm repeat; }
+  .band .mid { display: grid; grid-template-columns: 25mm 1fr; gap: 4mm; align-items: center; padding: 3mm 5mm 2mm; }
+  .band .logo { width: 25mm; height: 25mm; background: url(assets/logo.png) center / contain no-repeat; }
+  .band .kind { font-size: 9mm; font-weight: 900; line-height: .92; letter-spacing: -.02em; text-transform: uppercase; }
+  .band .sub { margin-top: 1.2mm; font-size: 2.4mm; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .band .row { display: flex; align-items: center; gap: 2.5mm; margin-top: 2mm; }
+  .band .vol { padding: .7mm 3mm; background: var(--accent); color: var(--on-accent); font-size: 3.4mm; border: .35mm solid var(--navy); }
+  .band .date { flex: 1; }
+  .band .foot { background: var(--navy); color: var(--cream); padding: 1.8mm 5mm 2mm; display: grid; gap: .5mm; }
+  .band .foot .fine { font-size: 1.8mm; }
+  .band .foot b { color: var(--accent); }
+
+  /* ===================================================== 3. upright sticker 60 × 90 mm */
+  .tall { width: 60mm; height: 90mm; border-radius: 4mm; background: var(--cream); border: .8mm solid var(--navy);
+          display: grid; grid-template-rows: 36mm auto 1fr auto; }
+  .tall .hero { position: relative; background: var(--accent); border-bottom: .8mm solid var(--navy); }
+  .tall .hero .animal { position: absolute; inset: 5mm 6mm 3.5mm; background: var(--animal-on-accent) center bottom / contain no-repeat; }
+  .tall .hero .logo { position: absolute; top: 2.4mm; left: 2.4mm; width: 14mm; height: 14mm; border-radius: 50%; background: var(--cream) url(assets/logo.png) center / 12.4mm no-repeat; border: .35mm solid var(--navy); transform: rotate(-8deg); }
+  .tall .hero .vol { position: absolute; top: 3mm; right: 3mm; padding: .6mm 2.6mm; background: var(--cream); color: var(--navy); border: .35mm solid var(--navy); font-size: 3.2mm; }
+  .tall .name { padding: 3.6mm 4mm 0; }
+  .tall .kind { font-size: 8.4mm; font-weight: 900; line-height: .9; letter-spacing: -.02em; text-transform: uppercase; }
+  .tall .sub { margin-top: 1.3mm; font-size: 2.3mm; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--teal-dark); }
+  .tall .label[data-milk="goat"] .sub, .tall[data-milk="goat"] .sub { color: var(--navy); }
+  .tall .facts { padding: 2.6mm 4mm 0; display: grid; gap: .9mm; align-content: start; }
+  .tall .facts p { display: flex; gap: 1.4mm; }
+  .tall .facts p::before { content: ""; flex: none; width: 1.5mm; height: 1.5mm; margin-top: .55mm; border-radius: 50%; background: var(--accent); border: .25mm solid var(--navy); }
+  .tall .bottom { padding: 0 4mm 3.4mm; display: grid; gap: 1.6mm; }
+  .tall .bottom .fine { font-size: 1.7mm; opacity: .85; }
+
+  /* Export mode: only one label, pinned to the page corner (see export.mjs). */
+  body.solo { background: transparent; }
+  body.solo .sheet { display: block; padding: 0; }
+  body.solo .sheet > *:not(.solo-target) { display: none; }
+  body.solo figure.solo-target { display: block; }
+  body.solo figure.solo-target figcaption { display: none; }
+</style>
+</head>
+<body>
+<main class="sheet">
+  <h2>Кравље млеко</h2>
+
+  <figure data-file="kravlje-1-okrugla-70mm" data-w="70" data-h="70">
+    <div class="label round" data-milk="cow">
+      <p class="brand">Млеко и Млеко</p>
+      <div class="animal"></div>
+      <p class="kind">Кравље</p>
+      <p class="milk">млеко</p>
+      <p class="sub">сирово · пуномасно</p>
+      <p class="vol">1 Л</p>
+      <p class="fine">Пре употребе прокувати. Чувати на +2 до +6 °C.</p>
+    </div>
+    <figcaption>1 · Округла 70 mm</figcaption>
+  </figure>
+
+  <figure data-file="kravlje-2-vodoravna-95x60mm" data-w="95" data-h="60">
+    <div class="label band" data-milk="cow">
+      <div class="top"></div>
+      <div class="mid">
+        <div class="logo"></div>
+        <div>
+          <p class="kind">Кравље<br>млеко</p>
+          <p class="sub">сирово · пуномасно</p>
+          <div class="row"><span class="vol">1 Л</span><p class="date">Употребљиво до <i></i></p></div>
+        </div>
+      </div>
+      <div class="foot">
+        <p class="fine"><b>Сирово млеко</b> — пре употребе прокувати. Чувати на температури од +2 до +6 °C.</p>
+        <p class="fine">Флашира: Three &amp; More d.o.o., Мирка Милојковића 19, Београд · 060 502 23 23 · Повратна стаклена флаша</p>
+      </div>
+    </div>
+    <figcaption>2 · Водоравна 95 × 60 mm</figcaption>
+  </figure>
+
+  <figure data-file="kravlje-3-uspravna-60x90mm" data-w="60" data-h="90">
+    <div class="label tall" data-milk="cow">
+      <div class="hero"><div class="logo"></div><span class="vol">1 Л</span><div class="animal"></div></div>
+      <div class="name"><p class="kind">Кравље<br>млеко</p><p class="sub">сирово · пуномасно</p></div>
+      <div class="facts">
+        <p class="fine">Ништа додато, ништа одузето.</p>
+        <p class="fine">Пре употребе прокувати.</p>
+        <p class="fine">Чувати на +2 до +6 °C.</p>
+        <p class="fine">Повратна стаклена флаша.</p>
+      </div>
+      <div class="bottom">
+        <p class="date">Употребљиво до <i></i></p>
+        <p class="fine">Флашира: Three &amp; More d.o.o., Мирка Милојковића 19, Београд · 060 502 23 23</p>
+      </div>
+    </div>
+    <figcaption>3 · Усправна 60 × 90 mm</figcaption>
+  </figure>
+
+  <h2>Козје млеко</h2>
+
+  <figure data-file="kozje-1-okrugla-70mm" data-w="70" data-h="70">
+    <div class="label round" data-milk="goat">
+      <p class="brand">Млеко и Млеко</p>
+      <div class="animal"></div>
+      <p class="kind">Козје</p>
+      <p class="milk">млеко</p>
+      <p class="sub">сирово · пуномасно</p>
+      <p class="vol">1 Л</p>
+      <p class="fine">Пре употребе прокувати. Чувати на +2 до +6 °C.</p>
+    </div>
+    <figcaption>1 · Округла 70 mm</figcaption>
+  </figure>
+
+  <figure data-file="kozje-2-vodoravna-95x60mm" data-w="95" data-h="60">
+    <div class="label band" data-milk="goat">
+      <div class="top"></div>
+      <div class="mid">
+        <div class="logo"></div>
+        <div>
+          <p class="kind">Козје<br>млеко</p>
+          <p class="sub">сирово · пуномасно</p>
+          <div class="row"><span class="vol">1 Л</span><p class="date">Употребљиво до <i></i></p></div>
+        </div>
+      </div>
+      <div class="foot">
+        <p class="fine"><b>Сирово млеко</b> — пре употребе прокувати. Чувати на температури од +2 до +6 °C.</p>
+        <p class="fine">Флашира: Three &amp; More d.o.o., Мирка Милојковића 19, Београд · 060 502 23 23 · Повратна стаклена флаша</p>
+      </div>
+    </div>
+    <figcaption>2 · Водоравна 95 × 60 mm</figcaption>
+  </figure>
+
+  <figure data-file="kozje-3-uspravna-60x90mm" data-w="60" data-h="90">
+    <div class="label tall" data-milk="goat">
+      <div class="hero"><div class="logo"></div><span class="vol">1 Л</span><div class="animal"></div></div>
+      <div class="name"><p class="kind">Козје<br>млеко</p><p class="sub">сирово · пуномасно</p></div>
+      <div class="facts">
+        <p class="fine">Ништа додато, ништа одузето.</p>
+        <p class="fine">Пре употребе прокувати.</p>
+        <p class="fine">Чувати на +2 до +6 °C.</p>
+        <p class="fine">Повратна стаклена флаша.</p>
+      </div>
+      <div class="bottom">
+        <p class="date">Употребљиво до <i></i></p>
+        <p class="fine">Флашира: Three &amp; More d.o.o., Мирка Милојковића 19, Београд · 060 502 23 23</p>
+      </div>
+    </div>
+    <figcaption>3 · Усправна 60 × 90 mm</figcaption>
+  </figure>
+</main>
+</body>
+</html>

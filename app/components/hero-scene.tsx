@@ -319,6 +319,7 @@ export function HeroScene({ media, offerHref }: HeroSceneProps) {
                     {homeCopy.hero.primaryCta}
                   </a>
                 </div>
+                  <p className="hero-scroll-hint">{homeCopy.hero.hint}<span aria-hidden="true">↓</span></p>
               </div>
             </div>
           </div>
