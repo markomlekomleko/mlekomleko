@@ -860,7 +860,7 @@ button.button { border-radius: 999px; }
 
 /* Footer without the link columns: the legal stack opens the footer, and phone, email
    and social sit in one centred row right under the company details. */
-.site-footer--k .footer-k-legal { padding-top: clamp(40px, 6vw, 72px); border-top: 0; }
+.site-footer--k .footer-k-legal { padding-block: clamp(40px, 6vw, 72px) calc(clamp(32px, 5vw, 56px) + env(safe-area-inset-bottom)); border-top: 0; }
 .site-footer--k .footer-contact-row {
   display: flex;
   flex-wrap: wrap;

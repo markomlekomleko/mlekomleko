@@ -118,13 +118,13 @@ test("Escape closes the mobile menu and returns focus to Meni", async ({ page })
   await expect(menu).toBeFocused();
 });
 
-test("the footer wordmark fits its container without overflow", async ({ page }) => {
+test("the footer holds only the company, contact and policy links", async ({ page }) => {
   await acceptNecessary(page);
   await page.goto("/");
-  await page.evaluate(() => document.fonts.ready);
-  const wordmark = page.locator(".footer-wordmark");
-  await wordmark.scrollIntoViewIfNeeded();
-  const fit = await wordmark.evaluate((node) => ({ scroll: node.scrollWidth, client: node.clientWidth }));
-  expect(fit.scroll).toBeLessThanOrEqual(fit.client);
+  const footer = page.locator("footer.site-footer");
+  await expect(footer.locator(".footer-company")).toBeVisible();
+  await expect(footer.locator('a[href^="mailto:"]')).toHaveCount(1);
+  await expect(footer.locator('a[href^="tel:"]')).toHaveCount(1);
+  await expect(footer.locator(".footer-wordmark, .footer-links, .footer-pay")).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
