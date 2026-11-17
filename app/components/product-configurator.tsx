@@ -308,7 +308,7 @@ export function ProductConfigurator({
                 <strong>{formatMoney(perDelivery, locale)}</strong>
               </p>
               {shippingKnown ? <>
-                <p className="configurator-occurrences">{visits} {visits === 1 ? "dostava" : "dostave"} · {quantityLabel(quantity*visits,product.unit)} ukupno</p>
+                <p className="configurator-occurrences">{`${visits} ${visits === 1 ? "dostava" : "dostave"} · ${quantityLabel(quantity*visits,product.unit)} ukupno`}</p>
                 <p className="configurator-occurrences">Dostava: {formatMoney(shippingTotal,locale)}{visits>1 ? ` (${formatMoney(shippingTotal/visits,locale)} po poseti)` : ""}</p>
                 <p className="configurator-package-total"><span>Ukupno za ovaj izbor</span> <strong>{formatMoney(goodsTotal+shippingTotal,locale)}</strong></p>
                 {purchaseType === "subscription" ? <p className="configurator-occurrences">Ceo paket plaćaš gotovinom pri prvoj dostavi.</p> : null}

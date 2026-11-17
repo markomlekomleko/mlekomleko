@@ -3,7 +3,7 @@
 import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import { useCart } from "./cart-provider";
 import { CookieSettingsButton } from "./analytics-provider";
 import { LanguageSwitcher } from "./language-switcher";
@@ -42,7 +42,21 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   const externalAnnouncement = /^https:\/\//i.test(announcementUrl);
   // Only one overlay is ever active: the cart takes precedence over the menu.
   const menuVisible = menuOpen && !drawerOpen;
-  const closeMenu = () => setMenuOpen(false);
+  // Closes the menu; for a link to a section of the page already open (the milk picker on
+  // the home page) it also scrolls there itself, because the router does nothing when
+  // the URL already carries that same hash.
+  const closeMenu = (event?: ReactMouseEvent<HTMLAnchorElement>) => {
+    setMenuOpen(false);
+    const link = event?.currentTarget;
+    if (!link || !link.hash) return;
+    const url = new URL(link.href);
+    if (url.pathname.replace(/\/$/, "") !== window.location.pathname.replace(/\/$/, "")) return;
+    const target = document.getElementById(decodeURIComponent(url.hash.slice(1)));
+    if (!target) return;
+    event.preventDefault();
+    history.replaceState(null, "", url.pathname + url.search + url.hash);
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -73,7 +87,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
             <Link onClick={closeMenu} href="/farme">Poreklo tvog mleka</Link>
             <Link onClick={closeMenu} href="/gde-kupiti">Mlekomati</Link>
             <Link onClick={closeMenu} className="nav-support" href="/faq">Česta pitanja</Link>
-            <Link onClick={closeMenu} className="nav-support" href="/kontakt">Kontakt</Link>
+            <Link onClick={closeMenu} href="/kontakt">Kontakt</Link>
             <Link onClick={closeMenu} className="mobile-account" href="/nalog">Moj nalog</Link>
             <p className="nav-contact">
               <a href={PHONE.href}>{PHONE.label}</a>
@@ -102,7 +116,12 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
           </Link>
           <div className="header-actions">
             <LanguageSwitcher />
-            <Link className="header-account" href="/nalog">Moj nalog</Link>
+            <Link className="header-account" href="/nalog" aria-label="Moj nalog" title="Moj nalog">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7" />
+              </svg>
+            </Link>
             <button className="cart-link" type="button" onClick={openDrawer} aria-label={ready && count > 0 ? `Napuni frižider, ${count} jedinica` : "Napuni frižider"}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
                 <path d="M3 3h2l2.4 12h11.2l2-8H6" />
@@ -195,7 +214,7 @@ export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string
         <div className="page-shell footer-wordmark-wrap">
           {/* Drawn from a pseudo-element: purely decorative low-contrast type that contrast
               checkers would otherwise read as text. */}
-          <p className="footer-wordmark" aria-hidden="true" data-wordmark={locale === "sr-cyrl" ? toCyrillic(shellCopy.footer.wordmark) : shellCopy.footer.wordmark} />
+          <p className="footer-wordmark" aria-hidden="true" data-wordmark={translate(shellCopy.footer.wordmark, locale)} />
         </div>
       </div>
     </footer>

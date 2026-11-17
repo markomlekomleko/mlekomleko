@@ -764,7 +764,7 @@ export const catalog: Record<string, readonly [string, string]> = {
   ],
   "Izaberi svoje mleko": [
     "Choose your milk",
-    "Выберите своё молоко"
+    "Выбери своё молоко"
   ],
   "Skroluj i otkrij": [
     "Scroll to discover",
@@ -1460,7 +1460,7 @@ export const catalog: Record<string, readonly [string, string]> = {
   ],
   "Izaberi mleko i litre": [
     "Choose milk and litres",
-    "Выберите молоко и литры"
+    "Выбери молоко и литры"
   ],
   "Odaberi kravlje ili kozje mleko, zatim 2, 4 ili 8 litara po dostavi. Količinu možeš dodatno da podesiš dugmadima − i +.": [
     "Choose cow's or goat's milk, then 2, 4 or 8 litres per delivery. You can adjust the quantity further with the − and + buttons.",
@@ -1468,7 +1468,7 @@ export const catalog: Record<string, readonly [string, string]> = {
   ],
   "Izaberi ritam": [
     "Choose your rhythm",
-    "Выберите свой ритм"
+    "Выбери свой ритм"
   ],
   "Redovna dostava može biti svake nedelje ili svake dve nedelje. Beogradske rute su utorkom i petkom, a novosadska petkom.": [
     "Recurring deliveries can be weekly or fortnightly. Belgrade routes run on Tuesdays and Fridays; the Novi Sad route runs on Fridays.",
@@ -3188,7 +3188,7 @@ export const catalog: Record<string, readonly [string, string]> = {
   ],
   "Izabereš mleko i ritam.": [
     "Choose your milk and rhythm.",
-    "Выберите молоко и ритм."
+    "Выбери молоко и ритм."
   ],
   "Kravlje ili kozje, jednom ili redovno. Kako tebi paše.": [
     "Cow's or goat's, once or regularly. Whatever suits you.",
@@ -4189,5 +4189,85 @@ export const catalog: Record<string, readonly [string, string]> = {
   "Video snimci": [
     "Videos",
     "Видео"
+  ],
+  "Pravo mleko više nije daleko — lokacije mlekomata": [
+    "Real milk is never far — milk machine locations",
+    "Настоящее молоко теперь рядом — адреса молокоматов"
+  ],
+  "Jutro na farmi": [
+    "Morning on the farm",
+    "Утро на ферме"
+  ],
+  "Kajmak od dva litra pravog mleka": [
+    "Kajmak from two litres of real milk",
+    "Каймак из двух литров настоящего молока"
+  ],
+  "Jedna flaša, dve priče": [
+    "One bottle, two stories",
+    "Одна бутылка, две истории"
+  ],
+  "Poseti mlekomat": [
+    "Visit a milk machine",
+    "Загляни в молокомат"
+  ],
+  "Mirka Milojkovića 19, 11000 Beograd": [
+    "Mirka Milojkovića 19, 11000 Belgrade",
+    "ул. Мирка Милойковича, 19, 11000 Белград"
+  ],
+  "Beo šoping centar": [
+    "Beo Shopping Center",
+    "ТЦ «Бео шопинг центар»"
+  ],
+  "Lidl Bežanijska kosa": [
+    "Lidl Bežanijska Kosa",
+    "Lidl, Бежанийска-Коса"
+  ],
+  "Mega Roda Novi Beograd": [
+    "Mega Roda, New Belgrade",
+    "Mega Roda, Новый Белград"
+  ],
+  "Unesi beogradski poštanski broj. Aktuelna zona obuhvata podržane poštanske brojeve sa prefiksom 11.": [
+    "Enter a Belgrade postcode. The current zone covers supported postcodes starting with 11.",
+    "Введи белградский почтовый индекс. Текущая зона охватывает поддерживаемые индексы, начинающиеся с 11."
+  ],
+  "Unesi novosadski poštanski broj. Aktuelna zona obuhvata podržane poštanske brojeve sa prefiksom 21.": [
+    "Enter a Novi Sad postcode. The current zone covers supported postcodes starting with 21.",
+    "Введи почтовый индекс Нови-Сада. Текущая зона охватывает поддерживаемые индексы, начинающиеся с 21."
+  ],
+  "tvoj@email.rs": [
+    "you@email.com",
+    "ty@email.ru"
+  ],
+  "{0} · jednokratno": [
+    "{0} · one-time",
+    "{0} · разово"
+  ],
+  "{0} · svake nedelje": [
+    "{0} · every week",
+    "{0} · каждую неделю"
+  ],
+  "{0} · svake 2 nedelje": [
+    "{0} · every 2 weeks",
+    "{0} · раз в 2 недели"
+  ],
+  "{0} dostava · {1} ukupno": [
+    "{0} delivery · {1} in total",
+    "{0} доставка · всего {1}"
+  ],
+  "{0} dostave · {1} ukupno": [
+    "{0} deliveries · {1} in total",
+    "{0} доставки · всего {1}"
+  ],
+  "Mleko i Mleko": [
+    "Mleko i Mleko",
+    "Млеко и Млеко"
+  ],
+  "%s | Mleko i Mleko": [
+    "%s | Mleko i Mleko",
+    "%s | Млеко и Млеко"
+  ],
+  "{0} | Mleko i Mleko": [
+    "{0} | Mleko i Mleko",
+    "{0} | Млеко и Млеко"
   ],
 };

@@ -1,11 +1,11 @@
-import { getLocalize } from "@/app/lib/i18n/server";
+import { getLocalize, localizedMetadata } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "Stranica nije pronađena",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const metadata = await localizedMetadata({ title: "Stranica nije pronađena" });
+  return { ...metadata, robots: { index: false, follow: false } };
+}
 
 export default async function NotFound() {
   const localize = await getLocalize();

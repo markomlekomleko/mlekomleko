@@ -642,3 +642,21 @@ button.button { border-radius: 999px; }
   .site-footer--k .footer-policies > a,
   .site-footer--k .footer-policies > button { padding: 0; border-left: 0; }
 }
+
+/* Compact header (17 Nov 2026): five links incl. Kontakt, account as an icon. Links never
+   wrap; the actions cluster is icon-sized so long Russian/English labels still fit. */
+@media (min-width: 1181px) {
+  .main-nav { gap: clamp(14px, 1.4vw, 24px); font-size: clamp(0.75rem, 0.86vw, 0.875rem); }
+  .main-nav > a { white-space: nowrap; }
+  .header-actions { gap: 14px; }
+}
+.header-account {
+  display: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--ink);
+}
+.header-account:hover { background: var(--blush); }
+@media (min-width: 1181px) { .header-account { display: inline-grid; } }
