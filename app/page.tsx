@@ -32,12 +32,12 @@ export default async function HomePage() {
     <div className="home">
       <Hero media={heroMedia} offerHref="#izaberite-mleko" />
       <MarqueeBand />
-      {/* Order agreed on 17 Nov 2026: why this milk, steps, the shop, then questions. */}
+      {/* Order agreed on 17 Nov 2026: why this milk, steps, the shop, "Mleko uživo", and the questions last. */}
       <MilkSection />
       <StepsSection />
       <OfferSection products={products} delivery={delivery} />
-      <FaqSection />
       <SocialSection />
+      <FaqSection />
 
       <script
         type="application/ld+json"

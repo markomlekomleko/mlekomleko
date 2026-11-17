@@ -35,7 +35,7 @@ export default async function OriginPage() {
             <p className="lead">Kravlje i kozje mleko sa domaćih porodičnih farmi, u povratnim staklenim flašama — do tvojih vrata ili do mlekomata u tvom kraju.</p>
             <div className="button-row"><Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko</Link><a className="button secondary" href="/kako-funkcionise">Put tvog mleka</a></div>
           </div>
-          <img className="sub-hero-art" src="/images/ilustracije/pasnjak.webp" alt="Domaćica na pašnjaku sa kozom i kravom" width="1200" height="900" />
+          <img className="sub-hero-art" src="/images/ilustracije/pasnjak.webp" alt="Krava i koza zajedno na pašnjaku" width="1200" height="900" />
         </div>
       </header>
 

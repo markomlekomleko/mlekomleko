@@ -8,9 +8,9 @@ const copy = homeCopy.steps;
 
 // One illustration per step, in the order of the copy deck.
 const art = [
-  { src: "/images/ilustracije/pasnjak.webp", alt: "Domaćica na pašnjaku sa kozom i kravom" },
+  { src: "/images/ilustracije/pasnjak.webp", alt: "Krava i koza zajedno na pašnjaku" },
   { src: "/images/ilustracije/mlekadzija.webp", alt: "Mlekadžija utovara kante mleka u kombi" },
-  { src: "/images/ilustracije/povratne-flase.webp", alt: "Prazne flaše se vraćaju dostavljaču" },
+  { src: "/images/ilustracije/povratne-flase.webp", alt: "Prazne flaše se na vratima menjaju za pune" },
 ];
 
 /**

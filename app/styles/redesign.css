@@ -763,3 +763,11 @@ button.button { border-radius: 999px; }
   .milk-why .section-head h2 { font-size: min(var(--fs-h2), 7vw); hyphens: none; }
   .milk-why-line { display: block; white-space: nowrap; }
 }
+
+/* Origin page: "Sa paše do flaše." always holds one line, phone to desktop. The heading
+   is sized against its own column (container units), per language, since the English
+   and Russian lines run 17% and 23% longer than the Serbian one. */
+.origin-page .sub-hero .page-heading { container-type: inline-size; }
+.origin-page .sub-hero h1 { max-width: none; white-space: nowrap; font-size: min(5.2rem, 9.1cqi); }
+.origin-page .sub-hero h1:lang(en) { font-size: min(5.2rem, 7.8cqi); }
+.origin-page .sub-hero h1:lang(ru) { font-size: min(5.2rem, 7.4cqi); }

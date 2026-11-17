@@ -3854,17 +3854,17 @@ export const catalog: Record<string, readonly [string, string]> = {
     "A bottle of goat's milk and a glass on the table",
     "Бутылка козьего молока и стакан на столе"
   ],
-  "Domaćica na pašnjaku sa kozom i kravom": [
-    "A farmer at pasture with a goat and a cow",
-    "Хозяйка на пастбище с козой и коровой"
+  "Krava i koza zajedno na pašnjaku": [
+    "A cow and a goat together in the pasture",
+    "Корова и коза вместе на пастбище"
   ],
   "Mlekadžija utovara kante mleka u kombi": [
     "A milkman loading milk churns into a van",
     "Молочник грузит бидоны в фургон"
   ],
-  "Prazne flaše se vraćaju dostavljaču": [
-    "Empty bottles go back to the courier",
-    "Пустые бутылки возвращают курьеру"
+  "Prazne flaše se na vratima menjaju za pune": [
+    "Empty bottles swapped for full ones at the door",
+    "Пустые бутылки меняют на полные у двери"
   ],
   "Krava na pašnjaku i dete koje toči mleko iz Mleko i Mleko mlekomata": [
     "A cow at pasture and a child filling milk from a Mleko i Mleko milk machine",
@@ -3898,9 +3898,9 @@ export const catalog: Record<string, readonly [string, string]> = {
     "You choose the milk and the rhythm — we milk, bottle and deliver.",
     "Ты выбираешь молоко и ритм — мы доим, разливаем и привозим."
   ],
-  "Čovek ujutru pije čašu mleka": [
-    "A man drinking a glass of milk in the morning",
-    "Мужчина утром пьёт стакан молока"
+  "Porodica za doručkom, dečak pije čašu mleka": [
+    "A family at breakfast, a boy drinking a glass of milk",
+    "Семья за завтраком, мальчик пьёт стакан молока"
   ],
   "Od krave do tvoje čaše": [
     "From the cow to your glass",

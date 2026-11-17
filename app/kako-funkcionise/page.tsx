@@ -43,7 +43,7 @@ export default async function SubscriptionPage() {
             <h1>Tvoje mleko, svake nedelje.</h1>
             <p className="lead">Biraš mleko i ritam — mi muzemo, flaširamo i donosimo.</p>
           </div>
-          <img className="sub-hero-art" src="/images/ilustracije/jutarnja-casa.webp" alt="Čovek ujutru pije čašu mleka" width="1200" height="900" />
+          <img className="sub-hero-art" src="/images/ilustracije/jutarnja-casa.webp" alt="Porodica za doručkom, dečak pije čašu mleka" width="1200" height="900" />
         </div>
       </header>
 
