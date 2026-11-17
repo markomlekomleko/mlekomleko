@@ -232,22 +232,44 @@ img.offer-stamp {
   font-weight: 800;
   text-transform: uppercase;
 }
-/* "Napuni frižider" is the one action in the card: logo teal, so it never reads as
-   another navy choice chip above it. White on #357f94 passes AA for this bold text. */
+/* "Napuni frižider" is the one action in the card, so it gets the one warm colour on
+   the page: butter yellow with navy text (contrast ≈ 9:1), a thick navy outline, a
+   chunky offset shadow like the logo sticker, and an arrow that nudges on hover. */
 .configurator-card[data-kind] .configurator-actions .button {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: #fff;
-  box-shadow: 0 4px 0 var(--teal);
+  gap: 10px;
+  min-height: 60px;
+  border: 3px solid var(--navy);
+  background: #f6c945;
+  color: var(--navy);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  box-shadow: 0 5px 0 var(--navy);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.15s ease;
+}
+.configurator-card[data-kind] .configurator-actions .button::after {
+  content: "→";
+  content: "→" / "";
+  font-size: 1.25em;
+  line-height: 1;
+  transition: transform 0.15s ease;
 }
 .configurator-card[data-kind] .configurator-actions .button:not(:disabled):hover {
-  border-color: var(--teal);
-  background: var(--teal);
-  color: #fff;
+  border-color: var(--navy);
+  background: #ffd75e;
+  color: var(--navy);
+  transform: translateY(-2px);
+  box-shadow: 0 7px 0 var(--navy);
 }
+.configurator-card[data-kind] .configurator-actions .button:not(:disabled):hover::after { transform: translateX(4px); }
 .configurator-card[data-kind] .configurator-actions .button:not(:disabled):active {
-  box-shadow: none;
-  transform: translateY(4px);
+  transform: translateY(5px);
+  box-shadow: 0 0 0 var(--navy);
+}
+.configurator-card[data-kind] .configurator-actions .button:focus-visible { outline: 3px solid var(--brand); outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  .configurator-card[data-kind] .configurator-actions .button,
+  .configurator-card[data-kind] .configurator-actions .button::after { transition: none; }
 }
 
 /* ---------------------------------------------------------------- social videos */
