@@ -3426,6 +3426,10 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Also at the milk machine",
     "И в молокомате"
   ],
+  "Naše mleko je mleko.": [
+    "Our milk is just milk.",
+    "Наше молоко — это просто молоко."
+  ],
   "Tri koraka.": [
     "Three steps.",
     "Три шага."

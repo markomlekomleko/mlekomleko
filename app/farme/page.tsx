@@ -57,7 +57,7 @@ export default async function OriginPage() {
 
       <section className="content-band" aria-labelledby="sirovo-title">
         <div className="page-shell">
-          <div className="section-head"><p className="eyebrow">Sirovo naspram industrijskog</p><h2 id="sirovo-title">Isto se zove. Nije isto mleko.</h2><p className="lead">Mleko iz prodavnice prođe kroz fabriku pre nego što stigne do tebe. Naše ne.</p></div>
+          <div className="section-head"><p className="eyebrow">Sirovo naspram industrijskog</p><h2 id="sirovo-title">Naše mleko je mleko.</h2><p className="lead">Mleko iz prodavnice prođe kroz fabriku pre nego što stigne do tebe. Naše ne.</p></div>
           <div className="compare" role="table" aria-labelledby="sirovo-title">
             <div className="compare-row compare-head" role="row">
               <span role="columnheader"><span className="visually-hidden">Svojstvo</span></span>
