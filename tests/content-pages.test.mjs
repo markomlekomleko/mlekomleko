@@ -39,7 +39,7 @@ test('publish adds canonical, escaped content and sitemap; unpublish removes rou
  const current=(await created.json()).page;
  const publicResponse=await api('/informacije/'+data.slug,null,{admin:false,method:'GET'});
  assert.equal(publicResponse.status,200);
- const html=await publicResponse.text();assert.ok(html.includes('<h1>Sveže mleko</h1>'));assert.ok(html.includes('<h2>Podnaslov</h2>'));assert.ok(!html.includes('<script>window.evil=true</script>'));
+ const html=await publicResponse.text();assert.ok(html.includes('<h1>Свеже млеко</h1>'));assert.ok(html.includes('<h2>Поднаслов</h2>'));assert.ok(!html.includes('<script>window.evil=true</script>'));
  assert.ok((await (await api('/sitemap.xml',null,{admin:false,method:'GET'})).text()).includes('/informacije/'+data.slug));
  assert.equal((await save({...data,status:'draft',expectedVersion:current.version})).status,200);
  assert.equal((await api('/informacije/'+data.slug,null,{admin:false,method:'GET'})).status,404);

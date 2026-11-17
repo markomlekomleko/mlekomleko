@@ -253,7 +253,7 @@ export function AccountView() {
           <a href="#podesavanja-naloga">Podešavanja</a>
         </nav>
         <div className="account-sidebar-footer">
-          <a href="/prodavnica">← Nazad u prodavnicu</a>
+          <Link href="/#izaberite-mleko">← Nazad na izbor mleka</Link>
           <a href="/kontakt">Pomoć i kontakt</a>
           <button disabled={busy} onClick={() => void signOut()}>Odjavi se</button>
         </div>
@@ -265,9 +265,9 @@ export function AccountView() {
             <h1>Zdravo, {customer.fullName ? <span data-no-translate>{customer.fullName}</span> : "kupče"}.</h1>
             <p>Pregled dostava, porudžbina i podešavanja naloga.</p>
           </div>
-          <a className="button secondary small" href="/prodavnica">
-            Dodaj proizvod
-          </a>
+          <Link className="button secondary small" href="/#izaberite-mleko">
+            Dodaj mleko
+          </Link>
         </header>
         <div className="account-feedback">
           {account.demo && (
@@ -325,9 +325,9 @@ export function AccountView() {
               <section className="card">
                 <h2>Još nemate redovnu dostavu.</h2>
                 <p>Izaberite mleko, količinu i koliko često želite da stiže.</p>
-                <a className="button" href="/prodavnica">
-                  Izaberi mleko
-                </a>
+                <Link className="button" href="/#izaberite-mleko">
+                  Izaberi svoje mleko
+                </Link>
               </section>
             )}
             {(account.oneTimeDeliveries ?? []).map((delivery) => (

@@ -2,7 +2,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useLocale } from "../lib/i18n/client";
-import { languageTags, localeLabels, locales, localizedPath } from "../lib/i18n/routing";
+import { languageTags, localeLabels, menuLocales, localizedPath } from "../lib/i18n/routing";
 import { translate } from "../lib/i18n/translate";
 export function LanguageSwitcher() {
   const locale = useLocale();
@@ -34,7 +34,7 @@ export function LanguageSwitcher() {
   }}>
     <summary aria-label={translate("Izaberi jezik", locale)}><span aria-hidden="true">◎</span> {({ "sr-latn": "SR", "sr-cyrl": "СР", en: "EN", ru: "РУ" })[locale]}</summary>
     <nav aria-label={translate("Jezik sajta", locale)}>
-      {locales.map(item => <a key={item} href={localizedPath(path, item)} hrefLang={languageTags[item]} lang={languageTags[item]} aria-current={item === locale ? "true" : undefined} onClick={event => {
+      {menuLocales.map(item => <a key={item} href={localizedPath(path, item)} hrefLang={languageTags[item]} lang={languageTags[item]} aria-current={item === locale ? "true" : undefined} onClick={event => {
         // Full navigation updates the document language and keeps query/hash state.
         event.currentTarget.href = localizedPath(path, item) + window.location.search + window.location.hash;
       }}>{localeLabels[item]}</a>)}

@@ -171,17 +171,22 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
+  // The storefront opens in Cyrillic (meeting 17 Nov 2026); Latin source copy is
+  // transliterated on render.
   const html = await response.text();
-  assert.match(html, /<html[^>]* lang="sr-Latn"[^>]*>/);
+  assert.match(html, /<html[^>]* lang="sr-Cyrl"[^>]*>/);
   assert.match(
     html,
-    /<title>Domaće kravlje i kozje mleko na tvojoj adresi \| Mleko i Mleko<\/title>/,
+    /<title>Домаће кравље и козје млеко на твојој адреси \| Млеко и Млеко<\/title>/,
   );
-  assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Jutro počinje ovde\.<\/h1>/);
-  assert.match(html, /Kravlje i kozje mleko u povratnim staklenim flašama/);
-  assert.match(html, /Izaberi svoje mleko/);
-  assert.match(html, /href="\/prodavnica"/);
+  assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Млеко и Млеко — домаће кравље и козје млеко<\/h1>/);
+  assert.match(html, /Са паше до флаше/);
+  assert.match(html, /Изабери своје млеко/);
+  assert.match(html, /href="\/#izaberite-mleko"/);
+  assert.match(html, /href="\/kako-funkcionise"/);
+  assert.match(html, /href="\/gde-kupiti"/);
   assert.match(html, /href="\/nalog"/);
+  assert.doesNotMatch(html, /href="\/prodavnica"/);
   assert.match(html, /<img[^>]+(?:src|srcSet)="[^"]*mleko-i-mleko-logo-mark(?:\.|%2E)png/i);
   assert.match(html, /class="skip-link"[^>]*href="#glavni-sadrzaj"/);
   assert.match(html, /<main id="glavni-sadrzaj">/);
@@ -206,21 +211,21 @@ test("public catalog and product content are present in server-rendered HTML", a
 
   assert.equal(storeResponse.status, 200);
   const storeHtml = await storeResponse.text();
-  assert.match(storeHtml, /<h1[^>]*>Dobro sa farme\. Pravo na sto\.<\/h1>/);
+  assert.match(storeHtml, /<h1[^>]*>Добро са фарме\. Право на сто\.<\/h1>/);
   assert.match(storeHtml, /href="\/proizvodi\/kravlje-mleko"/);
-  assert.match(storeHtml, /Kravlje mleko/);
-  assert.doesNotMatch(storeHtml, /Učitavamo proizvode/);
+  assert.match(storeHtml, /Кравље млеко/);
+  assert.doesNotMatch(storeHtml, /Učitavamo proizvode|Учитавамо производе/);
 
   assert.equal(productResponse.status, 200);
   const productHtml = await productResponse.text();
-  assert.match(productHtml, /<h1[^>]*>Kravlje mleko<\/h1>/);
-  assert.match(productHtml, /Sveže kravlje mleko\./);
+  assert.match(productHtml, /<h1[^>]*>Кравље млеко<\/h1>/);
+  assert.match(productHtml, /Свеже кравље млеко\./);
   assert.match(productHtml, /"@type":"Product"/);
   assert.match(productHtml, /"priceCurrency":"RSD"/);
   assert.match(productHtml, /"price":"250\.00"/);
   assert.match(productHtml, /"@type":"BreadcrumbList"/);
   assert.match(productHtml, /width="1080" height="1080"/);
-  assert.doesNotMatch(productHtml, /Učitavamo proizvod/);
+  assert.doesNotMatch(productHtml, /Učitavamo proizvod|Учитавамо производ/);
 });
 
 test("missing product returns a real, noindex 404 page", async () => {
@@ -229,7 +234,7 @@ test("missing product returns a real, noindex 404 page", async () => {
   });
   assert.equal(response.status, 404);
   const html = await response.text();
-  assert.match(html, /Ova stranica ne postoji/);
+  assert.match(html, /Ова страница не постоји/);
   assert.match(html, /<meta name="robots" content="[^"]*noindex/i);
   assert.doesNotMatch(html, /PRODUCT_NOT_FOUND|Error:.*\bat\b|D1 binding/i);
 });

@@ -3649,5 +3649,545 @@ export const catalog: Record<string, readonly [string, string]> = {
   "(opciono)": [
     "(optional)",
     "(необязательно)"
-  ]
+  ],
+  "Tvoj frižider čeka prvo mleko.": [
+    "Your fridge is waiting for its first milk.",
+    "Ваш холодильник ждёт первое молоко."
+  ],
+  "Frižider je još prazan.": [
+    "The fridge is still empty.",
+    "Холодильник пока пуст."
+  ],
+  "Otvori ceo frižider": [
+    "Open the whole fridge",
+    "Открыть весь холодильник"
+  ],
+  "Izmeni frižider": [
+    "Edit the fridge",
+    "Изменить холодильник"
+  ],
+  "Zatvori frižider": [
+    "Close the fridge",
+    "Закрыть холодильник"
+  ],
+  "Otvaramo frižider…": [
+    "Opening the fridge…",
+    "Открываем холодильник…"
+  ],
+  "Frižider": [
+    "Fridge",
+    "Холодильник"
+  ],
+  "Napuni frižider, {0} jedinica": [
+    "Fill the fridge, {0} items",
+    "Наполни холодильник, {0} шт."
+  ],
+  "Sa paše do flaše": [
+    "From pasture to bottle",
+    "С пастбища в бутылку"
+  ],
+  "Sa paše do flaše.": [
+    "From pasture to bottle.",
+    "С пастбища в бутылку."
+  ],
+  "Mleko i Mleko — domaće kravlje i kozje mleko": [
+    "Mleko i Mleko — homemade cow's and goat's milk",
+    "Mleko i Mleko — домашнее коровье и козье молоко"
+  ],
+  "Biraš vrstu, količinu i koliko često dolazimo. Želiš oba? Može i to.": [
+    "You pick the kind, the amount and how often we come. Want both? You got it.",
+    "Ты выбираешь вид, количество и как часто мы приезжаем. Хочешь оба? Можно и так."
+  ],
+  "MLEKO KOJE ZNAŠ": [
+    "MILK YOU KNOW",
+    "МОЛОКО, КОТОРОЕ ТЫ ЗНАЕШЬ"
+  ],
+  "Kako stiže": [
+    "How it arrives",
+    "Как оно приезжает"
+  ],
+  "Pre prve flaše": [
+    "Before your first bottle",
+    "Перед первой бутылкой"
+  ],
+  "Poslednji gutljaj": [
+    "Last sip",
+    "Последний глоток"
+  ],
+  "Mleko uživo.": [
+    "Milk, live.",
+    "Молоко вживую."
+  ],
+  "Sa farme, iz mlekomata i iz kuhinje — pogledaj kako izgleda pravo mleko.": [
+    "From the farm, the milk machine and the kitchen — see what real milk looks like.",
+    "С фермы, из молокомата и с кухни — посмотри, как выглядит настоящее молоко."
+  ],
+  "Prati nas na Instagramu": [
+    "Follow us on Instagram",
+    "Подписывайся в Instagram"
+  ],
+  "Prati nas na TikToku": [
+    "Follow us on TikTok",
+    "Подписывайся в TikTok"
+  ],
+  "Sa domaćih farmi": [
+    "From local farms",
+    "С местных ферм"
+  ],
+  "Šta je u flaši": [
+    "What's in the bottle",
+    "Что в бутылке"
+  ],
+  "Šta je u flaši.": [
+    "What's in the bottle.",
+    "Что в бутылке."
+  ],
+  "Bez dodataka i bez obiranja": [
+    "Nothing added, nothing skimmed",
+    "Без добавок и без снятия сливок"
+  ],
+  "Muženo i flaširano za tvoju dostavu": [
+    "Milked and bottled for your delivery",
+    "Надоено и разлито для твоей доставки"
+  ],
+  "Blago i lako svarljivo": [
+    "Mild and easy to digest",
+    "Мягкое и легко усваивается"
+  ],
+  "Staklo koje se vraća": [
+    "Glass that comes back",
+    "Стекло, которое возвращается"
+  ],
+  "Prethodna fotografija": [
+    "Previous photo",
+    "Предыдущее фото"
+  ],
+  "Sledeća fotografija": [
+    "Next photo",
+    "Следующее фото"
+  ],
+  "Fotografije: {0}": [
+    "Photos: {0}",
+    "Фото: {0}"
+  ],
+  "Staklena flaša domaćeg kravljeg mleka": [
+    "Glass bottle of homemade cow's milk",
+    "Стеклянная бутылка домашнего коровьего молока"
+  ],
+  "Staklena flaša domaćeg kozjeg mleka": [
+    "Glass bottle of homemade goat's milk",
+    "Стеклянная бутылка домашнего козьего молока"
+  ],
+  "Krava na pašnjaku": [
+    "A cow at pasture",
+    "Корова на пастбище"
+  ],
+  "Koza na pašnjaku": [
+    "A goat at pasture",
+    "Коза на пастбище"
+  ],
+  "Mleko se sipa iz staklene flaše u čašu": [
+    "Milk poured from a glass bottle into a glass",
+    "Молоко наливают из стеклянной бутылки в стакан"
+  ],
+  "Flaša kozjeg mleka i čaša na stolu": [
+    "A bottle of goat's milk and a glass on the table",
+    "Бутылка козьего молока и стакан на столе"
+  ],
+  "Domaćica na pašnjaku sa kozom i kravom": [
+    "A farmer at pasture with a goat and a cow",
+    "Хозяйка на пастбище с козой и коровой"
+  ],
+  "Mlekadžija utovara kante mleka u kombi": [
+    "A milkman loading milk churns into a van",
+    "Молочник грузит бидоны в фургон"
+  ],
+  "Prazne flaše se vraćaju dostavljaču": [
+    "Empty bottles go back to the courier",
+    "Пустые бутылки возвращают курьеру"
+  ],
+  "Krava na pašnjaku i dete koje toči mleko iz Mleko i Mleko mlekomata": [
+    "A cow at pasture and a child filling milk from a Mleko i Mleko milk machine",
+    "Корова на пастбище и ребёнок, наливающий молоко из молокомата Mleko i Mleko"
+  ],
+  "Mesečna pretplata": [
+    "Monthly subscription",
+    "Ежемесячная подписка"
+  ],
+  "Poreklo tvog mleka": [
+    "Where your milk comes from",
+    "Откуда твоё молоко"
+  ],
+  "Mlekomati": [
+    "Milk machines",
+    "Молокоматы"
+  ],
+  "Pomoć": [
+    "Help",
+    "Помощь"
+  ],
+  "Postani partner": [
+    "Become a partner",
+    "Стань партнёром"
+  ],
+  "Tvoje mleko, svake nedelje.": [
+    "Your milk, every week.",
+    "Твоё молоко, каждую неделю."
+  ],
+  "Biraš mleko i ritam — mi muzemo, flaširamo i donosimo. Ceo paket plaćaš gotovinom pri prvoj dostavi.": [
+    "You choose the milk and the rhythm — we milk, bottle and deliver. You pay for the whole package in cash on the first delivery.",
+    "Ты выбираешь молоко и ритм — мы доим, разливаем и привозим. Весь пакет оплачиваешь наличными при первой доставке."
+  ],
+  "Čovek ujutru pije čašu mleka": [
+    "A man drinking a glass of milk in the morning",
+    "Мужчина утром пьёт стакан молока"
+  ],
+  "Od krave do tvoje čaše": [
+    "From the cow to your glass",
+    "От коровы до твоего стакана"
+  ],
+  "Put tvog mleka.": [
+    "Your milk's journey.",
+    "Путь твоего молока."
+  ],
+  "Put tvog mleka": [
+    "Your milk's journey",
+    "Путь твоего молока"
+  ],
+  "Muža na domaćinstvu": [
+    "Milking on the farmstead",
+    "Дойка на хозяйстве"
+  ],
+  "Mleko dolazi od domaćina koji sami čuvaju i muzu svoje krave i koze.": [
+    "The milk comes from farmers who keep and milk their own cows and goats.",
+    "Молоко от хозяев, которые сами держат и доят своих коров и коз."
+  ],
+  "Dolazimo po mleko": [
+    "We collect the milk",
+    "Мы забираем молоко"
+  ],
+  "Naše vozilo preuzima sveže mleko direktno na farmi i nosi ga na punjenje.": [
+    "Our van collects fresh milk right at the farm and takes it to be bottled.",
+    "Наша машина забирает свежее молоко прямо на ферме и везёт на розлив."
+  ],
+  "Staklena flaša": [
+    "Glass bottle",
+    "Стеклянная бутылка"
+  ],
+  "Mleko sipamo u staklene povratne flaše. Bez plastike i bez tetrapaka — samo mleko i staklo.": [
+    "We pour the milk into returnable glass bottles. No plastic, no cartons — just milk and glass.",
+    "Мы разливаем молоко в возвратные стеклянные бутылки. Без пластика и без тетрапака — только молоко и стекло."
+  ],
+  "Na tvojim vratima": [
+    "At your door",
+    "У твоей двери"
+  ],
+  "Flaše stižu na tvoju adresu u Beogradu ili Novom Sadu, u terminu koji vidiš pre potvrde porudžbine.": [
+    "The bottles reach your address in Belgrade or Novi Sad, in the slot you see before confirming the order.",
+    "Бутылки приезжают на твой адрес в Белграде или Нови-Саде, в окно, которое ты видишь до подтверждения заказа."
+  ],
+  "Flaša ide u krug": [
+    "The bottle goes round",
+    "Бутылка идёт по кругу"
+  ],
+  "Od druge dostave vraćaš prazne čiste flaše, a preuzimaš pune. Staklo se pere i ponovo puni.": [
+    "From the second delivery you hand back clean empty bottles and take full ones. The glass is washed and refilled.",
+    "Со второй доставки ты возвращаешь чистые пустые бутылки и получаешь полные. Стекло моют и наполняют снова."
+  ],
+  "Ti držiš kontrolu": [
+    "You're in control",
+    "Ты всё контролируешь"
+  ],
+  "Pretplata po tvom.": [
+    "A subscription your way.",
+    "Подписка по-твоему."
+  ],
+  "Biraš mleko i litre": [
+    "Choose milk and litres",
+    "Выбираешь молоко и литры"
+  ],
+  "Kravlje, kozje ili oba — 2, 4 ili 8 litara po dostavi, ili tačno koliko ti treba.": [
+    "Cow's, goat's or both — 2, 4 or 8 litres per delivery, or exactly what you need.",
+    "Коровье, козье или оба — 2, 4 или 8 литров за доставку, или ровно сколько нужно."
+  ],
+  "Biraš ritam": [
+    "Choose the rhythm",
+    "Выбираешь ритм"
+  ],
+  "Svake nedelje ili svake dve nedelje. Paket sadrži četiri nedeljne ili dve dvonedeljne dostave.": [
+    "Every week or every two weeks. A package has four weekly or two fortnightly deliveries.",
+    "Каждую неделю или раз в две недели. В пакете четыре еженедельные или две двухнедельные доставки."
+  ],
+  "Sve menjaš na nalogu": [
+    "Change everything in your account",
+    "Всё меняешь в аккаунте"
+  ],
+  "Pre roka menjaš količinu, preskačeš dostavu, pauziraš ili otkazuješ — bez poziva i objašnjavanja.": [
+    "Before the cut-off you change the amount, skip, pause or cancel — no calls, no explanations.",
+    "До срока меняешь количество, пропускаешь доставку, ставишь на паузу или отменяешь — без звонков и объяснений."
+  ],
+  "Pitanja o pretplati": [
+    "Subscription questions",
+    "Вопросы о подписке"
+  ],
+  "Sva pitanja": [
+    "All questions",
+    "Все вопросы"
+  ],
+  "Kravlje i kozje mleko sa domaćih porodičnih farmi, u povratnim staklenim flašama — do tvojih vrata ili do mlekomata u tvom kraju.": [
+    "Cow's and goat's milk from local family farms, in returnable glass bottles — to your door or to a milk machine near you.",
+    "Коровье и козье молоко с местных семейных ферм, в возвратных стеклянных бутылках — к твоей двери или к молокомату рядом."
+  ],
+  "Dve vrste mleka": [
+    "Two kinds of milk",
+    "Два вида молока"
+  ],
+  "Kravlje i kozje.": [
+    "Cow's and goat's.",
+    "Коровье и козье."
+  ],
+  "Punomasno, punog ukusa — za kafu, kačamak i domaći kajmak.": [
+    "Full-fat and full-flavoured — for coffee, polenta and homemade kajmak.",
+    "Цельное, с насыщенным вкусом — для кофе, качамака и домашнего каймака."
+  ],
+  "Punomasno i sirovo, sa domaćih farmi — za one koji traže baš kozje.": [
+    "Full-fat and raw, from local farms — for those who want goat's milk.",
+    "Цельное и сырое, с местных ферм — для тех, кто ищет именно козье."
+  ],
+  "Pitanja o mleku": [
+    "Questions about the milk",
+    "Вопросы о молоке"
+  ],
+  "Šta te zanima o mleku?": [
+    "What do you want to know about the milk?",
+    "Что тебя интересует о молоке?"
+  ],
+  "Da li se mleku nešto dodaje ili oduzima?": [
+    "Is anything added to or taken from the milk?",
+    "В молоко что-то добавляют или из него что-то убирают?"
+  ],
+  "Ne. Mleko je punomasno i sirovo — ništa se ne dodaje i ništa se ne obire.": [
+    "No. The milk is full-fat and raw — nothing is added and nothing is skimmed.",
+    "Нет. Молоко цельное и сырое — ничего не добавляют и ничего не снимают."
+  ],
+  "Odakle dolazi mleko?": [
+    "Where does the milk come from?",
+    "Откуда молоко?"
+  ],
+  "Sa domaćih porodičnih farmi sa kojima radimo direktno, bez posrednika. Za detalje o dobavljačima piši nam.": [
+    "From local family farms we work with directly, with no middlemen. Write to us for supplier details.",
+    "С местных семейных ферм, с которыми мы работаем напрямую, без посредников. Подробности о поставщиках — напиши нам."
+  ],
+  "Može li od njega da se napravi kajmak?": [
+    "Can you make kajmak from it?",
+    "Можно ли сделать из него каймак?"
+  ],
+  "Može. Kada prokuvaš dva litra i ostaviš da se ohladi, dobiješ oko 100 grama pravog domaćeg kajmaka.": [
+    "Yes. Boil two litres and let it cool, and you get about 100 grams of real homemade kajmak.",
+    "Можно. Вскипяти два литра и дай остыть — получишь около 100 граммов настоящего домашнего каймака."
+  ],
+  "Zašto staklena flaša?": [
+    "Why a glass bottle?",
+    "Почему стеклянная бутылка?"
+  ],
+  "Staklo ne menja ukus mleka i može da se pere i ponovo puni. Praznu čistu flašu vraćaš pri sledećoj dostavi.": [
+    "Glass doesn't change the taste of milk and can be washed and refilled. You hand back the clean empty bottle at the next delivery.",
+    "Стекло не меняет вкус молока, его можно мыть и наполнять снова. Чистую пустую бутылку возвращаешь при следующей доставке."
+  ],
+  "Pitanja o dostavi i pretplati su na strani": [
+    "Delivery and subscription questions are on the page",
+    "Вопросы о доставке и подписке — на странице"
+  ],
+  "Natoči sebi pravo mleko.": [
+    "Pour yourself real milk.",
+    "Налей себе настоящего молока."
+  ],
+  "Domaće mleko iz mlekomata u Beogradu — natočiš koliko ti treba i platiš na licu mesta, gotovinom ili karticom.": [
+    "Homemade milk from milk machines in Belgrade — pour what you need and pay on the spot, in cash or by card.",
+    "Домашнее молоко из молокоматов в Белграде — наливаешь сколько нужно и платишь на месте, наличными или картой."
+  ],
+  "Pronađi mlekomat": [
+    "Find a milk machine",
+    "Найти молокомат"
+  ],
+  "Lokacije u Beogradu": [
+    "Locations in Belgrade",
+    "Адреса в Белграде"
+  ],
+  "Gde je najbliži mlekomat?": [
+    "Where's the nearest milk machine?",
+    "Где ближайший молокомат?"
+  ],
+  "Put do mene ↗": [
+    "Directions ↗",
+    "Маршрут ↗"
+  ],
+  "Mapa: {0}": [
+    "Map: {0}",
+    "Карта: {0}"
+  ],
+  "Kako radi": [
+    "How it works",
+    "Как это работает"
+  ],
+  "Prosto kao pasulj.": [
+    "Easy as pie.",
+    "Проще простого."
+  ],
+  "Otvori vratanca i postavi flašu.": [
+    "Open the little door and put the bottle in.",
+    "Открой дверцу и поставь бутылку."
+  ],
+  "Ubaci novac ili plati karticom.": [
+    "Insert cash or pay by card.",
+    "Вставь деньги или оплати картой."
+  ],
+  "Izaberi željenu litražu.": [
+    "Choose how many litres.",
+    "Выбери нужный объём."
+  ],
+  "Kako se koristi mlekomat": [
+    "How to use the milk machine",
+    "Как пользоваться молокоматом"
+  ],
+  "Poslovno partnerstvo": [
+    "Business partnership",
+    "Деловое партнёрство"
+  ],
+  "Imaš prostor? Postavimo mlekomat.": [
+    "Have a space? Let's put a milk machine there.",
+    "Есть место? Поставим молокомат."
+  ],
+  "Pijaca, tržni centar, market ili pumpa — ako kod tebe prolaze ljudi koji vole pravo mleko, mi donosimo mlekomat, punimo ga i održavamo.": [
+    "A market, mall, shop or petrol station — if people who love real milk pass by, we bring the machine, fill it and look after it.",
+    "Рынок, торговый центр, магазин или заправка — если у тебя проходят люди, которые любят настоящее молоко, мы привезём молокомат, наполним и обслужим."
+  ],
+  "Mi postavljamo i punimo": [
+    "We install and fill",
+    "Мы ставим и наполняем"
+  ],
+  "Aparat, mleko i održavanje su naša briga.": [
+    "The machine, the milk and the upkeep are on us.",
+    "Аппарат, молоко и обслуживание — наша забота."
+  ],
+  "Ti daješ mesto": [
+    "You provide the spot",
+    "Ты даёшь место"
+  ],
+  "Malo prostora i priključak za struju.": [
+    "A little space and a power socket.",
+    "Немного места и розетка."
+  ],
+  "Dogovor po meri": [
+    "A deal that fits",
+    "Договор под тебя"
+  ],
+  "Najam ili partnerstvo — dogovaramo se za svaku lokaciju.": [
+    "Rental or partnership — we agree on each location.",
+    "Аренда или партнёрство — договариваемся по каждой точке."
+  ],
+  "Firma ili objekat": [
+    "Company or venue",
+    "Компания или объект"
+  ],
+  "Gde je prostor?": [
+    "Where is the space?",
+    "Где находится место?"
+  ],
+  "Grad, ulica ili pijaca": [
+    "City, street or market",
+    "Город, улица или рынок"
+  ],
+  "Vrsta prostora": [
+    "Type of space",
+    "Тип помещения"
+  ],
+  "Izaberi": [
+    "Choose",
+    "Выбери"
+  ],
+  "Pijaca": [
+    "Market",
+    "Рынок"
+  ],
+  "Tržni centar": [
+    "Shopping centre",
+    "Торговый центр"
+  ],
+  "Prodavnica ili market": [
+    "Shop or supermarket",
+    "Магазин или супермаркет"
+  ],
+  "Benzinska pumpa": [
+    "Petrol station",
+    "Заправка"
+  ],
+  "Napomena": [
+    "Notes",
+    "Комментарий"
+  ],
+  "Koliko je mesta, ima li struje, kakav je promet…": [
+    "How much room, is there power, how busy it is…",
+    "Сколько места, есть ли электричество, какая проходимость…"
+  ],
+  "Podatke iz forme koristimo samo da odgovorimo na upit. Pročitaj": [
+    "We use the form details only to reply to your enquiry. Read the",
+    "Мы используем данные формы только для ответа на запрос. Прочитай"
+  ],
+  "Hvala na upitu.": [
+    "Thanks for your enquiry.",
+    "Спасибо за запрос."
+  ],
+  "Javićemo ti se na ostavljeni email da se dogovorimo oko lokacije.": [
+    "We'll reply to your email to agree on the location.",
+    "Мы ответим на твой email, чтобы договориться о месте."
+  ],
+  "Upit nije poslat. Pokušaj ponovo ili nas pozovi.": [
+    "The enquiry wasn't sent. Try again or call us.",
+    "Запрос не отправлен. Попробуй снова или позвони нам."
+  ],
+  "Kako stiže tvoje mleko: od muže na domaćinstvu, preko staklene flaše, do tvojih vrata — i nazad.": [
+    "How your milk arrives: from milking on the farm, through the glass bottle, to your door — and back.",
+    "Как приезжает твоё молоко: от дойки на хозяйстве через стеклянную бутылку к твоей двери — и обратно."
+  ],
+  "Odakle dolazi domaće kravlje i kozje mleko, šta je u flaši i zašto staklo.": [
+    "Where homemade cow's and goat's milk comes from, what's in the bottle and why glass.",
+    "Откуда домашнее коровье и козье молоко, что в бутылке и почему стекло."
+  ],
+  "Mleko i Mleko mlekomati u Beogradu: lokacije na mapi, put do najbližeg i partnerstvo za postavljanje mlekomata.": [
+    "Mleko i Mleko milk machines in Belgrade: locations on a map, directions to the nearest and partnerships for new machines.",
+    "Молокоматы Mleko i Mleko в Белграде: адреса на карте, маршрут до ближайшего и партнёрство для новых аппаратов."
+  ],
+  "Ubaci novac u mlekomat.": [
+    "Insert money into the milk machine.",
+    "Вставь деньги в молокомат."
+  ],
+  "Otvori mala vratanca sa leve strane i postavi flašu, malo nagnutu — tako mleko ne zapeni.": [
+    "Open the small door on the left and place the bottle slightly tilted — so the milk doesn't foam.",
+    "Открой маленькую дверцу слева и поставь бутылку с небольшим наклоном — так молоко не пенится."
+  ],
+  "Izaberi mleko i pritisni start.": [
+    "Choose the milk and press start.",
+    "Выбери молоко и нажми «старт»."
+  ],
+  "Kod kuće ga prokuvaj i uživaj.": [
+    "At home, boil it and enjoy.",
+    "Дома вскипяти его и наслаждайся."
+  ],
+  "Nisi poneo flašu?": [
+    "No bottle with you?",
+    "Не взял бутылку?"
+  ],
+  "Pored mlekomata je flašomat sa staklenim flašama: ubaci novčanicu od 100 dinara, izaberi broj police i preuzmi flašu.": [
+    "Next to the milk machine is a bottle machine with glass bottles: insert a 100-dinar note, choose the shelf number and take your bottle.",
+    "Рядом с молокоматом стоит автомат со стеклянными бутылками: вставь купюру 100 динаров, выбери номер полки и забери бутылку."
+  ],
+  "Plaćanje gotovinom pri dostavi · u mlekomatu gotovinom ili karticom": [
+    "Cash on delivery · cash or card at the milk machine",
+    "Оплата наличными при доставке · в молокомате наличными или картой"
+  ],
+  "Video snimci": [
+    "Videos",
+    "Видео"
+  ],
 };

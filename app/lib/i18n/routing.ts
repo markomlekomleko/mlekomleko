@@ -1,6 +1,11 @@
 export const locales = ["sr-latn", "sr-cyrl", "en", "ru"] as const;
 export type Locale = typeof locales[number];
-export const defaultLocale: Locale = "sr-latn";
+/** The script the copy is written in. Translation starts from it and the admin stays in it. */
+export const sourceLocale: Locale = "sr-latn";
+/** The language unprefixed URLs serve. The storefront opens in Cyrillic, like the brand's logo. */
+export const defaultLocale: Locale = "sr-cyrl";
+/** Languages offered in the switcher. Latin stays reachable under /sr-latn but is not offered. */
+export const menuLocales: readonly Locale[] = ["sr-cyrl", "en", "ru"];
 export const languageTags: Record<Locale, string> = { "sr-latn": "sr-Latn", "sr-cyrl": "sr-Cyrl", en: "en", ru: "ru" };
 export const localeLabels: Record<Locale, string> = { "sr-latn": "Srpski · latinica", "sr-cyrl": "Српски · ћирилица", en: "English", ru: "Русский" };
 export const intlLocales: Record<Locale, string> = { "sr-latn": "sr-Latn-RS", "sr-cyrl": "sr-Cyrl-RS", en: "en-GB", ru: "ru-RU" };

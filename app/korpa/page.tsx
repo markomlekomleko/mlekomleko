@@ -5,7 +5,7 @@ import { CartView } from "./cart-view";
 import { canonicalUrl } from "../lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
-  title: "Korpa",
+  title: "Napuni frižider",
   description: "Pregledaj proizvode, količine i ritam svake dostave.",
   alternates: { canonical: canonicalUrl("/korpa") },
   robots: { index: false, follow: true },

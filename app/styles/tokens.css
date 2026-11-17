@@ -75,7 +75,7 @@
 
   /* Type. The next/font variables live on <html>, the same element as this :root, so
      these stacks resolve here; declared on <body> they would be empty at :root. */
-  --ff-display: "Market Grotesk", var(--font-geist), Arial, sans-serif;
+  --ff-display: "Market Grotesk", var(--font-montserrat), var(--font-geist), Arial, sans-serif;
   --ff-card: var(--ff-display);
   --ff-body: var(--font-geist), Arial, sans-serif;
   --font-editorial: var(--ff-display);

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { localizedMetadata } from "@/app/lib/i18n/server";
 import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
@@ -17,6 +18,6 @@ export default async function ContentPage({ params }: Props) {
   if (!page) notFound();
   return localize(<article className="page-shell narrow"><header className="page-heading"><p className="eyebrow">Mleko i Mleko</p><h1>{page.title}</h1><p>{page.intro}</p></header>
     {page.sections.map((section, index) => <section key={index} style={{ marginBottom: "2rem" }}><h2>{section.heading}</h2>{section.text.split(/\n\s*\n/).map((paragraph, i) => <p key={i} style={{ whiteSpace: "pre-line" }}>{paragraph}</p>)}</section>)}
-    <div className="button-row"><a className="button" href="/prodavnica">Pogledajte proizvode</a><a className="button secondary" href="/kontakt">Kontaktirajte nas</a></div>
+    <div className="button-row"><Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko</Link><a className="button secondary" href="/kontakt">Kontaktirajte nas</a></div>
   </article>);
 }

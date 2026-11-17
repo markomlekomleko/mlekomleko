@@ -1,6 +1,5 @@
 import { localizedMetadata } from "@/app/lib/i18n/server";
 import { getLocalize } from "@/app/lib/i18n/server";
-import { BrandIllustration } from "../components/brand-illustration";
 import type { Metadata } from "next";
 import { canonicalUrl } from "../lib/seo";
 
@@ -24,7 +23,8 @@ export default async function AboutPage() {
             <div className="button-row"><a className="button" href="/farme">Kravlje i kozje</a></div>
           </div>
           <figure className="content-media">
-            <BrandIllustration />
+            {/* eslint-disable-next-line @next/next/no-img-element -- Pre-optimised local illustration. */}
+            <img className="sub-hero-art" src="/images/ilustracije/pasnjak.webp" alt="Domaćica na pašnjaku sa kozom i kravom" width="1200" height="900" />
           </figure>
         </div>
       </header>

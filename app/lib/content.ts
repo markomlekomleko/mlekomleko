@@ -43,6 +43,42 @@ export const frequentlyAskedQuestions = [
   },
 ];
 
+/** Subscription questions, shown on the Mesečna pretplata page. No delivery price here. */
+export const subscriptionQuestions = frequentlyAskedQuestions.filter(({ question }) =>
+  [
+    "Da li moram da se pretplatim?",
+    "Koliko mleka mogu da poručim?",
+    "Kada su dostave?",
+    "Kako funkcionišu povratne flaše?",
+    "Do kada mogu da izmenim dostavu?",
+    "Mogu li da preskočim, pauziram ili otkažem?",
+    "Kako se plaća?",
+  ].includes(question),
+);
+
+/**
+ * Questions about the milk itself, for the Poreklo tvog mleka page. Every answer restates
+ * something the brand already says on the site or in its own posts; nothing new is claimed.
+ */
+export const milkQuestions = [
+  {
+    question: "Da li se mleku nešto dodaje ili oduzima?",
+    answer: "Ne. Mleko je punomasno i sirovo — ništa se ne dodaje i ništa se ne obire.",
+  },
+  {
+    question: "Odakle dolazi mleko?",
+    answer: "Sa domaćih porodičnih farmi sa kojima radimo direktno, bez posrednika. Za detalje o dobavljačima piši nam.",
+  },
+  {
+    question: "Može li od njega da se napravi kajmak?",
+    answer: "Može. Kada prokuvaš dva litra i ostaviš da se ohladi, dobiješ oko 100 grama pravog domaćeg kajmaka.",
+  },
+  {
+    question: "Zašto staklena flaša?",
+    answer: "Staklo ne menja ukus mleka i može da se pere i ponovo puni. Praznu čistu flašu vraćaš pri sledećoj dostavi.",
+  },
+];
+
 /**
  * Homepage copy deck: cheeky in the headlines, plain about what you buy and how it arrives.
  * Delivery weekdays are never written here; they come from the `serviceAreaNote` setting.
@@ -50,24 +86,23 @@ export const frequentlyAskedQuestions = [
  */
 export const homeCopy = {
   hero: {
-    eyebrow: "Domaće mleko, pravo kući",
-    title: "Punomasno i ponosno.",
-    lead: "Sirovo kravlje i kozje mleko u povratnoj flaši, do vrata u Beogradu i Novom Sadu.",
-    primaryCta: "Izaberi svoje mleko",
+    eyebrow: "",
+    title: "Mleko i Mleko — domaće kravlje i kozje mleko",
+    lead: "",
+    primaryCta: "Sa paše do flaše",
     secondaryCta: "Proveri dostavu",
     hint: "Skroluj, ima još",
     rhythmTitle: "Ti biraš ritam, mi donosimo.",
     rhythmSub: "Kravlje. Kozje. Oba.",
   },
-  band: ["KRAVLJE", "KOZJE", "TVOJE MLEKO", "TVOJ RITAM", "POVRATNE FLAŠE", "DOSTAVA DO VRATA"],
+  band: ["MLEKO KOJE ZNAŠ", "KRAVLJE", "KOZJE", "TVOJ RITAM", "POVRATNE FLAŠE", "DOSTAVA DO VRATA"],
   offer: {
-    eyebrow: "01 / Na meniju",
-    title: "Tim krava ili tim koza?",
-    lead: "Biraš vrstu, količinu i koliko često dolazimo. Navijaš za oba? Može i to.",
-    storeLink: "Zaviri u prodavnicu",
+    eyebrow: "",
+    title: "Izaberi svoje mleko",
+    lead: "Biraš vrstu, količinu i koliko često dolazimo. Želiš oba? Može i to.",
   },
   steps: {
-    eyebrow: "02 / Kako stiže",
+    eyebrow: "Kako stiže",
     title: "Tri koraka. Nula filozofije.",
     items: [
       {
@@ -85,13 +120,13 @@ export const homeCopy = {
     ],
   },
   origin: {
-    eyebrow: "03 / Kravlje i kozje",
+    eyebrow: "Kravlje i kozje",
     title: "Glavne uloge: krave i koze.",
     text: "Kravlje, kozje ili oba — izaberi mleko koje voliš. Donosimo ga u povratnim staklenim flašama.",
     link: "Pogledaj kravlje i kozje",
   },
   rhythm: {
-    eyebrow: "04 / Tvoj tempo",
+    eyebrow: "Tvoj tempo",
     title: "Ozbiljna veza ili avantura?",
     items: [
       {
@@ -110,13 +145,20 @@ export const homeCopy = {
     note: "Promena plana? Izmene, preskakanje i pauza mogući su do roka navedenog uz svaku dostavu, na tvom nalogu.",
   },
   faq: {
-    eyebrow: "05 / Pre prve flaše",
+    eyebrow: "Pre prve flaše",
     title: "Nema glupih pitanja.",
     contactPrompt: "Tvoje pitanje nije tu?",
     contactLink: "Piši nam.",
   },
+  social: {
+    eyebrow: "@mleko_i_mleko",
+    title: "Mleko uživo.",
+    lead: "Sa farme, iz mlekomata i iz kuhinje — pogledaj kako izgleda pravo mleko.",
+    instagram: "Prati nas na Instagramu",
+    tiktok: "Prati nas na TikToku",
+  },
   closing: {
-    eyebrow: "06 / Poslednji gutljaj",
+    eyebrow: "Poslednji gutljaj",
     title: "Frižider ti se već raduje.",
     cta: "Napuni frižider",
   },

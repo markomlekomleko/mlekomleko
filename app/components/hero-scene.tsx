@@ -1,5 +1,6 @@
 "use client";
 
+import { homeCopy } from "../lib/content";
 import { useLocalize } from "@/app/lib/i18n/client";
 import { useEffect, useRef, useState } from "react";
 import type { HeroMedia, HeroVariant } from "../lib/hero-media";
@@ -309,25 +310,16 @@ export function HeroScene({ media, offerHref }: HeroSceneProps) {
 
           <div className="scene-copy">
             <div className="page-shell scene-copy-shell">
+              {/* Meeting 17 Nov 2026: the footage carries the hero, so all copy is gone
+                  except one action. The h1 stays for assistive technology and search. */}
               <div className="scene-intro">
-                <p className="eyebrow">Domaće mleko na kućnu adresu</p>
-                <h1 id="hero-title">Jutro počinje ovde.</h1>
-                <p className="scene-lead">
-                  Kravlje i kozje mleko u povratnim staklenim flašama.
-                </p>
+                <h1 id="hero-title" className="visually-hidden">{homeCopy.hero.title}</h1>
                 <div className="scene-actions">
-                  <a className="button" href={offerHref}>
-                    Izaberi svoje mleko
+                  <a className="button go hero-cta" href={offerHref}>
+                    {homeCopy.hero.primaryCta}
                   </a>
                 </div>
-                <p className="scene-hint" aria-hidden="true">
-                  Skroluj i otkrij
-                </p>
               </div>
-              <p className="scene-rhythm" aria-hidden="true">
-                <strong>Tvoje mleko. Tvoj ritam.</strong>
-                <span>Kravlje · Kozje</span>
-              </p>
             </div>
           </div>
         </div>

@@ -1,9 +1,10 @@
 import { formatDate } from "../../app/lib/frontend";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { cyr } from "./cyr";
 
 async function acceptNecessary(page: import("@playwright/test").Page) {
-  const button = page.getByRole("button", { name: "Samo neophodno" });
+  const button = page.getByRole("button", { name: cyr("Samo neophodno") });
   if (await button.isVisible().catch(() => false)) {
     await page.evaluate(() => window.localStorage.setItem("mleko-i-mleko-analytics-consent", JSON.stringify({ necessary: true, analytics: false, marketing: false })));
     await page.reload({ waitUntil: "domcontentloaded" });
@@ -15,19 +16,19 @@ test("responsive navigation has no overflow and exposes every primary destinatio
   await acceptNecessary(page);
   const viewport = page.viewportSize()!;
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-  if (viewport.width <= 1000) {
-    const menu = page.getByRole("button", { name: "Meni" });
+  if (viewport.width <= 1180) {
+    const menu = page.getByRole("button", { name: cyr("Meni") });
     await expect(menu).toBeVisible();
     await page.waitForTimeout(300);
     await menu.click();
     await expect(menu).toHaveAttribute("aria-expanded", "true");
-    const nav = page.getByRole("navigation", { name: "Glavna navigacija" });
-    for (const label of ["Prodavnica", "Kako dostavljamo", "Naše poreklo", "Česta pitanja", "Kontakt"]) {
-      await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
+    const nav = page.getByRole("navigation", { name: cyr("Glavna navigacija") });
+    for (const label of ["Izaberi svoje mleko", "Mesečna pretplata", "Poreklo tvog mleka", "Mlekomati", "Česta pitanja", "Kontakt"]) {
+      await expect(nav.getByRole("link", { name: cyr(label), exact: true })).toBeVisible();
     }
-    await expect(page.getByRole("link", { name: "Moj nalog", exact: true })).toBeVisible();
+    await expect(nav.getByRole("link", { name: cyr("Moj nalog"), exact: true })).toBeVisible();
   } else {
-    await expect(page.getByRole("navigation", { name: "Glavna navigacija" })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: cyr("Glavna navigacija") })).toBeVisible();
   }
   for (const path of ["/", "/prodavnica", "/checkout", "/privatnost"]) {
     await page.goto(path);
@@ -44,73 +45,73 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   await acceptNecessary(page);
   const cards = page.locator(".configurator");
   expect(await cards.count()).toBeGreaterThanOrEqual(2);
-  await cards.nth(0).getByRole("button", { name: "Redovna dostava" }).click();
-  await expect(cards.nth(0).getByRole("button", { name: "Redovna dostava" })).toHaveAttribute("aria-pressed", "true");
-  await cards.nth(0).locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
+  await cards.nth(0).getByRole("button", { name: cyr("Redovna dostava") }).click();
+  await expect(cards.nth(0).getByRole("button", { name: cyr("Redovna dostava") })).toHaveAttribute("aria-pressed", "true");
+  await cards.nth(0).locator(".configurator-actions button", { hasText: cyr("Napuni frižider") }).click();
   await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
-  await cards.nth(1).getByRole("button", { name: "Jednokratno" }).click();
-  await cards.nth(1).locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
+  await cards.nth(1).getByRole("button", { name: cyr("Jednokratno") }).click();
+  await cards.nth(1).locator(".configurator-actions button", { hasText: cyr("Napuni frižider") }).click();
   await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
   await page.locator(".cart-link").click();
   await expect(page.locator(".drawer-item")).toHaveCount(2);
-  await page.locator(".cart-drawer").getByRole("link", { name: "Otvori celu korpu" }).click();
-  await expect(page.getByText("Ukupno za ceo paket")).toBeVisible();
+  await page.locator(".cart-drawer").getByRole("link", { name: cyr("Otvori ceo frižider") }).click();
+  await expect(page.getByText(cyr("Ukupno za ceo paket"))).toBeVisible();
   const cartTotal = await page.locator(".cart-summary .summary-total > span").last().innerText();
-  await page.getByRole("link", { name: /Nastavi na podatke/ }).click();
+  await page.getByRole("link", { name: new RegExp(cyr("Nastavi na podatke")) }).click();
   await expect(page.locator(".checkout-price-preview strong")).toHaveText(cartTotal);
-  await expect(page.getByRole("button", { name: "Potvrdi porudžbinu" })).toBeDisabled();
-  await page.getByLabel("Ime i prezime").fill("Fiktivni E2E Kupac");
-  await page.getByRole("textbox", { name: "Email", exact: true }).fill(email);
-  await page.getByLabel("Broj telefona").fill("+381600000001");
-  await page.getByLabel("Ulica i broj").fill("Test ulica 1");
-  await page.getByLabel("Grad", { exact: true }).fill("Beograd");
-  await page.getByLabel("Poštanski broj", { exact: true }).fill("11000");
-  await expect(page.getByRole("radio", { name: "Utorak", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: cyr("Potvrdi porudžbinu") })).toBeDisabled();
+  await page.getByLabel(cyr("Ime i prezime")).fill("Fiktivni E2E Kupac");
+  await page.getByRole("textbox", { name: cyr("Email"), exact: true }).fill(email);
+  await page.getByLabel(cyr("Broj telefona")).fill("+381600000001");
+  await page.getByLabel(cyr("Ulica i broj")).fill("Test ulica 1");
+  await page.getByLabel(cyr("Grad"), { exact: true }).fill("Beograd");
+  await page.getByLabel(cyr("Poštanski broj"), { exact: true }).fill("11000");
+  await expect(page.getByRole("radio", { name: cyr("Utorak"), exact: true })).toBeVisible();
   // Changing the address invalidates the previous quote and updates allowed days.
-  await page.getByLabel("Grad", { exact: true }).fill("Novi Sad");
-  await page.getByLabel("Poštanski broj", { exact: true }).fill("21000");
-  await expect(page.getByRole("radio", { name: "Petak", exact: true })).toBeChecked();
-  await expect(page.getByRole("radio", { name: "Utorak", exact: true })).toHaveCount(0);
-  await page.getByLabel("Poštanski broj", { exact: true }).fill("00000");
-  await expect(page.getByRole("button", { name: "Potvrdi porudžbinu" })).toBeDisabled();
-  await page.getByLabel("Grad", { exact: true }).fill("Beograd");
-  await page.getByLabel("Poštanski broj", { exact: true }).fill("11000");
-  await page.getByRole("radio", { name: "Petak", exact: true }).check();
+  await page.getByLabel(cyr("Grad"), { exact: true }).fill("Novi Sad");
+  await page.getByLabel(cyr("Poštanski broj"), { exact: true }).fill("21000");
+  await expect(page.getByRole("radio", { name: cyr("Petak"), exact: true })).toBeChecked();
+  await expect(page.getByRole("radio", { name: cyr("Utorak"), exact: true })).toHaveCount(0);
+  await page.getByLabel(cyr("Poštanski broj"), { exact: true }).fill("00000");
+  await expect(page.getByRole("button", { name: cyr("Potvrdi porudžbinu") })).toBeDisabled();
+  await page.getByLabel(cyr("Grad"), { exact: true }).fill("Beograd");
+  await page.getByLabel(cyr("Poštanski broj"), { exact: true }).fill("11000");
+  await page.getByRole("radio", { name: cyr("Petak"), exact: true }).check();
   await page.locator(".calendar-trigger").click();
-  const calendar = page.getByRole("region", { name: "Kalendar dostave" });
+  const calendar = page.getByRole("region", { name: cyr("Kalendar dostave") });
   await expect(calendar.locator(".calendar-grid button:disabled").first()).toBeDisabled();
-  await calendar.getByRole("button", { name: "Sledeći mesec" }).click();
+  await calendar.getByRole("button", { name: cyr("Sledeći mesec") }).click();
   const dateButton = calendar.locator(".calendar-grid button:not(:disabled)").first();
   const dateLabel = await dateButton.getAttribute("aria-label");
   // A quote for the preceding weekday selection may still be in flight.
   const quoteResponse = page.waitForResponse(response => response.url().endsWith("/api/cart")
     && response.request().method() === "POST"
-    && formatDate(response.request().postDataJSON().deliveryDate) === dateLabel);
+    && formatDate(response.request().postDataJSON().deliveryDate, "sr-cyrl") === dateLabel);
   await dateButton.click();
   const selectedQuote = await (await quoteResponse).json();
   expect(new Date(`${selectedQuote.deliveryDate}T12:00:00Z`).getUTCDay()).toBe(5);
   for (const line of selectedQuote.lines) expect(line.deliveryDates[0]).toBe(selectedQuote.deliveryDate);
   await page.locator('input[type="checkbox"][required]').check();
   const createdResponse = page.waitForResponse(response => response.url().endsWith("/api/checkout") && response.request().method() === "POST");
-  await page.getByRole("button", { name: "Potvrdi porudžbinu" }).click();
+  await page.getByRole("button", { name: cyr("Potvrdi porudžbinu") }).click();
   expect((await (await createdResponse).json()).order.deliveryDate).toBe(selectedQuote.deliveryDate);
-  await expect(page.getByRole("heading", { name: "Hvala na porudžbini." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: cyr("Hvala na porudžbini.") })).toBeVisible();
 
   await page.goto("/prijava");
-  await page.getByRole("button", { name: "Napravi nalog", exact: true }).click();
-  await page.getByLabel("Email adresa").fill(email);
+  await page.getByRole("button", { name: cyr("Napravi nalog"), exact: true }).click();
+  await page.getByLabel(cyr("Email adresa")).fill(email);
   const challengeResponse = page.waitForResponse(response => response.url().endsWith("/api/auth/register") && response.request().method() === "POST");
-  await page.getByRole("button", { name: "Napravi nalog i pošalji kod" }).click();
+  await page.getByRole("button", { name: cyr("Napravi nalog i pošalji kod") }).click();
   const challenge = await (await challengeResponse).json();
-  await page.getByLabel("Šestocifreni kod").fill(challenge.localDevelopment.code);
-  await page.getByRole("button", { name: "Potvrdi kod", exact: true }).click();
+  await page.getByLabel(cyr("Šestocifreni kod")).fill(challenge.localDevelopment.code);
+  await page.getByRole("button", { name: cyr("Potvrdi kod"), exact: true }).click();
   await expect(page).toHaveURL(/\/nalog$/);
   expect(await page.evaluate(() => window.localStorage.getItem("mleko-i-mleko-session"))).toBeNull();
   expect(await page.evaluate(() => document.cookie)).not.toContain("mm_session");
   const replay = await page.request.post("/api/auth/code/verify", { headers: { origin: new URL(page.url()).origin }, data: { challengeId: challenge.challengeId, code: challenge.localDevelopment.code } });
   expect(replay.status()).toBe(401);
-  await expect(page.getByRole("heading", { name: /Zdravo, Fiktivni E2E Kupac/ })).toBeVisible();
-  await page.locator("summary").filter({ hasText: "Moje porudžbine" }).click();
+  await expect(page.getByRole("heading", { name: new RegExp(`${cyr("Zdravo,")} Fiktivni E2E Kupac`) })).toBeVisible();
+  await page.locator("summary").filter({ hasText: cyr("Moje porudžbine") }).click();
   await expect(page.locator(".account-orders > li")).toHaveCount(1);
   await expect(page.locator("body")).not.toContainText(/demo|mockup/i);
   const subscription = page.locator("[data-subscription-id]").first();
@@ -121,10 +122,10 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   });
   expect(csrf.status()).toBe(403);
   expect((await csrf.json()).error.code).toBe("CSRF_REJECTED");
-  await page.getByRole("button", { name: "Preskoči sledeću", exact: false }).click();
-  await expect(page.getByRole("region", { name: "Potvrda izmene" })).toContainText("Sledeća redovna dostava biće");
-  await page.getByRole("button", { name: "Potvrdi preskakanje" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Dostava je preskočena" })).toBeVisible();
+  await page.getByRole("button", { name: cyr("Preskoči sledeću"), exact: false }).click();
+  await expect(page.getByRole("region", { name: cyr("Potvrda izmene") })).toContainText(cyr("Sledeća redovna dostava biće"));
+  await page.getByRole("button", { name: cyr("Potvrdi preskakanje") }).click();
+  await expect(page.getByRole("status").filter({ hasText: cyr("Dostava je preskočena") })).toBeVisible();
   const conflict = await page.evaluate(async ({ id }) => {
     const response = await fetch(`/api/account/subscriptions/${encodeURIComponent(id)}`, {
       method: "PATCH",
@@ -138,51 +139,51 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   expect(conflict.body.requestId).toMatch(/^[0-9a-f-]{36}$/i);
   const quantity = subscription.getByRole("spinbutton");
   const before = Number(await quantity.inputValue());
-  await subscription.getByRole("button", { name: /^Povećaj količinu/ }).click();
+  await subscription.getByRole("button", { name: new RegExp("^" + cyr("Povećaj količinu")) }).click();
   await expect(quantity).toHaveValue(String(before + 1));
   // A draft does not silently change the subscription.
   expect((await (await page.request.get("/api/account")).json()).subscriptions[0].items[0].quantity).toBe(before);
-  await subscription.getByRole("button", { name: "Sačuvaj izmene" }).click();
-  await expect(page.getByRole("status")).toContainText("Izmena je sačuvana");
+  await subscription.getByRole("button", { name: cyr("Sačuvaj izmene") }).click();
+  await expect(page.getByRole("status")).toContainText(cyr("Izmena je sačuvana"));
   await page.reload();
   await expect(quantity).toHaveValue(String(before + 1));
-  await subscription.getByRole("button", { name: /^Smanji količinu/ }).click();
-  await subscription.getByRole("button", { name: "Sačuvaj izmene" }).click();
-  await expect(page.getByRole("status")).toContainText("Izmena je sačuvana");
-  await subscription.getByLabel(/^Ritam za/).selectOption("biweekly");
-  await subscription.getByRole("button", { name: "Sačuvaj izmene" }).click();
-  await expect(page.getByRole("status")).toContainText("Izmena je sačuvana");
-  await subscription.locator(".account-extras summary").filter({ hasText: "Dodajte nešto samo sledećoj dostavi" }).click();
-  await subscription.getByRole("region", { name: "Dodajte sledećoj dostavi" }).getByRole("button").first().click();
-  await expect(subscription.locator(".next-addon-summary")).toContainText("Dodato samo sledećoj dostavi");
-  await subscription.getByRole("button", { name: /Pauziraj dostave/ }).click();
+  await subscription.getByRole("button", { name: new RegExp("^" + cyr("Smanji količinu")) }).click();
+  await subscription.getByRole("button", { name: cyr("Sačuvaj izmene") }).click();
+  await expect(page.getByRole("status")).toContainText(cyr("Izmena je sačuvana"));
+  await subscription.getByLabel(new RegExp("^" + cyr("Ritam za"))).selectOption("biweekly");
+  await subscription.getByRole("button", { name: cyr("Sačuvaj izmene") }).click();
+  await expect(page.getByRole("status")).toContainText(cyr("Izmena je sačuvana"));
+  await subscription.locator(".account-extras summary").filter({ hasText: cyr("Dodajte nešto samo sledećoj dostavi") }).click();
+  await subscription.getByRole("region", { name: cyr("Dodajte sledećoj dostavi") }).getByRole("button").first().click();
+  await expect(subscription.locator(".next-addon-summary")).toContainText(cyr("Dodato samo sledećoj dostavi"));
+  await subscription.getByRole("button", { name: new RegExp(cyr("Pauziraj dostave")) }).click();
   const currentSubscription = (await (await page.request.get("/api/account")).json()).subscriptions[0];
   const pauseUntil = new Date(new Date(`${currentSubscription.nextDeliveryDate}T12:00:00Z`).getTime() + 14 * 86400000).toISOString().slice(0, 10);
-  await subscription.getByLabel("Pauziraj do").fill(pauseUntil);
+  await subscription.getByLabel(cyr("Pauziraj do")).fill(pauseUntil);
   expect((await (await page.request.get("/api/account")).json()).subscriptions[0].status).toBe("active");
-  await subscription.getByRole("button", { name: "Potvrdi pauzu" }).click();
-  await expect(subscription.getByRole("button", { name: "Nastavi pretplatu" })).toBeVisible();
-  await expect(subscription).toContainText("Dostave se zatim nastavljaju automatski");
+  await subscription.getByRole("button", { name: cyr("Potvrdi pauzu") }).click();
+  await expect(subscription.getByRole("button", { name: cyr("Nastavi pretplatu") })).toBeVisible();
+  await expect(subscription).toContainText(cyr("Dostave se zatim nastavljaju automatski"));
   await page.reload();
-  await expect(subscription.getByRole("button", { name: "Nastavi pretplatu" })).toBeVisible();
-  await subscription.getByRole("button", { name: "Nastavi pretplatu" }).click();
-  await expect(subscription.getByRole("button", { name: /Pauziraj dostave/ })).toBeVisible();
-  await expect(page.locator("#istorija-dostava")).toContainText("Preskočena");
-  await page.getByLabel("Prikaži", { exact: true }).selectOption("delivered");
-  await expect(page.locator("#istorija-dostava")).toContainText("Još nema dostava u ovom prikazu.");
+  await expect(subscription.getByRole("button", { name: cyr("Nastavi pretplatu") })).toBeVisible();
+  await subscription.getByRole("button", { name: cyr("Nastavi pretplatu") }).click();
+  await expect(subscription.getByRole("button", { name: new RegExp(cyr("Pauziraj dostave")) })).toBeVisible();
+  await expect(page.locator("#istorija-dostava")).toContainText(cyr("Preskočena"));
+  await page.getByLabel(cyr("Prikaži"), { exact: true }).selectOption("delivered");
+  await expect(page.locator("#istorija-dostava")).toContainText(cyr("Još nema dostava u ovom prikazu."));
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   const axe = await new AxeBuilder({ page }).include(".account-dashboard").analyze();
   expect(axe.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
-  await subscription.getByRole("button", { name: "Otkaži pretplatu", exact: true }).click();
-  await subscription.getByRole("button", { name: "Potvrdi otkazivanje" }).click();
+  await subscription.getByRole("button", { name: cyr("Otkaži pretplatu"), exact: true }).click();
+  await subscription.getByRole("button", { name: cyr("Potvrdi otkazivanje") }).click();
   await expect(quantity).toBeDisabled();
   await page.reload();
   await expect(quantity).toBeDisabled();
-  await page.getByRole("button", { name: "Odjavi se", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Prijavite se kodom" })).toBeVisible();
+  await page.getByRole("button", { name: cyr("Odjavi se"), exact: true }).click();
+  await expect(page.getByRole("heading", { name: cyr("Prijavite se kodom") })).toBeVisible();
   expect((await page.request.get("/api/account")).status()).toBe(401);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Prijavite se kodom" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: cyr("Prijavite se kodom") })).toBeVisible();
 
 });
 
@@ -212,37 +213,34 @@ test("public pages have no serious or critical automated accessibility findings"
 test("hero priorities remain visible and a custom milk selection survives the cart", async ({ page }) => {
   await page.goto("/");
   await acceptNecessary(page);
-  // Headline, description and the primary action are fully inside the first screen
-  // without waiting for media. toBeInViewport retries, so a poster settling into place
-  // cannot turn this into a flake.
-  for (const target of [
-    page.locator(".scene-intro h1"),
-    page.locator(".scene-lead"),
-    page.locator(".scene-actions .button"),
-  ]) {
-    await expect(target).toBeInViewport({ ratio: 1 });
-  }
+  // The hero carries a visually hidden h1 and one call to action ("Sa paše do flaše"); the
+  // action is fully inside the first screen without waiting for media. toBeInViewport
+  // retries, so a poster settling into place cannot turn this into a flake.
+  await expect(page.locator(".scene-intro h1")).toBeAttached();
+  await expect(page.locator(".hero-cta")).toHaveText(cyr("Sa paše do flaše"));
+  await expect(page.locator(".hero-cta")).toBeInViewport({ ratio: 1 });
   await expect(page.locator(".scene-poster img")).toBeAttached();
 
   await page.locator(".scene-actions .button").click();
   await expect(page.locator("#offer-title")).toBeInViewport();
 
   const card = page.locator(".configurator").first();
-  await card.getByRole("button", { name: "4 L", exact: true }).click();
-  await expect(card.locator(".configurator-total")).toContainText("1.000");
-  await card.getByRole("button", { name: "Druga količina", exact: true }).click();
+  await card.getByRole("button", { name: cyr("4 L"), exact: true }).click();
+  // The home card is trimmed (17 Nov 2026): no totals block, no details link; the price stays.
+  await expect(card.locator(".configurator-total")).toHaveCount(0);
+  await expect(card.locator(".configurator-price strong")).toBeVisible();
+  await card.getByRole("button", { name: cyr("Druga količina"), exact: true }).click();
   await card.getByRole("spinbutton").fill("3");
-  await card.getByRole("button", { name: "Redovna dostava" }).click();
-  await card.getByRole("button", { name: "Svake 2 nedelje" }).click();
-  await expect(card.locator(".configurator-total")).toContainText("750");
-  await card.locator(".configurator-actions button", { hasText: "Dodaj u korpu" }).click();
+  await card.getByRole("button", { name: cyr("Redovna dostava") }).click();
+  await card.getByRole("button", { name: cyr("Svake 2 nedelje") }).click();
+  await card.locator(".configurator-actions button", { hasText: cyr("Napuni frižider") }).click();
   await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
   await page.locator(".cart-link").click();
 
-  await expect(page.locator(".drawer-item-meta").first()).toContainText("3 L po dostavi · svake 2 nedelje");
-  await page.locator(".cart-drawer").getByRole("link", { name: "Otvori celu korpu" }).click();
-  await expect(page.getByRole("spinbutton", { name: "Količina za Domaće kravlje mleko" })).toHaveValue("3");
-  await expect(page.getByLabel("Ritam isporuke za Domaće kravlje mleko")).toHaveValue("biweekly");
-  await expect(page.getByLabel("Tip kupovine za Domaće kravlje mleko")).toHaveValue("subscription");
+  await expect(page.locator(".drawer-item-meta").first()).toContainText(cyr("3 L po dostavi · svake 2 nedelje"));
+  await page.locator(".cart-drawer").getByRole("link", { name: cyr("Otvori ceo frižider") }).click();
+  await expect(page.getByRole("spinbutton", { name: cyr("Količina za Domaće kravlje mleko") })).toHaveValue("3");
+  await expect(page.getByLabel(cyr("Ritam isporuke za Domaće kravlje mleko"))).toHaveValue("biweekly");
+  await expect(page.getByLabel(cyr("Tip kupovine za Domaće kravlje mleko"))).toHaveValue("subscription");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });

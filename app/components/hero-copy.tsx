@@ -5,44 +5,31 @@ import { homeCopy } from "../lib/content";
 
 type HeroCopyProps = {
   offerHref: string;
-  deliveryHref: string;
-  /** The mid-scroll sticker only has a job in the scroll scene, which fades it in. */
+  /** Kept for the scroll scene's signature; the hero now offers a single action. */
+  deliveryHref?: string;
+  /** Kept for the scroll scene's signature; the hero no longer shows the rhythm sticker. */
   withRhythm?: boolean;
 };
 
 /**
- * The hero's words, shared by the scroll scene and the ambient loop. The class names
- * are what the e2e specs and the scroll engine's custom properties hang on, and the
- * h1 stays plain text: the rendered-HTML tests match it as a single string.
+ * The hero's words. The footage carries the story, so the only visible element is the
+ * one action (meeting 17 Nov 2026: all hero copy removed, "Sa paše do flaše" button).
+ * The h1 stays for assistive technology and search, visually hidden.
  */
-export function HeroCopy({ offerHref, deliveryHref, withRhythm = true }: HeroCopyProps) {
+export function HeroCopy({ offerHref }: HeroCopyProps) {
   const localize = useLocalize();
   const copy = homeCopy.hero;
   return localize((
     <div className="scene-copy">
       <div className="page-shell scene-copy-shell">
         <div className="scene-intro">
-          <p className="eyebrow">{copy.eyebrow}</p>
-          <h1 id="hero-title">{copy.title}</h1>
-          <p className="scene-lead">{copy.lead}</p>
+          <h1 id="hero-title" className="visually-hidden">{copy.title}</h1>
           <div className="scene-actions">
-            <a className="button go" href={offerHref}>
+            <a className="button go hero-cta" href={offerHref}>
               {copy.primaryCta}
             </a>
-            <a className="scene-secondary" href={deliveryHref}>
-              {copy.secondaryCta}
-            </a>
           </div>
-          <p className="scene-hint" aria-hidden="true">
-            {copy.hint}
-          </p>
         </div>
-        {withRhythm ? (
-          <p className="scene-rhythm" aria-hidden="true">
-            <strong>{copy.rhythmTitle}</strong>
-            <span>{copy.rhythmSub}</span>
-          </p>
-        ) : null}
       </div>
     </div>
   ));

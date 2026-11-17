@@ -3,7 +3,7 @@ import { languageTags } from "./lib/i18n/routing";
 import { LocaleProvider } from "./lib/i18n/client";
 import { localizeSchema } from "./lib/i18n/render";
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Montserrat } from "next/font/google";
 import { ApplicationShell } from "./components/application-shell";
 import { absoluteUrl, canonicalUrl, getSiteUrl, serializeJsonLd } from "./lib/seo";
 import { getStorefront } from "../server/storefront";
@@ -26,6 +26,7 @@ import "./styles/home/faq.css";
 import "./styles/home/closing.css";
 import "./styles/pages/commerce.css";
 import "./styles/pages/content.css";
+import "./styles/redesign.css";
 import "./styles/admin.css";
 
 export const dynamic = "force-dynamic";
@@ -34,6 +35,15 @@ export const runtime = "nodejs";
 const geist = Geist({
   variable: "--font-geist",
   subsets: ["latin", "latin-ext", "cyrillic"],
+});
+
+// Market Grotesk has no Cyrillic, and the storefront opens in Cyrillic. Montserrat's
+// heavy cuts fill in those glyphs in display type, close to the chunky caps of the
+// Kafeterija reference (meeting 17 Nov 2026).
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
+  subsets: ["latin", "latin-ext", "cyrillic"],
+  weight: ["700", "800", "900"],
 });
 
 const baseMetadata: Metadata = {
@@ -108,7 +118,7 @@ export default async function RootLayout({
       lang={languageTags[locale]}
       data-scroll-behavior="smooth"
       data-clarity-mask="true"
-      className={geist.variable}
+      className={`${geist.variable} ${montserrat.variable}`}
     >
       <body>
         <script

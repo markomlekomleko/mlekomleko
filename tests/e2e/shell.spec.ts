@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { cyr } from "./cyr";
 
 // The same stored decision the "Samo neophodno" button writes (production-readiness
 // acceptNecessary), set before the first load so the banner never covers the shell.
@@ -66,25 +67,26 @@ test("the content marquee scrolls by default and stands still with reduced motio
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.reload();
   await expect(rail).toHaveCSS("animation-name", "none");
-  // Nothing moves, so the pause control is not offered.
-  await expect(page.locator(".motion-toggle")).toBeHidden();
+  // Nothing moves, so no pause control is offered either.
+  await expect(page.locator(".motion-toggle")).toHaveCount(0);
 });
 
-test("the motion toggle pauses the content marquee and remembers the choice", async ({ page }) => {
+// toggle removed from footer per client 17 Nov 2026 (reduced-motion is covered above).
+test.skip("the motion toggle pauses the content marquee and remembers the choice", async ({ page }) => {
   await acceptNecessary(page);
   await page.goto("/");
   await parkPointer(page);
   const rail = page.locator(".marquee-rail").first();
   const toggle = page.locator(".motion-toggle");
   await expect(toggle).toHaveAttribute("aria-pressed", "false");
-  await expect(toggle).toHaveAccessibleName("Zaustavi animacije");
+  await expect(toggle).toHaveAccessibleName(cyr("Zaustavi animacije"));
 
   // A click that lands before hydration is lost; retry until the button answers.
   await expect(async () => {
     await toggle.click();
     await expect(toggle).toHaveAttribute("aria-pressed", "true", { timeout: 1_000 });
   }).toPass();
-  await expect(toggle).toHaveAccessibleName("Zaustavi animacije");
+  await expect(toggle).toHaveAccessibleName(cyr("Zaustavi animacije"));
   await expect(page.locator("html")).toHaveAttribute("data-motion", "paused");
   await expect(rail).toHaveCSS("animation-play-state", "paused");
 
@@ -102,15 +104,15 @@ test("the motion toggle pauses the content marquee and remembers the choice", as
 });
 
 test("Escape closes the mobile menu and returns focus to Meni", async ({ page }) => {
-  test.skip(page.viewportSize()!.width > 860, "The menu button only exists up to 860px");
+  test.skip(page.viewportSize()!.width > 1180, "The menu button only exists up to 1180px");
   await acceptNecessary(page);
   await page.goto("/");
-  const menu = page.getByRole("button", { name: "Meni" });
+  const menu = page.getByRole("button", { name: cyr("Meni") });
   await expect(async () => {
     await menu.click();
     await expect(menu).toHaveAttribute("aria-expanded", "true", { timeout: 1_000 });
   }).toPass();
-  await expect(page.getByRole("navigation", { name: "Glavna navigacija" }).getByRole("link", { name: "Prodavnica", exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: cyr("Glavna navigacija") }).getByRole("link", { name: cyr("Izaberi svoje mleko"), exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(menu).toHaveAttribute("aria-expanded", "false");
   await expect(menu).toBeFocused();

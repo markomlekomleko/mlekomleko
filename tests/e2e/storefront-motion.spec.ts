@@ -67,42 +67,34 @@ test("native scrolling advances both hero story steps and reaches the final fram
   expect(back.time).toBeLessThan(middle.time);
 });
 
-test("hero stays centred and advances on the first scroll beneath the header", async ({ page }) => {
+test("hero stays pinned, shows only the call to action and advances on the first scroll beneath the header", async ({ page }) => {
   await hideConsent(page);
   await page.goto("/", { waitUntil: "networkidle" });
   await expect(page.locator(".hero")).toHaveAttribute("data-video", "ready", { timeout: 20_000 });
+  // The hero carries no copy any more (17 Nov 2026): a visually hidden h1 and one call to action.
   await expect(page.locator(".scene-actions a")).toHaveCount(1);
-  await expect(page.locator(".scene-actions .button")).toBeInViewport({ ratio: 1 });
+  await expect(page.locator(".hero-cta")).toBeInViewport({ ratio: 1 });
+  await expect(page.locator(".scene-rhythm, .scene-lead, .hero-eyebrow")).toHaveCount(0);
   const geometry = await page.evaluate(() => {
     const pin = document.querySelector(".scene-pin")!.getBoundingClientRect();
-    const intro = document.querySelector(".scene-intro")!.getBoundingClientRect();
+    const cta = document.querySelector(".hero-cta")!.getBoundingClientRect();
     const header = document.querySelector("[data-hero-header]")!.getBoundingClientRect();
     return {
-      top: pin.top, centre: pin.top + pin.height / 2,
-      introX: intro.x + intro.width / 2, introY: intro.y + intro.height / 2,
+      top: pin.top,
+      ctaX: cta.x + cta.width / 2,
       headerBottom: header.bottom,
       time: (document.querySelector(".scene-video") as HTMLVideoElement).currentTime,
       travel: document.querySelector(".scene-track")!.getBoundingClientRect().height - pin.height,
     };
   });
   expect(geometry.top).toBeCloseTo(geometry.headerBottom, 0);
-  expect(geometry.introX).toBeCloseTo(page.viewportSize()!.width / 2, 0);
-  expect(geometry.introY).toBeCloseTo(geometry.centre, 0);
+  expect(geometry.ctaX).toBeCloseTo(page.viewportSize()!.width / 2, 0);
   await page.evaluate(() => window.scrollTo({ top: 32, behavior: "instant" }));
   await expect.poll(() => page.locator(".scene-video").evaluate((video: HTMLVideoElement) => video.currentTime)).toBeGreaterThan(geometry.time);
-  const after = await page.evaluate(() => ({
-    top: document.querySelector(".scene-pin")!.getBoundingClientRect().top,
-    introY: (() => { const rect = document.querySelector(".scene-intro")!.getBoundingClientRect(); return rect.y + rect.height / 2; })(),
-  }));
-  expect(after.top).toBeCloseTo(geometry.top, 0);
-  // The outgoing title intentionally moves up 12px while fading; the pinned scene stays centred.
-  expect(after.introY).toBeLessThanOrEqual(geometry.introY + 0.5);
-  expect(after.introY).toBeGreaterThanOrEqual(geometry.introY - 12.5);
+  const after = await page.evaluate(() => document.querySelector(".scene-pin")!.getBoundingClientRect().top);
+  expect(after).toBeCloseTo(geometry.top, 0);
   await page.evaluate((top) => window.scrollTo({ top, behavior: "instant" }), geometry.travel * 0.7);
-  await expect.poll(() => page.locator(".scene-rhythm").evaluate((element) => Number(getComputedStyle(element).opacity))).toBeGreaterThan(0.99);
-  const rhythm = await page.locator(".scene-rhythm").boundingBox();
-  expect(rhythm!.x + rhythm!.width / 2).toBeCloseTo(page.viewportSize()!.width / 2, 0);
-  expect(rhythm!.y + rhythm!.height / 2).toBeCloseTo(geometry.centre, 0);
+  await expect.poll(() => page.locator(".hero").evaluate(element => Number(getComputedStyle(element).getPropertyValue("--hero-p")))).toBeGreaterThan(0.5);
 });
 
 test("a failed hero export still leaves a usable poster and a working offer link", async ({ page }) => {

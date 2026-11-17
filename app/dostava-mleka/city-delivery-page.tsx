@@ -66,11 +66,11 @@ export async function CityDeliveryPage({
                   Biraš litre i da li želiš jednu ili redovnu dostavu.
                 </p>
                 <div className="button-row">
-                  <a className="button" href="/prodavnica">Izaberi mleko</a>
+                  <Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko</Link>
                   <a className="button secondary" href="/kako-funkcionise">Kako funkcioniše</a>
                 </div>
               </div>
-              <ContentStamp glyph="bottle" />
+              <ContentStamp />
             </div>
           </div>
         </header>

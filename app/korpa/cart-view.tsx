@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useAnalytics } from "../components/analytics-provider";
@@ -105,16 +106,16 @@ export function CartView() {
     track("subscription_selected", { placement: "cart_upsell", itemCount: items.length });
   }
 
-  if (!ready) return localize(<div className="page-shell cart-page"><p className="loading-state" role="status">Učitavamo korpu…</p></div>);
+  if (!ready) return localize(<div className="page-shell cart-page"><p className="loading-state" role="status">Otvaramo frižider…</p></div>);
 
   if (items.length === 0) {
     return localize((
       <div className="page-shell narrow cart-page">
         <div className="empty-state empty-cart">
-          <p className="eyebrow">Korpa</p>
-          <h1>Tvoja korpa je spremna za prvi proizvod.</h1>
+          <p className="eyebrow">Napuni frižider</p>
+          <h1>Tvoj frižider čeka prvo mleko.</h1>
           <p className="lead">Dodaj proizvod jednokratno ili izaberi redovnu dostavu.</p>
-          <a className="button" href="/prodavnica">Sastavi dostavu →</a>
+          <Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko →</Link>
         </div>
       </div>
     ));
@@ -123,7 +124,7 @@ export function CartView() {
   return localize((
     <div className="page-shell cart-page">
       <header className="page-heading compact-heading">
-        <p className="eyebrow">Korpa</p>
+        <p className="eyebrow">Napuni frižider</p>
         <h1>Još samo dostava.</h1>
         <p className="lead">Sve cene i termini proveravaju se direktno iz ponude pre potvrde.</p>
       </header>
@@ -158,7 +159,7 @@ export function CartView() {
               can span several subscription deliveries, so the wording says "obračun" then. */}
           {quote && quote.freeDeliveryThresholdMinor > 0 ? <div className={`delivery-progress ${quote.freeDeliveryRemainingMinor === 0 ? "complete" : ""}`}><div className="summary-row"><strong>{quote.freeDeliveryRemainingMinor > 0 ? (hasSubscriptionPeriods ? `Do besplatne dostave za ovaj obračun nedostaje ${formatMoney(quote.freeDeliveryRemainingMinor / 100, locale)}` : `Do besplatne dostave nedostaje ${formatMoney(quote.freeDeliveryRemainingMinor / 100, locale)}`) : quote.deliveryFeeMinor === 0 ? "Dostava za ovaj obračun je bez naknade." : "Proveravamo troškove dostave."}</strong><small>{formatMoney(quote.freeDeliveryThresholdMinor / 100, locale)}</small></div><span><i style={{ width: `${Math.min(100, quote.subtotalMinor / quote.freeDeliveryThresholdMinor * 100)}%` }} /></span></div> : null}
           <a className={`button ${!quote ? "disabled-link" : ""}`} href={quote ? "/checkout" : "#"} onClick={(event) => { if (!quote) event.preventDefault(); else track("checkout_clicked", { valueRsd: quote.totalMinor / 100, itemCount: items.length }); }}>Nastavi na podatke za dostavu →</a>
-          <a className="button secondary" href="/prodavnica">Dodaj još proizvoda</a>
+          <Link className="button secondary" href="/#izaberite-mleko">Dodaj još mleka</Link>
           <p className="secure-note">Tačan iznos proveravamo još jednom pre potvrde.</p>
         </aside>
       </div>

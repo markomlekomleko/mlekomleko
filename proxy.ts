@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { splitLocale, defaultLocale } from "./app/lib/i18n/routing";
+import { splitLocale, defaultLocale, sourceLocale } from "./app/lib/i18n/routing";
 
 export function proxy(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -12,7 +12,7 @@ export function proxy(request: NextRequest) {
   }
   const headers = new Headers(request.headers);
   // Overwrite, rather than trust, any locale headers supplied by the caller.
-  headers.set("x-store-locale", privatePath || asset ? defaultLocale : locale);
+  headers.set("x-store-locale", privatePath || asset ? sourceLocale : locale);
   headers.set("x-store-path", path);
   if (prefixed) {
     const url = new URL(requestUrl); url.pathname = path;

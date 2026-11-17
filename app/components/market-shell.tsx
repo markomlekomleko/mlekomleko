@@ -64,7 +64,7 @@ export function MarketHeader({ storeName }: { storeName: string }) {
       {visible && <nav id="market-mobile-nav" className={styles.mobileNavigation} aria-label="Mobilna navigacija">
         {navigation.flatMap((group) => group.links).map(([label, href]) => <Link href={href} key={href} onClick={() => setMenuOpen(false)}>{label}</Link>)}
         <Link href="/kontakt" onClick={() => setMenuOpen(false)}>Kontakt</Link>
-        <button onClick={() => { setMenuOpen(false); openDrawer(); }}>Korpa{ready && count > 0 ? ` (${count})` : ""}</button>
+        <button onClick={() => { setMenuOpen(false); openDrawer(); }}>Frižider{ready && count > 0 ? ` (${count})` : ""}</button>
       </nav>}
     </header>
   );

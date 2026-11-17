@@ -55,7 +55,7 @@ export function ProductDetail({
       <nav className="breadcrumbs" aria-label="Putanja">
         <Link href="/">Početna</Link>
         <span aria-hidden="true">/</span>
-        <a href="/prodavnica">Prodavnica</a>
+        <Link href="/#izaberite-mleko">Izaberi svoje mleko</Link>
         <span aria-hidden="true">/</span>
         <span aria-current="page">{product.name}</span>
       </nav>
@@ -164,7 +164,7 @@ export function ProductDetail({
           disabled={selection.disabled}
           onClick={() => addToCart.current()}
         >
-          Dodaj u korpu
+          Napuni frižider
         </button>
       </div>
     </div>

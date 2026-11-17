@@ -1,51 +1,91 @@
+/* eslint-disable @next/next/no-img-element -- Pre-optimised local illustrations and photos. */
 import { localizedMetadata } from "@/app/lib/i18n/server";
 import { getLocalize } from "@/app/lib/i18n/server";
-import { OriginGallery } from "../components/origin-gallery";
-import { getBusinessSettings } from "@/server/settings";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { milkQuestions } from "../lib/content";
 import { canonicalUrl } from "../lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
-  title: "Kravlje i kozje",
-  description: "Put domaćeg kravljeg i kozjeg mleka od farme do tvoje adrese.",
+  title: "Poreklo tvog mleka",
+  description: "Odakle dolazi domaće kravlje i kozje mleko, šta je u flaši i zašto staklo.",
   alternates: { canonical: canonicalUrl("/farme") },
 }); }
 
-export default async function FarmsPage() {
+const inBottle = [
+  { art: "muza", title: "Punomasno i sirovo", text: "Prirodan ukus i punoća od koje možeš da napraviš pravi domaći kajmak." },
+  { art: "flasiranje", title: "Dokumentovan kvalitet", text: "Podatke o kontroli i deklaraciji objavljujemo uz proizvod kada su potvrđeni dokumentacijom dobavljača." },
+  { art: "povratne-flase", title: "Povratno staklo", text: "Čiste korišćene flaše vraćaš pri sledećoj dostavi, a preuzimaš pune." },
+] as const;
+
+/**
+ * Where the milk comes from (meeting 17 Nov 2026: "Glavne uloge" removed, the sections
+ * about what is in the milk widened with pictures, and only milk questions here — the
+ * subscription questions live on the Mesečna pretplata page).
+ */
+export default async function OriginPage() {
   const localize = await getLocalize();
-  const settings = await getBusinessSettings();
   return localize((
-    <div className="content-page">
-      <header className="content-band content-hero">
-        <div className="page-shell content-split">
+    <div className="content-page origin-page">
+      <header className="content-band sub-hero">
+        <div className="page-shell sub-hero-grid">
           <div className="page-heading">
-            <p className="eyebrow">Put našeg mleka</p>
-            <h1>Glavne uloge: krave i koze.</h1>
-            <p className="lead">Dve vrste mleka, isti dogovor: biraš koliko i kada, a mi donosimo u povratnim staklenim flašama.</p>
-            <div className="button-row"><a className="button" href="/prodavnica">Izaberi mleko →</a><a className="button secondary" href="/kontakt">Kontakt</a></div>
+            <p className="eyebrow">Poreklo tvog mleka</p>
+            <h1>Sa paše do flaše.</h1>
+            <p className="lead">Kravlje i kozje mleko sa domaćih porodičnih farmi, u povratnim staklenim flašama — do tvojih vrata ili do mlekomata u tvom kraju.</p>
+            <div className="button-row"><Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko</Link><a className="button secondary" href="/kako-funkcionise">Put tvog mleka</a></div>
           </div>
-          <div className="content-media"><OriginGallery cow={settings.originCowImageUrl} goat={settings.originGoatImageUrl} /></div>
+          <img className="sub-hero-art" src="/images/ilustracije/pasnjak.webp" alt="Domaćica na pašnjaku sa kozom i kravom" width="1200" height="900" />
         </div>
       </header>
 
-      <section className="content-band" aria-labelledby="profil-title">
+      <section className="content-band" aria-labelledby="u-flasi-title">
         <div className="page-shell">
-          <div className="section-head"><p className="eyebrow">Šta dobijaš</p><h2 id="profil-title">Kvalitet koji možeš da prepoznaš.</h2></div>
+          <div className="section-head"><p className="eyebrow">Šta dobijaš</p><h2 id="u-flasi-title">Šta je u flaši.</h2></div>
           <div className="content-grid content-grid--3">
-            <article className="content-card"><span className="content-card-index" aria-hidden="true">01</span><h3>Punomasno i sirovo</h3><p>Prirodan ukus i punoća od koje možeš da napraviš pravi domaći kajmak.</p></article>
-            <article className="content-card"><span className="content-card-index" aria-hidden="true">02</span><h3>Dokumentovan kvalitet</h3><p>Podatke o kontroli i deklaraciji objavljujemo uz proizvod kada su potvrđeni dokumentacijom dobavljača.</p></article>
-            <article className="content-card"><span className="content-card-index" aria-hidden="true">03</span><h3>Povratno staklo</h3><p>Čiste korišćene flaše vraćaš pri sledećoj dostavi, a preuzimaš pune.</p></article>
+            {inBottle.map((item) => (
+              <article className="content-card art-card" key={item.title}>
+                <img src={`/images/ilustracije/${item.art}.webp`} alt="" width="1200" height="900" loading="lazy" />
+                <h3>{item.title}</h3>
+                <p>{item.text}</p>
+              </article>
+            ))}
           </div>
         </div>
       </section>
 
-      <section className="content-band content-band--brand farm-route" aria-labelledby="ruta-title">
+      <section className="content-band pattern-ground" aria-labelledby="dve-vrste-title">
         <div className="page-shell">
-          <div className="farm-route-grid">
-            <div><p className="eyebrow">Put proizvoda</p><h2 id="ruta-title">Od potvrđene količine do tvoje adrese.</h2></div>
-            <ol><li><strong>Planiranje</strong><span>Porudžbine se zaključavaju pre pripreme.</span></li><li><strong>Priprema</strong><span>Farma dobija zbir potrebnih količina.</span></li><li><strong>Ruta</strong><span>Dostava se grupiše po terminu i adresi.</span></li><li><strong>Kontrola</strong><span>Problem se vezuje za konkretnu porudžbinu.</span></li></ol>
+          <div className="kinds-card">
+            <div className="section-head"><p className="eyebrow">Dve vrste mleka</p><h2 id="dve-vrste-title">Kravlje i kozje.</h2></div>
+            <div className="kinds-grid">
+              <article className="kind" data-kind="cow">
+                <img src="/images/karusel/kravlje-krava.webp" alt="Krava na pašnjaku" width="1080" height="1350" loading="lazy" />
+                <h3>Domaće kravlje mleko</h3>
+                <p>Punomasno, punog ukusa — za kafu, kačamak i domaći kajmak.</p>
+              </article>
+              <article className="kind" data-kind="goat">
+                <img src="/images/karusel/kozje-koza.webp" alt="Koza na pašnjaku" width="1080" height="1350" loading="lazy" />
+                <h3>Domaće kozje mleko</h3>
+                <p>Punomasno i sirovo, sa domaćih farmi — za one koji traže baš kozje.</p>
+              </article>
+            </div>
           </div>
-          <aside className="farm-disclosure"><strong>Poreklo mleka</strong><p>Za dodatne informacije o dobavljačima i poreklu proizvoda <a href="/kontakt">kontaktiraj nas</a>.</p></aside>
+        </div>
+      </section>
+
+      <section className="content-band content-band--soft" aria-labelledby="mleko-pitanja-title">
+        <div className="page-shell">
+          <div className="section-head"><p className="eyebrow">Pitanja o mleku</p><h2 id="mleko-pitanja-title">Šta te zanima o mleku?</h2></div>
+          <div className="details-list faq-list">
+            {milkQuestions.map(({ question, answer }) => (
+              <details key={question}>
+                <summary><span className="faq-question">{question}</span><span className="faq-icon" aria-hidden="true" /></summary>
+                <p className="faq-answer">{answer}</p>
+              </details>
+            ))}
+          </div>
+          <p className="faq-contact">Pitanja o dostavi i pretplati su na strani <a className="text-link" href="/kako-funkcionise">Mesečna pretplata</a>.</p>
         </div>
       </section>
     </div>

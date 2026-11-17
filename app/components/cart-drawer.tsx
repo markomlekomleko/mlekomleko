@@ -206,19 +206,19 @@ export function CartDrawer() {
         data-open={drawerOpen}
         role="dialog"
         aria-modal="true"
-        aria-label="Tvoja korpa"
+        aria-label="Napuni frižider"
         aria-hidden={!drawerOpen}
         inert={!drawerOpen}
       >
         <div ref={panel} className="cart-drawer-panel">
           <header className="cart-drawer-head">
             <div>
-              <h2>Tvoja korpa</h2>
+              <h2>Napuni frižider</h2>
               <p className="muted small-text">
                 {pluralUnits(items.reduce((sum, item) => sum + item.quantity, 0))}
               </p>
             </div>
-            <button type="button" className="icon-button" onClick={close} aria-label="Zatvori korpu">
+            <button type="button" className="icon-button" onClick={close} aria-label="Zatvori frižider">
               ✕
             </button>
           </header>
@@ -226,7 +226,7 @@ export function CartDrawer() {
           <div className="cart-drawer-body">
             {items.length === 0 ? (
               <div className="cart-drawer-empty">
-                <p>Korpa je prazna.</p>
+                <p>Frižider je još prazan.</p>
                 <Link className="button" href="/#izaberite-mleko" onClick={close}>
                   Izaberi mleko
                 </Link>
@@ -324,7 +324,7 @@ export function CartDrawer() {
                     </div>
                     <div className="drawer-offer-actions">
                       <button type="button" className="button small" disabled={offerBusy} onClick={() => addOffer(offer)}>
-                        Dodaj u korpu
+                        Napuni frižider
                       </button>
                       <button
                         type="button"
@@ -427,7 +427,7 @@ export function CartDrawer() {
                 Nastavi na poručivanje
               </a>
               <a className="text-link drawer-full-cart" href="/korpa" onClick={close}>
-                Otvori celu korpu
+                Otvori ceo frižider
               </a>
             </footer>
           ) : null}

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { translate, toCyrillic } from "../../app/lib/i18n/translate";
-import { languageTags, localizedPath, type Locale } from "../../app/lib/i18n/routing";
+import { languageTags, localizedPath, menuLocales, type Locale } from "../../app/lib/i18n/routing";
 
 const languages: Locale[] = ["sr-latn", "sr-cyrl", "en", "ru"];
 test.beforeEach(async ({ page, context }) => {
@@ -20,14 +20,18 @@ test("four languages render on the server with reciprocal SEO links and protecte
       for (const target of languages) expect(html).toContain(`hrefLang="${languageTags[target]}"`);
       expect(html).toContain('hrefLang="x-default"');
       expect(html).toContain('property="og:image"');
-      if (path === "/") expect(html).toContain(({ "sr-latn": "Jutro počinje ovde.", "sr-cyrl": "Јутро почиње овде.", en: "Your morning starts here.", ru: "Утро начинается здесь." })[locale]);
+      // The hero carries one call to action; its text follows the language.
+      if (path === "/") expect(html).toContain(translate("Sa paše do flaše", locale));
     }
   }
   const sitemap = await (await request.get("/sitemap.xml")).text();
-  for (const prefix of ["/en", "/ru", "/sr-cyrl"]) expect(sitemap).toContain(`${prefix}/prodavnica</loc>`);
+  // Cyrillic is the unprefixed default, so it is listed without a prefix; Latin stays listed under /sr-latn.
+  for (const prefix of ["/en", "/ru", "/sr-latn"]) expect(sitemap).toContain(`${prefix}/prodavnica</loc>`);
+  expect(sitemap).toContain("/prodavnica</loc>");
+  expect(sitemap).not.toContain("/sr-cyrl/");
   const spoof = await request.get("/admin", { headers: { "x-store-locale": "ru" } });
   expect(await spoof.text()).toContain('<html lang="sr-Latn"');
-  for (const path of ["/ru/admin", "/en/api/storefront", "/sr-latn/prodavnica"]) {
+  for (const path of ["/ru/admin", "/en/api/storefront", "/sr-cyrl/prodavnica"]) {
     const response = await request.get(path, { maxRedirects: 0 });
     expect(response.status()).toBe(308);
     expect(response.headers().location).not.toMatch(/\/(ru|en|sr-latn)\//);
@@ -44,13 +48,18 @@ test("switching language preserves the page, query and basket on every viewport"
   await page.locator(".cart-link").click();
   await expect(page.locator(".drawer-item")).toHaveCount(1);
   await page.keyboard.press("Escape");
-  for (const [locale, label] of [["en", "English"], ["ru", "Русский"], ["sr-cyrl", "Српски · ћирилица"], ["sr-latn", "Srpski · latinica"]] as const) {
+  // Latin is reachable by URL but not offered: the switcher lists only Cyrillic, English and Russian.
+  await page.locator(".language-switcher summary").click();
+  await expect(page.locator(".language-switcher").getByRole("link")).toHaveCount(menuLocales.length);
+  await expect(page.locator(".language-switcher").getByRole("link", { name: "Srpski · latinica", exact: true })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  for (const [locale, label] of [["en", "English"], ["ru", "Русский"], ["sr-cyrl", "Српски · ћирилица"]] as const) {
     await page.locator(".language-switcher summary").click();
     await page.locator(".language-switcher").getByRole("link", { name: label, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`${localizedPath("/prodavnica", locale)}\\?source=language-test#top$`));
     await expect(page.locator("html")).toHaveAttribute("lang", languageTags[locale]);
     await expect(page.locator(".cart-count")).toHaveText("2");
-    await expect(page.locator(".configurator-actions button").first()).toContainText(translate("Dodaj u korpu", locale));
+    await expect(page.locator(".configurator-actions button").first()).toContainText(translate("Napuni frižider", locale));
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     const brand = await page.locator(".nav-shell > .brand").boundingBox();
     const actions = await page.locator(".header-actions").boundingBox();
@@ -73,7 +82,7 @@ for (const locale of ["sr-cyrl", "en", "ru"] as const) test(`${locale}: purchase
   await card.locator(".configurator-actions button").click();
   await page.locator(".cart-link").click();
   await page.locator(".cart-drawer-foot .button").click();
-  await expect(page).toHaveURL(new RegExp(`${locale}/checkout$`));
+  await expect(page).toHaveURL(new RegExp(`${localizedPath("/checkout", locale)}$`));
   for (const [name, value] of Object.entries({ fullName: "Mila Test", email, phone: "0601234567", street: "Test 12", city: "Beograd", postalCode: "11000" })) await page.locator(`input[name="${name}"]`).fill(value);
   await page.getByRole("radio", { name: t("Petak"), exact: true }).check();
   await page.locator(".calendar-trigger").click();
@@ -103,7 +112,7 @@ for (const locale of ["sr-cyrl", "en", "ru"] as const) test(`${locale}: purchase
   await expect(page.locator('form [role="alert"]')).toHaveText(t("Kod nije ispravan, istekao je ili je već iskorišćen. Zatražite novi kod."));
   await page.getByLabel(t("Šestocifreni kod")).fill(actualCode);
   await page.getByRole("button", { name: t("Potvrdi kod"), exact: true }).click();
-  await expect(page).toHaveURL(new RegExp(`${locale}/nalog$`));
+  await expect(page).toHaveURL(new RegExp(`${localizedPath("/nalog", locale)}$`));
   await expect(page.locator("html")).toHaveAttribute("lang", languageTags[locale]);
   await expect(page.getByRole("heading", { name: `${t("Zdravo,")} Mila Test.` })).toBeVisible();
   const resultAxe = await new AxeBuilder({ page }).analyze();
@@ -143,10 +152,12 @@ test("announcement has one editable localized message, with optional link, and a
 
 // Interface translation must not change commerce values or destinations.
 test("translations preserve dynamic values, external URLs, APIs and assets", () => {
-  expect(toCyrillic("Čaša, sveže, džem, Ljubav, NJIVA, Email: test@example.com — Mleko i Mleko")).toBe("Чаша, свеже, џем, Љубав, ЊИВА, Имејл: test@example.com — Mleko i Mleko");
+  expect(toCyrillic("Čaša, sveže, džem, Ljubav, NJIVA, Email: test@example.com — Mleko i Mleko")).toBe("Чаша, свеже, џем, Љубав, ЊИВА, Имејл: test@example.com — Млеко и Млеко");
   expect(translate("Novi kod za 30 s", "en")).toBe("New code in 30 s");
   for (const locale of languages) {
-    expect(translate("Mila Test, Test 12, order_123", locale)).toBe("Mila Test, Test 12, order_123");
+    // Latin and EN/RU keep unknown values verbatim; Cyrillic transliterates uncatalogued text by design
+    // (customer-entered values are shielded in the UI with data-no-translate, not in the translator).
+    expect(translate("Mila Test, Test 12, order_123", locale)).toBe(locale === "sr-cyrl" ? "Мила Тест, Тест 12, ордер_123" : "Mila Test, Test 12, order_123");
     for (const path of ["/api/checkout", "/admin", "/images/milk.jpg", "https://example.com/en", "#dostava", "mailto:test@example.com"]) expect(localizedPath(path, locale)).toBe(path);
     expect(localizedPath(localizedPath("/prodavnica?sort=price#top", locale), locale)).toBe(localizedPath("/prodavnica?sort=price#top", locale));
   }

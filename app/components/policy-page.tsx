@@ -14,7 +14,7 @@ const stampRing: readonly BrandGlyphName[] = ["bottle", "drop"];
  * three brand glyphs in place of its words, so content pages add no copy of their own.
  * Purely decorative, hidden from assistive technology; content.css shows it from 1024px.
  */
-export function ContentStamp({ glyph = "cow" }: { glyph?: BrandGlyphName }) {
+export function ContentStamp() {
   const localize = useLocalize();
   return localize((
     <svg className="content-stamp" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
@@ -26,7 +26,9 @@ export function ContentStamp({ glyph = "cow" }: { glyph?: BrandGlyphName }) {
           <path key={index} d={glyphPaths[stampRing[index % stampRing.length]]} transform={`rotate(${index * 45} 80 80) translate(69.1 8.1) scale(0.34)`} />
         ))}
       </g>
-      <path d={glyphPaths[glyph]} transform="translate(56 56) scale(0.75)" />
+      {/* The logo's pair in the middle: goat and cow together, never the cow alone. */}
+      <image href="/images/brand/goat-navy.png" x="47" y="58" width="40" height="35" />
+      <image href="/images/brand/cow-white.png" x="76" y="62" width="40" height="30" />
     </svg>
   ));
 }
@@ -38,7 +40,7 @@ export function PolicyPage({ eyebrow, title, intro, sections }: { eyebrow: strin
       <header className="content-band content-hero">
         <div className="page-shell content-head">
           <div className="page-heading"><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p className="lead">{intro}</p><p className="policy-updated">Poslednje ažuriranje: 4. septembar 2026.</p></div>
-          <ContentStamp glyph="bottle" />
+          <ContentStamp />
         </div>
       </header>
       <div className="content-band">

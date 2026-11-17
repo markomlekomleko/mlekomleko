@@ -6,6 +6,7 @@ import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useEffect, useId, useState } from "react";
 import { useAnalytics } from "./analytics-provider";
 import { useCart } from "./cart-provider";
+import { ProductCarousel, milkKind } from "./product-carousel";
 import {
   MAX_QUANTITY,
   cadenceLabel,
@@ -165,26 +166,31 @@ export function ProductConfigurator({
     setQuantity(value);
   }
 
+  // The home card is the trimmed Kafeterija-style card (meeting 17 Nov 2026): carousel,
+  // name, price and the three choices, then one button. The product page keeps the full panel.
+  const kind = milkKind(product);
+  const compact = layout === "card";
+
   return localize((
-    <article className={`configurator configurator-${layout}`} data-available={product.available}>
-      <a className="configurator-media" href={href} aria-label={`Detalji: ${product.name}`}>
+    <article className={`configurator configurator-${layout}`} data-available={product.available} data-kind={kind ?? undefined}>
+      {compact && kind ? <ProductCarousel kind={kind} name={product.name} /> : <a className="configurator-media" href={href} aria-label={`Detalji: ${product.name}`}>
         {product.imageUrl ? (
           <img src={product.imageUrl} alt={product.imageAlt} width="1080" height="1080" loading="lazy" />
         ) : (
           <span>Fotografija uskoro</span>
         )}
-      </a>
+      </a>}
 
       <div className="configurator-body">
         <div className="configurator-head">
-          <p className="configurator-category">{product.category}</p>
-          {product.imageUrl && (/^\/images\/demo\//.test(product.imageUrl) || /^\/images\/catalog\/(kravlje|kozje)-mleko(-v2)?\.(webp|jpg|avif)$/.test(product.imageUrl)) ? <small className="configurator-occurrences">Ilustracija pakovanja</small> : null}
+          {compact ? null : <p className="configurator-category">{product.category}</p>}
+          {!compact && product.imageUrl && (/^\/images\/demo\//.test(product.imageUrl) || /^\/images\/catalog\/(kravlje|kozje)-mleko(-v2)?\.(webp|jpg|avif)$/.test(product.imageUrl)) ? <small className="configurator-occurrences">Ilustracija pakovanja</small> : null}
           {layout === "panel" ? <h3 className="configurator-title">{product.name}</h3> : (
             <h3 className="configurator-title">
               <a href={href}>{product.name}</a>
             </h3>
           )}
-          <p className="configurator-note">{product.shortDescription}</p>
+          {compact ? null : <p className="configurator-note">{product.shortDescription}</p>}
           <p className="configurator-price">
             <strong>{formatMoney(unitPrice, locale)}</strong>
             <span>/ {product.unit}</span>
@@ -293,7 +299,7 @@ export function ProductConfigurator({
               </fieldset>
             ) : null}
 
-            <div className="configurator-total">
+            {compact ? null : <div className="configurator-total">
               <p>
                 <span>
                   Proizvodi po dostavi
@@ -308,15 +314,15 @@ export function ProductConfigurator({
                 {purchaseType === "subscription" ? <p className="configurator-occurrences">Ceo paket plaćaš gotovinom pri prvoj dostavi.</p> : null}
                 <small className="configurator-occurrences">Zajednička dostava i popusti proveravaju se u korpi.</small>
               </> : <p className="configurator-occurrences">Ukupan iznos sa dostavom vidiš u korpi pre potvrde.</p>}
-            </div>
+            </div>}
 
             <div className="configurator-actions">
               <button className="button" type="button" disabled={!ready} onClick={addToCart}>
-                Dodaj u korpu
+                Napuni frižider
               </button>
-              <a className="text-link" href={href}>
+              {compact ? null : <a className="text-link" href={href}>
                 Detalji proizvoda
-              </a>
+              </a>}
             </div>
           </>
         )}

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -322,7 +323,7 @@ export function SubscriptionCard({
       ) : (
         <p>
           Za novu redovnu dostavu izaberite proizvode u{" "}
-          <a href="/prodavnica">prodavnici</a>.
+          <Link href="/#izaberite-mleko">izboru mleka</Link>.
         </p>
       )}
       {sub.currentPackage?.length ? <section className="account-basket-heading"><h3>Vaš kupljeni paket</h3>{sub.currentPackage.map(line => <p key={line.line_id}><strong>{line.quantity} × {line.product_name}</strong> po dostavi · uručeno {line.delivered_units}/{line.required_units} komada</p>)}{sub.renewalEnabled === false ? <p>Obnova je otkazana. Preostale plaćene dostave ostaju zakazane.</p> : null}</section> : null}

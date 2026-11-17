@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { cyr } from "./cyr";
 const origin = `http://localhost:${process.env.E2E_PORT || "4173"}`;
 test("admin writes draft, previews, publishes, updates and unpublishes SEO page", async ({ page, request, context }) => {
   await context.setExtraHTTPHeaders({ "cf-connecting-ip": `2001:db8:abcd:${crypto.randomUUID().slice(0,4)}::1` });
@@ -30,10 +31,12 @@ test("admin writes draft, previews, publishes, updates and unpublishes SEO page"
     const hidden = await request.get(`/informacije/${slug}`);
     expect([200, 404]).toContain(hidden.status());
     const body = await hidden.text();
-    expect(body).toContain("Ova stranica ne postoji.");
+    expect(body).toContain(cyr("Ova stranica ne postoji."));
     expect(body).toContain("noindex");
     expect(body).not.toContain("Sveže mleko za vaš dom");
+    expect(body).not.toContain(cyr("Sveže mleko za vaš dom"));
     expect(body).not.toContain("Nedeljno ili dvonedeljno.");
+    expect(body).not.toContain(cyr("Nedeljno ili dvonedeljno."));
   }
   const listing = page.locator("li").filter({ hasText: `/informacije/${slug}` });
   await listing.getByRole("button", { name: "Izmeni" }).click();
@@ -44,8 +47,8 @@ test("admin writes draft, previews, publishes, updates and unpublishes SEO page"
   const published = await request.get(`/informacije/${slug}`);
   expect(published.status()).toBe(200);
   const html = await published.text();
-  expect(html).toContain(`<h1>Sveže mleko za vaš dom</h1>`);
-  expect(html).toContain(`<h2>Odaberite ritam</h2>`);
+  expect(html).toContain(`<h1>${cyr("Sveže mleko za vaš dom")}</h1>`);
+  expect(html).toContain(`<h2>${cyr("Odaberite ritam")}</h2>`);
   expect(html).toContain(`${origin}/informacije/${slug}`);
   expect(html).not.toContain("<script>window.evil=true</script>");
   expect(await (await request.get("/sitemap.xml")).text()).toContain(`/informacije/${slug}`);
@@ -58,10 +61,12 @@ test("admin writes draft, previews, publishes, updates and unpublishes SEO page"
     const hidden = await request.get(`/informacije/${slug}`);
     expect([200, 404]).toContain(hidden.status());
     const body = await hidden.text();
-    expect(body).toContain("Ova stranica ne postoji.");
+    expect(body).toContain(cyr("Ova stranica ne postoji."));
     expect(body).toContain("noindex");
     expect(body).not.toContain("Sveže mleko za vaš dom");
+    expect(body).not.toContain(cyr("Sveže mleko za vaš dom"));
     expect(body).not.toContain("Nedeljno ili dvonedeljno.");
+    expect(body).not.toContain(cyr("Nedeljno ili dvonedeljno."));
   }
   expect(await (await request.get("/sitemap.xml")).text()).not.toContain(`/informacije/${slug}`);
 });

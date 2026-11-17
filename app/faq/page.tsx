@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { localizedMetadata } from "@/app/lib/i18n/server";
 import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
@@ -17,8 +18,8 @@ export default async function FaqPage() {
     <div className="content-page">
       <header className="content-band content-hero">
         <div className="page-shell content-head">
-          <div className="page-heading"><p className="eyebrow">FAQ</p><h1>Česta pitanja</h1></div>
-          <ContentStamp glyph="drop" />
+          <div className="page-heading"><p className="eyebrow">Pre prve flaše</p><h1>Česta pitanja</h1></div>
+          <ContentStamp />
         </div>
       </header>
       <div className="content-band">
@@ -36,7 +37,7 @@ export default async function FaqPage() {
               </details>
             ))}
           </div>
-          <div className="button-row content-actions"><a className="button" href="/prodavnica">Otvori prodavnicu</a><a className="button secondary" href="/kontakt">Postavi pitanje</a></div>
+          <div className="button-row content-actions"><Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko</Link><a className="button secondary" href="/kontakt">Postavi pitanje</a></div>
         </div>
       </div>
     </div>

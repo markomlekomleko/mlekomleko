@@ -3,17 +3,18 @@
 import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useCart } from "./cart-provider";
 import { CookieSettingsButton } from "./analytics-provider";
-import { MotionToggle } from "./motion-toggle";
 import { LanguageSwitcher } from "./language-switcher";
 import { translate, toCyrillic } from "../lib/i18n/translate";
 import { shellCopy } from "../lib/content";
+import { company, companyLine } from "../lib/company";
 
 // One source for the contact pair the footer and the mobile menu both show.
-const PHONE = { href: "tel:+381605022323", label: "060 502 23 23" };
-const INSTAGRAM_URL = "https://instagram.com/mleko_i_mleko";
+const PHONE = { href: company.phoneHref, label: company.phone };
+export const INSTAGRAM_URL = "https://instagram.com/mleko_i_mleko";
+export const TIKTOK_URL = "https://www.tiktok.com/@mleko_i_mleko";
 
 export type HeaderSettings = {
   storeName: string;
@@ -41,6 +42,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   const externalAnnouncement = /^https:\/\//i.test(announcementUrl);
   // Only one overlay is ever active: the cart takes precedence over the menu.
   const menuVisible = menuOpen && !drawerOpen;
+  const closeMenu = () => setMenuOpen(false);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -63,13 +65,16 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
           <button ref={menuButton} id="menu-toggle" className="mobile-menu-button" type="button" aria-label="Meni" aria-expanded={menuVisible} aria-controls="glavna-navigacija" onClick={() => setMenuOpen((current) => !current)}>
             <span className={`menu-lines ${menuVisible ? "is-open" : ""}`} aria-hidden="true"><span /><span /></span>
           </button>
+          {/* Every link closes the menu: a same-page hash link (the milk picker on the
+              home page) would otherwise leave it covering the section. */}
           <nav id="glavna-navigacija" className={`main-nav ${menuVisible ? "is-open" : ""}`} aria-label="Glavna navigacija">
-            <Link href="/prodavnica">Prodavnica</Link>
-            <Link href="/kako-funkcionise">Kako dostavljamo</Link>
-            <Link href="/farme">Naše poreklo</Link>
-            <Link className="nav-support" href="/faq">Česta pitanja</Link>
-            <Link className="nav-support" href="/kontakt">Kontakt</Link>
-            <Link className="mobile-account" href="/nalog">Moj nalog</Link>
+            <Link onClick={closeMenu} href="/#izaberite-mleko">Izaberi svoje mleko</Link>
+            <Link onClick={closeMenu} href="/kako-funkcionise">Mesečna pretplata</Link>
+            <Link onClick={closeMenu} href="/farme">Poreklo tvog mleka</Link>
+            <Link onClick={closeMenu} href="/gde-kupiti">Mlekomati</Link>
+            <Link onClick={closeMenu} className="nav-support" href="/faq">Česta pitanja</Link>
+            <Link onClick={closeMenu} className="nav-support" href="/kontakt">Kontakt</Link>
+            <Link onClick={closeMenu} className="mobile-account" href="/nalog">Moj nalog</Link>
             <p className="nav-contact">
               <a href={PHONE.href}>{PHONE.label}</a>
               <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">Instagram ↗</a>
@@ -98,7 +103,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
           <div className="header-actions">
             <LanguageSwitcher />
             <Link className="header-account" href="/nalog">Moj nalog</Link>
-            <button className="cart-link" type="button" onClick={openDrawer} aria-label={ready && count > 0 ? `Korpa, ${count} jedinica` : "Korpa"}>
+            <button className="cart-link" type="button" onClick={openDrawer} aria-label={ready && count > 0 ? `Napuni frižider, ${count} jedinica` : "Napuni frižider"}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
                 <path d="M3 3h2l2.4 12h11.2l2-8H6" />
                 <circle cx="9" cy="20" r="1" />
@@ -117,53 +122,80 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   ));
 }
 
+/** Small line icons for the footer contacts; decorative, the link text names the target. */
+function FooterIcon({ name }: { name: "phone" | "mail" | "instagram" | "tiktok" }) {
+  const paths: Record<typeof name, ReactNode> = {
+    phone: <path d="M6.6 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.1 6.1l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A17.6 17.6 0 0 1 4.6 5.7a2 2 0 0 1 2-2.2z" />,
+    mail: <><rect x="3" y="5.5" width="18" height="13" rx="2" /><path d="m3.5 7 8.5 6.2L20.5 7" /></>,
+    instagram: <><rect x="3.5" y="3.5" width="17" height="17" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r="0.9" fill="currentColor" stroke="none" /></>,
+    tiktok: <path d="M14 3.5v11.2a3.8 3.8 0 1 1-3.3-3.8M14 3.5c.4 2.6 2.2 4.4 5 4.6" />,
+  };
+  return (
+    <svg className="footer-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      {paths[name]}
+    </svg>
+  );
+}
+
 export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string }) {
   const localize = useLocalize();
+  const locale = useLocale();
+  const legal = companyLine();
+  // The Kafeterija footer in our colours (17 Nov 2026): logo and link columns, the legal
+  // line with the registered company, a row of policies, how to pay, social links, and
+  // the oversized faded wordmark running off the bottom.
   return localize((
-    <footer className="site-footer">
-      <div className="page-shell footer-grid">
+    <footer className="site-footer site-footer--k">
+      <div className="page-shell footer-k-grid">
         <div className="footer-brand-col">
           <Link className="brand footer-brand" href="/" aria-label={`${storeName} - početna`}>
-            <Image
-              className="brand-logo brand-logo-footer"
-              src="/images/mleko-i-mleko-logo-mark.png"
-              alt=""
-              width={140}
-              height={140}
-              sizes="88px"
-            />
+            <Image className="brand-logo brand-logo-footer" src="/images/mleko-i-mleko-logo-mark.png" alt="" width={140} height={140} sizes="96px" />
           </Link>
           <p className="footer-tagline">{shellCopy.footer.tagline}</p>
-          <p className="footer-contact">
-            <a href={PHONE.href}>{PHONE.label}</a>
-            <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">Instagram ↗</a>
-          </p>
         </div>
-        <nav className="footer-links" aria-labelledby="footer-istrazi">
-          <h2 id="footer-istrazi">{shellCopy.footer.exploreTitle}</h2>
-          <Link href="/prodavnica">Prodavnica</Link>
-          <Link href="/gde-kupiti">Gde kupiti</Link>
-          <Link href="/dostava-mleka/beograd">Dostava Beograd</Link>
-          <Link href="/dostava-mleka/novi-sad">Dostava Novi Sad</Link>
-          <Link href="/farme">Kravlje i kozje</Link>
+        <nav className="footer-links" aria-labelledby="footer-mleko">
+          <h2 id="footer-mleko">Mleko</h2>
+          <Link href="/#izaberite-mleko">Izaberi svoje mleko</Link>
+          <Link href="/kako-funkcionise">Mesečna pretplata</Link>
+          <Link href="/farme">Poreklo tvog mleka</Link>
+          <Link href="/gde-kupiti">Mlekomati</Link>
+        </nav>
+        <nav className="footer-links" aria-labelledby="footer-pomoc">
+          <h2 id="footer-pomoc">Pomoć</h2>
           <Link href="/faq">Česta pitanja</Link>
           <Link href="/kontakt">Kontakt</Link>
+          <Link href="/nalog">Moj nalog</Link>
+          <Link href="/gde-kupiti#partnerstvo">Postani partner</Link>
         </nav>
-        <nav className="footer-links" aria-labelledby="footer-sitna-slova">
-          <h2 id="footer-sitna-slova">{shellCopy.footer.infoTitle}</h2>
+        <div className="footer-links footer-contact-col">
+          <h2>Kontakt</h2>
+          <a className="footer-contact" href={company.phoneHref}><FooterIcon name="phone" />{company.phone}</a>
+          {company.email ? <a className="footer-contact" href={`mailto:${company.email}`}><FooterIcon name="mail" /><span data-no-translate>{company.email}</span></a> : null}
+          <a className="footer-contact" href={INSTAGRAM_URL} target="_blank" rel="noreferrer"><FooterIcon name="instagram" />Instagram</a>
+          <a className="footer-contact" href={TIKTOK_URL} target="_blank" rel="noreferrer"><FooterIcon name="tiktok" />TikTok</a>
+        </div>
+      </div>
+      <div className="page-shell footer-k-legal">
+        <p className="footer-company">
+          {company.legalName ? <span data-no-translate>{company.legalName}</span> : null}
+          {legal.map((part) => <span key={part}> · {part}</span>)}
+        </p>
+        <nav className="footer-policies" aria-label={shellCopy.footer.infoTitle}>
           <Link href="/uslovi-kupovine">Uslovi kupovine</Link>
-          <Link href="/privatnost">Privatnost i kolačići</Link>
+          <Link href="/pravila-pretplate">Pravila pretplate</Link>
           <Link href="/dostava">Dostava</Link>
           <Link href="/reklamacije">Reklamacije i povraćaj</Link>
-          <Link href="/pravila-pretplate">Pravila pretplate</Link>
+          <Link href="/privatnost">Privatnost i kolačići</Link>
           <CookieSettingsButton />
-          <MotionToggle />
         </nav>
+        <p className="footer-pay">Plaćanje gotovinom pri dostavi · u mlekomatu gotovinom ili karticom</p>
       </div>
       {/* Decorative: the brand name is already the logo link's accessible name. */}
       <div className="footer-bottom">
         <div className="page-shell footer-wordmark-wrap">
-          <p className="footer-wordmark" aria-hidden="true">{shellCopy.footer.wordmark}</p>
+          {/* Drawn from a pseudo-element: purely decorative low-contrast type that contrast
+              checkers would otherwise read as text. */}
+          <p className="footer-wordmark" aria-hidden="true" data-wordmark={locale === "sr-cyrl" ? toCyrillic(shellCopy.footer.wordmark) : shellCopy.footer.wordmark} />
         </div>
       </div>
     </footer>

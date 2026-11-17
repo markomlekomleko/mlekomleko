@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { DeliveryCalendar } from "../components/delivery-calendar";
@@ -213,9 +214,9 @@ export function CheckoutForm() {
             <a className="button" href="/nalog">
               Otvori nalog
             </a>
-            <a className="button secondary" href="/prodavnica">
-              Nazad u prodavnicu
-            </a>
+            <Link className="button secondary" href="/#izaberite-mleko">
+              Nazad na izbor mleka
+            </Link>
           </div>
         </div>
       </div>
@@ -228,10 +229,10 @@ export function CheckoutForm() {
         <div className="empty-state">
           <p className="eyebrow">Plaćanje</p>
           <h1>Nema stavki za plaćanje.</h1>
-          <p className="lead">Dodaj proizvode u korpu pre nastavka.</p>
-          <a className="button" href="/prodavnica">
-            Otvori prodavnicu
-          </a>
+          <p className="lead">Napuni frižider pre nastavka.</p>
+          <Link className="button" href="/#izaberite-mleko">
+            Izaberi svoje mleko
+          </Link>
         </div>
       </div>
     ));
@@ -377,7 +378,7 @@ export function CheckoutForm() {
           <button className="button" type="submit" disabled={submitting || !quote || !addressVerified || quote.minimumOrderMet === false}>
             {submitting ? "Čuvamo porudžbinu…" : "Potvrdi porudžbinu"}
           </button>
-          <a className="button secondary" href="/korpa">Izmeni korpu</a>
+          <a className="button secondary" href="/korpa">Izmeni frižider</a>
         </aside>
       </form>
     </div>

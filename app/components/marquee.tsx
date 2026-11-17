@@ -8,8 +8,9 @@ type MarqueeVariant = "ticker" | "band";
 export type MarqueeProps = {
   items: readonly string[];
   variant: MarqueeVariant;
-  /** Drawn between items; defaults to a middle dot. Always decorative. */
-  separator?: ReactNode;
+  /** Drawn between items; defaults to a middle dot. Always decorative. A function gets
+      the separator's position, so marks can alternate (goat, cow, goat…). */
+  separator?: ReactNode | ((index: number) => ReactNode);
   /** Copies of the item list inside one track, so a short list still fills a wide screen. */
   repeat?: number;
   /** Set it for an informational ticker: one still copy is then read out as "label: a · b". */
@@ -36,7 +37,7 @@ export function Marquee({ items, variant, separator, repeat = 3, label, classNam
   const characters = sequence.reduce((sum, item) => sum + item.length + 3, 0);
   const seconds = Math.max(MIN_SECONDS[variant], Math.round(characters * SECONDS_PER_CHAR[variant]));
   const style = { "--marquee-duration": `${seconds}s` } as CSSProperties;
-  const mark = separator ?? "·";
+  const mark = (index: number) => (typeof separator === "function" ? separator(index) : separator ?? "·");
   const band = variant === "band";
   const classes = ["marquee", `marquee--${variant}`, className].filter(Boolean).join(" ");
 
@@ -45,7 +46,7 @@ export function Marquee({ items, variant, separator, repeat = 3, label, classNam
       {sequence.map((item, index) => (
         <Fragment key={index}>
           <li className="marquee-item">{item}</li>
-          <li className="marquee-sep">{mark}</li>
+          <li className="marquee-sep">{mark(index)}</li>
         </Fragment>
       ))}
     </ul>

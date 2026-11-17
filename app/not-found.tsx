@@ -21,7 +21,7 @@ export default async function NotFound() {
           </p>
           <div className="button-row">
             <Link className="button" href="/">Nazad na početnu</Link>
-            <a className="button secondary" href="/prodavnica">Pogledaj ponudu</a>
+            <Link className="button secondary" href="/#izaberite-mleko">Izaberi svoje mleko</Link>
           </div>
         </div>
       </section>

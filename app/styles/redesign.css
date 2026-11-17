@@ -1,0 +1,623 @@
+/* Owner: redesign 17 Nov 2026 — Kafeterija-style layer in the Mleko i Mleko colours.
+   Loaded after the section sheets, so it only states what changed. See
+   docs/sastanak-2026-11-17.md for the decisions behind each block. */
+
+/* ------------------------------------------------------------ goat-and-cow ground */
+
+/* The brand's own pattern: navy goats and white cows on logo teal, alternating as in
+   the logo. Decorative only; copy always sits on a solid card above it. */
+.pattern-ground,
+.home > .closing.pattern-ground {
+  background-color: var(--brand);
+  background-image: url("/images/brand/pattern-goat-cow.png");
+  background-position: center top;
+  background-size: 300px;
+  color: #fff;
+}
+
+@media (min-width: 768px) {
+  .pattern-ground,
+  .home > .closing.pattern-ground { background-size: 380px; }
+}
+
+/* ------------------------------------------------------------------- hero loop */
+
+/* The footage carries the hero: no copy, one action near the bottom edge. */
+.hero[data-kind="loop"] { --hero-scroll: 0px; background: var(--navy); }
+.hero[data-kind="loop"] .scene-track { height: auto; }
+.hero[data-kind="loop"] .scene-pin {
+  position: relative;
+  top: auto;
+  height: calc(100svh - var(--hero-header-height));
+  min-height: 520px;
+  max-height: 960px;
+}
+.hero[data-kind="loop"] .scene-stage,
+.hero[data-kind="loop"] .scene-frame { position: absolute; inset: 0; height: 100%; }
+.hero[data-kind="loop"] .scene-poster img,
+.hero[data-kind="loop"] .scene-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.hero[data-kind="loop"] .scene-copy {
+  position: absolute;
+  inset: auto 0 0;
+  padding-block: 0 clamp(72px, 12vh, 120px);
+  background: linear-gradient(to top, rgb(0 0 0 / 0.45), transparent);
+}
+.hero[data-kind="loop"] .scene-intro { opacity: 1; transform: none; }
+
+.hero .hero-cta,
+.hero .scene-actions .button.hero-cta {
+  min-height: 64px;
+  padding: 16px 36px;
+  border: 2px solid var(--navy);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--navy);
+  font-family: var(--ff-display);
+  font-size: clamp(1.1rem, 4.6vw, 1.4rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  box-shadow: 0 6px 0 var(--navy);
+}
+.hero .hero-cta:hover { background: var(--blush); }
+
+.hero-loop-toggle {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.85);
+  color: var(--navy);
+  fill: currentColor;
+  cursor: pointer;
+}
+
+/* ------------------------------------------------------------------ band marks */
+
+.marquee--band .band-mark {
+  display: block;
+  width: auto;
+  height: 0.9em;
+}
+
+/* ---------------------------------------------------------------- steps on ground */
+
+.home > .steps.pattern-ground { padding-block: clamp(48px, 9vw, 112px); }
+
+.steps-card {
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: clamp(24px, 4vw, 56px);
+  border: 2px solid var(--navy);
+  border-radius: 20px;
+  background: var(--surface);
+  /* .steps flips --ink to white for the old teal ground; the card is white again. */
+  --ink: var(--navy);
+  --ink-2: #4a5061;
+  color: var(--navy);
+}
+.steps-card * { color: inherit; }
+.steps-card .section-head { margin-bottom: var(--space-6); text-align: center; }
+.steps-card .steps-grid li { padding-inline: var(--space-3); }
+.steps-card .steps-grid li + li { border-color: var(--rule); }
+.steps-card .steps-grid p { color: var(--ink-2); }
+
+.steps-art {
+  width: 100%;
+  max-width: min(240px, 70vw);
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 2px solid var(--navy);
+  border-radius: 14px;
+}
+
+/* ------------------------------------------------------------------- offer head */
+
+.offer .offer-head .section-head h2 {
+  font-family: var(--ff-display);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+img.offer-stamp {
+  display: none;
+  width: clamp(104px, 12vw, 148px);
+  height: auto;
+  transform: rotate(8deg);
+}
+@media (min-width: 768px) { img.offer-stamp { display: block; } }
+
+/* ------------------------------------------------------------ product carousel */
+
+.configurator-card[data-kind] { overflow: hidden; border-radius: 20px; }
+.configurator-card[data-kind="cow"] { --kind-ground: var(--blush); --kind-ink: var(--brand-dark); }
+.configurator-card[data-kind="goat"] { --kind-ground: #efe4cf; --kind-ink: var(--navy); }
+
+.carousel {
+  position: relative;
+  background: var(--kind-ground, var(--blush));
+}
+
+.carousel-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.carousel-track::-webkit-scrollbar { display: none; }
+.carousel-track:focus-visible { outline: 3px solid var(--navy); outline-offset: -3px; }
+
+.carousel-slide {
+  position: relative;
+  flex: 0 0 100%;
+  aspect-ratio: 4 / 5;
+  scroll-snap-align: start;
+}
+.carousel-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.carousel-caption {
+  position: absolute;
+  left: 16px;
+  bottom: 40px;
+  margin: 0;
+  padding: 8px 14px;
+  border: 2px solid var(--navy);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--navy);
+  font-family: var(--ff-display);
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.carousel-story {
+  display: grid;
+  align-content: center;
+  gap: 16px;
+  height: 100%;
+  padding: 32px;
+  background: var(--kind-ink, var(--brand));
+  color: #fff;
+}
+.carousel-story-mark { width: 96px; height: auto; }
+.carousel-story h4 {
+  margin: 0;
+  font-family: var(--ff-display);
+  font-size: clamp(1.6rem, 6vw, 2.2rem);
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.carousel-story ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.carousel-story li {
+  padding-top: 10px;
+  border-top: 1px solid rgb(255 255 255 / 0.35);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  border: 2px solid var(--navy);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--navy);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.carousel-prev { left: 10px; }
+.carousel-next { right: 10px; }
+
+.carousel-dots {
+  position: absolute;
+  inset: auto 0 14px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.carousel-dots span {
+  width: 8px;
+  height: 8px;
+  border: 1px solid var(--navy);
+  border-radius: 50%;
+  background: #fff;
+}
+.carousel-dots span[data-active="true"] { background: var(--navy); }
+
+/* The trimmed card: name, price, three choices, one button. */
+.configurator-card[data-kind] .configurator-title {
+  font-family: var(--ff-display);
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.configurator-card[data-kind] .configurator-actions .button {
+  width: 100%;
+  min-height: 56px;
+  border-radius: 999px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------------- social videos */
+
+.home > .social { background: var(--surface); }
+.social-head { margin-bottom: var(--space-6); text-align: center; }
+.social-head h2 { font-weight: 900; text-transform: uppercase; }
+.social-head .lead { margin-inline: auto; }
+
+/* Phones swipe a row of portrait clips; wider screens get the full 3 × 2 grid. */
+.social-grid {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(72vw, 300px);
+  gap: 12px;
+  margin: 0 calc(var(--page-gutter, 16px) * -1);
+  padding: 0 var(--page-gutter, 16px) 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  list-style: none;
+}
+.social-grid li {
+  overflow: hidden;
+  aspect-ratio: 9 / 16;
+  border: 2px solid var(--navy);
+  border-radius: 16px;
+  background: var(--navy);
+  scroll-snap-align: start;
+}
+.social-grid iframe { display: block; width: 100%; height: 100%; border: 0; }
+
+@media (min-width: 900px) {
+  .social-grid {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+  }
+}
+
+.social-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: var(--space-6);
+}
+
+/* ------------------------------------------------------- inner pages: shared hero */
+
+.sub-hero { padding-block: clamp(32px, 7vw, 96px); }
+.sub-hero-grid {
+  display: grid;
+  gap: clamp(24px, 5vw, 64px);
+  align-items: center;
+}
+@media (min-width: 900px) { .sub-hero-grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); } }
+.sub-hero h1 {
+  font-family: var(--ff-display);
+  font-size: clamp(2.6rem, 9vw, 5.2rem);
+  font-weight: 900;
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+.sub-hero-art,
+.art-card img,
+.sub-road-list img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 2px solid var(--navy);
+  border-radius: 20px;
+}
+
+.content-page h2 { font-weight: 900; text-transform: uppercase; }
+
+/* ---------------------------------------------------- subscription: the road */
+
+.sub-road { padding-block: clamp(48px, 9vw, 112px); }
+.sub-road-card,
+.kinds-card {
+  max-width: 1120px;
+  margin-inline: auto;
+  padding: clamp(24px, 4vw, 56px);
+  border: 2px solid var(--navy);
+  border-radius: 20px;
+  background: var(--surface);
+  --ink: var(--navy);
+  --ink-2: #4a5061;
+  color: var(--navy);
+}
+.sub-road-card *,
+.kinds-card * { color: inherit; }
+.sub-road-card .section-head,
+.kinds-card .section-head { margin-bottom: var(--space-6); text-align: center; }
+
+.sub-road-list { display: grid; gap: clamp(28px, 5vw, 56px); margin: 0; padding: 0; list-style: none; }
+.sub-road-list li { display: grid; gap: 16px; align-items: center; }
+@media (min-width: 768px) {
+  .sub-road-list li { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
+  .sub-road-list li:nth-child(even) img { order: 2; }
+}
+.sub-road-number {
+  display: block;
+  color: var(--brand);
+  font-family: var(--ff-display);
+  font-size: clamp(2.5rem, 8vw, 4rem);
+  font-weight: 900;
+  line-height: 1;
+}
+.sub-road-list h3 { margin: 8px 0; font-size: clamp(1.3rem, 4vw, 1.8rem); font-weight: 900; text-transform: uppercase; }
+.sub-road-list p { margin: 0; color: var(--ink-2); font-size: 1.05rem; }
+
+.sub-control { border-radius: 20px; }
+.content-band--soft { background: var(--blush); }
+
+/* ------------------------------------------------------------ origin: kinds */
+
+.art-card { border-radius: 20px; }
+.kinds-grid { display: grid; gap: 20px; }
+@media (min-width: 768px) { .kinds-grid { grid-template-columns: 1fr 1fr; } }
+.kind { display: grid; gap: 10px; }
+.kind img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border: 2px solid var(--navy); border-radius: 16px; }
+.kind[data-kind="cow"] img { background: var(--blush); }
+.kind[data-kind="goat"] img { background: #efe4cf; }
+.kind h3 { margin: 6px 0 0; font-weight: 900; text-transform: uppercase; }
+.kind p { margin: 0; color: var(--ink-2); }
+
+/* ------------------------------------------------------------- mlekomati */
+
+.mlekomat-map { display: grid; gap: 16px; }
+@media (min-width: 900px) { .mlekomat-map { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); } }
+.mlekomat-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; align-content: start; }
+.mlekomat-list li {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 2px solid var(--navy);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.mlekomat-list li[data-active="true"] { background: var(--blush); }
+.mlekomat-list button {
+  display: grid;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--navy);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mlekomat-list strong { font-family: var(--ff-display); font-size: 1.1rem; font-weight: 900; text-transform: uppercase; }
+.mlekomat-list span { color: var(--ink-2); font-size: 0.95rem; }
+.mlekomat-frame { overflow: hidden; min-height: 360px; border: 2px solid var(--navy); border-radius: 20px; }
+.mlekomat-frame iframe { display: block; width: 100%; height: 100%; min-height: 360px; border: 0; }
+
+.mlekomat-how { display: grid; gap: 24px; align-items: center; }
+@media (min-width: 768px) { .mlekomat-how { grid-template-columns: 1fr minmax(0, 340px); } }
+.mlekomat-steps { display: grid; gap: 10px; margin: 16px 0 0; padding-left: 1.4em; font-size: 1.1rem; font-weight: 600; }
+.mlekomat-video { overflow: hidden; aspect-ratio: 9 / 16; max-width: 340px; border: 2px solid var(--navy); border-radius: 16px; background: var(--navy); }
+.mlekomat-video iframe { display: block; width: 100%; height: 100%; border: 0; }
+
+.partner-grid { display: grid; gap: clamp(24px, 5vw, 64px); align-items: start; }
+@media (min-width: 900px) { .partner-grid { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); } }
+.partner-form { padding: clamp(20px, 3vw, 32px); border: 2px solid var(--navy); border-radius: 20px; background: var(--surface); }
+.partner-points { margin-top: var(--space-5); }
+
+/* ------------------------------------------------------------------- footer */
+
+/* Kafeterija's footer in the brand colours: navy ground, teal headings, the legal line,
+   a row of policies, and a giant faded wordmark cut off by the bottom edge. */
+.site-footer--k .footer-k-grid {
+  display: grid;
+  gap: 32px 24px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-block: clamp(40px, 6vw, 80px) 32px;
+}
+.site-footer--k .footer-brand-col { grid-column: 1 / -1; display: grid; gap: 16px; align-content: start; }
+.site-footer--k .footer-brand-col .brand-logo-footer { width: 96px; height: auto; }
+.site-footer--k .footer-tagline { max-width: 34ch; margin: 0; opacity: 0.8; }
+@media (min-width: 900px) {
+  .site-footer--k .footer-k-grid { grid-template-columns: 1.5fr repeat(3, minmax(0, 1fr)); }
+  .site-footer--k .footer-brand-col { grid-column: auto; }
+}
+.site-footer--k .footer-links { display: grid; gap: 12px; align-content: start; }
+.site-footer--k .footer-links h2 {
+  margin: 0 0 4px;
+  /* Lighter than --brand-light so it clears 4.5:1 on the navy ground. */
+  color: #a9d0da;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.site-footer--k .footer-links a { text-decoration: none; overflow-wrap: anywhere; }
+.site-footer--k .footer-links a:hover { text-decoration: underline; }
+
+.site-footer--k .footer-contact { display: inline-flex; align-items: center; gap: 10px; }
+.site-footer--k .footer-icon { flex: none; color: var(--brand-light); }
+
+/* Legal line, policies and payment: one centred stack, policies as a tidy row of
+   dot-separated links that wraps evenly on phones. */
+.site-footer--k .footer-k-legal {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding-block: 28px;
+  border-top: 1px solid rgb(255 255 255 / 0.16);
+  text-align: center;
+}
+.site-footer--k .footer-company { max-width: 72ch; margin: 0; font-size: 0.8rem; line-height: 1.6; opacity: 0.7; }
+.site-footer--k .footer-policies {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 6px 0;
+  max-width: 1120px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.site-footer--k .footer-policies > a,
+.site-footer--k .footer-policies > button {
+  padding: 2px 14px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.site-footer--k .footer-policies > * + a,
+.site-footer--k .footer-policies > * + button { border-left: 1px solid rgb(255 255 255 / 0.3); }
+.site-footer--k .footer-policies > a:hover,
+.site-footer--k .footer-policies > button:hover { text-decoration: underline; }
+.site-footer--k .footer-pay { margin: 0; font-size: 0.8rem; opacity: 0.7; }
+
+/* The wordmark spans the width, centred, cut by the bottom edge like Kafeterija's. */
+.site-footer--k .footer-bottom { overflow: hidden; border-top: 0; }
+.site-footer--k .footer-wordmark-wrap { padding-block: 0; }
+.site-footer--k .footer-wordmark {
+  width: 100%;
+  color: var(--brand);
+  opacity: 0.35;
+  font-size: calc(100cqi / 8.6);
+  line-height: 0.8;
+  text-align: center;
+  transform: translateY(12%);
+}
+.site-footer--k .footer-wordmark::before { content: attr(data-wordmark); }
+
+/* The carousel is the card's picture at every width: stacked on top, never squeezed
+   into the old 10rem photo column. */
+@media (min-width: 640px) {
+  .configurator.configurator-card[data-kind] { grid-template-columns: minmax(0, 1fr); }
+}
+/* Wide screens: two smaller cards side by side with a shorter picture, so the shop
+   section no longer fills a whole screen with one photo. */
+@media (min-width: 640px) {
+  .configurator-card[data-kind] .carousel-slide { aspect-ratio: 4 / 3; }
+}
+@media (min-width: 900px) {
+  .offer-grid[data-count="2"] { max-width: 960px; margin-inline: auto; }
+}
+
+/* ------------------------------------------------------------------- header */
+
+/* Wide screens: logo first, the four links right after it, account and cart on the
+   right, as on the Kafeterija header. */
+@media (min-width: 1181px) {
+  .nav-shell { grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 32px; }
+  .nav-shell > .brand { grid-area: 1 / 1; }
+  .main-nav { grid-area: 1 / 2; }
+}
+
+/* Scroll hero with copy removed: the single action sits low in the frame, clear of the
+   glass, with no cream scrim behind it. */
+.hero:not([data-kind="loop"]) .scene-copy {
+  align-content: end;
+  padding-bottom: clamp(64px, 12svh, 140px);
+  background: none;
+}
+
+.mlekomat-gallery {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(80vw, 420px);
+  gap: 12px;
+  margin: 0;
+  padding: 0 0 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  list-style: none;
+}
+.mlekomat-gallery li { scroll-snap-align: start; }
+.mlekomat-gallery img {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+  border: 2px solid var(--navy);
+  border-radius: 20px;
+}
+
+/* ---------------------------------------------- Kafeterija shapes, site-wide */
+
+/* Pill buttons and soft-cornered cards everywhere (account, cart, checkout included),
+   as on the reference; the square legacy shapes read as a different brand. */
+.button,
+a.button,
+button.button { border-radius: 999px; }
+.content-card,
+.card,
+.contact-form,
+.empty-state,
+.choice-row > button,
+.field input,
+.field select,
+.field textarea { border-radius: 14px; }
+.content-card,
+.card { border-radius: 20px; }
+
+/* Steps: the illustration is a fourth row, so the shared subgrid spans four (art,
+   numeral, title, text) — with three the title and text collided on wide screens. */
+@media (min-width: 768px) {
+  @supports (grid-template-rows: subgrid) {
+    .steps-card .steps-grid li { grid-row: span 4; }
+  }
+}
+.steps-card .steps-number { font-size: clamp(3.5rem, 7vw, 6rem); margin-bottom: 0; }
+.mlekomat-bottle-note {
+  margin: 18px 0 0;
+  padding: 14px 16px;
+  border: 2px dashed var(--brand);
+  border-radius: 14px;
+  background: var(--blush);
+}
+
+.site-footer--k .footer-links a.footer-contact { display: flex; flex-wrap: nowrap; align-items: center; gap: 10px; min-width: 0; }
+.site-footer--k .footer-contact span { display: inline; flex: 1 1 auto; }
+.site-footer--k .footer-contact span { min-width: 0; overflow-wrap: anywhere; }
+
+/* Phones: the policies become an even two-column grid; separators only make sense on
+   one line. */
+@media (max-width: 699px) {
+  .site-footer--k .footer-policies {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
+    width: 100%;
+  }
+  .site-footer--k .footer-policies > a,
+  .site-footer--k .footer-policies > button { padding: 0; border-left: 0; }
+}

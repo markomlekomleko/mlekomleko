@@ -6,8 +6,7 @@ import { ClosingSection } from "./components/home/closing-section";
 import { FaqSection } from "./components/home/faq-section";
 import { MarqueeBand } from "./components/home/marquee-band";
 import { OfferSection } from "./components/home/offer-section";
-import { OriginSection } from "./components/home/origin-section";
-import { RhythmSection } from "./components/home/rhythm-section";
+import { SocialSection } from "./components/home/social-section";
 import { StepsSection } from "./components/home/steps-section";
 import { frequentlyAskedQuestions } from "./lib/content";
 import { normalizeProduct } from "./lib/frontend";
@@ -33,12 +32,12 @@ export default async function HomePage() {
     <div className="home">
       <Hero media={heroMedia} offerHref="#izaberite-mleko" />
       <MarqueeBand />
-      <OfferSection products={products} bundles={storefront.bundles} delivery={delivery} />
+      {/* Order agreed on 17 Nov 2026: steps, then the shop, then questions. */}
       <StepsSection />
-      <OriginSection settings={settings} />
-      <RhythmSection />
+      <OfferSection products={products} delivery={delivery} />
       <FaqSection />
       <ClosingSection settings={settings} />
+      <SocialSection />
 
       <script
         type="application/ld+json"

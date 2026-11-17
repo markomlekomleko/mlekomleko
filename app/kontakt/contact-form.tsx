@@ -54,7 +54,7 @@ export function ContactForm() {
         <label className="field"><span>Broj porudžbine <small>(opciono)</small></span><input name="orderNumber" placeholder="Ako ga imaš pri ruci" maxLength={80} /></label>
       </div>
       <label className="field"><span>Poruka</span><textarea name="message" placeholder="Kako možemo da pomognemo?" rows={6} minLength={10} maxLength={5000} required /></label>
-      <div className="contact-trap" aria-hidden="true"><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
+      <div className="contact-trap" aria-hidden="true" data-no-translate><label>Website<input name="website" tabIndex={-1} autoComplete="off" /></label></div>
       <p className="contact-privacy">Podatke iz forme koristimo da odgovorimo na tvoj upit. Pročitaj <a href="/privatnost">politiku privatnosti</a>.</p>
       <div aria-live="polite">{error ? <p className="contact-form-error" role="alert">{error} Možeš nas pozvati na <a href="tel:+381605022323">060 502 23 23</a>.</p> : null}</div>
       <button className="button contact-submit" type="submit" disabled={busy}>{busy ? "Šaljemo…" : "Pošalji poruku"}<span aria-hidden="true">→</span></button>
