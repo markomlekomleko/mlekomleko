@@ -437,17 +437,18 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
     transition-delay: 0s;
   }
 
-  /* Condensed to a fixed width so "KAKO DOSTAVLJAMO" holds one line from 320px up. */
+  /* Every label holds one line, down to 320px and in English/Russian too: the size
+     follows the viewport so the longest label ("Where your milk comes from") fits. */
   .main-nav > a {
     display: flex;
     min-height: 64px;
     padding: var(--space-3) var(--shell-gutter);
-    font-size: clamp(1.75rem, 8.2vw, 2.5rem);
+    font-size: clamp(1.0625rem, 5.6vw, 2.25rem);
     font-variation-settings: "wdth" 86;
     font-weight: 900;
     letter-spacing: -0.035em;
     line-height: 0.95;
-    white-space: normal;
+    white-space: nowrap;
     word-spacing: 0.06em;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
@@ -736,7 +737,7 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
 
 /* Tablets: the sheet is twice a phone's height, so the rows grow to carry it. */
 @media (min-width: 600px) and (max-width: 1279px) {
-  .main-nav > a { font-size: clamp(2.5rem, 7vw, 3.5rem); }
+  .main-nav > a { font-size: clamp(2rem, 5.4vw, 3rem); }
 }
 
 /* One announcement, with the same copy whether linked or plain text. */

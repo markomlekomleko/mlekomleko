@@ -3182,6 +3182,66 @@ export const catalog: Record<string, readonly [string, string]> = {
     "02 / How it arrives",
     "02 / Как оно приезжает"
   ],
+  "Zašto baš ovo mleko": [
+    "Why this milk",
+    "Почему именно это молоко"
+  ],
+  "Ništa dodato. Ništa oduzeto.": [
+    "Nothing added. Nothing taken away.",
+    "Ничего не добавлено. Ничего не убрано."
+  ],
+  "Ništa dodato.": [
+    "Nothing added.",
+    "Ничего не добавлено."
+  ],
+  "Ništa oduzeto.": [
+    "Nothing taken away.",
+    "Ничего не убрано."
+  ],
+  "Mleko kakvo je bilo pre fabrike — samo ohlađeno i flaširano.": [
+    "Milk the way it was before factories — just chilled and bottled.",
+    "Молоко, каким оно было до заводов, — только охлаждённое и разлитое по бутылкам."
+  ],
+  "Sirovo i punomasno": [
+    "Raw and whole",
+    "Сырое и цельное"
+  ],
+  "Bez obiranja, bez homogenizacije, bez produžavanja roka.": [
+    "No skimming, no homogenisation, no extended shelf life.",
+    "Без снятия сливок, без гомогенизации, без продления срока хранения."
+  ],
+  "Sveže, ne sa rafa": [
+    "Fresh, not off a shelf",
+    "Свежее, а не с полки"
+  ],
+  "Ne stoji nedeljama u magacinu, nego putuje pravo do tebe.": [
+    "It doesn't sit in a warehouse for weeks; it travels straight to you.",
+    "Оно не лежит неделями на складе, а едет прямо к вам."
+  ],
+  "Znaš odakle je": [
+    "You know where it's from",
+    "Вы знаете, откуда оно"
+  ],
+  "Iza svake flaše je prava farma i pravi ljudi, ne etiketa iz fabrike.": [
+    "Behind every bottle is a real farm and real people, not a factory label.",
+    "За каждой бутылкой — настоящая ферма и настоящие люди, а не заводская этикетка."
+  ],
+  "Ukus koji pamtiš": [
+    "The taste you remember",
+    "Вкус, который вы помните"
+  ],
+  "Gusto, sa kajmakom, kao nekad.": [
+    "Rich, with a layer of cream, like it used to be.",
+    "Густое, со сливками сверху, как раньше."
+  ],
+  "Tri koraka.": [
+    "Three steps.",
+    "Три шага."
+  ],
+  "Nula filozofije.": [
+    "No fuss.",
+    "Без сложностей."
+  ],
   "Tri koraka. Nula filozofije.": [
     "Three steps. No fuss.",
     "Три шага. Без сложностей."
@@ -3834,9 +3894,9 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Your milk, every week.",
     "Твоё молоко, каждую неделю."
   ],
-  "Biraš mleko i ritam — mi muzemo, flaširamo i donosimo. Ceo paket plaćaš gotovinom pri prvoj dostavi.": [
-    "You choose the milk and the rhythm — we milk, bottle and deliver. You pay for the whole package in cash on the first delivery.",
-    "Ты выбираешь молоко и ритм — мы доим, разливаем и привозим. Весь пакет оплачиваешь наличными при первой доставке."
+  "Biraš mleko i ritam — mi muzemo, flaširamo i donosimo.": [
+    "You choose the milk and the rhythm — we milk, bottle and deliver.",
+    "Ты выбираешь молоко и ритм — мы доим, разливаем и привозим."
   ],
   "Čovek ujutru pije čašu mleka": [
     "A man drinking a glass of milk in the morning",

@@ -2,11 +2,11 @@ import { localizedMetadata } from "@/app/lib/i18n/server";
 import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
 import { Hero } from "./components/hero";
-import { ClosingSection } from "./components/home/closing-section";
 import { FaqSection } from "./components/home/faq-section";
 import { MarqueeBand } from "./components/home/marquee-band";
 import { OfferSection } from "./components/home/offer-section";
 import { SocialSection } from "./components/home/social-section";
+import { MilkSection } from "./components/home/milk-section";
 import { StepsSection } from "./components/home/steps-section";
 import { frequentlyAskedQuestions } from "./lib/content";
 import { normalizeProduct } from "./lib/frontend";
@@ -25,18 +25,18 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const localize = await getLocalize();
   const storefront = await getStorefront();
-  const { settings, delivery } = storefront;
+  const { delivery } = storefront;
   const products = storefront.products.map(normalizeProduct);
 
   return localize((
     <div className="home">
       <Hero media={heroMedia} offerHref="#izaberite-mleko" />
       <MarqueeBand />
-      {/* Order agreed on 17 Nov 2026: steps, then the shop, then questions. */}
+      {/* Order agreed on 17 Nov 2026: why this milk, steps, the shop, then questions. */}
+      <MilkSection />
       <StepsSection />
       <OfferSection products={products} delivery={delivery} />
       <FaqSection />
-      <ClosingSection settings={settings} />
       <SocialSection />
 
       <script

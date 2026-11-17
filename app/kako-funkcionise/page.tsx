@@ -41,8 +41,7 @@ export default async function SubscriptionPage() {
           <div className="page-heading">
             <p className="eyebrow">Mesečna pretplata</p>
             <h1>Tvoje mleko, svake nedelje.</h1>
-            <p className="lead">Biraš mleko i ritam — mi muzemo, flaširamo i donosimo. Ceo paket plaćaš gotovinom pri prvoj dostavi.</p>
-            <div className="button-row"><Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko</Link></div>
+            <p className="lead">Biraš mleko i ritam — mi muzemo, flaširamo i donosimo.</p>
           </div>
           <img className="sub-hero-art" src="/images/ilustracije/jutarnja-casa.webp" alt="Čovek ujutru pije čašu mleka" width="1200" height="900" />
         </div>
@@ -67,6 +66,8 @@ export default async function SubscriptionPage() {
                 </li>
               ))}
             </ol>
+            {/* After the fifth stop the reader knows the whole road: the moment to order. */}
+            <div className="button-row sub-road-cta"><Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko</Link></div>
           </div>
         </div>
       </section>

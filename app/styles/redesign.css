@@ -686,7 +686,7 @@ button.button { border-radius: 999px; }
   .site-header-stack[data-nav-collapsed] .mobile-menu-button:hover { background: var(--ink); color: var(--on-ink); }
   .site-header-stack[data-nav-collapsed] .main-nav { position: absolute; top: 100%; right: 0; left: 0; display: flex; flex-direction: column; min-height: calc(100dvh - var(--header-stack)); max-height: calc(100dvh - var(--header-stack)); overflow-y: auto; overscroll-behavior: contain; border-bottom: 1px solid var(--rule); background: var(--surface); visibility: hidden; opacity: 0; transform: translateY(-8px); pointer-events: none; transition: opacity 0.22s ease, transform 0.3s cubic-bezier(0.22, 0.7, 0.25, 1), visibility 0s linear 0.3s; }
   .site-header-stack[data-nav-collapsed] .main-nav.is-open { visibility: visible; opacity: 1; transform: none; pointer-events: auto; transition-delay: 0s; }
-  .site-header-stack[data-nav-collapsed] .main-nav > a { display: flex; min-height: 64px; padding: var(--space-3) var(--shell-gutter); font-size: clamp(1.75rem, 8.2vw, 2.5rem); font-variation-settings: "wdth" 86; font-weight: 900; letter-spacing: -0.035em; line-height: 0.95; white-space: normal; word-spacing: 0.06em; transition: background-color 0.2s ease, color 0.2s ease; }
+  .site-header-stack[data-nav-collapsed] .main-nav > a { display: flex; min-height: 64px; padding: var(--space-3) var(--shell-gutter); font-size: clamp(1.75rem, 8.2vw, 2.5rem); font-variation-settings: "wdth" 86; font-weight: 900; letter-spacing: -0.035em; line-height: 0.95; white-space: nowrap; word-spacing: 0.06em; transition: background-color 0.2s ease, color 0.2s ease; }
   .site-header-stack[data-nav-collapsed] .main-nav > a + a { border-top: 1px solid var(--rule); }
   .site-header-stack[data-nav-collapsed] .main-nav > a:last-of-type { border-bottom: 1px solid var(--rule); }
   .site-header-stack[data-nav-collapsed] .main-nav .nav-support, .site-header-stack[data-nav-collapsed] .main-nav .mobile-account { display: flex; }
@@ -699,4 +699,67 @@ button.button { border-radius: 999px; }
   .site-header-stack[data-nav-collapsed] .main-nav.is-open > a:nth-child(4) { animation-delay: 0.09s; }
   .site-header-stack[data-nav-collapsed] .main-nav.is-open > a:nth-child(5) { animation-delay: 0.12s; }
   .site-header-stack[data-nav-collapsed] .main-nav.is-open > a:nth-child(6) { animation-delay: 0.15s; }
+}
+
+/* "Tri koraka. / Nula filozofije." — one line on wide screens, exactly two on a phone. */
+@media (max-width: 767px) {
+  /* Sized by the viewport so "Нула филозофије." still fits a 320px phone on one line. */
+  .steps-card .section-head h2 { font-size: min(var(--fs-h2), 6.8vw); hyphens: none; }
+  .steps-card .steps-title-line { display: block; white-space: nowrap; }
+}
+
+/* Closing words of the steps card: title, guarantee and the order button. */
+.steps-card .steps-outro {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--rule);
+  text-align: center;
+}
+.steps-card .steps-outro h3 { margin: 0; font-size: var(--fs-h3, 1.6rem); text-wrap: balance; }
+.steps-card .steps-outro p { max-width: 52ch; margin: 0; color: var(--ink-2); text-wrap: pretty; }
+.steps-card .steps-outro .button { margin-top: var(--space-2); color: #fff; }
+
+/* The order button closes the road, right after the fifth stop. */
+.sub-road-cta { justify-content: center; margin-top: clamp(32px, 5vw, 56px); }
+/* The card forces its navy on every child; the button keeps white text. */
+.sub-road-cta .button { color: #fff; }
+
+/* ------------------------------------------------- home: why this milk */
+
+/* Plain milk-white ground, so it reads apart from the patterned steps card below. */
+.milk-why { padding-block: clamp(56px, 9vw, 112px); background: var(--surface); color: var(--navy); }
+.milk-why .section-head { max-width: 760px; margin: 0 auto clamp(32px, 5vw, 56px); text-align: center; }
+.milk-why .section-head h2 { font-size: var(--fs-h2); text-wrap: balance; }
+.milk-why .section-head .lead { margin-inline: auto; color: #4a5061; }
+
+/* Four short facts: stacked on a phone, two by two on a tablet, one row on desktop. */
+.milk-why-grid {
+  display: grid;
+  gap: 0;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  border-top: 2px solid var(--navy);
+}
+.milk-why-grid li { padding: var(--space-5) var(--space-2); border-bottom: 1px solid var(--rule); text-align: center; }
+.milk-why-grid h3 { margin: 0 0 6px; font-size: 1.15rem; font-weight: 900; text-transform: uppercase; }
+.milk-why-grid p { max-width: 30ch; margin: 0 auto; color: #4a5061; }
+@media (min-width: 640px) {
+  .milk-why-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .milk-why-grid li:nth-child(odd) { border-right: 1px solid var(--rule); }
+}
+@media (min-width: 1024px) {
+  .milk-why-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 2px solid var(--navy); }
+  .milk-why-grid li { border-bottom: 0; }
+  .milk-why-grid li + li { border-left: 1px solid var(--rule); }
+  .milk-why-grid li:nth-child(odd) { border-right: 0; }
+}
+@media (max-width: 767px) {
+  /* Exactly two lines on a phone, as with the steps heading. */
+  .milk-why .section-head h2 { font-size: min(var(--fs-h2), 7vw); hyphens: none; }
+  .milk-why-line { display: block; white-space: nowrap; }
 }

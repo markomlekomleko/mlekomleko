@@ -23,7 +23,6 @@ import "./styles/home/band.css";
 import "./styles/home/origin.css";
 import "./styles/home/rhythm.css";
 import "./styles/home/faq.css";
-import "./styles/home/closing.css";
 import "./styles/pages/commerce.css";
 import "./styles/pages/content.css";
 import "./styles/redesign.css";

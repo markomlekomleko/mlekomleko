@@ -25,7 +25,10 @@ export function StepsSection() {
         <div className="steps-card">
           <div className="section-head">
             <p className="eyebrow">{copy.eyebrow}</p>
-            <h2 id="steps-title">{copy.title}</h2>
+            <h2 id="steps-title" aria-label={copy.title}>
+              <span className="steps-title-line">{copy.titleLines[0]}</span>{" "}
+              <span className="steps-title-line">{copy.titleLines[1]}</span>
+            </h2>
           </div>
           {/* The <ol> already numbers the steps for assistive technology; the giant
               numerals are the visual echo of that order. */}
@@ -41,6 +44,11 @@ export function StepsSection() {
               </li>
             ))}
           </ol>
+          <div className="steps-outro">
+            <h3>{copy.outro.title}</h3>
+            <p>{copy.outro.text}</p>
+            <a className="button" href="#izaberite-mleko">{copy.outro.cta}</a>
+          </div>
         </div>
       </div>
     </section>

@@ -101,9 +101,30 @@ export const homeCopy = {
     title: "Izaberi svoje mleko",
     lead: "Biraš vrstu, količinu i koliko često dolazimo. Želiš oba? Može i to.",
   },
+  // Why this milk, first thing under the hero (17 Nov 2026). Facts only, no health
+  // claims and no comparison with named dairies: both are regulated advertising.
+  milk: {
+    eyebrow: "Zašto baš ovo mleko",
+    title: "Ništa dodato. Ništa oduzeto.",
+    titleLines: ["Ništa dodato.", "Ništa oduzeto."],
+    lead: "Mleko kakvo je bilo pre fabrike — samo ohlađeno i flaširano.",
+    items: [
+      { title: "Sirovo i punomasno", text: "Bez obiranja, bez homogenizacije, bez produžavanja roka." },
+      { title: "Sveže, ne sa rafa", text: "Ne stoji nedeljama u magacinu, nego putuje pravo do tebe." },
+      { title: "Znaš odakle je", text: "Iza svake flaše je prava farma i pravi ljudi, ne etiketa iz fabrike." },
+      { title: "Ukus koji pamtiš", text: "Gusto, sa kajmakom, kao nekad." },
+    ],
+  },
   steps: {
     eyebrow: "Kako stiže",
     title: "Tri koraka. Nula filozofije.",
+    // The same sentence split in two, so a phone breaks it exactly after the first.
+    titleLines: ["Tri koraka.", "Nula filozofije."],
+    outro: {
+      title: "Frižider ti se već raduje.",
+      text: "Količinu i ritam menjate pre roka, a svaku sledeću dostavu možete da preskočite ili pauzirate iz svog naloga.",
+      cta: "Napuni frižider",
+    },
     items: [
       {
         title: "Izabereš mleko i ritam.",
@@ -156,11 +177,6 @@ export const homeCopy = {
     lead: "Sa farme, iz mlekomata i iz kuhinje — pogledaj kako izgleda pravo mleko.",
     instagram: "Prati nas na Instagramu",
     tiktok: "Prati nas na TikToku",
-  },
-  closing: {
-    eyebrow: "Poslednji gutljaj",
-    title: "Frižider ti se već raduje.",
-    cta: "Napuni frižider",
   },
 } as const;
 
