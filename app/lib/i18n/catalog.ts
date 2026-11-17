@@ -3406,6 +3406,26 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Milk you know",
     "Молоко, которое вы знаете"
   ],
+  "Staklena flaša kravljeg mleka sa etiketom, na drvenoj dasci": [
+    "A glass bottle of cow’s milk with its label, on a wooden board",
+    "Стеклянная бутылка коровьего молока с этикеткой на деревянной доске"
+  ],
+  "Staklena flaša kozjeg mleka sa etiketom, na drvenoj dasci": [
+    "A glass bottle of goat’s milk with its label, on a wooden board",
+    "Стеклянная бутылка козьего молока с этикеткой на деревянной доске"
+  ],
+  "Ruka drži flašu kravljeg mleka ispred mlekomata": [
+    "A hand holding a bottle of cow’s milk in front of a milk machine",
+    "Рука держит бутылку коровьего молока у молокомата"
+  ],
+  "Ruka drži flašu kozjeg mleka ispred mlekomata": [
+    "A hand holding a bottle of goat’s milk in front of a milk machine",
+    "Рука держит бутылку козьего молока у молокомата"
+  ],
+  "I u mlekomatu": [
+    "Also at the milk machine",
+    "И в молокомате"
+  ],
   "Tri koraka.": [
     "Three steps.",
     "Три шага."

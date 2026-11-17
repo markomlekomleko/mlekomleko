@@ -50,9 +50,8 @@ export default async function OriginPage() {
             <p className="eyebrow">Poreklo tvog mleka</p>
             <h1>Sa paše do flaše.</h1>
             <p className="lead">Biramo male domaće farme, preuzimamo mleko posle muže i donosimo ti ga sirovo i punomasno — bez fabrike, magacina i rafa između.</p>
-            <div className="button-row"><Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko</Link><a className="button secondary" href="/kako-funkcionise">Put tvog mleka</a></div>
           </div>
-          <img className="sub-hero-art" src="/images/grafike/pasnjak.svg" alt="Krava i koza zajedno na pašnjaku" width="1200" height="900" />
+          <img className="sub-hero-art" src="/images/ilustracije/pasnjak.webp" alt="Krava i koza zajedno na pašnjaku" width="1200" height="900" />
         </div>
       </header>
 
@@ -84,6 +83,8 @@ export default async function OriginPage() {
               <article className="content-card" key={item.title}><img className="kitchen-icon" src={`/images/grafike/${item.icon}.svg`} alt="" width="72" height="72" loading="lazy" /><h3>{item.title}</h3><p>{item.text}</p></article>
             ))}
           </div>
+          {/* The order button closes the kitchen section (18 Nov 2026). */}
+          <div className="button-row kitchen-cta"><Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko</Link></div>
         </div>
       </section>
 

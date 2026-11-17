@@ -894,3 +894,4 @@ button.button { border-radius: 999px; }
 @keyframes hero-hint-nudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .hero-scroll-hint span { animation: none; } }
 :root[data-motion="paused"] .hero-scroll-hint span { animation: none; }
+.kitchen-cta { justify-content: center; margin-top: clamp(28px, 4vw, 44px); }
