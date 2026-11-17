@@ -19,6 +19,5 @@ export function companyLine(): string[] {
     company.address,
     company.registrationNumber ? `MB ${company.registrationNumber}` : "",
     company.taxId ? `PIB ${company.taxId}` : "",
-    company.email,
   ].filter(Boolean);
 }

@@ -857,3 +857,17 @@ button.button { border-radius: 999px; }
 .configurator-card[data-kind] .configurator-title:lang(sr-Latn) { font-size: min(var(--title-max, 2.25rem), 8.1cqi); }
 .configurator-card[data-kind] .configurator-title:lang(en) { font-size: min(var(--title-max, 2.25rem), 10.9cqi); }
 .configurator-card[data-kind] .configurator-title:lang(ru) { font-size: min(var(--title-max, 2.25rem), 5.7cqi); }
+
+/* Footer without the link columns: the legal stack opens the footer, and phone, email
+   and social sit in one centred row right under the company details. */
+.site-footer--k .footer-k-legal { padding-top: clamp(40px, 6vw, 72px); border-top: 0; }
+.site-footer--k .footer-contact-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 28px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.site-footer--k .footer-contact-row a { color: inherit; text-decoration: none; }
+.site-footer--k .footer-contact-row a:hover { text-decoration: underline; }

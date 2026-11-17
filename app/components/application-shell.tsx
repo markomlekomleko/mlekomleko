@@ -38,7 +38,7 @@ export function ApplicationShell({
         {skip}
         <SiteHeader key={path} settings={settings} />
         {content}
-        <SiteFooter storeName={settings.storeName} />
+        <SiteFooter />
         <CartDrawer />
       </CartProvider>
     </AnalyticsProvider>

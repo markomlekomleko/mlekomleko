@@ -198,49 +198,28 @@ function FooterIcon({ name }: { name: "phone" | "mail" | "instagram" | "tiktok" 
   );
 }
 
-export function SiteFooter({ storeName = "Mleko i Mleko" }: { storeName?: string }) {
+export function SiteFooter() {
   const localize = useLocalize();
   const locale = useLocale();
   const legal = companyLine();
-  // The Kafeterija footer in our colours (17 Nov 2026): logo and link columns, the legal
-  // line with the registered company, a row of policies, how to pay, social links, and
-  // the oversized faded wordmark running off the bottom.
+  // The footer in our colours: the legal line with the registered company, phone, email
+  // and social links under it, a row of policies, how to pay, and the oversized faded
+  // wordmark running off the bottom.
   return localize((
     <footer className="site-footer site-footer--k">
-      <div className="page-shell footer-k-grid">
-        <div className="footer-brand-col">
-          <Link className="brand footer-brand" href="/" aria-label={`${storeName} - početna`}>
-            <Image className="brand-logo brand-logo-footer" src="/images/mleko-i-mleko-logo-mark.png" alt="" width={140} height={140} sizes="96px" />
-          </Link>
-          <p className="footer-tagline">{shellCopy.footer.tagline}</p>
-        </div>
-        <nav className="footer-links" aria-labelledby="footer-mleko">
-          <h2 id="footer-mleko">Mleko</h2>
-          <Link href="/#izaberite-mleko">Izaberi svoje mleko</Link>
-          <Link href="/kako-funkcionise">Mesečna pretplata</Link>
-          <Link href="/farme">Poreklo tvog mleka</Link>
-          <Link href="/gde-kupiti">Mlekomati</Link>
-        </nav>
-        <nav className="footer-links" aria-labelledby="footer-pomoc">
-          <h2 id="footer-pomoc">Pomoć</h2>
-          <Link href="/faq">Česta pitanja</Link>
-          <Link href="/kontakt">Kontakt</Link>
-          <Link href="/nalog">Moj nalog</Link>
-          <Link href="/gde-kupiti#partnerstvo">Postani partner</Link>
-        </nav>
-        <div className="footer-links footer-contact-col">
-          <h2>Kontakt</h2>
-          <a className="footer-contact" href={company.phoneHref}><FooterIcon name="phone" />{company.phone}</a>
-          {company.email ? <a className="footer-contact" href={`mailto:${company.email}`}><FooterIcon name="mail" /><span data-no-translate>{company.email}</span></a> : null}
-          <a className="footer-contact" href={INSTAGRAM_URL} target="_blank" rel="noreferrer"><FooterIcon name="instagram" />Instagram</a>
-          <a className="footer-contact" href={TIKTOK_URL} target="_blank" rel="noreferrer"><FooterIcon name="tiktok" />TikTok</a>
-        </div>
-      </div>
       <div className="page-shell footer-k-legal">
         <p className="footer-company">
           {company.legalName ? <span data-no-translate>{company.legalName}</span> : null}
           {legal.map((part) => <span key={part}> · {part}</span>)}
         </p>
+        {/* Contact and social, right under the company details (17 Nov 2026: the link
+            columns above were dropped; the header and menu already carry those links). */}
+        <div className="footer-contact-row">
+          <a className="footer-contact" href={company.phoneHref}><FooterIcon name="phone" />{company.phone}</a>
+          {company.email ? <a className="footer-contact" href={`mailto:${company.email}`}><FooterIcon name="mail" /><span data-no-translate>{company.email}</span></a> : null}
+          <a className="footer-contact" href={INSTAGRAM_URL} target="_blank" rel="noreferrer"><FooterIcon name="instagram" />Instagram</a>
+          <a className="footer-contact" href={TIKTOK_URL} target="_blank" rel="noreferrer"><FooterIcon name="tiktok" />TikTok</a>
+        </div>
         <nav className="footer-policies" aria-label={shellCopy.footer.infoTitle}>
           <Link href="/uslovi-kupovine">Uslovi kupovine</Link>
           <Link href="/pravila-pretplate">Pravila pretplate</Link>
