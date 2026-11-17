@@ -510,7 +510,7 @@ img.offer-stamp {
   .configurator-card[data-kind] .carousel-story h4 { font-size: 1.5rem; }
   .configurator-card[data-kind] .carousel-story li { font-size: 0.95rem; padding-top: 8px; }
   .configurator-card[data-kind] .carousel-story-mark { width: 72px; }
-  .configurator-card[data-kind] .configurator-title { font-size: 1.5rem; }
+  .configurator-card[data-kind] .configurator-title { --title-max: 1.5rem; }
 }
 
 /* The section heading lines up with the centred pair of cards. */
@@ -798,3 +798,23 @@ button.button { border-radius: 999px; }
   .chain li:first-child { padding-left: 0; }
 }
 .kitchen-icon { display: block; width: 72px; height: 72px; margin-bottom: 12px; }
+
+/* ------------------------------------------- home shop: one-line headings */
+
+/* "Izaberi svoje mleko" and each product name hold one line at every width. Both are
+   sized against their own column (container units), per language: the Russian names
+   ("Фермерское коровье молоко") run about 30% longer than the Serbian ones. */
+.offer .offer-head .section-head { container-type: inline-size; }
+.offer .offer-head .section-head h2 { white-space: nowrap; text-wrap: nowrap; font-size: min(var(--fs-h2), 8.1cqi); }
+.offer .offer-head .section-head h2:lang(sr-Latn) { font-size: min(var(--fs-h2), 9.3cqi); }
+.offer .offer-head .section-head h2:lang(en) { font-size: min(var(--fs-h2), 10.6cqi); }
+
+.configurator-card[data-kind] .configurator-head { container-type: inline-size; }
+.configurator-card[data-kind] .configurator-title {
+  white-space: nowrap;
+  overflow-wrap: normal;
+  font-size: min(var(--title-max, 2.25rem), 7.4cqi);
+}
+.configurator-card[data-kind] .configurator-title:lang(sr-Latn) { font-size: min(var(--title-max, 2.25rem), 8.1cqi); }
+.configurator-card[data-kind] .configurator-title:lang(en) { font-size: min(var(--title-max, 2.25rem), 10.9cqi); }
+.configurator-card[data-kind] .configurator-title:lang(ru) { font-size: min(var(--title-max, 2.25rem), 5.7cqi); }
