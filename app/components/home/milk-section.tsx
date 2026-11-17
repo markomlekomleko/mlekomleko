@@ -25,7 +25,7 @@ export function MilkSection() {
               </h2>
               <p className="lead">{copy.lead}</p>
             </div>
-            <img className="milk-why-art" src="/images/grafike/pasnjak.svg" alt="Krava i koza zajedno na pašnjaku" width="1200" height="900" loading="lazy" />
+            <img className="milk-why-art" src="/images/ilustracije/pasnjak.webp" alt="Krava i koza zajedno na pašnjaku" width="1200" height="900" loading="lazy" />
           </div>
           <ul className="milk-why-grid">
             {copy.items.map((item) => (

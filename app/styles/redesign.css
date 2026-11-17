@@ -232,6 +232,23 @@ img.offer-stamp {
   font-weight: 800;
   text-transform: uppercase;
 }
+/* "Napuni frižider" is the one action in the card: logo teal, so it never reads as
+   another navy choice chip above it. White on #357f94 passes AA for this bold text. */
+.configurator-card[data-kind] .configurator-actions .button {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--teal);
+}
+.configurator-card[data-kind] .configurator-actions .button:not(:disabled):hover {
+  border-color: var(--teal);
+  background: var(--teal);
+  color: #fff;
+}
+.configurator-card[data-kind] .configurator-actions .button:not(:disabled):active {
+  box-shadow: none;
+  transform: translateY(4px);
+}
 
 /* ---------------------------------------------------------------- social videos */
 
