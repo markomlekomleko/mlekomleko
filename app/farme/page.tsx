@@ -14,10 +14,10 @@ export async function generateMetadata(): Promise<Metadata> { return localizedMe
 
 // Raw versus shop milk, one fact per row. Only process facts, no health claims.
 const compare = [
-  { label: "Masnoća", ours: "Punomasno, sa svom pavlakom koju je dala krava ili koza.", shop: "Pavlaka se obira, pa se masnoća podešava na 2,8 ili 3,2%." },
-  { label: "Homogenizacija", ours: "Nema je — pavlaka se sama skuplja na vrhu flaše.", shop: "Masne kapljice se usitnjavaju da se pavlaka nikad ne izdvoji." },
-  { label: "Termička obrada", ours: "Nema je — ti biraš da li ćeš ga prokuvati.", shop: "Pasterizacija ili sterilizacija na visokoj temperaturi." },
-  { label: "Rok trajanja", ours: "Nekoliko dana, zato ti ga donosimo sveže.", shop: "Nedeljama, a trajno mleko i mesecima, na rafu." },
+  { icon: "masnoca", label: "Masnoća", ours: "Punomasno, sa svom pavlakom koju je dala krava ili koza.", shop: "Pavlaka se obira, pa se masnoća podešava na 2,8 ili 3,2%." },
+  { icon: "homogenizacija", label: "Homogenizacija", ours: "Nema je — pavlaka se sama skuplja na vrhu flaše.", shop: "Masne kapljice se usitnjavaju da se pavlaka nikad ne izdvoji." },
+  { icon: "termicka-obrada", label: "Termička obrada", ours: "Nema je — ti biraš da li ćeš ga prokuvati.", shop: "Pasterizacija ili sterilizacija na visokoj temperaturi." },
+  { icon: "rok-trajanja", label: "Rok trajanja", ours: "Nekoliko dana, zato ti ga donosimo sveže.", shop: "Nedeljama, a trajno mleko i mesecima, na rafu." },
 ] as const;
 
 const kitchen = [
@@ -57,7 +57,7 @@ export default async function OriginPage() {
 
       <section className="content-band" aria-labelledby="sirovo-title">
         <div className="page-shell">
-          <div className="section-head"><p className="eyebrow">Sirovo naspram industrijskog</p><h2 id="sirovo-title">Naše mleko je mleko.</h2><p className="lead">Mleko iz prodavnice prođe kroz fabriku pre nego što stigne do tebe. Naše ne.</p></div>
+          <div className="section-head"><p className="eyebrow">Sirovo naspram industrijskog</p><h2 id="sirovo-title" className="one-line-title">Naše mleko je mleko.</h2><p className="lead">Mleko iz prodavnice prođe kroz fabriku pre nego što stigne do tebe. Naše ne.</p></div>
           <div className="compare" role="table" aria-labelledby="sirovo-title">
             <div className="compare-row compare-head" role="row">
               <span role="columnheader"><span className="visually-hidden">Svojstvo</span></span>
@@ -66,7 +66,7 @@ export default async function OriginPage() {
             </div>
             {compare.map((row) => (
               <div className="compare-row" role="row" key={row.label}>
-                <span role="rowheader" className="compare-label">{row.label}</span>
+                <span role="rowheader" className="compare-label"><img className="compare-icon" src={`/images/grafike/${row.icon}.svg`} alt="" width="48" height="48" loading="lazy" />{row.label}</span>
                 <p role="cell" className="compare-ours">{row.ours}</p>
                 <p role="cell">{row.shop}</p>
               </div>
@@ -90,7 +90,7 @@ export default async function OriginPage() {
 
       <section className="content-band" aria-labelledby="farme-title">
         <div className="page-shell">
-          <div className="section-head"><p className="eyebrow">Ko stoji iza flaše</p><h2 id="farme-title">Mi biramo farme. Ti biraš mleko.</h2><p className="lead">Ne držimo svoje krave. Naš posao je da nađemo domaćine koji to rade dobro i da njihovo mleko stigne do tebe onakvo kakvo je izašlo sa farme.</p></div>
+          <div className="section-head"><p className="eyebrow">Ko stoji iza flaše</p><h2 id="farme-title" className="two-line-title" aria-label="Mi biramo farme. Ti biraš mleko."><span>Mi biramo farme.</span>{" "}<span>Ti biraš mleko.</span></h2><p className="lead">Ne držimo svoje krave. Naš posao je da nađemo domaćine koji to rade dobro i da njihovo mleko stigne do tebe onakvo kakvo je izašlo sa farme.</p></div>
           <ol className="chain">
             {chain.map((step, index) => (
               <li key={step.title}>

@@ -3428,7 +3428,15 @@ export const catalog: Record<string, readonly [string, string]> = {
   ],
   "Naše mleko je mleko.": [
     "Our milk is just milk.",
-    "Наше молоко — это просто молоко."
+    "Наше молоко — просто молоко."
+  ],
+  "Mi biramo farme.": [
+    "We choose the farms.",
+    "Мы выбираем фермы."
+  ],
+  "Ti biraš mleko.": [
+    "You choose the milk.",
+    "Вы выбираете молоко."
   ],
   "Tri koraka.": [
     "Three steps.",

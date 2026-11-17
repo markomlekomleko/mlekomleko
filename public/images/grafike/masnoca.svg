@@ -1,0 +1,23 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+<title>Happy cream drop on a little glass of milk</title>
+<rect width="1024" height="1024" fill="#FFFFFF" />
+<g transform="translate(82 82) scale(0.84)" stroke="#353A4A" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+<g id="glass">
+<path d="M177 515 C188 624 224 845 249 953 C259 998 290 1016 340 1021 C424 1030 595 1030 676 1020 C725 1014 758 993 767 951 C792 834 824 634 837 515 Z" transform="translate(0 -30)" fill="#357F94" />
+<path d="M220 750 C270 709 320 696 370 708 C425 719 459 741 518 732 C579 723 624 681 690 689 C726 692 758 709 787 731 L751 925 Q744 978 678 988 Q515 1008 341 991 Q275 985 262 942 Z" fill="#F7F3E9" stroke="none" />
+<path d="M177 485 C188 594 224 815 249 923 C259 968 290 986 340 991 C424 1000 595 1000 676 990 C725 984 758 963 767 921 C792 804 824 604 837 485" fill="none" />
+<ellipse cx="507" cy="483" rx="330" ry="63" fill="#357F94" />
+<path d="M249 604 L262 685" fill="none" stroke="#F7F3E9" stroke-width="34" />
+</g>
+<g id="cream-drop">
+<path d="M294 472 C249 441 222 393 223 329 C225 227 303 146 397 67 C447 24 482 -13 472 -79 C470 -93 478 -98 491 -91 C556 -56 647 36 711 122 C770 201 805 269 794 343 C788 397 765 438 720 471 C669 508 602 522 515 522 C421 522 348 510 294 472 Z" transform="translate(0 40)" fill="#F7F3E9" />
+<path d="M446 116 C408 147 369 183 341 225" fill="none" stroke="#357F94" stroke-width="38" />
+<path d="M348 327 C361 289 405 288 424 323 M591 323 C607 288 653 289 667 327" fill="none" stroke-width="25" />
+<path d="M461 369 Q509 388 559 369 C556 401 539 420 511 420 C483 420 465 402 461 369 Z" fill="#353A4A" stroke-width="23" />
+</g>
+<g id="little-hands" fill="#F7F3E9" stroke-width="27">
+<path d="M293 469 C314 446 345 444 376 460 C402 474 426 500 425 524 C423 550 391 555 372 535 C357 556 326 555 306 541 C283 525 278 493 293 469 Z" />
+<path d="M722 469 C701 446 670 444 639 460 C613 474 589 500 590 524 C592 550 624 555 643 535 C658 556 689 555 709 541 C732 525 737 493 722 469 Z" />
+</g>
+</g>
+</svg>

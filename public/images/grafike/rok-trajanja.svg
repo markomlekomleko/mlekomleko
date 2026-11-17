@@ -1,0 +1,29 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+  <title>Happy fresh shelf life calendar</title>
+  <rect width="1024" height="1024" fill="#FFFFFF" />
+  <g stroke="#353A4A" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+    <g id="hanger" fill="#F7F3E9">
+      <path d="M370 205 474 100M550 100 654 205" fill="none" />
+      <circle cx="512" cy="80" r="40" />
+    </g>
+    <g id="calendar-pages" fill="#F7F3E9">
+      <path d="M814 370 856 815Q861 887 787 890H706L735 377Z" />
+      <path d="M177 381H782V825Q782 913 698 913H250Q181 913 176 848Z" />
+      <path d="M202 366H789Q790 536 758 677 735 772 646 825 584 861 531 860L198 854Q120 853 135 777Z" />
+      <path d="M531 860Q577 843 594 775 606 725 649 725 731 730 758 677" fill="none" />
+    </g>
+    <path id="teal-header" d="M276 212 746 209Q814 210 844 260 860 284 857 320 854 366 805 370L225 371Q185 371 184 333L184 309Q184 254 230 227 250 214 276 212Z" fill="#357F94" />
+    <g id="binding-rings" fill="#F7F3E9">
+      <path d="M320 278Q313 220 332 178 348 148 375 162 400 176 389 202 373 233 379 279 383 310 353 315 324 318 320 278Z" />
+      <path d="M632 278Q625 220 644 178 660 148 687 162 712 176 701 202 685 233 691 279 695 310 665 315 636 318 632 278Z" />
+    </g>
+    <g id="happy-face">
+      <path d="M287 578Q301 536 339 538 375 539 386 579M493 580Q506 539 544 541 580 543 590 584" fill="none" stroke-width="26" />
+      <path d="M383 636Q436 666 491 638 488 704 438 704 390 704 383 636Z" fill="#353A4A" stroke-width="17" />
+    </g>
+    <g id="milk-drop">
+      <path d="M679 411Q658 446 635 482 618 509 623 532 629 570 667 576 708 582 728 548 746 520 724 484Z" fill="#F7F3E9" stroke-width="21" />
+      <path d="M706 513Q709 536 688 545" fill="none" stroke="#357F94" stroke-width="16" />
+    </g>
+  </g>
+</svg>

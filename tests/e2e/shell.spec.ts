@@ -118,13 +118,14 @@ test("Escape closes the mobile menu and returns focus to Meni", async ({ page })
   await expect(menu).toBeFocused();
 });
 
-test("the footer holds only the company, contact and policy links", async ({ page }) => {
+test("the footer holds only the company, contact, social and policy links", async ({ page }) => {
   await acceptNecessary(page);
   await page.goto("/");
   const footer = page.locator("footer.site-footer");
   await expect(footer.locator(".footer-company")).toBeVisible();
   await expect(footer.locator('a[href^="mailto:"]')).toHaveCount(1);
   await expect(footer.locator('a[href^="tel:"]')).toHaveCount(1);
+  await expect(footer.locator('a[href*="instagram.com"], a[href*="tiktok.com"]')).toHaveCount(2);
   await expect(footer.locator(".footer-wordmark, .footer-links, .footer-pay")).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });

@@ -895,3 +895,17 @@ button.button { border-radius: 999px; }
 @media (prefers-reduced-motion: reduce) { .hero-scroll-hint span { animation: none; } }
 :root[data-motion="paused"] .hero-scroll-hint span { animation: none; }
 .kitchen-cta { justify-content: center; margin-top: clamp(28px, 4vw, 44px); }
+
+/* Origin page headings: "Naše mleko je mleko." holds one line, "Mi biramo farme. /
+   Ti biraš mleko." exactly two. Sized against their column, per language. */
+.origin-page .section-head:has(.one-line-title, .two-line-title) { container-type: inline-size; max-width: none; }
+.origin-page .one-line-title { white-space: nowrap; font-size: min(var(--fs-h2), var(--fit, 7cqi)); }
+.origin-page .two-line-title { font-size: min(var(--fs-h2), var(--fit2, 9cqi)); }
+.origin-page .two-line-title span { display: block; white-space: nowrap; }
+.origin-page :is(.one-line-title, .two-line-title) { --fit: 7.85cqi; --fit2: 9.4cqi; }
+.origin-page :is(.one-line-title, .two-line-title):lang(sr-Latn) { --fit: 8.8cqi; --fit2: 10.9cqi; }
+.origin-page :is(.one-line-title, .two-line-title):lang(en) { --fit: 8.4cqi; --fit2: 8.5cqi; }
+.origin-page :is(.one-line-title, .two-line-title):lang(ru) { --fit: 5.3cqi; --fit2: 7.3cqi; }
+.origin-page :is(.one-line-title, .two-line-title) { max-width: none; }
+.compare-label { display: inline-flex; align-items: center; gap: 10px; }
+.compare-icon { flex: none; width: 48px; height: 48px; }

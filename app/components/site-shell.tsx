@@ -184,10 +184,12 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
 }
 
 /** Small line icons for the footer contacts; decorative, the link text names the target. */
-function FooterIcon({ name }: { name: "phone" | "mail" }) {
+function FooterIcon({ name }: { name: "phone" | "mail" | "instagram" | "tiktok" }) {
   const paths: Record<typeof name, ReactNode> = {
     phone: <path d="M6.6 3.5h3l1.5 4-2 1.3a11 11 0 0 0 6.1 6.1l1.3-2 4 1.5v3a2 2 0 0 1-2.2 2A17.6 17.6 0 0 1 4.6 5.7a2 2 0 0 1 2-2.2z" />,
     mail: <><rect x="3" y="5.5" width="18" height="13" rx="2" /><path d="m3.5 7 8.5 6.2L20.5 7" /></>,
+    instagram: <><rect x="3.5" y="3.5" width="17" height="17" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.2" cy="6.8" r="0.9" fill="currentColor" stroke="none" /></>,
+    tiktok: <path d="M14 3.5v11.2a3.8 3.8 0 1 1-3.3-3.8M14 3.5c.4 2.6 2.2 4.4 5 4.6" />,
   };
   return (
     <svg className="footer-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
@@ -199,8 +201,8 @@ function FooterIcon({ name }: { name: "phone" | "mail" }) {
 export function SiteFooter() {
   const localize = useLocalize();
   const legal = companyLine();
-  // The whole footer (18 Nov 2026): the registered company, email and phone, and the
-  // policy links. Nothing else.
+  // The whole footer (18 Nov 2026): the registered company, email, phone, Instagram and
+  // TikTok, and the policy links. Nothing else.
   return localize((
     <footer className="site-footer site-footer--k">
       <div className="page-shell footer-k-legal">
@@ -211,6 +213,8 @@ export function SiteFooter() {
         <div className="footer-contact-row">
           {company.email ? <a className="footer-contact" href={`mailto:${company.email}`}><FooterIcon name="mail" /><span data-no-translate>{company.email}</span></a> : null}
           <a className="footer-contact" href={company.phoneHref}><FooterIcon name="phone" />{company.phone}</a>
+          <a className="footer-contact" href={INSTAGRAM_URL} target="_blank" rel="noreferrer"><FooterIcon name="instagram" />Instagram</a>
+          <a className="footer-contact" href={TIKTOK_URL} target="_blank" rel="noreferrer"><FooterIcon name="tiktok" />TikTok</a>
         </div>
         <nav className="footer-policies" aria-label={shellCopy.footer.infoTitle}>
           <Link href="/uslovi-kupovine">Uslovi kupovine</Link>
