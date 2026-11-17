@@ -74,6 +74,10 @@ export const milkQuestions = [
     answer: "Može. Kada prokuvaš dva litra i ostaviš da se ohladi, dobiješ oko 100 grama pravog domaćeg kajmaka.",
   },
   {
+    question: "Kako znam da je mleko proveravano?",
+    answer: "Podatke o kontroli i deklaraciji objavljujemo uz proizvod kada su potvrđeni dokumentacijom dobavljača.",
+  },
+  {
     question: "Zašto staklena flaša?",
     answer: "Staklo ne menja ukus mleka i može da se pere i ponovo puni. Praznu čistu flašu vraćaš pri sledećoj dostavi.",
   },
@@ -104,7 +108,6 @@ export const homeCopy = {
   // Why this milk, first thing under the hero (17 Nov 2026). Facts only, no health
   // claims and no comparison with named dairies: both are regulated advertising.
   milk: {
-    eyebrow: "Zašto baš ovo mleko",
     title: "Ništa dodato. Ništa oduzeto.",
     titleLines: ["Ništa dodato.", "Ništa oduzeto."],
     lead: "Mleko kakvo je bilo pre fabrike — samo ohlađeno i flaširano.",

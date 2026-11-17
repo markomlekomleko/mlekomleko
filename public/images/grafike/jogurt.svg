@@ -1,0 +1,15 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+  <title>Jar of homemade yoghurt with a spoon</title>
+  <rect width="1024" height="1024" fill="#FFFFFF" />
+  <g stroke="#353A4A" stroke-width="27" stroke-linecap="round" stroke-linejoin="round">
+    <path id="jar-body" d="M279 501 C281 550 246 583 236 644 C226 700 224 783 235 829 C254 918 327 944 510 944 C685 944 759 917 782 839 C798 787 789 690 783 654 C775 591 741 554 742 503 Z" fill="#F7F3E9" />
+    <path id="jar-mouth" d="M777 449 C777 519 661 552 510 552 C358 552 247 519 247 450 C247 380 364 331 512 331 C662 331 777 381 777 449 Z" fill="#F7F3E9" />
+    <path id="mouth-interior" d="M712 438 C712 473 621 493 511 493 C400 493 309 473 309 438 C309 402 401 371 512 371 C622 371 712 403 712 438 Z" fill="#353A4A" />
+    <path id="spoon" d="M577 414 C600 349 622 275 646 209 C671 141 694 79 731 64 C761 50 791 63 800 88 C812 120 786 158 764 191 C713 266 671 337 648 414 Z" fill="#357F94" />
+    <path id="yoghurt" d="M326 462 C337 421 373 391 412 371 C450 352 486 333 474 302 C465 281 503 293 526 309 C551 326 572 351 594 364 L577 414 C622 409 668 427 687 464 C645 484 578 493 511 493 C435 493 365 482 326 462 Z" fill="#F7F3E9" stroke="none" />
+    <path id="yoghurt-peak" d="M326 462 C337 421 373 391 412 371 C450 352 486 333 474 302 C465 281 503 293 526 309 C551 326 572 351 594 364" fill="none" />
+    <path id="yoghurt-swirl" d="M453 423 C502 442 542 404 582 400 C628 394 673 416 687 455" fill="none" stroke-width="23" />
+    <path id="front-inner-rim" d="M309 447 C321 475 409 493 511 493 C610 493 694 475 712 447" fill="none" stroke-width="22" />
+  </g>
+  <path id="glass-highlight" d="M325 605 C288 652 275 717 282 774" fill="none" stroke="#FFFFFF" stroke-width="43" stroke-linecap="round" />
+</svg>

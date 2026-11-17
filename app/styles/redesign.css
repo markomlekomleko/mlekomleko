@@ -753,3 +753,48 @@ button.button { border-radius: 999px; }
 .origin-page .sub-hero h1 { max-width: none; white-space: nowrap; font-size: min(5.2rem, 9.1cqi); }
 .origin-page .sub-hero h1:lang(en) { font-size: min(5.2rem, 7.8cqi); }
 .origin-page .sub-hero h1:lang(ru) { font-size: min(5.2rem, 7.4cqi); }
+
+/* ------------------------------------------------ origin page: raw vs shop */
+
+/* A two-column comparison; our column is the one in navy. On a phone the property
+   name runs across the top of each row and the two answers sit side by side. */
+.compare { max-width: 1040px; border-top: 2px solid var(--navy); }
+.compare-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px 16px;
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--rule);
+}
+.compare-row > :first-child { grid-column: 1 / -1; }
+.compare-label,
+.compare-head > span { margin: 0; font-size: 0.95rem; font-weight: 900; text-transform: uppercase; }
+.compare-row p { margin: 0; color: #4a5061; }
+.compare-row .compare-ours { color: var(--navy); font-weight: 650; }
+.compare-head { padding-block: var(--space-3); }
+.compare-head .compare-ours { color: var(--brand); }
+@media (min-width: 768px) {
+  .compare-row { grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: baseline; }
+  .compare-row > :first-child { grid-column: auto; }
+}
+@media (max-width: 767px) { .compare-head > :first-child { display: none; } }
+
+.kitchen-grid { display: grid; gap: 16px; }
+.kitchen-grid .content-card h3 { margin: 0 0 8px; font-size: 1.15rem; line-height: 1.15; font-weight: 900; text-transform: uppercase; }
+.kitchen-grid p { margin: 0; }
+@media (min-width: 640px) { .kitchen-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1100px) { .kitchen-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+/* Four stops on the milk's short road, numbered like the subscription road. */
+.chain { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; border-top: 2px solid var(--navy); }
+.chain li { padding: var(--space-5) 0; border-bottom: 1px solid var(--rule); }
+.chain-number { display: block; color: var(--brand); font-family: var(--ff-display); font-size: clamp(2.2rem, 6vw, 3.2rem); font-weight: 900; line-height: 1; }
+.chain h3 { margin: 8px 0 4px; font-weight: 900; text-transform: uppercase; }
+.chain p { margin: 0; color: #4a5061; }
+@media (min-width: 900px) {
+  .chain { grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 2px solid var(--navy); }
+  .chain li { padding-inline: var(--space-4); border-bottom: 0; }
+  .chain li + li { border-left: 1px solid var(--rule); }
+  .chain li:first-child { padding-left: 0; }
+}
+.kitchen-icon { display: block; width: 72px; height: 72px; margin-bottom: 12px; }

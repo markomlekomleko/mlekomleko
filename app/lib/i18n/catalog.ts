@@ -3234,6 +3234,170 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Rich, with a layer of cream, like it used to be.",
     "Густое, со сливками сверху, как раньше."
   ],
+  "Biramo male domaće farme, preuzimamo mleko posle muže i donosimo ti ga sirovo i punomasno — bez fabrike, magacina i rafa između.": [
+    "We choose small local farms, collect the milk after milking and bring it to you raw and whole — no factory, warehouse or shelf in between.",
+    "Мы выбираем небольшие местные фермы, забираем молоко после дойки и привозим его вам сырым и цельным — без завода, склада и полки."
+  ],
+  "Sirovo naspram industrijskog": [
+    "Raw versus industrial",
+    "Сырое против промышленного"
+  ],
+  "Isto se zove. Nije isto mleko.": [
+    "Same name. Not the same milk.",
+    "Название то же. Молоко — нет."
+  ],
+  "Mleko iz prodavnice prođe kroz fabriku pre nego što stigne do tebe. Naše ne.": [
+    "Shop milk goes through a factory before it reaches you. Ours doesn’t.",
+    "Магазинное молоко проходит через завод, прежде чем попасть к вам. Наше — нет."
+  ],
+  "Industrijsko mleko": [
+    "Industrial milk",
+    "Промышленное молоко"
+  ],
+  "Masnoća": [
+    "Fat",
+    "Жирность"
+  ],
+  "Punomasno, sa svom pavlakom koju je dala krava ili koza.": [
+    "Whole, with all the cream the cow or goat gave.",
+    "Цельное, со всеми сливками, которые дала корова или коза."
+  ],
+  "Pavlaka se obira, pa se masnoća podešava na 2,8 ili 3,2%.": [
+    "The cream is skimmed and the fat set to 2.8 or 3.2%.",
+    "Сливки снимают, а жирность доводят до 2,8 или 3,2%."
+  ],
+  "Homogenizacija": [
+    "Homogenisation",
+    "Гомогенизация"
+  ],
+  "Nema je — pavlaka se sama skuplja na vrhu flaše.": [
+    "None — the cream gathers at the top of the bottle on its own.",
+    "Нет — сливки сами собираются наверху бутылки."
+  ],
+  "Masne kapljice se usitnjavaju da se pavlaka nikad ne izdvoji.": [
+    "Fat droplets are broken up so the cream never separates.",
+    "Жировые капли дробят, чтобы сливки никогда не отделялись."
+  ],
+  "Termička obrada": [
+    "Heat treatment",
+    "Термообработка"
+  ],
+  "Nema je — ti biraš da li ćeš ga prokuvati.": [
+    "None — you decide whether to boil it.",
+    "Нет — вы сами решаете, кипятить ли его."
+  ],
+  "Pasterizacija ili sterilizacija na visokoj temperaturi.": [
+    "Pasteurised or sterilised at high temperature.",
+    "Пастеризация или стерилизация при высокой температуре."
+  ],
+  "Rok trajanja": [
+    "Shelf life",
+    "Срок хранения"
+  ],
+  "Nekoliko dana, zato ti ga donosimo sveže.": [
+    "A few days, which is why we bring it fresh.",
+    "Несколько дней — поэтому мы привозим его свежим."
+  ],
+  "Nedeljama, a trajno mleko i mesecima, na rafu.": [
+    "Weeks on the shelf, and months for long-life milk.",
+    "Недели на полке, а ультрапастеризованное — месяцы."
+  ],
+  "U tvojoj kuhinji": [
+    "In your kitchen",
+    "На вашей кухне"
+  ],
+  "Od jednog mleka, cela trpeza.": [
+    "One milk, a whole table.",
+    "Из одного молока — целый стол."
+  ],
+  "Sirovo punomasno mleko nije samo za čašu — od njega praviš ono što od kupovnog ne ide.": [
+    "Raw whole milk isn’t just for drinking — it makes what shop milk can’t.",
+    "Сырое цельное молоко не только для стакана — из него получается то, что не выйдет из магазинного."
+  ],
+  "Pravi kajmak": [
+    "Real kajmak",
+    "Настоящий каймак"
+  ],
+  "Prokuvaš dva litra, ostaviš da se ohladi i skineš oko 100 grama kajmaka. Od homogenizovanog mleka kajmak se ne hvata.": [
+    "Boil two litres, let it cool and lift off about 100 grams of kajmak. Homogenised milk won’t form it.",
+    "Вскипятите два литра, дайте остыть и снимите около 100 граммов каймака. На гомогенизированном молоке он не образуется."
+  ],
+  "Domaći jogurt i kiselo mleko": [
+    "Homemade yoghurt and sour milk",
+    "Домашний йогурт и простокваша"
+  ],
+  "Gusti, sa korom od pavlake na vrhu i punim ukusom, kao nekad.": [
+    "Thick, with a crust of cream on top and full flavour, like it used to be.",
+    "Густые, с корочкой сливок сверху и полным вкусом, как раньше."
+  ],
+  "Mladi sir": [
+    "Fresh cheese",
+    "Молодой сыр"
+  ],
+  "Uz malo sirišta napraviš domaći mladi sir, kao na selu.": [
+    "With a little rennet you make fresh homemade cheese, the village way.",
+    "С небольшим количеством сычужного фермента получится домашний молодой сыр, как в деревне."
+  ],
+  "Kafa i kačamak": [
+    "Coffee and kačamak",
+    "Кофе и качамак"
+  ],
+  "Punomasno mleko daje kafi i kačamaku punoću koju obrano ne može.": [
+    "Whole milk gives coffee and kačamak a richness skimmed milk can’t.",
+    "Цельное молоко даёт кофе и качамаку насыщенность, которой нет у обезжиренного."
+  ],
+  "Ko stoji iza flaše": [
+    "Who’s behind the bottle",
+    "Кто стоит за бутылкой"
+  ],
+  "Mi biramo farme. Ti biraš mleko.": [
+    "We choose the farms. You choose the milk.",
+    "Мы выбираем фермы. Вы выбираете молоко."
+  ],
+  "Ne držimo svoje krave. Naš posao je da nađemo domaćine koji to rade dobro i da njihovo mleko stigne do tebe onakvo kakvo je izašlo sa farme.": [
+    "We don’t keep our own cows. Our job is to find farmers who do it well and get their milk to you just as it left the farm.",
+    "Мы не держим своих коров. Наша работа — найти хозяев, которые делают это хорошо, и доставить вам их молоко таким, каким оно вышло с фермы."
+  ],
+  "Biramo domaćine": [
+    "We choose the farmers",
+    "Выбираем хозяев"
+  ],
+  "Male porodične farme sa kojima radimo direktno, bez posrednika.": [
+    "Small family farms we work with directly, with no middlemen.",
+    "Небольшие семейные фермы, с которыми мы работаем напрямую, без посредников."
+  ],
+  "Preuzimamo posle muže": [
+    "We collect after milking",
+    "Забираем после дойки"
+  ],
+  "Naše vozilo dolazi po sveže mleko direktno na farmu.": [
+    "Our vehicle collects the fresh milk straight from the farm.",
+    "Наша машина забирает свежее молоко прямо на ферме."
+  ],
+  "Hladimo i sipamo u staklo": [
+    "We chill it and bottle it in glass",
+    "Охлаждаем и разливаем в стекло"
+  ],
+  "Bez plastike i tetrapaka — samo mleko i povratna staklena flaša.": [
+    "No plastic or cartons — just milk and a returnable glass bottle.",
+    "Без пластика и тетрапака — только молоко и возвратная стеклянная бутылка."
+  ],
+  "Donosimo na tvoja vrata": [
+    "We bring it to your door",
+    "Привозим к вашей двери"
+  ],
+  "Bez magacina i rafa: sa farme ide pravo do tebe u Beogradu i Novom Sadu.": [
+    "No warehouse, no shelf: from the farm straight to you in Belgrade and Novi Sad.",
+    "Без склада и полки: с фермы прямо к вам в Белграде и Нови-Саде."
+  ],
+  "Kako znam da je mleko proveravano?": [
+    "How do I know the milk is checked?",
+    "Как узнать, что молоко проверено?"
+  ],
+  "Svojstvo": [
+    "Property",
+    "Свойство"
+  ],
   "Tri koraka.": [
     "Three steps.",
     "Три шага."

@@ -40,7 +40,7 @@ export default async function MlekomatiPage() {
             <p className="lead">Domaće mleko iz mlekomata u Beogradu — natočiš koliko ti treba i platiš na licu mesta, gotovinom ili karticom.</p>
             <div className="button-row"><a className="button" href="#lokacije">Pronađi mlekomat</a><a className="button secondary" href="#partnerstvo">Postani partner</a></div>
           </div>
-          <img className="sub-hero-art" src="/images/ilustracije/jutarnja-casa.webp" alt="" width="1200" height="900" />
+          <img className="sub-hero-art" src="/images/grafike/jutarnja-casa.svg" alt="" width="1200" height="900" />
         </div>
       </header>
 
