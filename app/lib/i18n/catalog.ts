@@ -3398,6 +3398,10 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Property",
     "Свойство"
   ],
+  "Čovek ujutru pije čašu mleka": [
+    "A man drinking a glass of milk in the morning",
+    "Мужчина утром пьёт стакан молока"
+  ],
   "Tri koraka.": [
     "Three steps.",
     "Три шага."

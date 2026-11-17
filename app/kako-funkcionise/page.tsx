@@ -43,7 +43,7 @@ export default async function SubscriptionPage() {
             <h1>Tvoje mleko, svake nedelje.</h1>
             <p className="lead">Biraš mleko i ritam — mi muzemo, flaširamo i donosimo.</p>
           </div>
-          <img className="sub-hero-art" src="/images/grafike/jutarnja-casa.svg" alt="Porodica za doručkom, dečak pije čašu mleka" width="1200" height="900" />
+          <img className="sub-hero-art" src="/images/ilustracije/jutarnja-casa.webp" alt="Čovek ujutru pije čašu mleka" width="1200" height="900" />
         </div>
       </header>
 
@@ -57,7 +57,7 @@ export default async function SubscriptionPage() {
             <ol className="sub-road-list">
               {road.map((stop, index) => (
                 <li key={stop.art}>
-                  <img src={`/images/grafike/${stop.art}.svg`} alt="" width="1200" height="900" loading="lazy" />
+                  <img src={`/images/ilustracije/${stop.art}.webp`} alt="" width="1200" height="900" loading="lazy" />
                   <div>
                     <span className="sub-road-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
                     <h3>{stop.title}</h3>
