@@ -109,35 +109,10 @@ export const homeCopy = {
     titleLines: ["Ništa dodato.", "Ništa oduzeto."],
     lead: "Mleko kakvo je bilo pre fabrike — samo ohlađeno i flaširano.",
     items: [
-      { title: "Sirovo i punomasno", text: "Bez obiranja, bez homogenizacije, bez produžavanja roka." },
-      { title: "Sveže, ne sa rafa", text: "Ne stoji nedeljama u magacinu, nego putuje pravo do tebe." },
-      { title: "Znaš odakle je", text: "Iza svake flaše je prava farma i pravi ljudi, ne etiketa iz fabrike." },
-      { title: "Ukus koji pamtiš", text: "Gusto, sa kajmakom, kao nekad." },
-    ],
-  },
-  steps: {
-    eyebrow: "Kako stiže",
-    title: "Tri koraka. Nula filozofije.",
-    // The same sentence split in two, so a phone breaks it exactly after the first.
-    titleLines: ["Tri koraka.", "Nula filozofije."],
-    outro: {
-      title: "Frižider ti se već raduje.",
-      text: "Količinu i ritam menjate pre roka, a svaku sledeću dostavu možete da preskočite ili pauzirate iz svog naloga.",
-      cta: "Napuni frižider",
-    },
-    items: [
-      {
-        title: "Izabereš mleko i ritam.",
-        text: "Kravlje ili kozje, jednom ili redovno. Kako tebi paše.",
-      },
-      {
-        title: "Termin crno na belo.",
-        text: "Pre nego što potvrdiš, vidiš sledeći datum dostave i rok za izmene. Bez iznenađenja.",
-      },
-      {
-        title: "Flaša ide u krug.",
-        text: "Od druge dostave nam vraćaš prazne čiste flaše, a mi donosimo pune. Fer trampa.",
-      },
+      { icon: "sirovo", title: "Sirovo i punomasno", text: "Bez obiranja, bez homogenizacije, bez produžavanja roka." },
+      { icon: "sveze", title: "Sveže, ne sa rafa", text: "Ne stoji nedeljama u magacinu, nego putuje pravo do tebe." },
+      { icon: "poreklo", title: "Znaš odakle je", text: "Iza svake flaše je prava farma i pravi ljudi, ne etiketa iz fabrike." },
+      { icon: "ukus", title: "Ukus koji pamtiš", text: "Gusto, sa kajmakom, kao nekad." },
     ],
   },
   origin: {

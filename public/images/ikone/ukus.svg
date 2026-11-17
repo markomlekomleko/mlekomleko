@@ -1,0 +1,16 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+  <title>Happy glass of milk with a floating heart</title>
+  <g stroke="#353A4A" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M512 234C477 211 388 146 388 94C388 59 415 33 447 33C477 33 501 55 512 81C523 55 547 33 577 33C609 33 636 59 636 94C636 146 547 211 512 234Z" fill="#357F94" stroke-width="26" />
+    <g id="milk-glass">
+      <path d="M225 345C225 309 353 281 512 281C671 281 799 309 799 345L728 925C724 969 629 995 512 995C395 995 300 969 296 925Z" fill="#F7F3E9" stroke-width="32" />
+      <path d="M249 533C313 469 406 467 502 502C602 540 698 537 780 481" fill="none" stroke-width="22" />
+      <ellipse cx="512" cy="339" rx="287" ry="58" fill="#F7F3E9" stroke-width="28" />
+    </g>
+    <g id="happy-face" fill="none" stroke-width="23">
+      <path d="M362 655C375 610 425 609 441 655" />
+      <path d="M583 655C596 610 646 609 662 655" />
+      <path d="M459 706Q512 713 565 706C564 751 544 783 512 783C480 783 460 751 459 706Z" fill="#F7F3E9" stroke-width="21" />
+    </g>
+  </g>
+</svg>

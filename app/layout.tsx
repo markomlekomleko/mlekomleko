@@ -18,7 +18,6 @@ import "./styles/components/delivery-checker.css";
 import "./styles/components/delivery-calendar.css";
 import "./styles/home/hero.css";
 import "./styles/home/offer.css";
-import "./styles/home/steps.css";
 import "./styles/home/band.css";
 import "./styles/home/origin.css";
 import "./styles/home/rhythm.css";

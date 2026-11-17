@@ -1,0 +1,24 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+  <title>Cosy farmhouse with heart and little fence</title>
+  <g stroke="#353A4A" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <path id="heart" d="M512 222C479 207 393 145 392 96C390 61 418 32 451 32C477 31 498 48 512 66C527 44 548 32 572 32C606 32 632 61 632 94C632 145 548 205 512 222Z" fill="#357F94" />
+    <path id="house" d="M166 616V875H858V616L705 399L513 320L316 400Z" fill="#F7F3E9" />
+    <path id="roof" d="M165 636C145 643 122 637 108 623C90 606 91 584 105 563L235 368C248 349 267 334 288 327L499 257Q512 252 526 257L734 328C757 336 777 351 791 371L915 563C931 586 929 608 913 624C894 644 864 641 847 631Q832 622 821 605L702 416L512 337L319 416L198 606Q184 629 165 636Z" fill="#357F94" />
+    <g id="windows" fill="#F7F3E9" stroke-width="24">
+      <path d="M415 548V485C415 437 454 400 504 400H518C570 400 609 437 609 485V548Q609 568 587 568H438Q415 568 415 548Z" />
+      <path d="M512 405V564M419 484H605" fill="none" />
+      <rect x="226" y="651" width="137" height="132" rx="28" />
+      <path d="M294 655V780M230 717H359" fill="none" stroke-width="21" />
+      <rect x="661" y="651" width="137" height="132" rx="28" />
+      <path d="M730 655V780M665 717H794" fill="none" stroke-width="21" />
+    </g>
+    <path id="door" d="M412 873V728C412 671 456 625 511 625C568 625 613 671 613 728V873Z" fill="#357F94" />
+    <circle cx="561" cy="758" r="20" fill="#F7F3E9" stroke="none" />
+    <g id="fence" fill="#F7F3E9" stroke-width="24">
+      <rect x="69" y="874" width="886" height="71" rx="25" />
+      <path d="M134 976V866C134 841 151 822 174 822C197 822 215 841 215 866V976Q215 998 194 998H155Q134 998 134 976Z" />
+      <path d="M469 976V866C469 841 489 821 512 821C535 821 553 841 553 866V976Q553 998 532 998H491Q469 998 469 976Z" />
+      <path d="M809 976V866C809 841 827 822 850 822C873 822 893 841 893 866V976Q893 998 871 998H830Q809 998 809 976Z" />
+    </g>
+  </g>
+</svg>

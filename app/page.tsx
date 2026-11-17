@@ -7,7 +7,6 @@ import { MarqueeBand } from "./components/home/marquee-band";
 import { OfferSection } from "./components/home/offer-section";
 import { SocialSection } from "./components/home/social-section";
 import { MilkSection } from "./components/home/milk-section";
-import { StepsSection } from "./components/home/steps-section";
 import { frequentlyAskedQuestions } from "./lib/content";
 import { normalizeProduct } from "./lib/frontend";
 import { heroMedia } from "./lib/hero-media";
@@ -32,9 +31,8 @@ export default async function HomePage() {
     <div className="home">
       <Hero media={heroMedia} offerHref="#izaberite-mleko" />
       <MarqueeBand />
-      {/* Order agreed on 17 Nov 2026: why this milk, steps, the shop, "Mleko uživo", and the questions last. */}
+      {/* Order agreed on 17 Nov 2026: why this milk, the shop, "Mleko uživo", and the questions last. */}
       <MilkSection />
-      <StepsSection />
       <OfferSection products={products} delivery={delivery} />
       <SocialSection />
       <FaqSection />

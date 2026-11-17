@@ -1,0 +1,10 @@
+<svg viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+<title>Milk bottle with cream and a droplet</title>
+<g id="bottle" stroke="#353A4A" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+<path id="glass" d="M350 197 C353 285 323 318 290 380 C251 451 248 526 248 643 L250 778 C251 844 268 875 312 893 C380 923 582 923 650 892 C699 870 714 838 716 776 L718 619 C719 509 715 449 682 380 C652 317 625 279 630 197 Z" fill="#F7F3E9" />
+<path id="cream" d="M270 427 C286 373 320 346 349 356 C366 309 399 303 438 303 C479 304 504 281 491 256 C481 234 525 240 553 264 C584 289 592 316 577 340 C626 321 685 360 699 411 C680 448 647 436 621 430 C580 420 557 462 511 461 C464 462 449 430 408 431 C365 432 347 463 307 455 C290 452 279 441 270 427 Z" fill="#F7F3E9" stroke-width="22" />
+<path id="rim" d="M316 125 C317 91 369 69 489 68 C604 67 660 89 667 124 C675 155 668 179 639 191 C577 216 403 216 340 192 C316 183 308 155 316 125 Z" fill="#357F94" />
+<path id="bottle-mouth" d="M327 115 C333 91 400 78 490 78 C580 78 644 91 656 115 C646 139 579 151 491 151 C404 151 339 138 327 115 Z" fill="#F7F3E9" stroke-width="28" />
+</g>
+<path id="droplet" d="M777 287 C792 328 769 348 780 378 C791 410 825 416 846 397 C878 367 852 318 777 287 Z" fill="#F7F3E9" stroke="#353A4A" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
