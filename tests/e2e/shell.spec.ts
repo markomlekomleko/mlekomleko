@@ -104,7 +104,7 @@ test.skip("the motion toggle pauses the content marquee and remembers the choice
 });
 
 test("Escape closes the mobile menu and returns focus to Meni", async ({ page }) => {
-  test.skip(page.viewportSize()!.width > 1180, "The menu button only exists up to 1180px");
+  test.skip(page.viewportSize()!.width > 1279, "The menu button only exists up to 1279px");
   await acceptNecessary(page);
   await page.goto("/");
   const menu = page.getByRole("button", { name: cyr("Meni") });

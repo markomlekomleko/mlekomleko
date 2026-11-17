@@ -16,7 +16,7 @@ test("responsive navigation has no overflow and exposes every primary destinatio
   await acceptNecessary(page);
   const viewport = page.viewportSize()!;
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
-  if (viewport.width <= 1180) {
+  if (viewport.width <= 1279) {
     const menu = page.getByRole("button", { name: cyr("Meni") });
     await expect(menu).toBeVisible();
     await page.waitForTimeout(300);

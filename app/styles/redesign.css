@@ -518,46 +518,43 @@ img.offer-stamp {
 }
 .site-footer--k .footer-wordmark::before { content: attr(data-wordmark); }
 
-/* Product card picture: the frame always has the photo's own 4:5 shape, so the photo
-   fills it edge to edge with the whole bottle in view — no letterboxing, no cropping,
-   no vertical scrolling. From 640px the card is horizontal: the picture sits top-left
-   beside the choices instead of stretching the card. */
+/* Product cards, e-commerce standard: picture on top at the full card width in one
+   square format for both milks (the bottle sits in the middle 80% of every photo, so the
+   square keeps it whole), then name, price and choices. Two cards side by side from
+   tablet up, each capped in width so the picture is a confident thumbnail, never a
+   poster. The photo always fills its frame; nothing scrolls vertically. */
 .carousel-track { overflow-y: hidden; }
-.configurator-card[data-kind] .carousel-slide { aspect-ratio: 4 / 5; }
+.configurator.configurator-card[data-kind] { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+.configurator-card[data-kind] .carousel-slide { aspect-ratio: 1 / 1; }
 .configurator-card[data-kind] .carousel-slide img { object-fit: cover; object-position: center; }
+.configurator-card[data-kind] .carousel { border-bottom: 2px solid var(--navy); }
 
-@media (min-width: 640px) {
-  .configurator.configurator-card[data-kind] {
-    grid-template-columns: minmax(240px, 42%) minmax(0, 1fr);
-    align-items: start;
+@media (min-width: 700px) {
+  .offer-grid[data-count="2"] {
+    grid-template-columns: repeat(2, minmax(0, 420px));
+    justify-content: center;
+    gap: clamp(20px, 3vw, 40px);
+    max-width: none;
   }
-  .configurator-card[data-kind] .carousel {
-    overflow: hidden;
-    border-right: 2px solid var(--navy);
-    border-bottom: 2px solid var(--navy);
-    border-bottom-right-radius: 18px;
-  }
-  .configurator-card[data-kind] .carousel-caption { left: 10px; bottom: 34px; font-size: 0.7rem; padding: 6px 10px; }
-  .configurator-card[data-kind] .carousel-nav { width: 32px; height: 32px; margin-top: -16px; font-size: 1.2rem; }
-  .configurator-card[data-kind] .carousel-prev { left: 6px; }
-  .configurator-card[data-kind] .carousel-next { right: 6px; }
-  .configurator-card[data-kind] .carousel-story { padding: 20px; gap: 10px; }
-  .configurator-card[data-kind] .carousel-story h4 { font-size: 1.3rem; }
-  .configurator-card[data-kind] .carousel-story li { font-size: 0.9rem; padding-top: 6px; }
-  .configurator-card[data-kind] .carousel-story-mark { width: 64px; }
+  .configurator-card[data-kind] .carousel-caption { left: 12px; bottom: 34px; font-size: 0.72rem; padding: 6px 12px; }
+  .configurator-card[data-kind] .carousel-nav { width: 34px; height: 34px; margin-top: -17px; font-size: 1.25rem; }
+  .configurator-card[data-kind] .carousel-story { padding: 24px; gap: 12px; }
+  .configurator-card[data-kind] .carousel-story h4 { font-size: 1.5rem; }
+  .configurator-card[data-kind] .carousel-story li { font-size: 0.95rem; padding-top: 8px; }
+  .configurator-card[data-kind] .carousel-story-mark { width: 72px; }
+  .configurator-card[data-kind] .configurator-title { font-size: 1.5rem; }
 }
 
-@media (min-width: 1100px) {
-  .offer-grid[data-count="2"] { max-width: 1200px; margin-inline: auto; gap: 24px; }
-  .configurator.configurator-card[data-kind] { grid-template-columns: 280px minmax(0, 1fr); }
-  .configurator-card[data-kind] .configurator-title { font-size: 1.5rem; }
+/* The section heading lines up with the centred pair of cards. */
+@media (min-width: 700px) {
+  .offer .offer-head { max-width: calc(840px + clamp(20px, 3vw, 40px)); margin-inline: auto; }
 }
 
 /* ------------------------------------------------------------------- header */
 
 /* Wide screens: logo first, the four links right after it, account and cart on the
    right, as on the Kafeterija header. */
-@media (min-width: 1181px) {
+@media (min-width: 1280px) {
   .nav-shell { grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 32px; }
   .nav-shell > .brand { grid-area: 1 / 1; }
   .main-nav { grid-area: 1 / 2; }
@@ -645,7 +642,7 @@ button.button { border-radius: 999px; }
 
 /* Compact header (17 Nov 2026): five links incl. Kontakt, account as an icon. Links never
    wrap; the actions cluster is icon-sized so long Russian/English labels still fit. */
-@media (min-width: 1181px) {
+@media (min-width: 1280px) {
   .main-nav { gap: clamp(14px, 1.4vw, 24px); font-size: clamp(0.75rem, 0.86vw, 0.875rem); }
   .main-nav > a { white-space: nowrap; }
   .header-actions { gap: 14px; }
@@ -659,4 +656,47 @@ button.button { border-radius: 999px; }
   color: var(--ink);
 }
 .header-account:hover { background: var(--blush); }
-@media (min-width: 1181px) { .header-account { display: inline-grid; } }
+@media (min-width: 1280px) { .header-account { display: inline-grid; } }
+/* Single-column widths above a phone: keep the card (and its square picture) at a
+   comfortable product-card size instead of stretching across the screen. */
+@media (min-width: 480px) and (max-width: 699px) {
+  .offer-grid[data-count="2"] { max-width: 440px; margin-inline: auto; }
+}
+/* Equal-height cards in a row: the picture keeps its square, any extra height goes to
+   the body, and the action button sits on the bottom edge of both cards. */
+.configurator.configurator-card[data-kind] { display: flex; flex-direction: column; }
+.configurator-card[data-kind] .configurator-body { display: flex; flex: 1 1 auto; flex-direction: column; }
+.configurator-card[data-kind] .configurator-actions { margin-top: auto; }
+
+/* The header measures itself (site-shell.tsx): when the links would not fit beside the
+   logo and actions — a long language, a large system font, browser zoom — it sets
+   data-nav-tight and the links tighten instead of wrapping or overlapping. */
+.site-header-stack[data-nav-tight] .main-nav { gap: 12px; font-size: 0.72rem; letter-spacing: 0; }
+.site-header-stack[data-nav-tight] .nav-shell { column-gap: 20px; }
+
+
+/* Last resort, set by the header when even the tight links do not fit (site-shell.tsx):
+   the desktop header switches to the menu sheet, exactly as below 1280px. Generated from
+   the "Mobile menu" block in shell.css — keep the two in step. */
+@media (min-width: 1280px) {
+  .site-header-stack[data-nav-collapsed] .nav-shell { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .site-header-stack[data-nav-collapsed] .nav-shell > .brand { grid-area: 1 / 2; }
+  .site-header-stack[data-nav-collapsed] .header-account { display: none; }
+  .site-header-stack[data-nav-collapsed] .mobile-menu-button { display: inline-grid; width: 44px; height: 44px; place-items: center; margin-left: -10px; padding: 0; border: 0; background: transparent; color: var(--ink); transition: background-color 0.2s ease, color 0.2s ease; }
+  .site-header-stack[data-nav-collapsed] .mobile-menu-button:hover { background: var(--ink); color: var(--on-ink); }
+  .site-header-stack[data-nav-collapsed] .main-nav { position: absolute; top: 100%; right: 0; left: 0; display: flex; flex-direction: column; min-height: calc(100dvh - var(--header-stack)); max-height: calc(100dvh - var(--header-stack)); overflow-y: auto; overscroll-behavior: contain; border-bottom: 1px solid var(--rule); background: var(--surface); visibility: hidden; opacity: 0; transform: translateY(-8px); pointer-events: none; transition: opacity 0.22s ease, transform 0.3s cubic-bezier(0.22, 0.7, 0.25, 1), visibility 0s linear 0.3s; }
+  .site-header-stack[data-nav-collapsed] .main-nav.is-open { visibility: visible; opacity: 1; transform: none; pointer-events: auto; transition-delay: 0s; }
+  .site-header-stack[data-nav-collapsed] .main-nav > a { display: flex; min-height: 64px; padding: var(--space-3) var(--shell-gutter); font-size: clamp(1.75rem, 8.2vw, 2.5rem); font-variation-settings: "wdth" 86; font-weight: 900; letter-spacing: -0.035em; line-height: 0.95; white-space: normal; word-spacing: 0.06em; transition: background-color 0.2s ease, color 0.2s ease; }
+  .site-header-stack[data-nav-collapsed] .main-nav > a + a { border-top: 1px solid var(--rule); }
+  .site-header-stack[data-nav-collapsed] .main-nav > a:last-of-type { border-bottom: 1px solid var(--rule); }
+  .site-header-stack[data-nav-collapsed] .main-nav .nav-support, .site-header-stack[data-nav-collapsed] .main-nav .mobile-account { display: flex; }
+  .site-header-stack[data-nav-collapsed] .nav-contact { display: flex; flex-wrap: wrap; column-gap: var(--space-5); margin: auto 0 0; padding: var(--space-4) var(--shell-gutter) calc(var(--space-4) + env(safe-area-inset-bottom)); border-top: 1px solid var(--rule); }
+  .site-header-stack[data-nav-collapsed] .main-nav > a:hover, .site-header-stack[data-nav-collapsed] .main-nav > a:focus-visible { background: var(--brand); color: #fff; text-decoration: none; }
+  .site-header-stack[data-nav-collapsed] .main-nav > a:focus-visible { outline: 3px solid #fff; outline-offset: -7px; }
+  .site-header-stack[data-nav-collapsed] .main-nav.is-open > a { animation: nav-row-in 0.3s cubic-bezier(0.22, 0.7, 0.25, 1) both; }
+  .site-header-stack[data-nav-collapsed] .main-nav.is-open > a:nth-child(2) { animation-delay: 0.03s; }
+  .site-header-stack[data-nav-collapsed] .main-nav.is-open > a:nth-child(3) { animation-delay: 0.06s; }
+  .site-header-stack[data-nav-collapsed] .main-nav.is-open > a:nth-child(4) { animation-delay: 0.09s; }
+  .site-header-stack[data-nav-collapsed] .main-nav.is-open > a:nth-child(5) { animation-delay: 0.12s; }
+  .site-header-stack[data-nav-collapsed] .main-nav.is-open > a:nth-child(6) { animation-delay: 0.15s; }
+}

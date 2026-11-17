@@ -42,6 +42,48 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   const externalAnnouncement = /^https:\/\//i.test(announcementUrl);
   // Only one overlay is ever active: the cart takes precedence over the menu.
   const menuVisible = menuOpen && !drawerOpen;
+  const stackRef = useRef<HTMLDivElement>(null);
+  const [navFit, setNavFit] = useState<"relaxed" | "tight" | "collapsed">("relaxed");
+
+  // Desktop links must never wrap or run into the actions, whatever the language, the
+  // system font or the browser zoom. Measure the real layout: first tighten the links,
+  // and if even that does not fit, fall back to the menu sheet used on smaller screens.
+  useEffect(() => {
+    const stack = stackRef.current;
+    if (!stack) return;
+    const overflows = () => {
+      const nav = stack.querySelector<HTMLElement>("#glavna-navigacija");
+      const actions = stack.querySelector<HTMLElement>(".header-actions");
+      if (!nav || !actions) return false;
+      const links = [...nav.querySelectorAll<HTMLElement>(":scope > a")].filter((link) => link.offsetParent !== null);
+      if (!links.length) return false;
+      const heights = links.map((link) => link.getBoundingClientRect().height);
+      const wrapped = Math.max(...heights) > Math.min(...heights) * 1.5;
+      return wrapped || links[links.length - 1].getBoundingClientRect().right + 16 > actions.getBoundingClientRect().left;
+    };
+    const check = () => {
+      stack.removeAttribute("data-nav-tight");
+      stack.removeAttribute("data-nav-collapsed");
+      if (!window.matchMedia("(min-width: 1280px)").matches) { setNavFit("relaxed"); return; }
+      let fit: "relaxed" | "tight" | "collapsed" = "relaxed";
+      if (overflows()) {
+        stack.setAttribute("data-nav-tight", "");
+        fit = "tight";
+        if (overflows()) {
+          stack.removeAttribute("data-nav-tight");
+          stack.setAttribute("data-nav-collapsed", "");
+          fit = "collapsed";
+        }
+      }
+      setNavFit(fit);
+    };
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(stack);
+    window.addEventListener("resize", check);
+    document.fonts?.ready.then(check).catch(() => {});
+    return () => { observer.disconnect(); window.removeEventListener("resize", check); };
+  }, [locale]);
   // Closes the menu; for a link to a section of the page already open (the milk picker on
   // the home page) it also scrolls there itself, because the router does nothing when
   // the URL already carries that same hash.
@@ -70,7 +112,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   // DOM order is the visual order at every width (menu button, links, logo, actions),
   // so the tab order never jumps around the bar.
   return localize((
-    <div className="site-header-stack" data-hero-header>
+    <div ref={stackRef} className="site-header-stack" data-hero-header data-nav-tight={navFit === "tight" ? "" : undefined} data-nav-collapsed={navFit === "collapsed" ? "" : undefined}>
       {settings.announcementEnabled && announcementText.trim() ? <aside className="announcement-bar" aria-label="Obaveštenje">
         {announcementUrl ? <a href={announcementUrl} target={externalAnnouncement ? "_blank" : undefined} rel={externalAnnouncement ? "noopener noreferrer" : undefined}>{announcementText}</a> : <p>{announcementText}</p>}
       </aside> : null}
