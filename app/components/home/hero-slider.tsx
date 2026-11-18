@@ -18,11 +18,13 @@ type Slide = {
 };
 
 /**
- * The home hero after Farmit (18 Nov 2026): full-screen photos that cross-fade, a
- * centred headline in sentence case, one line of copy, a single white pill action with
- * a pictogram, the same reassurance line under every slide, and a segmented progress
- * bar like stories. The bar's own animation is the timer, so hovering, focusing or
- * touching the hero pauses it, and reduced motion turns autoplay off entirely.
+ * The home hero after Farmit (18 Nov 2026): full-screen photos that slide in from the
+ * right every three seconds, a centred headline in sentence case, one line of copy, a
+ * single white pill action with a pictogram, the same reassurance line under every
+ * slide, and a segmented progress bar that fills like a loading bar. The bar's own
+ * animation is the timer: keyboard focus or a touch pauses it, reduced motion turns
+ * autoplay off. A copy of the first slide sits after the last, so the loop always
+ * moves forward and then snaps back to the start unseen.
  */
 const slides: readonly Slide[] = [
   {
@@ -63,15 +65,30 @@ const slides: readonly Slide[] = [
   },
 ];
 
-const AUTOPLAY_MS = 6500;
+const AUTOPLAY_MS = 3000;
 
 export function HeroSlider() {
   const localize = useLocalize();
-  const [active, setActive] = useState(0);
+  // `position` runs 0..slides.length; slides.length is the copy of the first slide.
+  const [position, setPosition] = useState(0);
+  const [animate, setAnimate] = useState(true);
   const [hold, setHold] = useState(false);
   const touchX = useRef<number | null>(null);
+  const active = position % slides.length;
 
-  const go = (index: number) => setActive((index + slides.length) % slides.length);
+  const go = (index: number) => {
+    setAnimate(true);
+    if (index < 0) {
+      // Going back from the first slide: jump to the copy unseen, then slide back.
+      setAnimate(false);
+      setPosition(slides.length);
+      requestAnimationFrame(() => requestAnimationFrame(() => { setAnimate(true); setPosition(slides.length - 1); }));
+      return;
+    }
+    setPosition(Math.min(index, slides.length));
+  };
+
+  const all = [...slides, slides[0]];
 
   return localize((
     <section
@@ -80,8 +97,6 @@ export function HeroSlider() {
       aria-label="Istaknuto"
       data-hold={hold ? "" : undefined}
       style={{ "--hero-autoplay": `${AUTOPLAY_MS}ms` } as React.CSSProperties}
-      onMouseEnter={() => setHold(true)}
-      onMouseLeave={() => setHold(false)}
       onFocus={() => setHold(true)}
       onBlur={() => setHold(false)}
       onTouchStart={(event) => { touchX.current = event.touches[0].clientX; setHold(true); }}
@@ -95,36 +110,53 @@ export function HeroSlider() {
       }}
     >
       <h1 id="hero-title" className="visually-hidden">{homeCopy.hero.title}</h1>
-      {slides.map((slide, index) => (
-        <div
-          key={slide.image}
-          className="hero-slide"
-          role="group"
-          aria-roledescription="slajd"
-          aria-label={`${index + 1} / ${slides.length}`}
-          data-active={index === active ? "" : undefined}
-          aria-hidden={index !== active ? true : undefined}
-          inert={index !== active ? true : undefined}
-        >
-          <img
-            className="hero-slide-image"
-            src={slide.image}
-            alt={slide.alt}
-            style={{ objectPosition: slide.focus }}
-            loading={index === 0 ? "eager" : "lazy"}
-            fetchPriority={index === 0 ? "high" : "auto"}
-          />
-          <div className="page-shell hero-slide-copy">
-            <h2 className="hero-slide-title">{slide.title}</h2>
-            <p className="hero-slide-lead">{slide.lead}</p>
-            <a className={`hero-slide-action${index === 0 ? " hero-cta" : ""}`} href={slide.action.href}>
-              <span aria-hidden="true">{slide.icon}</span>
-              {slide.action.label}
-            </a>
-            <p className="hero-slide-note">Dostava u Beogradu i Novom Sadu · povratne staklene flaše</p>
-          </div>
-        </div>
-      ))}
+      <div
+        className="hero-track"
+        data-animate={animate ? "" : undefined}
+        style={{ transform: `translateX(${position * -100}%)` }}
+        onTransitionEnd={(event) => {
+          if (event.target !== event.currentTarget || position !== slides.length) return;
+          // Landed on the copy of the first slide: snap to the real one unseen.
+          setAnimate(false);
+          setPosition(0);
+          requestAnimationFrame(() => requestAnimationFrame(() => setAnimate(true)));
+        }}
+      >
+        {all.map((slide, index) => {
+          const isCopy = index === slides.length;
+          const current = index === position;
+          return (
+            <div
+              key={isCopy ? `${slide.image}-copy` : slide.image}
+              className="hero-slide"
+              role={isCopy ? undefined : "group"}
+              aria-roledescription={isCopy ? undefined : "slajd"}
+              aria-label={isCopy ? undefined : `${index + 1} / ${slides.length}`}
+              data-active={current ? "" : undefined}
+              aria-hidden={!current || isCopy ? true : undefined}
+              inert={!current ? true : undefined}
+            >
+              <img
+                className="hero-slide-image"
+                src={slide.image}
+                alt={isCopy ? "" : slide.alt}
+                style={{ objectPosition: slide.focus }}
+                loading={index === 0 ? "eager" : "lazy"}
+                fetchPriority={index === 0 ? "high" : "auto"}
+              />
+              <div className="page-shell hero-slide-copy">
+                <h2 className="hero-slide-title">{slide.title}</h2>
+                <p className="hero-slide-lead">{slide.lead}</p>
+                <a className={`hero-slide-action${index === 0 ? " hero-cta" : ""}`} href={slide.action.href}>
+                  <span aria-hidden="true">{slide.icon}</span>
+                  {slide.action.label}
+                </a>
+                <p className="hero-slide-note">Dostava u Beogradu i Novom Sadu · povratne staklene flaše</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
       <button type="button" className="hero-arrow hero-arrow-prev" aria-label="Prethodni slajd" onClick={() => go(active - 1)}>
         <span aria-hidden="true">‹</span>
       </button>
