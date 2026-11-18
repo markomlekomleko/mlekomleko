@@ -276,7 +276,7 @@ img.offer-stamp {
 
 .home > .social { background: var(--surface); }
 .social-head { margin-bottom: var(--space-6); text-align: center; }
-.social-head h2 { font-weight: 900; text-transform: uppercase; }
+.social-head h2 { margin-inline: auto; font-weight: 900; text-transform: uppercase; }
 .social-head .lead { margin-inline: auto; }
 
 /* Phones swipe a row of portrait clips; wider screens get the full 3 × 2 grid. */
