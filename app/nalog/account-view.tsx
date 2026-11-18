@@ -2,7 +2,6 @@
 
 import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useCallback, useEffect, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import {
   ApiError,
@@ -72,6 +71,16 @@ function deliveryStatus(status: string) {
   );
 }
 
+/** The account page's sections, in page order: anchor id and menu label. */
+const ACCOUNT_SECTIONS = [
+  ["pregled", "Pregled"],
+  ["pretplata", "Pretplata"],
+  ["porudzbine", "Porudžbine"],
+  ["istorija-dostava", "Istorija dostava"],
+  ["adresa", "Adresa"],
+  ["podesavanja-naloga", "Podešavanja"],
+] as const;
+
 export function AccountView() {
   const localize = useLocalize();
   const locale = useLocale();
@@ -86,6 +95,7 @@ export function AccountView() {
     null,
   );
   const [historyFilter, setHistoryFilter] = useState("all");
+  const [activeSection, setActiveSection] = useState("pregled");
   const loadAccount = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -109,6 +119,27 @@ export function AccountView() {
   useEffect(() => {
     queueMicrotask(() => void loadAccount());
   }, [loadAccount]);
+  // The left menu follows the section in view, like a table of contents.
+  useEffect(() => {
+    if (!account) return;
+    const sections = ACCOUNT_SECTIONS.map(([id]) => document.getElementById(id)).filter(Boolean) as HTMLElement[];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible[0]) setActiveSection(visible[0].target.id);
+      },
+      { rootMargin: "-20% 0px -60% 0px" },
+    );
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [account]);
+  // On a phone the menu is one swipeable row: keep the active pill in view.
+  useEffect(() => {
+    const nav = document.querySelector<HTMLElement>(".account-nav");
+    const pill = nav?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (!nav || !pill || nav.scrollWidth <= nav.clientWidth) return;
+    nav.scrollTo({ left: pill.offsetLeft - (nav.clientWidth - pill.clientWidth) / 2, behavior: "smooth" });
+  }, [activeSection]);
 
   async function mutate(id: string, action: string, details: Row = {}) {
     const current = account?.subscriptions.find((sub) => sub.id === id);
@@ -241,65 +272,91 @@ export function AccountView() {
   );
   return localize((
     <div className="account-dashboard">
-      <aside className="account-sidebar" aria-label="Meni naloga">
-        <Link className="account-brand" href="/">
-          <Image src="/images/mleko-i-mleko-logo.png" alt="" width={42} height={42} />
-          <strong>Mleko i Mleko</strong>
-        </Link>
-        <p className="account-sidebar-label">Moj nalog</p>
-        <nav className="account-nav" aria-label="Navigacija naloga">
-          <a href="#moje-dostave">Moje dostave</a>
-          <a href="#istorija-dostava">Istorija dostava</a>
-          <a href="#podesavanja-naloga">Podešavanja</a>
-        </nav>
-        <div className="account-sidebar-footer">
-          <Link href="/#izaberite-mleko">← Nazad na izbor mleka</Link>
-          <a href="/kontakt">Pomoć i kontakt</a>
-          <button disabled={busy} onClick={() => void signOut()}>Odjavi se</button>
-        </div>
-      </aside>
-      <div className="account-content">
-        <header className="account-welcome">
-          <div>
-            <p className="eyebrow">Moj nalog</p>
-            <h1>Zdravo, {customer.fullName ? <span data-no-translate>{customer.fullName}</span> : "kupče"}.</h1>
-            <p>Pregled dostava, porudžbina i podešavanja naloga.</p>
-          </div>
-          <Link className="button secondary small" href="/#izaberite-mleko">
-            Dodaj mleko
-          </Link>
-        </header>
-        <div className="account-feedback">
-          {account.demo && (
-            <p className="notice" role="status">Pregledate demo nalog sa primerima podataka. Za izmene i poručivanje odjavite se i prijavite na svoj nalog.</p>
-          )}
-          {notice && (
-            <p className="notice success" role="status">
-              {notice}
-            </p>
-          )}
-          {error && (
-            <p className="notice error" role="alert">
-              {error}
-            </p>
-          )}
-        </div>
-        <div className="account-main-grid">
-          <div className="form-stack" id="moje-dostave">
-            {(account.deliveryHistory ?? [])
-              .filter(
-                (delivery) =>
-                  delivery.status === "locked" &&
-                  delivery.date >= account.currentDate,
-              )
-              .map((delivery) => (
-                <section className="card" key={delivery.id}>
-                  <p className="eyebrow">Dostava u pripremi</p>
-                  <h2>{formatDate(delivery.date, locale)}</h2>
-                  <p>
-                    Ova dostava je već zaključana. Izmene redovne dostave ispod
-                    važe za naredne termine.
-                  </p>
+      <div className="page-shell account-shell">
+        <h1 className="account-title">Moj nalog</h1>
+        <div className="account-layout">
+          <nav className="account-nav" aria-label="Navigacija naloga">
+            {ACCOUNT_SECTIONS.map(([id, title]) => (
+              <a key={id} href={`#${id}`} aria-current={activeSection === id ? "true" : undefined}>{title}</a>
+            ))}
+          </nav>
+          <div className="account-content">
+            <div className="account-feedback">
+              {account.demo && (
+                <p className="notice" role="status">Pregledate demo nalog sa primerima podataka. Za izmene i poručivanje odjavite se i prijavite na svoj nalog.</p>
+              )}
+              {notice && (
+                <p className="notice success" role="status">
+                  {notice}
+                </p>
+              )}
+              {error && (
+                <p className="notice error" role="alert">
+                  {error}
+                </p>
+              )}
+            </div>
+
+            <section className="card account-hello" id="pregled" aria-labelledby="hello-title">
+              <div className="account-card-head">
+                <h2 id="hello-title">Zdravo, {customer.fullName ? <span data-no-translate>{customer.fullName}</span> : <span data-no-translate>{customer.email}</span>}</h2>
+                <button className="button secondary small" disabled={busy} onClick={() => void signOut()}>Odjavi se</button>
+              </div>
+              <dl className="account-rows">
+                <div><dt>Email</dt><dd data-no-translate>{customer.email}</dd></div>
+                <div><dt>Telefon</dt><dd>{customer.phone ? <span data-no-translate>{customer.phone}</span> : "Nije unet"}</dd></div>
+              </dl>
+            </section>
+
+            <div className="account-section" id="pretplata">
+              <h2 className="account-section-title">Pretplata</h2>
+              {(account.deliveryHistory ?? [])
+                .filter(
+                  (delivery) =>
+                    delivery.status === "locked" &&
+                    delivery.date >= account.currentDate,
+                )
+                .map((delivery) => (
+                  <section className="card" key={delivery.id}>
+                    <p className="eyebrow">Dostava u pripremi</p>
+                    <h3>{formatDate(delivery.date, locale)}</h3>
+                    <p>
+                      Ova dostava je već zaključana. Izmene redovne dostave ispod
+                      važe za naredne termine.
+                    </p>
+                    <ul className="list-clean">
+                      {delivery.items.map((item, index) => (
+                        <li key={index}>
+                          {item.quantity} × {item.product_name} · {item.unit_label}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))}
+              {subscriptions.length ? (
+                subscriptions.map((sub, index) => (
+                  <SubscriptionCard
+                    key={sub.id}
+                    subscription={sub}
+                    products={account.addonProducts.map(normalizeProduct)}
+                    busy={busy}
+                    readOnly={account.demo}
+                    mutate={mutate}
+                    index={index}
+                  />
+                ))
+              ) : (
+                <section className="card">
+                  <p>Pretplati se i mleko stiže na tvoja vrata, bez odlaska u prodavnicu.</p>
+                  <Link className="account-arrow-link" href="/#izaberite-mleko">
+                    Izaberi svoje mleko <span aria-hidden="true">→</span>
+                  </Link>
+                </section>
+              )}
+              {(account.oneTimeDeliveries ?? []).map((delivery) => (
+                <section className="card" key={delivery.date}>
+                  <p className="eyebrow">Naručeno jednokratno</p>
+                  <h3>{formatDate(delivery.date, locale)}</h3>
                   <ul className="list-clean">
                     {delivery.items.map((item, index) => (
                       <li key={index}>
@@ -307,57 +364,112 @@ export function AccountView() {
                       </li>
                     ))}
                   </ul>
+                  <p className="small-text">
+                    Ovi proizvodi nisu deo redovne dostave. Pauza ili preskakanje
+                    pretplate ih ne pomera. Izmenu i otkazivanje otvorite u „Moje
+                    porudžbine“ ispod, do prikazanog roka.
+                  </p>
                 </section>
               ))}
-            {subscriptions.length ? (
-              subscriptions.map((sub, index) => (
-                <SubscriptionCard
-                  key={sub.id}
-                  subscription={sub}
-                  products={account.addonProducts.map(normalizeProduct)}
-                  busy={busy}
-                  readOnly={account.demo}
-                  mutate={mutate}
-                  index={index}
-                />
-              ))
-            ) : (
-              <section className="card">
-                <h2>Još nemate redovnu dostavu.</h2>
-                <p>Izaberite mleko, količinu i koliko često želite da stiže.</p>
-                <Link className="button" href="/#izaberite-mleko">
-                  Izaberi svoje mleko
-                </Link>
-              </section>
-            )}
-            {(account.oneTimeDeliveries ?? []).map((delivery) => (
-              <section className="card" key={delivery.date}>
-                <p className="eyebrow">Naručeno jednokratno</p>
-                <h2>{formatDate(delivery.date, locale)}</h2>
-                <ul className="list-clean">
-                  {delivery.items.map((item, index) => (
-                    <li key={index}>
-                      {item.quantity} × {item.product_name} · {item.unit_label}
-                    </li>
-                  ))}
-                </ul>
-                <p className="small-text">
-                  Ovi proizvodi nisu deo redovne dostave. Pauza ili preskakanje
-                  pretplate ih ne pomera. Izmenu i otkazivanje otvorite u „Moje
-                  porudžbine“ ispod, do prikazanog roka.
-                </p>
-              </section>
-            ))}
+              {subscriptions.length ? (
+                <section className="account-help">
+                  <p><strong>Treba vam više ili manje?</strong> Podesite količinu sa − / + i sačuvajte.</p>
+                  <p><strong>Imate još mleka?</strong> Preskočite samo sledeći termin.</p>
+                  <p><strong>Putujete?</strong> Pauzirajte do datuma povratka.</p>
+                </section>
+              ) : null}
+            </div>
+
+            <section className="card account-orders-panel" id="porudzbine" aria-labelledby="orders-title">
+              <h2 id="orders-title">Porudžbine <span className="account-count">{account.orders.length}</span></h2>
+              {account.orders.length ? (
+                <>
+                  <p className="account-muted">
+                    Mesečni obračuni i jednokratne kupovine. Jedna mesečna porudžbina
+                    može obuhvatiti više dostava.
+                  </p>
+                  <ul className="list-clean account-orders">
+                    {account.orders.map((order) => (
+                      <li key={label(order.id)}>
+                        <div className="summary-row">
+                          <strong>{label(order.order_number)}</strong>
+                          <strong>
+                            {formatMoney(Number(order.total_minor) / 100, locale)}
+                          </strong>
+                        </div>
+                        <p>
+                          {order.kind === "subscription_invoice"
+                            ? "Početak obračunatog perioda"
+                            : "Termin dostave"}
+                          : {formatDate(label(order.delivery_date), locale)}
+                        </p>
+                        <p>
+                          Plaćanje: {statusLabel(label(order.payment_status))} ·{" "}
+                          {deliveryStatus(label(order.fulfillment_status))}
+                        </p>
+                        {order.kind === "one_time" && (
+                          <button
+                            className="button secondary small"
+                            disabled={busy}
+                            onClick={async () => {
+                              try {
+                                setSelectedOrder(
+                                  await fetchJson<EditableOrder>(
+                                    `/api/account/orders/${encodeURIComponent(label(order.id))}`,
+                                  ),
+                                );
+                              } catch (cause) {
+                                setError(
+                                  cause instanceof Error
+                                    ? cause.message
+                                    : "Porudžbina nije učitana.",
+                                );
+                              }
+                            }}
+                          >
+                            Otvori porudžbinu {label(order.order_number)}
+                          </button>
+                        )}
+                        {selectedOrder && selectedOrder.order.id === order.id && (
+                          <div className="account-confirm">
+                            <OrderItemEditor
+                              key={String(selectedOrder.order.updated_at)}
+                              detail={selectedOrder}
+                              onSaved={() => {
+                                setSelectedOrder(null);
+                                setNotice("Porudžbina je ažurirana.");
+                                void loadAccount();
+                              }}
+                            />
+                            <button
+                              className="text-button"
+                              onClick={() => setSelectedOrder(null)}
+                            >
+                              Zatvori detalje porudžbine
+                            </button>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <>
+                  <p>Još nemaš nijednu porudžbinu.</p>
+                  <Link className="account-arrow-link" href="/#izaberite-mleko">
+                    Izaberi svoje mleko <span aria-hidden="true">→</span>
+                  </Link>
+                </>
+              )}
+            </section>
+
             <section
               className="card account-history"
               id="istorija-dostava"
               aria-labelledby="history-title"
             >
               <div className="account-section-heading">
-                <div>
-                  <p className="eyebrow">Sve na jednom mestu</p>
-                  <h2 id="history-title">Istorija dostava</h2>
-                </div>
+                <h2 id="history-title">Istorija dostava</h2>
                 <label className="field">
                   <span>Prikaži</span>
                   <select
@@ -410,7 +522,7 @@ export function AccountView() {
                   <p>
                     Datum, proizvodi i status prikazuju se kada dostava bude
                     evidentirana. Račune i naručene proizvode pratite u
-                    porudžbinama ispod.
+                    porudžbinama iznad.
                   </p>
                 </div>
               )}
@@ -418,141 +530,54 @@ export function AccountView() {
                 Prikazujemo poslednjih 50 evidentiranih dostava i preskakanja.
               </p>
             </section>
-            <details className="card account-orders-panel">
-              <summary>
-                Moje porudžbine <span>{account.orders.length}</span>
-              </summary>
-              <p>
-                Mesečni obračuni i jednokratne kupovine. Jedna mesečna porudžbina
-                može obuhvatiti više dostava.
-              </p>
-              <ul className="list-clean account-orders">
-                {account.orders.map((order) => (
-                  <li key={label(order.id)}>
-                    <div className="summary-row">
-                      <strong>{label(order.order_number)}</strong>
-                      <strong>
-                        {formatMoney(Number(order.total_minor) / 100, locale)}
-                      </strong>
-                    </div>
-                    <p>
-                      {order.kind === "subscription_invoice"
-                        ? "Početak obračunatog perioda"
-                        : "Termin dostave"}
-                      : {formatDate(label(order.delivery_date), locale)}
-                    </p>
-                    <p>
-                      Plaćanje: {statusLabel(label(order.payment_status))} ·{" "}
-                      {deliveryStatus(label(order.fulfillment_status))}
-                    </p>
-                    {order.kind === "one_time" && (
-                      <button
-                        className="button secondary small"
-                        disabled={busy}
-                        onClick={async () => {
-                          try {
-                            setSelectedOrder(
-                              await fetchJson<EditableOrder>(
-                                `/api/account/orders/${encodeURIComponent(label(order.id))}`,
-                              ),
-                            );
-                          } catch (cause) {
-                            setError(
-                              cause instanceof Error
-                                ? cause.message
-                                : "Porudžbina nije učitana.",
-                            );
-                          }
-                        }}
-                      >
-                        Otvori porudžbinu {label(order.order_number)}
-                      </button>
-                    )}
-                    {selectedOrder && selectedOrder.order.id === order.id && (
-                      <div className="account-confirm">
-                        <OrderItemEditor
-                          key={String(selectedOrder.order.updated_at)}
-                          detail={selectedOrder}
-                          onSaved={() => {
-                            setSelectedOrder(null);
-                            setNotice("Porudžbina je ažurirana.");
-                            void loadAccount();
-                          }}
-                        />
-                        <button
-                          className="text-button"
-                          onClick={() => setSelectedOrder(null)}
-                        >
-                          Zatvori detalje porudžbine
-                        </button>
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              {!account.orders.length && <p>Još nema porudžbina.</p>}
-            </details>
+
+            <div className="account-pair">
+              <section className="card" id="adresa" aria-labelledby="address-title">
+                <h2 id="address-title">Adresa</h2>
+                {customer.addressLine1 ? (
+                  <p className="account-address">
+                    <span data-no-translate>{customer.addressLine1}</span>
+                    <br />
+                    <span data-no-translate>{[customer.addressLine2, customer.postalCode, customer.city].filter(Boolean).join(", ")}</span>
+                  </p>
+                ) : (
+                  <p className="account-muted">Još nemaš sačuvanu adresu.</p>
+                )}
+                <p className="small-text">
+                  Promenu adrese ili dogovor oko dostave rešavamo preko kontakta.
+                </p>
+                <a className="account-arrow-link" href="/kontakt">Javite nam se <span aria-hidden="true">→</span></a>
+              </section>
+              <section className="card" aria-labelledby="details-title">
+                <h2 id="details-title">Moji podaci</h2>
+                <dl className="account-rows">
+                  <div><dt>Ime i prezime</dt><dd>{customer.fullName ? <span data-no-translate>{customer.fullName}</span> : "Nije uneto"}</dd></div>
+                  <div><dt>Email</dt><dd data-no-translate>{customer.email}</dd></div>
+                  <div><dt>Telefon</dt><dd>{customer.phone ? <span data-no-translate>{customer.phone}</span> : "Nije unet"}</dd></div>
+                </dl>
+              </section>
+            </div>
+
+            <section
+              className="card account-settings"
+              id="podesavanja-naloga"
+              aria-labelledby="settings-title"
+            >
+              <h2 id="settings-title">Podešavanja</h2>
+              {account.demo ? <p>Demo nalog služi za pregled. Za izmene i poručivanje prijavite se na svoj nalog.</p> : (
+                <details>
+                  <summary>Prijava, email i WhatsApp</summary>
+                  <ProfileEditor customer={account.customer} />
+                  <RefundRequest orders={account.orders} />
+                  <LoginSettings />
+                </details>
+              )}
+              <a className="account-arrow-link" href="/kontakt">Zatraži izmenu podataka <span aria-hidden="true">→</span></a>
+            </section>
           </div>
-          <aside className="account-side" aria-label="Informacije o dostavi">
-            <section className="card">
-              <p className="eyebrow">Stižemo na adresu</p>
-              <h2>{customer.addressLine1 ? <span data-no-translate>{customer.addressLine1}</span> : "Adresa za dostavu"}</h2>
-              <p>
-                {[customer.addressLine2, customer.postalCode, customer.city]
-                  .filter(Boolean)
-                  .join(", ")}
-              </p>
-              <p className="small-text">
-                Promenu adrese ili dogovor oko dostave rešavamo preko kontakta.
-              </p>
-              <a href="/kontakt">Javite nam se →</a>
-            </section>
-            <section className="account-help">
-              <h3>Šta vam danas odgovara?</h3>
-              <p>
-                <strong>Treba vam više ili manje?</strong>
-                <br />
-                Podesite količinu sa − / + i sačuvajte.
-              </p>
-              <p>
-                <strong>Imate još mleka?</strong>
-                <br />
-                Preskočite samo sledeći termin.
-              </p>
-              <p>
-                <strong>Putujete?</strong>
-                <br />
-                Pauzirajte do datuma povratka.
-              </p>
-            </section>
-          </aside>
         </div>
-        <section
-          className="account-settings"
-          id="podesavanja-naloga"
-          aria-labelledby="settings-title"
-        >
-          <h2 id="settings-title">Podaci i obaveštenja</h2>
-          <details className="card">
-            <summary>Prijava, email i WhatsApp</summary>
-            {account.demo ? <p>Demo nalog služi za pregled. Za izmene i poručivanje prijavite se na svoj nalog.</p> : <>
-              <ProfileEditor customer={account.customer} />
-              <RefundRequest orders={account.orders} />
-              <LoginSettings />
-            </>}
-          </details>
-          <details className="card">
-            <summary>Moji kontakt podaci</summary>
-            <dl>
-              <dt>Email</dt>
-              <dd>{customer.email}</dd>
-              <dt>Telefon</dt>
-              <dd>{customer.phone || "Nije unet"}</dd>
-            </dl>
-            <a href="/kontakt">Zatraži izmenu podataka</a>
-          </details>
-        </section>
       </div>
+      <Link className="account-home-pill" href="/"><span aria-hidden="true">←</span> Početna strana</Link>
     </div>
   ));
 }

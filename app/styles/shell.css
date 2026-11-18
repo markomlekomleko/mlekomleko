@@ -260,7 +260,7 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
 .brand-animals { height: 32px; }
 .brand-wordmark { height: 40px; }
 
-/* Header links: heavy caps. From 1280px the five links sit after the logo (Kafeterija
+/* Header links: heavy caps. From 1024px the five links sit after the logo (Kafeterija
    layout); below that they live in the menu sheet, since the Cyrillic labels are long. */
 .main-nav { font-size: 0.8125rem; }
 .header-actions { font-size: 0.875rem; }
@@ -342,7 +342,7 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
 .menu-lines.is-open > span:last-child { transform: translateY(-4px) rotate(-45deg); }
 
 /* Desktop: links left, sticker centred, account and cart right. */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .main-nav {
     display: flex;
     grid-area: 1 / 1;
@@ -357,7 +357,7 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
   .header-account { display: inline-flex; }
 }
 
-@media (min-width: 1280px) and (max-width: 1439px) {
+@media (min-width: 1024px) and (max-width: 1439px) {
   .header-actions { font-size: 0.8125rem; }
 
   /* The links on both sides leave the centred logo no room for the animals here. */
@@ -378,9 +378,9 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
   .header-actions { gap: 20px; }
 }
 
-/* ---------- Mobile menu (≤ 1279px) ---------- */
+/* ---------- Mobile menu (≤ 1023px) ---------- */
 
-@media (max-width: 1279px) {
+@media (max-width: 1023px) {
   /* Meni sits left with its lines on the gutter; its hit area reaches into the
      gutter instead of pushing the lines inwards. */
   .mobile-menu-button {
@@ -736,7 +736,7 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
 .consent-banner .text-link { justify-self: start; }
 
 /* Tablets: the sheet is twice a phone's height, so the rows grow to carry it. */
-@media (min-width: 600px) and (max-width: 1279px) {
+@media (min-width: 600px) and (max-width: 1023px) {
   .main-nav > a { font-size: clamp(2rem, 5.4vw, 3rem); }
 }
 

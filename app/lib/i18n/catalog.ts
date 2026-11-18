@@ -3438,6 +3438,46 @@ export const catalog: Record<string, readonly [string, string]> = {
     "You choose the milk.",
     "Вы выбираете молоко."
   ],
+  "Pretplata": [
+    "Subscription",
+    "Подписка"
+  ],
+  "Porudžbine": [
+    "Orders",
+    "Заказы"
+  ],
+  "Adresa": [
+    "Address",
+    "Адрес"
+  ],
+  "Nije uneto": [
+    "Not entered",
+    "Не указано"
+  ],
+  "Još nemaš nijednu porudžbinu.": [
+    "You have no orders yet.",
+    "У вас пока нет заказов."
+  ],
+  "Još nemaš sačuvanu adresu.": [
+    "You have no saved address yet.",
+    "У вас пока нет сохранённого адреса."
+  ],
+  "Javite nam se": [
+    "Get in touch",
+    "Свяжитесь с нами"
+  ],
+  "Moji podaci": [
+    "My details",
+    "Мои данные"
+  ],
+  "Pretplati se i mleko stiže na tvoja vrata, bez odlaska u prodavnicu.": [
+    "Subscribe and milk comes to your door, with no trip to the shop.",
+    "Оформите подписку — и молоко приедет к вашей двери, без похода в магазин."
+  ],
+  "Datum, proizvodi i status prikazuju se kada dostava bude evidentirana. Račune i naručene proizvode pratite u porudžbinama iznad.": [
+    "The date, products and status appear once the delivery is recorded. Follow invoices and ordered products in the orders above.",
+    "Дата, товары и статус появятся, когда доставка будет зарегистрирована. Счета и заказанные товары смотрите в заказах выше."
+  ],
   "Tri koraka.": [
     "Three steps.",
     "Три шага."

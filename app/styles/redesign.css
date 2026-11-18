@@ -561,7 +561,7 @@ img.offer-stamp {
 
 /* Wide screens: logo first, the four links right after it, account and cart on the
    right, as on the Kafeterija header. */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .nav-shell { grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 32px; }
   .nav-shell > .brand { grid-area: 1 / 1; }
   .main-nav { grid-area: 1 / 2; }
@@ -641,7 +641,7 @@ button.button { border-radius: 999px; }
 
 /* Compact header (17 Nov 2026): five links incl. Kontakt, account as an icon. Links never
    wrap; the actions cluster is icon-sized so long Russian/English labels still fit. */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .main-nav { gap: clamp(14px, 1.4vw, 24px); font-size: clamp(0.75rem, 0.86vw, 0.875rem); }
   .main-nav > a { white-space: nowrap; }
   .header-actions { gap: 14px; }
@@ -655,7 +655,7 @@ button.button { border-radius: 999px; }
   color: var(--ink);
 }
 .header-account:hover { background: var(--blush); }
-@media (min-width: 1280px) { .header-account { display: inline-grid; } }
+@media (min-width: 1024px) { .header-account { display: inline-grid; } }
 /* Single-column widths above a phone: keep the card (and its square picture) at a
    comfortable product-card size instead of stretching across the screen. */
 @media (min-width: 480px) and (max-width: 699px) {
@@ -675,9 +675,9 @@ button.button { border-radius: 999px; }
 
 
 /* Last resort, set by the header when even the tight links do not fit (site-shell.tsx):
-   the desktop header switches to the menu sheet, exactly as below 1280px. Generated from
+   the desktop header switches to the menu sheet, exactly as below 1024px. Generated from
    the "Mobile menu" block in shell.css — keep the two in step. */
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .site-header-stack[data-nav-collapsed] .nav-shell { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
   .site-header-stack[data-nav-collapsed] .nav-shell > .brand { grid-area: 1 / 2; }
   .site-header-stack[data-nav-collapsed] .header-account { display: none; }
@@ -909,3 +909,8 @@ button.button { border-radius: 999px; }
 .origin-page :is(.one-line-title, .two-line-title) { max-width: none; }
 .compare-label { display: inline-flex; align-items: center; gap: 10px; }
 .compare-icon { flex: none; width: 48px; height: 48px; }
+
+/* When the header folds its links into the menu sheet after measuring (long English or
+   Russian labels on a small laptop), the closed sheet must not fade out on page load:
+   that read as the menu flashing open. It still animates in when opened. */
+.site-header-stack[data-nav-collapsed] .main-nav:not(.is-open) { transition: none; }

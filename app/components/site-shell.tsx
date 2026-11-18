@@ -64,7 +64,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
     const check = () => {
       stack.removeAttribute("data-nav-tight");
       stack.removeAttribute("data-nav-collapsed");
-      if (!window.matchMedia("(min-width: 1280px)").matches) { setNavFit("relaxed"); return; }
+      if (!window.matchMedia("(min-width: 1024px)").matches) { setNavFit("relaxed"); return; }
       let fit: "relaxed" | "tight" | "collapsed" = "relaxed";
       if (overflows()) {
         stack.setAttribute("data-nav-tight", "");
