@@ -3478,6 +3478,22 @@ export const catalog: Record<string, readonly [string, string]> = {
     "The date, products and status appear once the delivery is recorded. Follow invoices and ordered products in the orders above.",
     "Дата, товары и статус появятся, когда доставка будет зарегистрирована. Счета и заказанные товары смотрите в заказах выше."
   ],
+  "Pogledaj na TikToku ↗": [
+    "Watch on TikTok ↗",
+    "Смотреть в TikTok ↗"
+  ],
+  "Pusti video: {0}": [
+    "Play video: {0}",
+    "Воспроизвести видео: {0}"
+  ],
+  "Nastavi sa Google nalogom": [
+    "Continue with Google",
+    "Продолжить с Google"
+  ],
+  "Prijava preko Google naloga stiže uskoro. Do tada se prijavi kodom na email.": [
+    "Sign-in with Google is coming soon. Until then, sign in with an email code.",
+    "Вход через Google скоро появится. А пока войдите с кодом по электронной почте."
+  ],
   "Tri koraka.": [
     "Three steps.",
     "Три шага."
