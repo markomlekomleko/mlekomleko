@@ -15,9 +15,10 @@ export async function generateMetadata(): Promise<Metadata> { return localizedMe
 // The locations the site has listed so far. When the client confirms the full list
 // (their posts mention more), only this array changes.
 const locations: readonly Mlekomat[] = [
-  { name: "Beo šoping centar", query: "Beo Shopping Center, Beograd", milk: "kravlje mleko" },
-  { name: "Lidl Bežanijska kosa", query: "Lidl Bežanijska kosa, Beograd", milk: "kravlje i kozje mleko" },
-  { name: "Mega Roda Novi Beograd", query: "Mega Roda, Novi Beograd", milk: "kravlje mleko" },
+  // Coordinates from OpenStreetMap, cross-checked on Google Maps (18 Nov 2026).
+  { name: "Beo šoping centar", query: "Beo Shopping Center, Beograd", milk: "kravlje mleko", lat: 44.78673, lng: 20.50256 },
+  { name: "Lidl Bežanijska kosa", query: "Lidl Bežanijska kosa, Beograd", milk: "kravlje i kozje mleko", lat: 44.81794, lng: 20.38335 },
+  { name: "Mega Roda Novi Beograd", query: "Mega Roda, Đorđa Stanojevića 35, Beograd", milk: "kravlje mleko", lat: 44.80971, lng: 20.39687 },
 ];
 
 // The client's own mlekomat photos (sent 17 Nov 2026), web-sized into
@@ -40,7 +41,7 @@ export default async function MlekomatiPage() {
             <p className="lead">Domaće mleko iz mlekomata u Beogradu — natočiš koliko ti treba i platiš na licu mesta, gotovinom ili karticom.</p>
             <div className="button-row"><a className="button" href="#lokacije">Pronađi mlekomat</a><a className="button secondary" href="#partnerstvo">Postani partner</a></div>
           </div>
-          <img className="sub-hero-art" src="/images/grafike/jutarnja-casa.svg" alt="" width="1200" height="900" />
+          <img className="sub-hero-art" src="/images/crtezi/mlekomat.webp" alt="Devojka toči mleko u staklenu flašu na mlekomatu" width="1200" height="900" />
         </div>
       </header>
 
@@ -78,12 +79,16 @@ export default async function MlekomatiPage() {
               <p className="mlekomat-bottle-note"><strong>Nisi poneo flašu?</strong> Pored mlekomata je flašomat sa staklenim flašama: ubaci novčanicu od 100 dinara, izaberi broj police i preuzmi flašu.</p>
             </div>
             <div className="mlekomat-video">
-              <iframe
-                src="https://www.tiktok.com/player/v1/7258739044731931909?description=0&music_info=0&rel=0"
-                title="Kako se koristi mlekomat"
-                loading="lazy"
-                allow="encrypted-media; fullscreen; picture-in-picture"
-                allowFullScreen
+              {/* Self-hosted copy of the TikTok clip (18 Nov 2026), so no tracking blocker
+                  can leave the box black. Captions are burned into the picture. */}
+              {/* eslint-disable-next-line jsx-a11y/media-has-caption -- captions are burned into the footage */}
+              <video
+                src="/video/tiktok/7258739044731931909.mp4"
+                poster="/images/tiktok/7258739044731931909.webp"
+                controls
+                playsInline
+                preload="none"
+                aria-label="Kako se koristi mlekomat"
               />
             </div>
           </div>

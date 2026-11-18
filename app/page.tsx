@@ -1,7 +1,7 @@
 import { localizedMetadata } from "@/app/lib/i18n/server";
 import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
-import { Hero } from "./components/hero";
+import { HeroSlider } from "./components/home/hero-slider";
 import { FaqSection } from "./components/home/faq-section";
 import { MarqueeBand } from "./components/home/marquee-band";
 import { OfferSection } from "./components/home/offer-section";
@@ -9,7 +9,6 @@ import { SocialSection } from "./components/home/social-section";
 import { MilkSection } from "./components/home/milk-section";
 import { frequentlyAskedQuestions } from "./lib/content";
 import { normalizeProduct } from "./lib/frontend";
-import { heroMedia } from "./lib/hero-media";
 import { canonicalUrl, serializeJsonLd } from "./lib/seo";
 import { getStorefront } from "../server/storefront";
 
@@ -29,7 +28,7 @@ export default async function HomePage() {
 
   return localize((
     <div className="home">
-      <Hero media={heroMedia} offerHref="#izaberite-mleko" />
+      <HeroSlider />
       <MarqueeBand />
       {/* Order agreed on 17 Nov 2026: why this milk, the shop, "Mleko uživo", and the questions last. */}
       <MilkSection />

@@ -213,11 +213,11 @@ test("public pages have no serious or critical automated accessibility findings"
 test("hero priorities remain visible and a custom milk selection survives the cart", async ({ page }) => {
   await page.goto("/");
   await acceptNecessary(page);
-  // The hero carries a visually hidden h1 and one call to action ("Mleko koje znaš"); the
+  // The hero carries a visually hidden h1; the first slide's call to action is "Izaberi svoje mleko"; the
   // action is fully inside the first screen without waiting for media. toBeInViewport
   // retries, so a poster settling into place cannot turn this into a flake.
   await expect(page.locator(".scene-intro h1")).toBeAttached();
-  await expect(page.locator(".hero-cta")).toHaveText(cyr("Mleko koje znaš"));
+  await expect(page.locator(".hero-cta")).toHaveText(cyr("Izaberi svoje mleko"));
   await expect(page.locator(".hero-cta")).toBeInViewport({ ratio: 1 });
   await expect(page.locator(".scene-poster img")).toBeAttached();
 

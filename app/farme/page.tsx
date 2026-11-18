@@ -51,7 +51,7 @@ export default async function OriginPage() {
             <h1>Sa paše do flaše.</h1>
             <p className="lead">Biramo male domaće farme, preuzimamo mleko posle muže i donosimo ti ga sirovo i punomasno — bez fabrike, magacina i rafa između.</p>
           </div>
-          <img className="sub-hero-art" src="/images/ilustracije/pasnjak.webp" alt="Krava i koza zajedno na pašnjaku" width="1200" height="900" />
+          <img className="sub-hero-art" src="/images/crtezi/farma.webp" alt="Mala porodična farma sa štalom, kravom i kozom" width="1200" height="900" />
         </div>
       </header>
 

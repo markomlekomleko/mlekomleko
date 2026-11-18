@@ -3494,6 +3494,74 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Sign-in with Google is coming soon. Until then, sign in with an email code.",
     "Вход через Google скоро появится. А пока войдите с кодом по электронной почте."
   ],
+  "Sirovo i punomasno, sa malih domaćih farmi, u povratnoj staklenoj flaši.": [
+    "Raw and whole, from small local farms, in a returnable glass bottle.",
+    "Сырое и цельное, с небольших местных ферм, в возвратной стеклянной бутылке."
+  ],
+  "Sveže mleko do praga": [
+    "Fresh milk to your door",
+    "Свежее молоко к порогу"
+  ],
+  "Biraš mleko i ritam — mi donosimo. Preskakanje i pauzu uređuješ na nalogu.": [
+    "You choose the milk and the rhythm — we deliver. Skip or pause from your account.",
+    "Вы выбираете молоко и ритм — мы привозим. Пропуск и паузу настраиваете в кабинете."
+  ],
+  "Počni pretplatu": [
+    "Start a subscription",
+    "Оформить подписку"
+  ],
+  "Mleko se sipa u čašu": [
+    "Milk being poured into a glass",
+    "Молоко наливают в стакан"
+  ],
+  "Flaše kravljeg i kozjeg mleka na drvenom stolu": [
+    "Bottles of cow’s and goat’s milk on a wooden table",
+    "Бутылки коровьего и козьего молока на деревянном столе"
+  ],
+  "Ljudi ispred mlekomata Mleko i Mleko u tržnom centru": [
+    "People at a Mleko i Mleko milk machine in a shopping centre",
+    "Люди у молокомата Mleko i Mleko в торговом центре"
+  ],
+  "Krave na pašnjaku pored seoske kuće u svitanje": [
+    "Cows grazing by a farmhouse at dawn",
+    "Коровы на пастбище у деревенского дома на рассвете"
+  ],
+  "Biramo male domaće farme i radimo direktno sa domaćinima.": [
+    "We choose small local farms and work directly with the farmers.",
+    "Мы выбираем небольшие местные фермы и работаем напрямую с хозяевами."
+  ],
+  "Istaknuto": [
+    "Featured",
+    "Главное"
+  ],
+  "Prethodni slajd": [
+    "Previous slide",
+    "Предыдущий слайд"
+  ],
+  "Sledeći slajd": [
+    "Next slide",
+    "Следующий слайд"
+  ],
+  "Slajd {0}": [
+    "Slide {0}",
+    "Слайд {0}"
+  ],
+  "Krava na pašnjaku pored staklene flaše mleka": [
+    "A cow in the pasture beside a glass bottle of milk",
+    "Корова на пастбище рядом со стеклянной бутылкой молока"
+  ],
+  "Mala porodična farma sa štalom, kravom i kozom": [
+    "A small family farm with a barn, a cow and a goat",
+    "Небольшая семейная ферма с хлевом, коровой и козой"
+  ],
+  "Nasmejani domaćin drži kantu mleka": [
+    "A smiling farmer holding a milk churn",
+    "Улыбающийся фермер держит бидон молока"
+  ],
+  "Devojka toči mleko u staklenu flašu na mlekomatu": [
+    "A woman filling a glass bottle at a milk machine",
+    "Девушка наливает молоко в стеклянную бутылку у молокомата"
+  ],
   "Tri koraka.": [
     "Three steps.",
     "Три шага."

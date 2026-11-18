@@ -24,7 +24,7 @@ export default async function AboutPage() {
           </div>
           <figure className="content-media">
             {/* eslint-disable-next-line @next/next/no-img-element -- Pre-optimised local illustration. */}
-            <img className="sub-hero-art" src="/images/grafike/pasnjak.svg" alt="Krava i koza zajedno na pašnjaku" width="1200" height="900" />
+            <img className="sub-hero-art" src="/images/crtezi/domacin.webp" alt="Nasmejani domaćin drži kantu mleka" width="1200" height="900" />
           </figure>
         </div>
       </header>
