@@ -991,7 +991,8 @@ button.button { border-radius: 999px; }
   position: relative;
   display: grid;
   overflow: hidden;
-  min-height: clamp(560px, calc(100svh - var(--header-stack)), 860px);
+  /* Fills the first screen exactly (no cap), so the next section never peeks in. */
+  min-height: max(560px, calc(100svh - var(--header-stack)));
   padding: 0;
   background: var(--navy);
   color: #fff;
