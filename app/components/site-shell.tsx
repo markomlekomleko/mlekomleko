@@ -2,7 +2,6 @@
 
 import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import { useCart } from "./cart-provider";
@@ -44,19 +43,6 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   // Only one overlay is ever active: the cart takes precedence over the menu.
   const menuVisible = menuOpen && !drawerOpen;
   const stackRef = useRef<HTMLDivElement>(null);
-  // Home only (any language prefix): the header sits transparent over the hero photo
-  // until the visitor scrolls, then turns solid again (18 Nov 2026, after Farmit).
-  const pathname = usePathname() ?? "";
-  const isHome = /^\/(?:en|ru|sr-latn)?\/?$/.test(pathname);
-  const [atTop, setAtTop] = useState(true);
-  useEffect(() => {
-    if (!isHome) return;
-    const update = () => setAtTop(window.scrollY < 24);
-    update();
-    window.addEventListener("scroll", update, { passive: true });
-    return () => window.removeEventListener("scroll", update);
-  }, [isHome]);
-  const overHero = isHome && atTop && !menuVisible;
   const [navFit, setNavFit] = useState<"relaxed" | "tight" | "collapsed">("relaxed");
 
   // Desktop links must never wrap or run into the actions, whatever the language, the
@@ -126,7 +112,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   // DOM order is the visual order at every width (menu button, links, logo, actions),
   // so the tab order never jumps around the bar.
   return localize((
-    <div ref={stackRef} className="site-header-stack" data-hero-header data-over-hero={overHero ? "" : undefined} data-home={isHome ? "" : undefined} data-nav-tight={navFit === "tight" ? "" : undefined} data-nav-collapsed={navFit === "collapsed" ? "" : undefined}>
+    <div ref={stackRef} className="site-header-stack" data-hero-header data-nav-tight={navFit === "tight" ? "" : undefined} data-nav-collapsed={navFit === "collapsed" ? "" : undefined}>
       {settings.announcementEnabled && announcementText.trim() ? <aside className="announcement-bar" aria-label="Obaveštenje">
         {announcementUrl ? <a href={announcementUrl} target={externalAnnouncement ? "_blank" : undefined} rel={externalAnnouncement ? "noopener noreferrer" : undefined}>{announcementText}</a> : <p>{announcementText}</p>}
       </aside> : null}

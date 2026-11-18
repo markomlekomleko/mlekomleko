@@ -1109,22 +1109,3 @@ button.button { border-radius: 999px; }
 :root[data-motion="paused"] .hero-progress-fill { animation: none; transform: none; }
 .mlekomat-leaflet .leaflet-tile-pane { filter: saturate(0.55) contrast(0.95) brightness(1.04); }
 @media (max-width: 767px) { .hero-slide::after { background: rgb(20 24 32 / 0.6); } }
-
-/* ---------------------------------- transparent header over the hero (18 Nov 2026)
-   Home only: the hero slides up under the header bar, and while the page is at the
-   top the bar is see-through with white type, icons and logo over a soft dark fade.
-   After a short scroll (or with the menu open) it is the usual milk-white bar again. */
-.home > .hero-slider { margin-top: calc(var(--header-h) * -1); min-height: clamp(600px, calc(100svh - var(--ticker-h)), 900px); }
-.home > .hero-slider .hero-slide-copy { padding-top: calc(var(--header-h) + 48px); }
-.site-header-stack[data-home] .site-header { transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease; }
-.site-header-stack[data-over-hero] .site-header {
-  border-bottom-color: transparent;
-  background: linear-gradient(rgb(15 18 26 / 0.45), rgb(15 18 26 / 0));
-  color: #fff;
-}
-.site-header-stack[data-over-hero] .site-header :is(a, button) { color: #fff; }
-.site-header-stack[data-over-hero] .brand img { filter: brightness(0) invert(1); }
-.site-header-stack[data-over-hero] .menu-lines > span { background: #fff; }
-.site-header-stack[data-over-hero] .header-actions :is(a, button):hover { background: rgb(255 255 255 / 0.15); color: #fff; }
-.site-header-stack[data-over-hero] .main-nav > a:hover { color: #fff; text-decoration: underline; text-underline-offset: 6px; }
-.site-header-stack[data-home] .brand img { transition: filter 0.25s ease; }
