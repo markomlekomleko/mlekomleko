@@ -294,6 +294,7 @@ img.offer-stamp {
 .social-grid li { display: grid; gap: 8px; align-content: start; scroll-snap-align: start; }
 /* The clip box: cover with a play button until clicked, then TikTok's player. */
 .social-grid iframe,
+.social-video,
 .social-cover {
   display: block;
   width: 100%;
@@ -305,6 +306,7 @@ img.offer-stamp {
 }
 .social-cover { position: relative; padding: 0; cursor: pointer; }
 .social-cover img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+.social-video { object-fit: cover; }
 .social-cover:hover img { transform: scale(1.03); }
 .social-cover[data-no-cover] { display: grid; place-items: center; padding: 24px; background: var(--brand) url(/images/brand/pattern-goat-cow.png) center / 160px; }
 .social-cover-title { padding: 10px 14px; border: 2px solid var(--navy); border-radius: 12px; background: var(--surface); color: var(--navy); font-weight: 900; text-transform: uppercase; line-height: 1.2; }

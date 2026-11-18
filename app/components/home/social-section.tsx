@@ -12,39 +12,49 @@ import { INSTAGRAM_URL, TIKTOK_URL } from "../site-shell";
  * @mleko_i_mleko; swap them here when the client picks different ones.
  *
  * TikTok's player sits on tracker block lists (Safari and Firefox tracking protection,
- * Brave, ad blockers), so for some visitors an always-on embed stayed black. Each clip
- * now shows its own cover (stored locally, /images/tiktok/<id>.webp) with a play button;
- * the player loads only on click, and a plain link opens the clip on TikTok for anyone
- * whose browser blocks the embed.
+ * Brave, ad blockers), so for some visitors the embed stayed black. The clips are now
+ * served from this site (/video/tiktok/<id>.mp4, covers in /images/tiktok/<id>.webp)
+ * and play in a plain <video>, so every browser can play them; the link under each
+ * still leads to the post on TikTok.
  */
 export const socialVideos = [
   { id: "7352938823233359109", title: "Pravo mleko više nije daleko — lokacije mlekomata" },
   { id: "7465682673936207109", title: "Jutro na farmi" },
   { id: "7258739044731931909", title: "Kako se koristi mlekomat" },
-  { id: "7268735199112924422", title: "Kajmak od dva litra pravog mleka", noCover: true },
+  { id: "7268735199112924422", title: "Kajmak od dva litra pravog mleka" },
   { id: "7509530328181034245", title: "Jedna flaša, dve priče" },
   { id: "7457308316155268358", title: "Poseti mlekomat" },
 ] as const;
 
-function TikTokClip({ id, title, noCover }: { id: string; title: string; noCover?: boolean }) {
+function TikTokClip({ id, title }: { id: string; title: string }) {
   const [playing, setPlaying] = useState(false);
-  const pageUrl = `https://www.tiktok.com/@mleko_i_mleko/video/${id}`;
   return (
     <li>
       {playing ? (
-        <iframe
-          src={`https://www.tiktok.com/player/v1/${id}?autoplay=1&description=0&music_info=0&rel=0&native_context_menu=0`}
-          title={title}
-          allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-          allowFullScreen
+        // eslint-disable-next-line jsx-a11y/media-has-caption -- TikTok clips carry their captions burned into the picture; there are no separate caption files.
+        <video
+          className="social-video"
+          src={`/video/tiktok/${id}.mp4`}
+          poster={`/images/tiktok/${id}.webp`}
+          controls
+          autoPlay
+          playsInline
+          preload="auto"
+          aria-label={title}
+          // One clip at a time: starting one pauses the others.
+          onPlay={(event) => {
+            document.querySelectorAll<HTMLVideoElement>(".social-video").forEach((video) => {
+              if (video !== event.currentTarget) video.pause();
+            });
+          }}
         />
       ) : (
-        <button type="button" className="social-cover" data-no-cover={noCover ? "" : undefined} onClick={() => setPlaying(true)} aria-label={`Pusti video: ${title}`}>
-          {noCover ? <span className="social-cover-title">{title}</span> : <img src={`/images/tiktok/${id}.webp`} alt="" width="540" height="960" loading="lazy" />}
+        <button type="button" className="social-cover" onClick={() => setPlaying(true)} aria-label={`Pusti video: ${title}`}>
+          <img src={`/images/tiktok/${id}.webp`} alt="" width="540" height="960" loading="lazy" />
           <span className="social-play" aria-hidden="true" />
         </button>
       )}
-      <a className="social-open" href={pageUrl} target="_blank" rel="noreferrer">Pogledaj na TikToku ↗</a>
+      <a className="social-open" href={`https://www.tiktok.com/@mleko_i_mleko/video/${id}`} target="_blank" rel="noreferrer">Pogledaj na TikToku ↗</a>
     </li>
   );
 }
@@ -68,7 +78,7 @@ export function SocialSection() {
           aria-label="Video snimci"
         >
           {socialVideos.map((video) => (
-            <TikTokClip key={video.id} id={video.id} title={video.title} noCover={"noCover" in video ? video.noCover : undefined} />
+            <TikTokClip key={video.id} id={video.id} title={video.title} />
           ))}
         </ul>
         <p className="social-links">
