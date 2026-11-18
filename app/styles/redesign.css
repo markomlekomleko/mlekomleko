@@ -1110,3 +1110,11 @@ button.button { border-radius: 999px; }
 :root[data-motion="paused"] .hero-progress-fill { animation: none; transform: none; }
 .mlekomat-leaflet .leaflet-tile-pane { filter: saturate(0.55) contrast(0.95) brightness(1.04); }
 @media (max-width: 767px) { .hero-slide::after { background: rgb(20 24 32 / 0.6); } }
+/* The tilted band leaves a wedge of the next section showing on wide screens; the hero
+   runs a little past the fold there so only the band's upper edge is on screen. */
+@media (min-width: 768px) {
+  .hero-slider, .home > .hero-slider { min-height: max(560px, calc(100svh - var(--header-stack) + 90px)); }
+  /* Keep the copy and the story bar centred in the part that is on screen. */
+  .hero-slide-copy { padding-bottom: calc(clamp(130px, 13vw, 170px) + 90px); }
+  .hero-progress { bottom: calc(clamp(84px, 9vw, 120px) + 90px); }
+}
