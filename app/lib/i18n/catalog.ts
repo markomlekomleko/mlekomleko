@@ -3562,6 +3562,18 @@ export const catalog: Record<string, readonly [string, string]> = {
     "A woman filling a glass bottle at a milk machine",
     "Девушка наливает молоко в стеклянную бутылку у молокомата"
   ],
+  "Mleko koje znaš.": [
+    "Milk you know.",
+    "Молоко, которое вы знаете."
+  ],
+  "Sveže mleko do praga.": [
+    "Fresh milk to your door.",
+    "Свежее молоко к порогу."
+  ],
+  "Dostava u Beogradu i Novom Sadu · povratne staklene flaše": [
+    "Delivery in Belgrade and Novi Sad · returnable glass bottles",
+    "Доставка в Белграде и Нови-Саде · возвратные стеклянные бутылки"
+  ],
   "Tri koraka.": [
     "Three steps.",
     "Три шага."
