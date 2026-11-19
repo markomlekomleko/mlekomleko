@@ -110,11 +110,11 @@ export const homeCopy = {
   milk: {
     title: "Ništa dodato. Ništa oduzeto.",
     titleLines: ["Ništa dodato.", "Ništa oduzeto."],
-    lead: "Mleko kakvo je bilo pre fabrike — samo ohlađeno i flaširano.",
+    lead: "Mleko kakvo daju krava i koza — samo ohlađeno i flaširano.",
     items: [
       { icon: "sirovo", title: "Sirovo i punomasno", text: "Bez obiranja, bez homogenizacije, bez produžavanja roka." },
-      { icon: "sveze", title: "Sveže, ne sa rafa", text: "Ne stoji nedeljama u magacinu, nego putuje pravo do tebe." },
-      { icon: "poreklo", title: "Znaš odakle je", text: "Iza svake flaše je prava farma i pravi ljudi, ne etiketa iz fabrike." },
+      { icon: "sveze", title: "Sveže, pravo do tebe", text: "Preuzimamo ga posle muže i donosimo pravo na tvoja vrata." },
+      { icon: "poreklo", title: "Znaš odakle je", text: "Iza svake flaše je prava farma i pravi ljudi." },
       { icon: "ukus", title: "Ukus koji pamtiš", text: "Gusto, sa kajmakom, kao nekad." },
     ],
   },

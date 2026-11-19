@@ -3206,9 +3206,9 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Nothing taken away.",
     "Ничего не убрано."
   ],
-  "Mleko kakvo je bilo pre fabrike — samo ohlađeno i flaširano.": [
-    "Milk the way it was before factories — just chilled and bottled.",
-    "Молоко, каким оно было до заводов, — только охлаждённое и разлитое по бутылкам."
+  "Mleko kakvo daju krava i koza — samo ohlađeno i flaširano.": [
+    "Milk just as the cow and goat give it — only chilled and bottled.",
+    "Молоко таким, каким его дают корова и коза, — только охлаждённое и разлитое по бутылкам."
   ],
   "Sirovo i punomasno": [
     "Raw and whole",
@@ -3218,21 +3218,21 @@ export const catalog: Record<string, readonly [string, string]> = {
     "No skimming, no homogenisation, no extended shelf life.",
     "Без снятия сливок, без гомогенизации, без продления срока хранения."
   ],
-  "Sveže, ne sa rafa": [
-    "Fresh, not off a shelf",
-    "Свежее, а не с полки"
+  "Sveže, pravo do tebe": [
+    "Fresh, straight to you",
+    "Свежее, прямо к вам"
   ],
-  "Ne stoji nedeljama u magacinu, nego putuje pravo do tebe.": [
-    "It doesn't sit in a warehouse for weeks; it travels straight to you.",
-    "Оно не лежит неделями на складе, а едет прямо к вам."
+  "Preuzimamo ga posle muže i donosimo pravo na tvoja vrata.": [
+    "We collect it after milking and bring it straight to your door.",
+    "Забираем его после дойки и привозим прямо к вашей двери."
   ],
   "Znaš odakle je": [
     "You know where it's from",
     "Вы знаете, откуда оно"
   ],
-  "Iza svake flaše je prava farma i pravi ljudi, ne etiketa iz fabrike.": [
-    "Behind every bottle is a real farm and real people, not a factory label.",
-    "За каждой бутылкой — настоящая ферма и настоящие люди, а не заводская этикетка."
+  "Iza svake flaše je prava farma i pravi ljudi.": [
+    "Behind every bottle is a real farm and real people.",
+    "За каждой бутылкой — настоящая ферма и настоящие люди."
   ],
   "Ukus koji pamtiš": [
     "The taste you remember",
@@ -3242,25 +3242,13 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Rich, with a layer of cream, like it used to be.",
     "Густое, со сливками сверху, как раньше."
   ],
-  "Biramo male domaće farme, preuzimamo mleko posle muže i donosimo ti ga sirovo i punomasno — bez fabrike, magacina i rafa između.": [
-    "We choose small local farms, collect the milk after milking and bring it to you raw and whole — no factory, warehouse or shelf in between.",
-    "Мы выбираем небольшие местные фермы, забираем молоко после дойки и привозим его вам сырым и цельным — без завода, склада и полки."
-  ],
-  "Sirovo naspram industrijskog": [
-    "Raw versus industrial",
-    "Сырое против промышленного"
+  "Biramo male domaće farme, preuzimamo mleko posle muže i donosimo ti ga sirovo i punomasno, pravo na vrata.": [
+    "We choose small local farms, collect the milk right after milking and bring it to you raw and full-fat, straight to your door.",
+    "Мы выбираем небольшие местные фермы, забираем молоко сразу после дойки и привозим его сырым и цельным прямо к вашей двери."
   ],
   "Isto se zove. Nije isto mleko.": [
     "Same name. Not the same milk.",
     "Название то же. Молоко — нет."
-  ],
-  "Mleko iz prodavnice prođe kroz fabriku pre nego što stigne do tebe. Naše ne.": [
-    "Shop milk goes through a factory before it reaches you. Ours doesn’t.",
-    "Магазинное молоко проходит через завод, прежде чем попасть к вам. Наше — нет."
-  ],
-  "Industrijsko mleko": [
-    "Industrial milk",
-    "Промышленное молоко"
   ],
   "Masnoća": [
     "Fat",
@@ -3318,17 +3306,17 @@ export const catalog: Record<string, readonly [string, string]> = {
     "One milk, a whole table.",
     "Из одного молока — целый стол."
   ],
-  "Sirovo punomasno mleko nije samo za čašu — od njega praviš ono što od kupovnog ne ide.": [
-    "Raw whole milk isn’t just for drinking — it makes what shop milk can’t.",
-    "Сырое цельное молоко не только для стакана — из него получается то, что не выйдет из магазинного."
+  "Sirovo punomasno mleko nije samo za čašu — od njega praviš celu domaću trpezu.": [
+    "Raw full-fat milk isn't just for the glass — it makes a whole homemade table.",
+    "Сырое цельное молоко — не только для стакана: из него получается целый домашний стол."
   ],
   "Pravi kajmak": [
     "Real kajmak",
     "Настоящий каймак"
   ],
-  "Prokuvaš dva litra, ostaviš da se ohladi i skineš oko 100 grama kajmaka. Od homogenizovanog mleka kajmak se ne hvata.": [
-    "Boil two litres, let it cool and lift off about 100 grams of kajmak. Homogenised milk won’t form it.",
-    "Вскипятите два литра, дайте остыть и снимите около 100 граммов каймака. На гомогенизированном молоке он не образуется."
+  "Prokuvaš dva litra, ostaviš da se ohladi i skineš oko 100 grama pravog domaćeg kajmaka.": [
+    "Boil two litres, let it cool and skim off about 100 grams of real homemade kaymak.",
+    "Вскипятите два литра, дайте остыть и снимите около 100 граммов настоящего домашнего каймака."
   ],
   "Domaći jogurt i kiselo mleko": [
     "Homemade yoghurt and sour milk",
@@ -3350,9 +3338,9 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Coffee and kačamak",
     "Кофе и качамак"
   ],
-  "Punomasno mleko daje kafi i kačamaku punoću koju obrano ne može.": [
-    "Whole milk gives coffee and kačamak a richness skimmed milk can’t.",
-    "Цельное молоко даёт кофе и качамаку насыщенность, которой нет у обезжиренного."
+  "Punomasno mleko daje kafi i kačamaku pun, domaći ukus.": [
+    "Full-fat milk gives coffee and polenta a full, homemade taste.",
+    "Цельное молоко придаёт кофе и мамалыге насыщенный домашний вкус."
   ],
   "Ko stoji iza flaše": [
     "Who’s behind the bottle",
@@ -3394,9 +3382,9 @@ export const catalog: Record<string, readonly [string, string]> = {
     "We bring it to your door",
     "Привозим к вашей двери"
   ],
-  "Bez magacina i rafa: sa farme ide pravo do tebe u Beogradu i Novom Sadu.": [
-    "No warehouse, no shelf: from the farm straight to you in Belgrade and Novi Sad.",
-    "Без склада и полки: с фермы прямо к вам в Белграде и Нови-Саде."
+  "Sa farme ide pravo do tebe, u Beogradu i Novom Sadu.": [
+    "From the farm it goes straight to you, in Belgrade and Novi Sad.",
+    "С фермы — прямо к вам, в Белград и Нови-Сад."
   ],
   "Kako znam da je mleko proveravano?": [
     "How do I know the milk is checked?",
@@ -3433,10 +3421,6 @@ export const catalog: Record<string, readonly [string, string]> = {
   "I u mlekomatu": [
     "Also at the milk machine",
     "И в молокомате"
-  ],
-  "Naše mleko je mleko.": [
-    "Our milk is just milk.",
-    "Наше молоко — просто молоко."
   ],
   "Mi biramo farme.": [
     "We choose the farms.",
