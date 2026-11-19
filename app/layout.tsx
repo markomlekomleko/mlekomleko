@@ -7,6 +7,9 @@ import { Geist, Montserrat } from "next/font/google";
 import { ApplicationShell } from "./components/application-shell";
 import { absoluteUrl, canonicalUrl, getSiteUrl, serializeJsonLd } from "./lib/seo";
 import { getStorefront } from "../server/storefront";
+import { getNextDeliveryWindow } from "../server/settings";
+import { localDateTimeToUtc } from "../server/time";
+import type { DeliveryCountdown } from "./components/site-shell";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import "./styles/marquee.css";
@@ -82,6 +85,21 @@ const baseMetadata: Metadata = {
   },
 };
 
+// The announcement bar counts down to the next delivery a new order can still catch in
+// each city: the same date checkout offers, at the configured delivery time.
+async function nextDeliveryPerCity(): Promise<DeliveryCountdown[]> {
+  const now = new Date();
+  const windows = await Promise.all(["Beograd", "Novi Sad"].map(async (city) => {
+    try {
+      const window = await getNextDeliveryWindow(now, city);
+      return { city, at: localDateTimeToUtc(window.deliveryDate, window.deliveryLocalTime).toISOString() };
+    } catch {
+      return null; // No open route for this city right now: leave its clock out.
+    }
+  }));
+  return windows.filter((item): item is DeliveryCountdown => item !== null);
+}
+
 export async function generateMetadata(): Promise<Metadata> { return localizedMetadata(baseMetadata); }
 
 export default async function RootLayout({
@@ -92,6 +110,7 @@ export default async function RootLayout({
   const locale = await getLocale();
   const storefront = await getStorefront();
   const { settings } = storefront;
+  const deliveryCountdowns = await nextDeliveryPerCity();
   const organizationJsonLd = {
     "@context": "https://schema.org",
     "@type": "OnlineStore",
@@ -123,7 +142,7 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: serializeJsonLd(localizeSchema(organizationJsonLd, locale)) }}
         />
-        <LocaleProvider locale={locale}><ApplicationShell settings={settings}>{children}</ApplicationShell></LocaleProvider>
+        <LocaleProvider locale={locale}><ApplicationShell settings={{ ...settings, deliveryCountdowns }}>{children}</ApplicationShell></LocaleProvider>
       </body>
     </html>
   );

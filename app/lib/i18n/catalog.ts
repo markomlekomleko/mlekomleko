@@ -578,6 +578,14 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Add {0} more for free delivery.",
     "До бесплатной доставки осталось {0}."
   ],
+  "Naši domaćini": ["Our farmers", "Наши фермеры"],
+  "Pravi ljudi, prave farme.": ["Real people, real farms.", "Настоящие люди, настоящие фермы."],
+  "Porodica Glišić": ["The Glišić family", "Семья Глишич"],
+  "Domaćica Milena": ["Milena, our farmer", "Фермер Милена"],
+  "Cela porodica na okupu, ispred sena spremljenog za krave. Takve domaćine biramo — ljude koji iza svog mleka stoje imenom i prezimenom.": ["The whole family together, in front of the hay stored for the cows. These are the farmers we choose — people who put their own name behind their milk.", "Вся семья вместе, перед сеном, заготовленным для коров. Таких фермеров мы и выбираем — людей, которые отвечают за своё молоко своим именем."],
+  "Mala štala i krave koje poznaje jednu po jednu. Od ovakvih domaćina preuzimamo mleko odmah posle muže.": ["A small barn and cows she knows one by one. From farmers like her we collect the milk right after milking.", "Небольшой хлев и коровы, которых она знает каждую. У таких фермеров мы забираем молоко сразу после дойки."],
+  "Porodica Glišić, od najmlađe do najstarije, ispred velikih bala sena na svojoj farmi": ["The Glišić family, youngest to oldest, in front of large hay bales on their farm", "Семья Глишич, от младшей до старшей, перед большими тюками сена на своей ферме"],
+  "Domaćica u štali, naslonjena na ogradu između svojih krava": ["A farmer in her barn, leaning on the rail between her cows", "Фермер в хлеву, опирается на ограду между своими коровами"],
   "Sledeća dostava:": [
     "Next delivery:",
     "Следующая доставка:"

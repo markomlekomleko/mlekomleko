@@ -27,7 +27,48 @@ export type HeaderSettings = {
   announcementUrl: string;
   storeDemoMode: boolean;
   serviceAreaNote: string;
+  /** Next orderable delivery per city, as a UTC instant, computed on the server. */
+  deliveryCountdowns?: DeliveryCountdown[];
 };
+
+export type DeliveryCountdown = { city: string; at: string };
+
+const pad = (value: number) => String(value).padStart(2, "0");
+
+/** "2d 14:03:09", or "14:03:09" on the delivery day itself. */
+function formatCountdown(ms: number) {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const days = Math.floor(total / 86_400);
+  const clock = `${pad(Math.floor((total % 86_400) / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}`;
+  return days ? `${days}d ${clock}` : clock;
+}
+
+// One ticking clock per city. The first render uses the page's own time so the server
+// and browser agree; after that it ticks every second. A route whose time has passed
+// drops out until the next page load brings its following date.
+function DeliveryCountdowns({ items }: { items: DeliveryCountdown[] }) {
+  const localize = useLocalize();
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    const tick = () => setNow(Date.now());
+    const first = window.setTimeout(tick, 0);
+    const timer = window.setInterval(tick, 1000);
+    return () => { window.clearTimeout(first); window.clearInterval(timer); };
+  }, []);
+  const live = items.filter((item) => now === null || Date.parse(item.at) > now);
+  if (!live.length) return null;
+  return localize((
+    <p className="delivery-countdowns">
+      <span className="delivery-countdowns-label">Sledeća dostava:</span>
+      {live.map((item) => (
+        <span className="delivery-countdown" key={item.city}>
+          <span>{item.city}</span>{" "}
+          <time dateTime={item.at}>{now === null ? "··:··:··" : formatCountdown(Date.parse(item.at) - now)}</time>
+        </span>
+      ))}
+    </p>
+  ));
+}
 
 export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   const localize = useLocalize();
@@ -40,6 +81,8 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
     : locale === "sr-cyrl" ? settings.announcementTextSrCyrl || toCyrillic(settings.announcementText) : settings.announcementText;
   const announcementUrl = settings.announcementUrl.trim();
   const externalAnnouncement = /^https:\/\//i.test(announcementUrl);
+  const showAnnouncement = settings.announcementEnabled && Boolean(announcementText.trim());
+  const countdowns = settings.deliveryCountdowns ?? [];
   // Only one overlay is ever active: the cart takes precedence over the menu.
   const menuVisible = menuOpen && !drawerOpen;
   const stackRef = useRef<HTMLDivElement>(null);
@@ -113,8 +156,9 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   // so the tab order never jumps around the bar.
   return localize((
     <div ref={stackRef} className="site-header-stack" data-hero-header data-nav-tight={navFit === "tight" ? "" : undefined} data-nav-collapsed={navFit === "collapsed" ? "" : undefined}>
-      {settings.announcementEnabled && announcementText.trim() ? <aside className="announcement-bar" aria-label="Obaveštenje">
-        {announcementUrl ? <a href={announcementUrl} target={externalAnnouncement ? "_blank" : undefined} rel={externalAnnouncement ? "noopener noreferrer" : undefined}>{announcementText}</a> : <p>{announcementText}</p>}
+      {showAnnouncement || countdowns.length ? <aside className="announcement-bar" aria-label="Obaveštenje">
+        {showAnnouncement ? announcementUrl ? <a href={announcementUrl} target={externalAnnouncement ? "_blank" : undefined} rel={externalAnnouncement ? "noopener noreferrer" : undefined}>{announcementText}</a> : <p>{announcementText}</p> : null}
+        {countdowns.length ? <DeliveryCountdowns items={countdowns} /> : null}
       </aside> : null}
       <header className="site-header">
         <div className="nav-shell">

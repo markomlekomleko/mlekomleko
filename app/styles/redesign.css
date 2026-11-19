@@ -882,6 +882,23 @@ button.button { border-radius: 999px; }
   .chain li + li { border-left: 1px solid var(--rule); }
   .chain li:first-child { padding-left: 0; }
 }
+
+/* The people behind the bottle, under the chain: real farm photos with a short caption.
+   Desktop column widths follow the photos' own ratios (4:3 and 4:5), so both stand
+   equally tall without cropping anyone. */
+.hosts { margin-top: clamp(40px, 6vw, 72px); }
+.hosts-head { margin-bottom: var(--space-5); }
+.hosts-head .eyebrow { margin: 0 0 6px; }
+.hosts-head h3 { margin: 0; font-family: var(--ff-display); font-size: clamp(1.6rem, 4vw, 2.4rem); font-weight: 900; line-height: 1.05; text-transform: uppercase; }
+.hosts-grid { display: grid; gap: var(--space-5); }
+.host { display: grid; align-content: start; gap: 12px; margin: 0; }
+.host img { display: block; width: 100%; height: auto; border: 2px solid var(--navy); border-radius: 16px; background: #efe4cf; }
+.host figcaption { display: grid; gap: 4px; }
+.host strong { font-weight: 900; text-transform: uppercase; }
+.host span { color: var(--ink-2); }
+@media (min-width: 768px) {
+  .hosts-grid { grid-template-columns: 5fr 3fr; }
+}
 .kitchen-icon { display: block; width: 72px; height: 72px; margin-bottom: 12px; }
 
 /* ------------------------------------------- home shop: one-line headings */
