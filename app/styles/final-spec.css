@@ -113,3 +113,51 @@
   .delivery-countdown { padding: 1px 7px; }
   .delivery-countdown-day { display: none; }
 }
+
+/* ---------------------------------------------------------------- 20 Nov follow-up */
+/* Top bar: the change-deadline clocks sit in the exact middle, the announcement to the
+   left of them, everything on one vertical centre line. */
+.announcement-bar:has(.delivery-countdowns) { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: 20px; }
+.announcement-bar:has(.delivery-countdowns) > :not(.delivery-countdowns) { grid-column: 1; justify-self: end; margin: 0; }
+.announcement-bar .delivery-countdowns { grid-column: 2; align-items: center; line-height: 1.2; }
+.delivery-countdown, .delivery-countdowns-label { display: inline-flex; align-items: center; }
+.delivery-countdown { gap: 5px; line-height: 1.2; }
+@media (max-width: 760px) {
+  .announcement-bar:has(.delivery-countdowns) { grid-template-columns: minmax(0, 1fr); row-gap: 4px; justify-items: center; }
+  .announcement-bar:has(.delivery-countdowns) > :not(.delivery-countdowns),
+  .announcement-bar .delivery-countdowns { grid-column: 1; justify-self: center; }
+}
+
+/* Header: logo left, the five links centred on the page, account and cart right. */
+@media (min-width: 1024px) {
+  .site-header-stack:not([data-nav-collapsed]) .nav-shell { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .site-header-stack:not([data-nav-collapsed]) .nav-shell > .brand { justify-self: start; }
+  .site-header-stack:not([data-nav-collapsed]) .main-nav { justify-content: center; }
+  .site-header-stack:not([data-nav-collapsed]) .header-actions { justify-self: end; }
+}
+
+/* Headings centred everywhere (20 Nov 2026): every section head and page head, with
+   its eyebrow and lead, sits on the page's centre line. */
+.section-head,
+.page-heading,
+.offer .offer-head .section-head,
+.milk-why .section-head,
+.hosts-head,
+.about-founder > div > h2 { text-align: center; }
+.section-head .lead,
+.page-heading .lead,
+.page-heading .content-text,
+.milk-why .section-head .lead { margin-inline: auto; }
+.page-heading .button-row,
+.section-head .button-row { justify-content: center; }
+.section-head h2,
+.page-heading h1 { margin-inline: auto; text-wrap: balance; }
+@media (min-width: 900px) {
+  .milk-why-top { justify-items: center; text-align: center; }
+  .milk-why .section-head .lead { margin-inline: auto; }
+}
+/* The offer head had its stamp beside the title; centre the pair. */
+.offer .offer-head { justify-content: center; text-align: center; }
+/* Long titles never split a word: they wrap between words and shrink to the column. */
+.sub-hero h1, .page-heading h1, .section-head h2 { hyphens: manual; overflow-wrap: normal; word-break: normal; }
+.sub-page .sub-hero h1 { font-size: clamp(2.2rem, 4.3vw, 4.4rem); }

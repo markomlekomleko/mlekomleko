@@ -18,7 +18,7 @@ export function ProducersSection() {
           {producers.map((producer) => (
             <li key={producer.id}>
               <figure className="producer">
-                <img src={producer.image} alt={producer.alt} width={producer.width} height={producer.height} loading="lazy" />
+                <img src={producer.image} alt={producer.alt} width={producer.width} height={producer.height} style={{ objectPosition: producer.focus }} loading="lazy" />
                 <figcaption>
                   <strong>{producer.name}</strong>
                   {producer.place ? <span>{producer.place}</span> : null}

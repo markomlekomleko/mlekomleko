@@ -8,22 +8,21 @@ import { canonicalUrl } from "../lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
   title: "Mesečna pretplata",
-  description: "Kako stiže tvoje mleko: od muže na domaćinstvu, preko staklene flaše, do tvojih vrata — i nazad.",
+  description: "Kako funkcioniše pretplata: paket od četiri nedeljne dostave, plaćen unapred, koji menjaš, pauziraš ili otkazuješ na nalogu.",
   alternates: { canonical: canonicalUrl("/kako-funkcionise") },
 }); }
 
 /**
- * The whole road of a subscriber's milk, in the Kafeterija subscription-page layout:
- * one illustrated stop per step, then the three things the subscriber controls, then the
- * subscription questions (moved here from the origin page, meeting 17 Nov 2026). The
- * delivery price is deliberately not mentioned on this page.
+ * Only the subscription (20 Nov 2026): how the package works, step by step, what the
+ * subscriber controls, and the subscription questions. Where the milk comes from and
+ * its road to the bottle live on Poreklo tvog mleka.
  */
-const road = [
-  { art: "muza", title: "Muža na domaćinstvu", text: "Mleko dolazi od domaćina koji sami čuvaju i muzu svoje krave i koze." },
-  { art: "mlekadzija", title: "Dolazimo po mleko", text: "Naše vozilo preuzima sveže mleko direktno na farmi i nosi ga na punjenje." },
-  { art: "flasiranje", title: "Staklena flaša", text: "Mleko sipamo u staklene povratne flaše. Bez plastike i bez tetrapaka — samo mleko i staklo." },
-  { art: "korpa-na-pragu", title: "Na tvojim vratima", text: "Flaše stižu na tvoju adresu u Beogradu ili Novom Sadu, u terminu koji vidiš pre potvrde porudžbine." },
-  { art: "povratne-flase", title: "Flaša ide u krug", text: "Od druge dostave vraćaš prazne čiste flaše, a preuzimaš pune. Staklo se pere i ponovo puni." },
+const steps = [
+  { art: "flasiranje", title: "Izabereš litre", text: "2, 4 ili 8 litara po dostavi, ili tačno koliko ti treba — najmanje 2 litra. Litar u pretplati košta 250 dinara umesto 350." },
+  { art: "mlekadzija", title: "Paket od četiri dostave", text: "Pretplata je paket od četiri nedeljne dostave, plaćen unapred: gotovinom pri prvoj dostavi ili uplatom na račun." },
+  { art: "korpa-na-pragu", title: "Stiže jednom nedeljno", text: "U Beogradu utorkom ili petkom, u Novom Sadu petkom — do tvojih vrata. Do 36 sati pre ture možeš da dodaš litre, preskočiš dostavu ili pauziraš." },
+  { art: "povratne-flase", title: "Flaše vraćaš", text: "Čiste prazne flaše vratiš pri sledećoj dostavi, a dobiješ pune." },
+  { art: "jutarnja-casa", title: "Paket se obnavlja", text: "Novi paket kreće tek kada su sve četiri dostave stvarno isporučene. Posle 12 dostava poklanjamo ti 2 litra mleka i dostavu." },
 ] as const;
 
 const controls = [
@@ -40,10 +39,10 @@ export default async function SubscriptionPage() {
         <div className="page-shell sub-hero-grid">
           <div className="page-heading">
             <p className="eyebrow">Mesečna pretplata</p>
-            <h1>Tvoje mleko, svake nedelje.</h1>
-            <p className="lead">Biraš mleko i ritam — mi muzemo, flaširamo i donosimo.</p>
+            <h1>Kako funkcioniše pretplata</h1>
+            <p className="lead">Paket od četiri nedeljne dostave, plaćen unapred, koji menjaš, pauziraš ili otkazuješ kad god poželiš.</p>
           </div>
-          <img className="sub-hero-art" src="/images/ilustracije/jutarnja-casa.webp" alt="Čovek ujutru pije čašu mleka" width="1200" height="900" />
+          <img className="sub-hero-art" src="/images/ilustracije/korpa-na-pragu.webp" alt="Korpa sa flašama mleka na pragu" width="1200" height="900" />
         </div>
       </header>
 
@@ -51,11 +50,11 @@ export default async function SubscriptionPage() {
         <div className="page-shell">
           <div className="sub-road-card">
             <div className="section-head">
-              <p className="eyebrow">Od krave do tvoje čaše</p>
-              <h2 id="put-title">Put tvog mleka.</h2>
+              <p className="eyebrow">Korak po korak</p>
+              <h2 id="put-title">Pretplata u pet koraka.</h2>
             </div>
             <ol className="sub-road-list">
-              {road.map((stop, index) => (
+              {steps.map((stop, index) => (
                 <li key={stop.art}>
                   <img src={`/images/ilustracije/${stop.art}.webp`} alt="" width="1200" height="900" loading="lazy" />
                   <div>
@@ -66,8 +65,8 @@ export default async function SubscriptionPage() {
                 </li>
               ))}
             </ol>
-            {/* After the fifth stop the reader knows the whole road: the moment to order. */}
-            <div className="button-row sub-road-cta"><Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko</Link></div>
+            
+            <div className="button-row sub-road-cta"><Link className="button" href="/prodavnica?tip=pretplata">Izaberi pretplatu</Link></div>
           </div>
         </div>
       </section>

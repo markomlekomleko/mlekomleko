@@ -69,9 +69,9 @@ const slides: readonly Slide[] = [
   {
     image: "/images/domacini/porodica-glisic.webp",
     focus: "50% 45%",
-    alt: "Porodica Glišić ispred bala sena na svojoj farmi",
+    alt: "Porodica Glišić ispred bala sena na farmi u Deliblatskoj peščari",
     title: "Znaš od koga piješ.",
-    lead: "Pravi proizvođači i prave farme — ljudi koji iza svog mleka stoje imenom i prezimenom.",
+    lead: "Pravi proizvođači i prave farme — kao Farma Glišić iz Deliblatske peščare.",
     actions: [{ icon: "🐄", label: "Upoznaj naše farmere", href: "/o-nama#farmeri" }],
   },
   {

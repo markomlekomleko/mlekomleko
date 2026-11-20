@@ -43,7 +43,7 @@ export default async function AboutPage() {
           <div className="about-farmers">
             {producers.map((producer) => (
               <figure className="about-farmer" key={producer.id}>
-                <img src={producer.image} alt={producer.alt} width={producer.width} height={producer.height} loading="lazy" />
+                <img src={producer.image} alt={producer.alt} width={producer.width} height={producer.height} style={{ objectPosition: producer.focus }} loading="lazy" />
                 <figcaption>
                   <h3>{producer.name}</h3>
                   {producer.place ? <p className="about-farmer-place">{producer.place}</p> : null}

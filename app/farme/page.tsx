@@ -20,12 +20,14 @@ const kitchen = [
   { icon: "kafa", title: "Kafa i kačamak", text: "Punomasno mleko daje kafi i kačamaku pun, domaći ukus." },
 ] as const;
 
-// We keep no animals of our own: the story is choosing the farms and the short road.
-const chain = [
-  { title: "Biramo domaćine", text: "Male porodične farme sa kojima radimo direktno, bez posrednika." },
-  { title: "Preuzimamo posle muže", text: "Naše vozilo dolazi po sveže mleko direktno na farmu." },
-  { title: "Hladimo i sipamo u staklo", text: "Bez plastike i tetrapaka — samo mleko i povratna staklena flaša." },
-  { title: "Donosimo na tvoja vrata", text: "Sa farme ide pravo do tebe, u Beogradu i Novom Sadu." },
+// The road of the milk (moved here from the subscription page, 20 Nov 2026): we keep no
+// animals of our own, we choose the farms and keep the road short.
+const road = [
+  { art: "muza", title: "Muža na domaćinstvu", text: "Mleko dolazi od domaćina koji sami čuvaju i muzu svoje krave." },
+  { art: "mlekadzija", title: "Dolazimo po mleko", text: "Naše vozilo preuzima sveže mleko direktno na farmi i nosi ga na punjenje." },
+  { art: "flasiranje", title: "Staklena flaša", text: "Mleko sipamo u staklene povratne flaše. Bez plastike i bez tetrapaka — samo mleko i staklo." },
+  { art: "korpa-na-pragu", title: "Na tvojim vratima", text: "Flaše stižu na tvoju adresu u Beogradu ili Novom Sadu, u terminu koji vidiš pre potvrde porudžbine." },
+  { art: "povratne-flase", title: "Flaša ide u krug", text: "Od druge dostave vraćaš prazne čiste flaše, a preuzimaš pune. Staklo se pere i ponovo puni." },
 ] as const;
 
 // Real photos of the farms we buy from: one list shared with the home page and O nama.
@@ -51,6 +53,43 @@ export default async function OriginPage() {
         </div>
       </header>
 
+      <section className="content-band pattern-ground sub-road" aria-labelledby="put-title">
+        <div className="page-shell">
+          <div className="sub-road-card">
+            <div className="section-head">
+              <p className="eyebrow">Od krave do tvoje čaše</p>
+              <h2 id="put-title">Put tvog mleka.</h2>
+            </div>
+            <ol className="sub-road-list">
+              {road.map((stop, index) => (
+                <li key={stop.art}>
+                  <img src={`/images/ilustracije/${stop.art}.webp`} alt="" width="1200" height="900" loading="lazy" />
+                  <div>
+                    <span className="sub-road-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
+                    <h3>{stop.title}</h3>
+                    <p>{stop.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section className="content-band" aria-labelledby="farme-title">
+        <div className="page-shell">
+          <div className="section-head"><p className="eyebrow">Ko stoji iza flaše</p><h2 id="farme-title">Naše porodice.</h2><p className="lead">Ne držimo svoje krave. Naš posao je da nađemo domaćine koji to rade dobro i da njihovo mleko stigne do tebe onakvo kakvo je izašlo sa farme.</p></div>
+          <div className="hosts-grid">
+            {hosts.map((host) => (
+              <figure className="host" key={host.id}>
+                <img src={host.image} alt={host.alt} width={host.width} height={host.height} style={{ objectPosition: host.focus }} loading="lazy" />
+                <figcaption><strong>{host.place ? `${host.name}, ${host.place}` : host.name}</strong><span>{host.story}</span></figcaption>
+              </figure>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="content-band content-band--soft" aria-labelledby="kuhinja-title">
         <div className="page-shell">
           <div className="section-head"><p className="eyebrow">U tvojoj kuhinji</p><h2 id="kuhinja-title">Od jednog mleka, cela trpeza.</h2><p className="lead">Sirovo punomasno mleko nije samo za čašu — od njega praviš celu domaću trpezu.</p></div>
@@ -61,32 +100,6 @@ export default async function OriginPage() {
           </div>
           {/* The order button closes the kitchen section (18 Nov 2026). */}
           <div className="button-row kitchen-cta"><Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko</Link></div>
-        </div>
-      </section>
-
-      <section className="content-band" aria-labelledby="farme-title">
-        <div className="page-shell">
-          <div className="section-head"><p className="eyebrow">Ko stoji iza flaše</p><h2 id="farme-title" className="two-line-title" aria-label="Mi biramo farme. Ti biraš mleko."><span>Mi biramo farme.</span>{" "}<span>Ti biraš mleko.</span></h2><p className="lead">Ne držimo svoje krave. Naš posao je da nađemo domaćine koji to rade dobro i da njihovo mleko stigne do tebe onakvo kakvo je izašlo sa farme.</p></div>
-          <ol className="chain">
-            {chain.map((step, index) => (
-              <li key={step.title}>
-                <span className="chain-number" aria-hidden="true">{String(index + 1).padStart(2, "0")}</span>
-                <h3>{step.title}</h3>
-                <p>{step.text}</p>
-              </li>
-            ))}
-          </ol>
-          <section className="hosts" aria-labelledby="domacini-title">
-            <div className="hosts-head"><p className="eyebrow">Naši domaćini</p><h3 id="domacini-title">Pravi ljudi, prave farme.</h3></div>
-            <div className="hosts-grid">
-              {hosts.map((host) => (
-                <figure className="host" key={host.id}>
-                  <img src={host.image} alt={host.alt} width={host.width} height={host.height} loading="lazy" />
-                  <figcaption><strong>{host.place ? `${host.name}, ${host.place}` : host.name}</strong><span>{host.story}</span></figcaption>
-                </figure>
-              ))}
-            </div>
-          </section>
         </div>
       </section>
 
