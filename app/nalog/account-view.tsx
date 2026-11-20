@@ -21,6 +21,8 @@ import { ProfileEditor } from "./profile-editor";
 import { LoginSettings } from "./login-settings";
 import { LoginForm } from "../prijava/login-form";
 import { SubscriptionCard, type Subscription } from "./subscription-card";
+import { LoyaltyCard, type Loyalty } from "./loyalty-card";
+import { AddressEditor } from "./address-editor";
 import "./account.css";
 
 type Row = Record<string, unknown>;
@@ -28,7 +30,7 @@ type Delivery = {
   id: string;
   date: string;
   status: string;
-  items: { product_name: string; unit_label: string; quantity: number }[];
+  items: { product_name: string; unit_label: string; quantity: number; delivered_quantity?: number | null; source_type?: string }[];
 };
 type AccountPayload = {
   demo?: boolean;
@@ -43,6 +45,7 @@ type AccountPayload = {
     postalCode: string;
   };
   subscriptions: Subscription[];
+  loyalty?: Loyalty;
   orders: Row[];
   addonProducts: Row[];
   deliveryHistory: Delivery[];
@@ -65,10 +68,31 @@ function deliveryStatus(status: string) {
         out_for_delivery: "Na putu",
         cancelled: "Otkazana",
         skipped: "Preskočena",
-        delivered: "Isporučena",
+        delivered: "Realizovana",
       } as Record<string, string>
     )[status] ?? "Status se ažurira"
   );
+}
+
+function orderRole(role: string) {
+  return (
+    {
+      package: "Osnovni paket",
+      subscription_invoice: "Osnovni paket",
+      surcharge: "Doplata",
+      addon: "Dodatak uz dostavu",
+      one_time: "Jednokratna porudžbina",
+      adjustment: "Doplata",
+    } as Record<string, string>
+  )[role] ?? "Porudžbina";
+}
+function surchargeText(surcharge: Row, locale: Parameters<typeof formatMoney>[1]) {
+  const added = Number(surcharge.quantityPerDelivery);
+  const deliveries = Number(surcharge.deliveries);
+  const unit = formatMoney(Number(surcharge.unitPriceMinor) / 100, locale), total = formatMoney(Number(surcharge.amountMinor) / 100, locale);
+  return surcharge.scope === "regular"
+    ? `+${added} × ${label(surcharge.productName)}, redovno u ${deliveries} dostave: ${added} × ${unit} × ${deliveries} = ${total}`
+    : `+${added} × ${label(surcharge.productName)}, samo sledeća dostava: ${added} × ${unit} = ${total}`;
 }
 
 /** The account page's sections, in page order: anchor id and menu label. */
@@ -153,6 +177,7 @@ export function AccountView() {
         adjustmentMinor: number;
         appliesTo?: string;
         cancelAfterPackage?: boolean;
+        surcharge?: Row | null;
       }>(`/api/account/subscriptions/${encodeURIComponent(id)}`, {
         method: "PATCH",
         headers: { "Idempotency-Key": window.crypto.randomUUID() },
@@ -174,10 +199,13 @@ export function AccountView() {
               ? `Dostave su pauzirane. Automatski se nastavljaju od ${date}.`
               : action === "resume"
                 ? `Pretplata je ponovo aktivna. Sledeća redovna dostava: ${date}.`
-                : action === "add_next_only"
-                  ? `Proizvod je dodat samo dostavi za ${date}.`
+                : action === "add_next_only" || (action === "add_quantity" && details.scope === "next_only")
+                  ? `Dodato samo dostavi za ${date}.`
+                  : action === "add_quantity"
+                  ? "Dodato u sve preostale dostave paketa i u naredne pakete."
                   : `Izmena je sačuvana. Novi izbor važi za naredne redovne dostave, od ${date}, prema ritmu svakog proizvoda.`;
       if (result.appliesTo === "next_package") message = "Izmena je sačuvana za sledeći paket. Količine i ritam već kupljenog paketa ostaju isti.";
+      if (result.surcharge && Number(result.surcharge.amountMinor) > 0) message += ` Doplata ${formatMoney(Number(result.surcharge.amountMinor) / 100, locale)} je evidentirana (${label(result.surcharge.orderNumber)}).`;
       if (result.cancelAfterPackage) message = "Obnova je otkazana. Preostale plaćene dostave ostaju zakazane.";
       if (result.adjustmentMinor > 0)
         message += ` Odobreno za naredni obračun: ${formatMoney(result.adjustmentMinor / 100, locale)}.`;
@@ -192,8 +220,10 @@ export function AccountView() {
             : updated?.status === "cancelled"
               ? "subscription_cancelled"
               : "subscription_saved";
-      if (action !== "add_next_only")
+      if (action !== "add_next_only" && action !== "add_quantity")
         track(event, { subscriptionId: id, action });
+      if (action === "add_quantity")
+        track("subscription_saved", { subscriptionId: id, action, scope: label(details.scope) });
       if (action === "add_next_only")
         track("add_to_next_delivery", {
           subscriptionId: id,
@@ -263,6 +293,7 @@ export function AccountView() {
       Number(a.status === "cancelled") - Number(b.status === "cancelled") ||
       a.nextDeliveryDate.localeCompare(b.nextDeliveryDate),
   );
+  const activeSubscription = subscriptions.find((sub) => sub.status !== "cancelled");
   const history = (account.deliveryHistory ?? []).filter(
     (delivery) =>
       historyFilter === "all" ||
@@ -308,6 +339,28 @@ export function AccountView() {
               </dl>
             </section>
 
+            {activeSubscription ? (
+              <section className="card account-overview" aria-labelledby="overview-title">
+                <p className="eyebrow">{activeSubscription.status === "paused" ? "Pretplata je pauzirana" : "Aktivna pretplata"}</p>
+                <h2 id="overview-title">{`Sledeća dostava: ${formatDate(activeSubscription.nextDeliveryDate, locale)}`}</h2>
+                {activeSubscription.packageSummary ? (
+                  <>
+                    <p className="account-package-counts"><strong>{`Kupljeno ${activeSubscription.packageSummary.purchased} dostave • Realizovano ${activeSubscription.packageSummary.realized} • Ostalo ${activeSubscription.packageSummary.remaining}`}</strong></p>
+                    <p className="small-text">Preskočena dostava NE troši plaćeni termin.</p>
+                  </>
+                ) : null}
+                <p className="small-text account-muted">{activeSubscription.items.filter((item) => item.status === "active").map((item) => `${item.quantity} × ${item.productName}`).join(" · ")}</p>
+                <a className="account-arrow-link" href="#pretplata">Uredi pretplatu <span aria-hidden="true">→</span></a>
+              </section>
+            ) : null}
+            {account.loyalty ? (
+              <LoyaltyCard
+                loyalty={account.loyalty}
+                readOnly={Boolean(account.demo)}
+                onChange={(loyalty, message) => { setAccount({ ...account, loyalty }); setNotice(message); setError(""); }}
+              />
+            ) : null}
+
             <div className="account-section" id="pretplata">
               <h2 className="account-section-title">Pretplata</h2>
               {(account.deliveryHistory ?? [])
@@ -343,6 +396,7 @@ export function AccountView() {
                     readOnly={account.demo}
                     mutate={mutate}
                     index={index}
+                    loyaltyLine={account.loyalty && sub.status !== "cancelled" ? `${account.loyalty.progress}/${account.loyalty.target} dostava do poklona` : undefined}
                   />
                 ))
               ) : (
@@ -373,9 +427,9 @@ export function AccountView() {
               ))}
               {subscriptions.length ? (
                 <section className="account-help">
-                  <p><strong>Treba vam više ili manje?</strong> Podesite količinu sa − / + i sačuvajte.</p>
-                  <p><strong>Imate još mleka?</strong> Preskočite samo sledeći termin.</p>
-                  <p><strong>Putujete?</strong> Pauzirajte do datuma povratka.</p>
+                  <p><strong>Treba ti više mleka?</strong> Dodaj litre sa + i potvrdi doplatu.</p>
+                  <p><strong>Imaš još mleka?</strong> Preskoči samo sledeći termin. Plaćeni termin se ne troši.</p>
+                  <p><strong>Putuješ?</strong> Pauziraj i izaberi datum nastavka.</p>
                 </section>
               ) : null}
             </div>
@@ -385,8 +439,7 @@ export function AccountView() {
               {account.orders.length ? (
                 <>
                   <p className="account-muted">
-                    Mesečni obračuni i jednokratne kupovine. Jedna mesečna porudžbina
-                    može obuhvatiti više dostava.
+                    Osnovni paket, doplate i jednokratne kupovine, sa stanjem uplate. Jedan paket obuhvata četiri realizovane dostave.
                   </p>
                   <ul className="list-clean account-orders">
                     {account.orders.map((order) => (
@@ -397,15 +450,23 @@ export function AccountView() {
                             {formatMoney(Number(order.total_minor) / 100, locale)}
                           </strong>
                         </div>
+                        <p className="account-order-role">{orderRole(label(order.role) || label(order.kind))}</p>
+                        {order.role === "package" ? (
+                          <p>
+                            {`Proizvodi ${formatMoney(Number(order.subtotal_minor ?? 0) / 100, locale)} · dostava ${formatMoney(Number(order.delivery_fee_minor ?? 0) / 100, locale)}`}
+                            {Number(order.discount_minor ?? 0) > 0 ? <><br />{`Popust −${formatMoney(Number(order.discount_minor) / 100, locale)}`}</> : null}
+                            {Number(order.credit_applied_minor ?? 0) > 0 ? <><br />{`Kredit −${formatMoney(Number(order.credit_applied_minor) / 100, locale)}`}</> : null}
+                          </p>
+                        ) : null}
+                        {order.surcharge ? (
+                          <p>{surchargeText(order.surcharge as Row, locale)}</p>
+                        ) : null}
                         <p>
-                          {order.kind === "subscription_invoice"
-                            ? "Početak obračunatog perioda"
-                            : "Termin dostave"}
-                          : {formatDate(label(order.delivery_date), locale)}
+                          {order.role === "package" ? `Prva dostava paketa: ${formatDate(label(order.delivery_date), locale)}` : `Termin dostave: ${formatDate(label(order.delivery_date), locale)}`}
                         </p>
                         <p>
-                          Plaćanje: {statusLabel(label(order.payment_status))} ·{" "}
-                          {deliveryStatus(label(order.fulfillment_status))}
+                          {`Uplata: ${statusLabel(label(order.payment_status))} · ${deliveryStatus(label(order.fulfillment_status))}`}
+                          {order.payment_method === "cash" ? <><br />Gotovina ili uplata na račun</> : null}
                         </p>
                         {order.kind === "one_time" && (
                           <button
@@ -478,7 +539,7 @@ export function AccountView() {
                     onChange={(event) => setHistoryFilter(event.target.value)}
                   >
                     <option value="all">Sve dostave</option>
-                    <option value="delivered">Isporučene</option>
+                    <option value="delivered">Realizovane</option>
                     <option value="skipped">Preskočene</option>
                   </select>
                 </label>
@@ -497,15 +558,16 @@ export function AccountView() {
                         <ul className="list-clean">
                           {delivery.items.map((item, index) => (
                             <li key={index}>
-                              {item.quantity} × {item.product_name} ·{" "}
+                              {item.delivered_quantity ?? item.quantity} × {item.product_name} ·{" "}
                               {item.unit_label}
+                              {item.source_type === "surcharge" || item.source_type === "next_only" ? <small> (doplata)</small> : null}
                             </li>
                           ))}
                         </ul>
                       ) : (
                         <p>
                           {delivery.status === "skipped"
-                            ? "Ovaj termin ste preskočili."
+                            ? "Ovaj termin si preskočio/la. Plaćeni termin nije potrošen."
                             : "Detalji dostave još nisu dostupni."}
                         </p>
                       )}
@@ -543,10 +605,14 @@ export function AccountView() {
                 ) : (
                   <p className="account-muted">Još nemaš sačuvanu adresu.</p>
                 )}
-                <p className="small-text">
-                  Promenu adrese ili dogovor oko dostave rešavamo preko kontakta.
-                </p>
-                <a className="account-arrow-link" href="/kontakt">Javite nam se <span aria-hidden="true">→</span></a>
+                {account.demo ? (
+                  <p className="small-text">U demo nalogu adresa se ne menja.</p>
+                ) : (
+                  <AddressEditor
+                    customer={customer}
+                    onSaved={(message) => { setNotice(message); setError(""); void loadAccount(); }}
+                  />
+                )}
               </section>
               <section className="card" aria-labelledby="details-title">
                 <h2 id="details-title">Moji podaci</h2>

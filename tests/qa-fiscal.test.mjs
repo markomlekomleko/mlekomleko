@@ -5,6 +5,7 @@ import { afterEach, beforeEach, test } from 'node:test';
 import {
   call, checkout, env, expectStatus, line, networkCalls, rows, setClock, setup, sql, teardown, count, database,
 } from './qa-harness.mjs';
+import { legacyBiweekly } from './legacy-biweekly.mjs';
 
 beforeEach(() => setup());
 afterEach(() => teardown());
@@ -12,7 +13,12 @@ afterEach(() => teardown());
 // ---------- helpers ----------------------------------------------------------
 const sub = (cadence = 'weekly', quantity = 2, product = 'prod_kravlje_1l') => line(product, quantity, 'subscription', cadence);
 async function buyPackage({ cadence = 'weekly', quantity = 2, method = 'cash', extra = {}, product } = {}) {
-  const body = expectStatus(await checkout([sub(cadence, quantity, product)], { paymentMethod: method, ...(method === 'cash' ? { paymentToken: undefined } : {}), ...extra }), 201);
+  if (cadence !== 'biweekly') return expectStatus(await checkout([sub(cadence, quantity, product)], { paymentMethod: method, ...(method === 'cash' ? { paymentToken: undefined } : {}), ...extra }), 201);
+  // Legacy biweekly package (weekly only since the final specification): bought weekly with cash,
+  // rewritten to the former biweekly rows, then paid, so the advance uses the old total.
+  const body = expectStatus(await checkout([sub('weekly', quantity, product)], { ...extra, paymentMethod: 'cash', paymentToken: undefined }), 201);
+  body.order.totalMinor = legacyBiweekly(database.raw, body.order.id, [{ productId: product ?? 'prod_kravlje_1l', quantity }]).total_minor;
+  if (method === 'card') expectStatus(await payAsAdmin(body.order.id));
   return body;
 }
 const payAsAdmin = async (id, expectedUpdatedAt) => call('/api/admin/orders', { method: 'PATCH', admin: true, body: { id, paymentStatus: 'paid', ...(expectedUpdatedAt ? { expectedUpdatedAt } : {}) } });

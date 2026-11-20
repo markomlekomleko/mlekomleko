@@ -227,18 +227,18 @@ test('F-B13 malformed delivery dates are rejected; omitted date selects the next
 });
 
 test('F-B14 cutoff: accepted until one millisecond before DELIVERY_EDIT cutoff, rejected from the exact cutoff instant', async () => {
-  // Delivery Fri 2027-01-01 08:00 Belgrade (07:00Z), cutoff 24h before = 2026-12-31T07:00:00Z.
-  setClock('2026-12-31T06:59:59.999Z');
+  // Delivery Fri 2027-01-01 07:00 Belgrade (06:00Z), cutoff 36h before = 2026-12-30T18:00:00Z.
+  setClock('2026-12-30T17:59:59.999Z');
   expectStatus(await checkout([line()], {}, { ip: '203.0.113.140' }), 201);
-  setClock('2026-12-31T07:00:00.000Z');
+  setClock('2026-12-30T18:00:00.000Z');
   const locked = await checkout([line()], { customer: customer({ email: 'test-f-cutoff@example.test' }) }, { ip: '203.0.113.141' });
   expectError(locked, 409, 'DELIVERY_LOCKED');
-  assert.equal(locked.body.error.details.cutoffAt, '2026-12-31T07:00:00.000Z');
+  assert.equal(locked.body.error.details.cutoffAt, '2026-12-30T18:00:00.000Z');
   setClock('2027-01-01T09:00:00Z');
   expectError(await checkout([line()], { customer: customer({ email: 'test-f-cutoff2@example.test' }) }, { ip: '203.0.113.142' }), 409, 'DELIVERY_LOCKED');
   assert.equal(count('orders'), 1);
   expectError(await call('/api/cart', { body: { items: [line()], deliveryDate: '2027-01-01' } }), 409, 'DELIVERY_LOCKED');
-  setClock('2026-12-31T07:00:00.000Z');
+  setClock('2026-12-30T18:00:00.000Z');
   expectStatus(await checkout([line()], { deliveryDate: '2027-01-05' }, { ip: '203.0.113.143' }), 201);
 });
 
@@ -456,7 +456,7 @@ test('F-B28 webhook input validation: missing/odd fields, unknown order, non-JSO
 });
 
 test('F-B29 webhook on a prepaid package: paid works, but a later failed/refunded event cannot rewrite a paid package', async () => {
-  const { order } = expectStatus(await checkout([line('prod_kravlje_1l', 1, 'subscription', 'biweekly')], { paymentMethod: 'cash', paymentToken: undefined }), 201);
+  const { order } = expectStatus(await checkout([line('prod_kravlje_1l', 1, 'subscription', 'weekly')], { paymentMethod: 'cash', paymentToken: undefined }), 201);
   expectStatus(await webhook({ eventId: 'test-f-evt-5', orderId: order.id, status: 'paid' }));
   assert.equal(sql('SELECT status s FROM subscription_packages').s, 'open');
   assert.equal(count('fiscal_receipts', "kind='advance' AND status='issued'"), 1);

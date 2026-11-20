@@ -3,6 +3,7 @@ import { beforeEach, afterEach, test } from 'node:test';
 import { register } from 'node:module';
 import { createHash, randomUUID } from 'node:crypto';
 import { createDatabase } from './sqlite-d1.mjs';
+import { legacyBiweekly, weeklyItems, biweeklyProducts } from './legacy-biweekly.mjs';
 
 const realDate = Date;
 let database;
@@ -32,7 +33,13 @@ async function api(path, data, { method = 'POST', admin = false, cookie, key = r
 function line(productId='prod_kravlje_1l', quantity=3, purchaseType='subscription', cadence='weekly') { return { productId, quantity, purchaseType, ...(purchaseType==='subscription'?{cadence}:{}) }; }
 function checkoutData(items=[line()],extra={}) { return { customer:{email:'qa@example.test',fullName:'Željko QA Kupac',phone:'+381600000000',addressLine1:'Test ulica 1',city:'Beograd',postalCode:'11000'},items,paymentMethod:items.some(item=>item.purchaseType==='subscription')?'card':'cash',paymentToken:'test-provider-token',deliveryDate:'2027-01-01',...extra }; }
 function expectStatus(r,status=200) { assert.equal(r.status,status,JSON.stringify(r.body)); return r.body; }
-async function create(extra={},items=[line()]) { return expectStatus(await api('/api/checkout',checkoutData(items,extra)),201); }
+// Biweekly lines are legacy packages (sold before weekly-only): bought weekly, rewritten to the old rows.
+async function create(extra={},items=[line()]) {
+ const legacy=biweeklyProducts(items);
+ const body=expectStatus(await api('/api/checkout',checkoutData(weeklyItems(items),extra)),201);
+ if (legacy.length) body.order.totalMinor=legacyBiweekly(database.raw,body.order.id,legacy).total_minor;
+ return body;
+}
 function session() {
  const c=database.raw.prepare('SELECT id,email FROM customers LIMIT 1').get();
  const token=randomUUID()+randomUUID();
@@ -43,11 +50,11 @@ const scalar=(sql,...args)=>Object.values(database.raw.prepare(sql).get(...args)
 async function mutate(id, action, details={}, cookie=session(), key=randomUUID()) { const version=scalar('SELECT version FROM subscriptions WHERE id=?',id); return api('/api/account/subscriptions/'+id,{action,expectedVersion:version,...details},{cookie,key,method:'PATCH'}); }
 async function delivery(date='2027-01-01') { return expectStatus(await api('/api/admin/deliveries',{action:'generate',date},{admin:true})); }
 
-test('T-04: independent mixed-cart monthly total is 5,100 RSD', async()=>{
- const items=[line(),line('prod_jogurt_1l',1,'subscription','biweekly'),line('prod_sir_500g',1,'one_time')];
+test('T-04: independent mixed-cart package total is 5,400 RSD (weekly only)', async()=>{
+ const items=[line(),line('prod_jogurt_1l',1,'subscription','weekly'),line('prod_sir_500g',1,'one_time')];
  const quote=expectStatus(await api('/api/cart',{items,deliveryDate:'2027-01-01'}));
- assert.equal(quote.totalMinor,510000); assert.equal(quote.deliveryOccurrences,4);
- const order=await create({},items); assert.equal(order.order.totalMinor,510000);
+ assert.equal(quote.totalMinor,540000); assert.equal(quote.deliveryOccurrences,4);
+ const order=await create({},items); assert.equal(order.order.totalMinor,540000);
  assert.equal(scalar('SELECT COUNT(*) FROM orders'),1);
 });
 test('T-04/T-46: mixed-cart one-time item appears exactly on its first delivery',async()=>{
@@ -98,14 +105,19 @@ test('T-22/T-31: actual concurrent mutations keep one version and projection',as
  assert.equal(scalar('SELECT version FROM subscriptions WHERE id=?',id),2);
  const qty=scalar('SELECT quantity FROM subscription_items WHERE id=?',item);
  assert.ok([4,5].includes(qty));
- assert.equal(scalar('SELECT SUM(quantity) FROM delivery_items WHERE product_id=?','prod_kravlje_1l'),3);
+ // The winning regular addition is in the open (not yet packed) projection, exactly once.
+ assert.equal(scalar('SELECT SUM(quantity) FROM delivery_items WHERE product_id=?','prod_kravlje_1l'),qty);
+ assert.equal(scalar('SELECT COUNT(*) FROM package_surcharges'),1);
 });
 test('T-23: add a recurring product without altering existing item cadence',async()=>{
  const order=await create(); const id=order.subscription.id;
- expectStatus(await mutate(id,'add_item',{productId:'prod_jogurt_1l',quantity:1,cadence:'biweekly'}));
+ expectStatus(await mutate(id,'add_item',{productId:'prod_jogurt_1l',quantity:1,cadence:'biweekly'}),422);
+ expectStatus(await mutate(id,'add_item',{productId:'prod_jogurt_1l',quantity:1,cadence:'weekly'}));
  assert.equal(scalar("SELECT COUNT(*) FROM subscription_items WHERE subscription_id=? AND status='active'",id),2);
- assert.equal((await delivery()).preparation.find(p=>p.product_id==='prod_jogurt_1l'),undefined);
- assert.ok(!(await delivery('2027-01-08')).preparation.some(p=>p.product_id==='prod_jogurt_1l'));
+ assert.equal(scalar("SELECT cadence FROM subscription_items WHERE product_id='prod_kravlje_1l'"),'weekly');
+ // A regular addition rides on every remaining delivery of the paid package.
+ assert.equal((await delivery()).preparation.find(p=>p.product_id==='prod_jogurt_1l')?.total_quantity,1);
+ assert.equal((await delivery('2027-01-08')).preparation.find(p=>p.product_id==='prod_kravlje_1l')?.total_quantity,3);
 });
 test('T-25/T-45: next-only addon is consumed once by lock',async()=>{
  const order=await create(); const id=order.subscription.id;
@@ -127,9 +139,11 @@ test('T-27/T-28/T-29/T-30: skip, pause, resume and terminal cancel update persis
  assert.equal(scalar('SELECT renewal_enabled FROM subscriptions'),0);
  expectStatus(await mutate(id,'resume'),409);
 });
-test('T-24: removing the final recurring item cannot leave a billable empty subscription',async()=>{
+test('T-24: a paid item cannot be removed; cancelling renewal is the way to stop',async()=>{
  const order=await create(); const id=order.subscription.id,itemId=scalar('SELECT id FROM subscription_items');
- expectStatus(await mutate(id,'remove_item',{itemId}));
+ expectStatus(await mutate(id,'remove_item',{itemId}),422);
+ assert.equal(scalar("SELECT status FROM subscription_items WHERE id=?",itemId),'active');
+ expectStatus(await mutate(id,'cancel'));
  assert.equal(scalar('SELECT renewal_enabled FROM subscriptions'),0);
 });
 test('T-34: exact cutoff is rejected and does not create mutation records',async()=>{
@@ -138,11 +152,12 @@ test('T-34: exact cutoff is rejected and does not create mutation records',async
  expectStatus(await mutate(order.subscription.id,'skip_next'),409);
  assert.equal(scalar('SELECT COUNT(*) FROM subscription_mutation_versions'),0);
 });
-test('T-37: paid reduction applies to the next package without creating credit',async()=>{
+test('T-37: a paid quantity cannot be reduced and creates no credit',async()=>{
  const order=await create({paymentMethod:'card',paymentToken:'test-provider-token'}),id=order.subscription.id,itemId=scalar('SELECT id FROM subscription_items');
  database.raw.prepare("UPDATE subscriptions SET next_delivery_date='2027-01-15' WHERE id=?").run(id);
  at('2027-01-13T10:00:00Z');
- expectStatus(await mutate(id,'update_item',{itemId,quantity:2}));
+ expectStatus(await mutate(id,'update_item',{itemId,quantity:2}),422);
+ assert.equal(scalar('SELECT quantity FROM subscription_items WHERE id=?',itemId),3);
  assert.equal(scalar('SELECT COUNT(*) FROM credits_ledger'),0);
  assert.equal(scalar('SELECT total_minor FROM orders WHERE id=?',order.order.id),440000);
 });
@@ -281,9 +296,10 @@ test('invalid and post-cutoff pauses reject edits and preserve locked goods', as
 
 test('deadline: exact boundary locks concrete delivery, rejects admin cancellation, and keeps snapshot immutable', async () => {
  const order=await create({},[line('prod_kravlje_1l',3,'one_time')]);
- at('2026-12-31T06:59:59.999Z');
+ // 36 hours before the 07:00 route start on 1 January (final specification).
+ at('2026-12-30T17:59:59.999Z');
  expectStatus(await api('/api/admin/orders',{id:order.order.id,items:[{productId:'prod_kravlje_1l',quantity:4}]},{method:'PATCH',admin:true}));
- at('2026-12-31T07:00:00.000Z');
+ at('2026-12-30T18:00:00.000Z');
  expectStatus(await api('/api/admin/orders',{id:order.order.id,fulfillmentStatus:'cancelled'},{method:'PATCH',admin:true}),409);
  assert.equal(scalar('SELECT status FROM deliveries'),'locked');
  assert.equal(scalar('SELECT fulfillment_status FROM orders WHERE id=?',order.order.id),'locked');
@@ -298,7 +314,7 @@ test('deadline: admin policy changes recalculate open dates and never reopen loc
  await create(); await delivery();
  expectStatus(await api('/api/admin/settings',{cutoffHours:48},{method:'PATCH',admin:true}));
  assert.equal(scalar('SELECT status FROM deliveries WHERE delivery_date=?','2027-01-01'),'locked');
- assert.equal(scalar('SELECT cutoff_at FROM deliveries WHERE delivery_date=?','2027-01-01'),'2026-12-30T07:00:00.000Z');
+ assert.equal(scalar('SELECT cutoff_at FROM deliveries WHERE delivery_date=?','2027-01-01'),'2026-12-30T06:00:00.000Z');
  expectStatus(await api('/api/admin/settings',{cutoffHours:0},{method:'PATCH',admin:true}));
  assert.equal(scalar('SELECT status FROM deliveries WHERE delivery_date=?','2027-01-01'),'locked');
  expectStatus(await api('/api/admin/orders',{id:scalar('SELECT id FROM orders'),fulfillmentStatus:'cancelled'},{method:'PATCH',admin:true}),409);
@@ -314,7 +330,9 @@ test('deadline: account automatically advances future subscription without chang
  const itemId=scalar('SELECT id FROM subscription_items');
  expectStatus(await api('/api/account/subscriptions/'+id,{action:'update_item',expectedVersion:1,itemId,quantity:9},{method:'PATCH',cookie:user}),409);
  expectStatus(await mutate(id,'update_item',{itemId,quantity:5},user));
+ // The locked delivery keeps its goods; the regular addition starts with the next open one.
  assert.equal((await delivery('2027-01-01')).preparation[0].total_quantity,3);
- assert.equal((await delivery('2027-01-08')).preparation[0].total_quantity,3);
+ assert.equal((await delivery('2027-01-08')).preparation[0].total_quantity,5);
+ assert.equal(scalar('SELECT deliveries FROM package_surcharges'),3);
  assert.equal(scalar('SELECT COUNT(*) FROM mutation_guards'),0);
 });

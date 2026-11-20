@@ -302,7 +302,7 @@ test('the redesigned homepage ships the headline, the poster and purchase naviga
   assert.match(html, /href="#izaberite-mleko"/);
   assert.match(html, /Izaberi svoje mleko/);
   assert.match(html, /id="offer-title"/);
-  assert.match(html, /Da li moram da se pretplatim/);
+  assert.match(html, /Da li je mleko bezbedno i kako se koristi/);
   for (const asset of ['/media/hero/poster-mobile.webp', '/media/hero/poster-desktop.webp', '/images/farma.webp']) {
     const image = await fetch(origin + asset);
     assert.equal(image.status, 200, asset);

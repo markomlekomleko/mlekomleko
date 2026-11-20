@@ -3,6 +3,7 @@ import { beforeEach, afterEach, test } from 'node:test';
 import { register } from 'node:module';
 import { randomUUID } from 'node:crypto';
 import { createDatabase } from './sqlite-d1.mjs';
+import { legacyBiweekly, weeklyItems, biweeklyProducts } from './legacy-biweekly.mjs';
 import { renderTransactionalMessage } from '../server/notifications.ts';
 const RealDate = Date, realFetch = globalThis.fetch;
 let database, network, calls;
@@ -37,6 +38,17 @@ async function paid() {
   assert.equal(update.status,200,await update.clone().text()); return id;
 }
 const one=sql=>database.raw.prepare(sql).get();
+// Biweekly lines are legacy packages (sold before weekly-only): bought weekly with cash, rewritten
+// to the former biweekly rows, then paid by the admin, so the advance is issued on the old total.
+async function checkoutJson(body) {
+ const legacy=biweeklyProducts(body.items);
+ if(!legacy.length){const response=await api('/api/checkout',body);assert.equal(response.status,201,await response.clone().text());return response.json();}
+ const response=await api('/api/checkout',{...body,items:weeklyItems(body.items),paymentMethod:'cash',paymentToken:undefined});
+ assert.equal(response.status,201,await response.clone().text());const json=await response.json();
+ json.order.totalMinor=legacyBiweekly(database.raw,json.order.id,legacy).total_minor;
+ if(body.paymentMethod==='card'){const paid=await api('/api/admin/orders',{id:json.order.id,paymentStatus:'paid'},{method:'PATCH',admin:true});assert.equal(paid.status,200,await paid.clone().text());}
+ return json;
+}
 test('cash collected during a complete one-off handover issues one ordinary receipt',async()=>{
  const created=await api('/api/checkout',{customer:{email:'cod@example.test',fullName:'Test Gotovina',phone:'+381600000000',addressLine1:'Test 1',city:'Beograd',postalCode:'11000'},items:[{productId:'prod_kravlje_1l',quantity:2,purchaseType:'one_time'}],paymentMethod:'cash',deliveryDate:'2027-01-01'});
  assert.equal(created.status,201,await created.clone().text());
@@ -77,9 +89,7 @@ test('timeout is journaled and cannot be retried by the generic retry button',as
 });
 for (const mode of ['live', 'training']) test(`package receipt lifecycle stays in ${mode} mode`,async()=>{
  env.FISCOMM_MODE = mode;
- const response=await api('/api/checkout',{customer:{email:'chain@example.test',fullName:'Test Lanac',phone:'+381600000000',addressLine1:'Test 1',city:'Beograd',postalCode:'11000'},items:[{productId:'prod_kravlje_1l',quantity:2,purchaseType:'subscription',cadence:'biweekly'}],paymentMethod:'card',paymentToken:'test-token',deliveryDate:'2027-01-01'});
- assert.equal(response.status,201,await response.clone().text());
- const order=(await response.json()).order;
+ const {order}=await checkoutJson({customer:{email:'chain@example.test',fullName:'Test Lanac',phone:'+381600000000',addressLine1:'Test 1',city:'Beograd',postalCode:'11000'},items:[{productId:'prod_kravlje_1l',quantity:2,purchaseType:'subscription',cadence:'biweekly'}],paymentMethod:'card',paymentToken:'test-token',deliveryDate:'2027-01-01'});
  assert.equal(calls[0].url,`https://api.fiscomm.rs/receipt/${mode === 'training' ? 'training' : 'advance'}/sale`);
  assert.equal(calls[0].payload.items[0].quantity,4);
  for(const date of ['2027-01-01','2027-01-15']) {
@@ -190,8 +200,7 @@ async function deliver(date, deliveredQuantity) {
  return orders;
 }
 async function buyMilk(productId,quantity,cadence) {
- const response=await api('/api/checkout',{customer:{email:'milk@example.test',fullName:'Milk Test',phone:'+381600000000',addressLine1:'Test 1',city:'Beograd',postalCode:'11000'},items:[{productId,quantity,purchaseType:cadence?'subscription':'one_time',...(cadence?{cadence}:{})}],paymentMethod:'card',paymentToken:'test-token',deliveryDate:'2027-01-01'});
- assert.equal(response.status,201,await response.clone().text());return response.json();
+ return checkoutJson({customer:{email:'milk@example.test',fullName:'Milk Test',phone:'+381600000000',addressLine1:'Test 1',city:'Beograd',postalCode:'11000'},items:[{productId,quantity,purchaseType:cadence?'subscription':'one_time',...(cadence?{cadence}:{})}],paymentMethod:'card',paymentToken:'test-token',deliveryDate:'2027-01-01'});
 }
 for(const mode of ['live','training']) test(`2l one-time and 8l biweekly: each actual delivery has the right amount (${mode})`,async()=>{
  env.FISCOMM_MODE=mode;
@@ -266,12 +275,11 @@ test('partial finalize with a wrong refund amount is unknown and blocks automati
 });
 
 test('all three rhythms in one basket retain separate quantities and exactly the prepaid total',async()=>{
- const response=await api('/api/checkout',{customer:{email:'mixedmilk@example.test',fullName:'Mixed Milk Test',phone:'+381600000000',addressLine1:'Test 1',city:'Beograd',postalCode:'11000'},items:[
+ const {order}=await checkoutJson({customer:{email:'mixedmilk@example.test',fullName:'Mixed Milk Test',phone:'+381600000000',addressLine1:'Test 1',city:'Beograd',postalCode:'11000'},items:[
   {productId:'prod_kozje_1l',quantity:2,purchaseType:'one_time'},
   {productId:'prod_kozje_1l',quantity:8,purchaseType:'subscription',cadence:'biweekly'},
   {productId:'prod_kravlje_1l',quantity:10,purchaseType:'subscription',cadence:'weekly'},
  ],paymentMethod:'card',paymentToken:'test-token',deliveryDate:'2027-01-01'});
- assert.equal(response.status,201,await response.clone().text());const {order}=await response.json();
  for(const date of ['2027-01-01','2027-01-08','2027-01-15','2027-01-22'])await deliver(date);
  const finals=calls.slice(1);
  assert.equal(finals.reduce((sum,call)=>sum+Math.round(call.payload.payments[0].amount*100),0),order.totalMinor);

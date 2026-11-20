@@ -4,6 +4,8 @@ import { useLocalize } from "@/app/lib/i18n/client";
 import { useEffect, useMemo, useState } from "react";
 import { useAnalytics } from "../components/analytics-provider";
 import { ProductConfigurator } from "../components/product-configurator";
+import { GoatWaitlistCard } from "../components/goat-waitlist";
+import { milkKind } from "../components/product-carousel";
 import { type DeliveryWindow, type Product } from "../lib/frontend";
 
 export function StoreView({
@@ -24,15 +26,15 @@ export function StoreView({
     [products],
   );
 
+  const goatWaitlist = !products.some((product) => milkKind(product) === "goat");
   const visibleProducts =
     category === "Sve" ? products : products.filter((product) => product.category === category);
 
   return localize((
     <div className="page-shell store-page">
       <header className="section-head">
-        <p className="eyebrow">Prodavnica</p>
-        <h1>Dobro sa farme. Pravo na sto.</h1>
-        <p className="lead">Domaći proizvodi, dostavljeni na tvoju adresu. Izaberi svoje favorite, količinu i ritam dostave.</p>
+        <h1>Izaberi svoje mleko</h1>
+        <p className="lead">Domaće sirovo mleko, u povratnoj staklenoj flaši, do tvojih vrata. Izaberi pretplatu ili jednokratnu kupovinu i količinu po dostavi.</p>
       </header>
 
       {products.length === 0 ? (
@@ -61,10 +63,11 @@ export function StoreView({
           {visibleProducts.length === 0 ? (
             <p className="empty-state">Nema proizvoda u izabranoj kategoriji.</p>
           ) : (
-            <div className="offer-grid" data-count={visibleProducts.length}>
+            <div className="offer-grid" data-count={visibleProducts.length + (goatWaitlist ? 1 : 0)}>
               {visibleProducts.map((product) => (
                 <ProductConfigurator key={product.id} product={product} delivery={delivery} />
               ))}
+              {goatWaitlist ? <GoatWaitlistCard /> : null}
             </div>
           )}
         </>

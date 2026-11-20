@@ -31,11 +31,12 @@ export type HeaderSettings = {
   deliveryCountdowns?: DeliveryCountdown[];
 };
 
-export type DeliveryCountdown = { city: string; at: string };
+export type DeliveryCountdown = { city: string; slots: { date: string; weekday: number; cutoffAt: string }[] };
 
 const pad = (value: number) => String(value).padStart(2, "0");
+const WEEKDAYS = ["nedelja", "ponedeljak", "utorak", "sreda", "četvrtak", "petak", "subota"];
 
-/** "2d 14:03:09", or "14:03:09" on the delivery day itself. */
+/** "2d 14:03:09", or "14:03:09" in the last day. */
 function formatCountdown(ms: number) {
   const total = Math.max(0, Math.floor(ms / 1000));
   const days = Math.floor(total / 86_400);
@@ -43,9 +44,10 @@ function formatCountdown(ms: number) {
   return days ? `${days}d ${clock}` : clock;
 }
 
-// One ticking clock per city. The first render uses the page's own time so the server
-// and browser agree; after that it ticks every second. A route whose time has passed
-// drops out until the next page load brings its following date.
+// One clock per city, counting down to the change deadline of that city's next delivery
+// (36 h before the 07:00 route start, enforced by the server). The server sends the next
+// few deadlines, so when one passes the clock moves on to the next delivery by itself.
+// The first render shows placeholders so the server and the browser agree.
 function DeliveryCountdowns({ items }: { items: DeliveryCountdown[] }) {
   const localize = useLocalize();
   const [now, setNow] = useState<number | null>(null);
@@ -55,15 +57,18 @@ function DeliveryCountdowns({ items }: { items: DeliveryCountdown[] }) {
     const timer = window.setInterval(tick, 1000);
     return () => { window.clearTimeout(first); window.clearInterval(timer); };
   }, []);
-  const live = items.filter((item) => now === null || Date.parse(item.at) > now);
+  const live = items
+    .map((item) => ({ city: item.city, slot: item.slots.find((slot) => now === null || Date.parse(slot.cutoffAt) > now) }))
+    .filter((item): item is { city: string; slot: DeliveryCountdown["slots"][number] } => Boolean(item.slot));
   if (!live.length) return null;
   return localize((
     <p className="delivery-countdowns">
-      <span className="delivery-countdowns-label">Sledeća dostava:</span>
-      {live.map((item) => (
-        <span className="delivery-countdown" key={item.city}>
-          <span>{item.city}</span>{" "}
-          <time dateTime={item.at}>{now === null ? "··:··:··" : formatCountdown(Date.parse(item.at) - now)}</time>
+      <span className="delivery-countdowns-label">Rok za izmene:</span>
+      {live.map(({ city, slot }) => (
+        <span className="delivery-countdown" key={city}>
+          <span className="delivery-countdown-city">{city}</span>{" "}
+          <span className="delivery-countdown-day">({WEEKDAYS[slot.weekday]})</span>{" "}
+          <time dateTime={slot.cutoffAt}>{now === null ? "··:··:··" : formatCountdown(Date.parse(slot.cutoffAt) - now)}</time>
         </span>
       ))}
     </p>
@@ -168,17 +173,12 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
           {/* Every link closes the menu: a same-page hash link (the milk picker on the
               home page) would otherwise leave it covering the section. */}
           <nav id="glavna-navigacija" className={`main-nav ${menuVisible ? "is-open" : ""}`} aria-label="Glavna navigacija">
-            <Link onClick={closeMenu} href="/#izaberite-mleko">Izaberi svoje mleko</Link>
-            <Link onClick={closeMenu} href="/kako-funkcionise">Mesečna pretplata</Link>
-            <Link onClick={closeMenu} href="/farme">Poreklo tvog mleka</Link>
+            <Link onClick={closeMenu} href="/">Početna</Link>
+            <Link onClick={closeMenu} href="/prodavnica">Izaberi svoje mleko</Link>
             <Link onClick={closeMenu} href="/gde-kupiti">Mlekomati</Link>
-            <Link onClick={closeMenu} className="nav-support" href="/faq">Česta pitanja</Link>
-            <Link onClick={closeMenu} href="/kontakt">Kontakt</Link>
+            <Link onClick={closeMenu} href="/o-nama">O nama</Link>
+            <Link onClick={closeMenu} href="/analize">Analize</Link>
             <Link onClick={closeMenu} className="mobile-account" href="/nalog">Moj nalog</Link>
-            <p className="nav-contact">
-              <a href={PHONE.href}>{PHONE.label}</a>
-              <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">Instagram ↗</a>
-            </p>
           </nav>
           <Link className="brand" href="/" aria-label={`${settings.storeName} - početna`}>
             {/* The goat and cow and the hand-drawn wordmark from mlekoimleko.rs, their
@@ -245,22 +245,35 @@ function FooterIcon({ name }: { name: "phone" | "mail" | "instagram" | "tiktok" 
 export function SiteFooter() {
   const localize = useLocalize();
   const legal = companyLine();
-  // The whole footer (18 Nov 2026): the registered company, email, phone, Instagram and
-  // TikTok, and the policy links. Nothing else.
+  // Spec 19 Nov 2026, §15: contact, company details, social networks and the legal
+  // pages. Contact lives here, easy to reach, instead of in the main menu.
   return localize((
     <footer className="site-footer site-footer--k">
-      <div className="page-shell footer-k-legal">
-        <p className="footer-company">
-          {company.legalName ? <span data-no-translate>{company.legalName}</span> : null}
-          {legal.map((part) => <span key={part}> · {part}</span>)}
-        </p>
-        <div className="footer-contact-row">
-          {company.email ? <a className="footer-contact" href={`mailto:${company.email}`}><FooterIcon name="mail" /><span data-no-translate>{company.email}</span></a> : null}
-          <a className="footer-contact" href={company.phoneHref}><FooterIcon name="phone" />{company.phone}</a>
-          <a className="footer-contact" href={INSTAGRAM_URL} target="_blank" rel="noreferrer"><FooterIcon name="instagram" />Instagram</a>
-          <a className="footer-contact" href={TIKTOK_URL} target="_blank" rel="noreferrer"><FooterIcon name="tiktok" />TikTok</a>
+      <div className="page-shell footer-k-grid">
+        <div className="footer-brand-col">
+          <Image className="brand-logo-footer" src="/images/mleko-i-mleko-logo.png" alt="Mleko i Mleko" width={96} height={96} sizes="96px" />
+          <p className="footer-tagline">{shellCopy.footer.tagline}</p>
         </div>
-        <nav className="footer-policies" aria-label={shellCopy.footer.infoTitle}>
+        <nav className="footer-links" aria-labelledby="footer-contact-title">
+          <h2 id="footer-contact-title">Kontakt</h2>
+          <Link href="/kontakt">Piši nam</Link>
+          <a className="footer-contact" href={PHONE.href}><FooterIcon name="phone" /><span>{PHONE.label}</span></a>
+          {company.email ? <a className="footer-contact" href={`mailto:${company.email}`}><FooterIcon name="mail" /><span data-no-translate>{company.email}</span></a> : null}
+          <a className="footer-contact" href={INSTAGRAM_URL} target="_blank" rel="noreferrer"><FooterIcon name="instagram" /><span>Instagram</span></a>
+          <a className="footer-contact" href={TIKTOK_URL} target="_blank" rel="noreferrer"><FooterIcon name="tiktok" /><span>TikTok</span></a>
+        </nav>
+        <nav className="footer-links" aria-labelledby="footer-milk-title">
+          <h2 id="footer-milk-title">Mleko i Mleko</h2>
+          <Link href="/prodavnica">Izaberi svoje mleko</Link>
+          <Link href="/gde-kupiti">Mlekomati</Link>
+          <Link href="/o-nama">O nama</Link>
+          <Link href="/analize">Analize</Link>
+          <Link href="/kako-funkcionise">Kako funkcioniše pretplata</Link>
+          <Link href="/farme">Poreklo tvog mleka</Link>
+          <Link href="/faq">Česta pitanja</Link>
+        </nav>
+        <nav className="footer-links" aria-labelledby="footer-legal-title">
+          <h2 id="footer-legal-title">{shellCopy.footer.infoTitle}</h2>
           <Link href="/uslovi-kupovine">Uslovi kupovine</Link>
           <Link href="/pravila-pretplate">Pravila pretplate</Link>
           <Link href="/dostava">Dostava</Link>
@@ -268,6 +281,13 @@ export function SiteFooter() {
           <Link href="/privatnost">Privatnost i kolačići</Link>
           <CookieSettingsButton />
         </nav>
+      </div>
+      <div className="page-shell footer-k-legal">
+        <p className="footer-company">
+          {company.legalName ? <span data-no-translate>{company.legalName}</span> : null}
+          {legal.map((part) => <span key={part}> · {part}</span>)}
+        </p>
+        <p className="footer-pay">Plaćanje: gotovinom pri dostavi ili uplatom na račun.</p>
       </div>
     </footer>
   ));

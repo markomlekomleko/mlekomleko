@@ -3,6 +3,7 @@ import { beforeEach, afterEach, test } from 'node:test';
 import { register } from 'node:module';
 import { createHash, randomUUID } from 'node:crypto';
 import { createDatabase } from './sqlite-d1.mjs';
+import { legacyBiweekly, weeklyItems, biweeklyProducts } from './legacy-biweekly.mjs';
 
 const realDate = Date;
 let database;
@@ -32,7 +33,13 @@ async function api(path, data, { method = 'POST', admin = false, cookie, key = r
 function line(productId='prod_kravlje_1l', quantity=3, purchaseType='subscription', cadence='weekly') { return { productId, quantity, purchaseType, ...(purchaseType==='subscription'?{cadence}:{}) }; }
 function checkoutData(items=[line()],extra={}) { return { customer:{email:'qa@example.test',fullName:'Željko QA Kupac',phone:'+381600000000',addressLine1:'Test ulica 1',city:'Beograd',postalCode:'11000'},items,paymentMethod:items.some(item=>item.purchaseType==='subscription')?'card':'cash',paymentToken:'test-provider-token',deliveryDate:'2027-01-01',...extra }; }
 function expectStatus(r,status=200) { assert.equal(r.status,status,JSON.stringify(r.body)); return r.body; }
-async function create(extra={},items=[line()]) { return expectStatus(await api('/api/checkout',checkoutData(items,extra)),201); }
+// Biweekly lines are legacy packages (sold before weekly-only): bought weekly, rewritten to the old rows.
+async function create(extra={},items=[line()]) {
+ const legacy=biweeklyProducts(items);
+ const body=expectStatus(await api('/api/checkout',checkoutData(weeklyItems(items),extra)),201);
+ if (legacy.length) body.order.totalMinor=legacyBiweekly(database.raw,body.order.id,legacy).total_minor;
+ return body;
+}
 function session() {
  const c=database.raw.prepare('SELECT id,email FROM customers LIMIT 1').get();
  const token=randomUUID()+randomUUID();
@@ -152,14 +159,17 @@ test('future calendar projects real weekly and biweekly quantities and removes s
   expectStatus(await api('/api/admin/delivery-calendar?from=2027-01-01&to=2028-01-01',null,{method:'GET',admin:true}),422);
 });
 
-test('renewal item changes preserve purchased snapshots across future deliveries', async () => {
+test('a regular addition reaches every open delivery of the paid package and the next package', async () => {
   const created = await create();
   await delivery('2027-01-01');
   await delivery('2027-01-08');
   const result = expectStatus(await mutate(created.subscription.id,'add_item',{productId:'prod_kravlje_1l',quantity:2,cadence:'weekly'}));
   assert.equal(result.account.subscriptions[0].items[0].quantity,5);
+  assert.equal(result.surcharge.deliveries,4);
   const first = await delivery('2027-01-01');
   const second = await delivery('2027-01-08');
-  assert.equal(first.preparation[0].total_quantity,3);
-  assert.equal(second.preparation[0].total_quantity,3);
+  assert.equal(first.preparation[0].total_quantity,5);
+  assert.equal(second.preparation[0].total_quantity,5);
+  // The purchased package snapshot itself is unchanged; the surcharge is its own order.
+  assert.equal(scalar("SELECT quantity FROM order_items WHERE order_id=?",created.order.id),3);
 });

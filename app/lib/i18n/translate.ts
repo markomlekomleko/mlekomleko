@@ -1,7 +1,9 @@
 import { catalog as mainCatalog } from "./catalog";
 import { demoCatalog } from "./demo-catalog";
+import { specCatalog } from "./spec-catalog";
+import { loyaltyCatalog } from "./loyalty-catalog";
 import { sourceLocale, type Locale } from "./routing";
-const catalog = { ...mainCatalog, ...demoCatalog };
+const catalog = { ...mainCatalog, ...demoCatalog, ...specCatalog, ...loyaltyCatalog };
 const latin = "abvgdđežzijk lmnoprstćufhcčš".replaceAll(" ", "");
 const cyrillic = "абвгдђежзијклмнопрстћуфхцчш";
 const letters = Object.fromEntries([...latin].map((letter, i) => [letter, cyrillic[i]]));

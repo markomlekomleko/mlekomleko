@@ -1,0 +1,13 @@
+<svg viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg" width="1024" height="1024">
+<title>Test tube with milk and a check mark</title>
+<g stroke="#353A4A" stroke-width="32" stroke-linecap="round" stroke-linejoin="round">
+<path id="tube" d="M372 150 L372 742 C372 830 430 890 512 890 C594 890 652 830 652 742 L652 150 Z" fill="#F7F3E9" />
+<path id="milk" d="M372 470 C430 440 470 500 512 478 C556 455 596 438 652 468 L652 742 C652 830 594 890 512 890 C430 890 372 830 372 742 Z" fill="#F7F3E9" stroke-width="24" />
+<path id="lip" d="M318 150 L706 150 C726 150 738 128 728 110 C721 98 710 92 696 92 L328 92 C314 92 303 98 296 110 C286 128 298 150 318 150 Z" fill="#357F94" />
+<path id="marks" d="M372 270 H448 M372 360 H430" />
+</g>
+<g id="check" stroke="#353A4A" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="770" cy="640" r="150" fill="#357F94" />
+<path d="M700 640 L752 692 L842 596" stroke="#F7F3E9" stroke-width="36" />
+</g>
+</svg>

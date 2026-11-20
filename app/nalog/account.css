@@ -233,3 +233,40 @@
 }
 .account-home-pill:hover { background: var(--navy); color: #fff; }
 .account-dashboard .account-nav a:focus-visible { outline-offset: 2px; }
+
+/* -------------------------------------------- package, surcharge and loyalty (final spec, 20 Nov 2026) */
+.account-stepper output { display: grid; place-items: center; background: #fff; font-weight: 700; font-variant-numeric: tabular-nums; }
+.account-package { margin: 1.2rem 0 .4rem; padding: 14px 16px; border-radius: 16px; background: var(--blush); }
+.account-package h3 { margin: 0 0 4px; }
+.account-package p { margin: 4px 0; }
+.account-package-counts { font-size: .95rem; overflow-wrap: anywhere; }
+.account-loyalty-line { display: inline-flex; gap: 6px; margin: 4px 0 0; color: var(--brand-dark); font-weight: 800; font-size: .85rem; text-decoration: none; }
+.account-loyalty-line:hover { text-decoration: underline; }
+.account-scope { display: grid; gap: 8px; margin: .6rem 0; padding: 0; border: 0; }
+.account-scope legend { font-weight: 700; margin-bottom: 6px; font-size: .85rem; }
+.account-scope label { display: flex; gap: 10px; align-items: start; padding: 10px 12px; border: 1px solid var(--rule-soft); border-radius: 12px; background: #fff; font-size: .88rem; cursor: pointer; }
+.account-scope label:has(input:checked) { border-color: var(--navy); box-shadow: inset 0 0 0 1px var(--navy); }
+.account-dashboard .account-scope input[type="radio"] { flex: none; width: 18px; height: 18px; min-width: 0; min-height: 0; margin: 2px 0 0; padding: 0; accent-color: var(--brand-dark); }
+.account-scope label > span { flex: 1; text-align: left; }
+.account-surcharge-math { font-size: .95rem; overflow-wrap: anywhere; }
+.account-order-role { font-weight: 800; color: var(--brand-dark); font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; }
+.account-address-form { margin-top: 12px; gap: 14px; }
+.account-address-form .form-grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.account-address-form .checkbox-row { display: flex; gap: 10px; align-items: start; font-size: .85rem; }
+
+.account-loyalty { border-color: var(--brand-dark); background: linear-gradient(180deg, color-mix(in srgb, var(--blush) 70%, white), var(--surface) 60%); }
+.account-loyalty-counter { font-family: var(--ff-display); font-size: 1.6rem; font-weight: 900; color: var(--brand-dark); font-variant-numeric: tabular-nums; }
+.account-loyalty-boxes { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; margin: 4px 0 14px; padding: 0; list-style: none; }
+.account-loyalty-boxes li { display: grid; place-items: center; aspect-ratio: 1; min-width: 0; border: 1.5px solid var(--rule-soft); border-radius: 10px; background: #fff; color: var(--ink-2); font-size: .8rem; font-weight: 700; }
+.account-loyalty-boxes li.is-done { border-color: var(--brand-dark); background: var(--brand-dark); color: #fff; font-size: 1rem; }
+.account-loyalty-remaining { margin: 0 0 4px; font-weight: 800; font-size: 1rem; }
+.account-loyalty-gift { margin: 0 0 6px; }
+.account-loyalty-reward { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 6px; padding: 14px 16px; border: 1.5px solid var(--brand-dark); border-radius: 16px; background: #fff; }
+.account-loyalty-reward > div { display: grid; gap: 4px; justify-items: start; }
+.account-dashboard .account-status.is-ready { background: var(--brand-dark); color: #fff; }
+.account-loyalty-history { display: grid; gap: 8px; margin: 10px 0; }
+.account-loyalty-history li { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: .86rem; }
+@media (max-width: 560px) {
+  .account-loyalty-boxes { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .account-address-form .form-grid { grid-template-columns: minmax(0, 1fr); }
+}

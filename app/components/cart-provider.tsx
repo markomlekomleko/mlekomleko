@@ -31,6 +31,18 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
+/** Only the weekly rhythm is sold now: a saved biweekly line becomes weekly (merged with an equal line). */
+function weeklyOnly(saved: CartItem[]): CartItem[] {
+  const merged = new Map<string, CartItem>();
+  for (const raw of saved) {
+    const item = raw.purchaseType === "subscription" && raw.cadence !== "weekly" ? { ...raw, cadence: "weekly" as const } : raw;
+    const key = itemKey(item);
+    const previous = merged.get(key);
+    merged.set(key, previous ? { ...previous, quantity: Math.min(99, previous.quantity + item.quantity) } : { ...item, key });
+  }
+  return [...merged.values()];
+}
+
 function itemKey(item: Pick<CartItem, "productId" | "purchaseType" | "cadence">) {
   return `${item.productId}:${item.purchaseType}:${item.cadence ?? "once"}`;
 }
@@ -48,9 +60,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (saved) {
           try {
             const parsed = JSON.parse(saved) as { items?: CartItem[]; promoCode?: string } | CartItem[];
-            if (Array.isArray(parsed)) setItems(parsed);
+            if (Array.isArray(parsed)) setItems(weeklyOnly(parsed));
             else {
-              if (Array.isArray(parsed.items)) setItems(parsed.items);
+              if (Array.isArray(parsed.items)) setItems(weeklyOnly(parsed.items));
               if (typeof parsed.promoCode === "string") setPromoCodeState(parsed.promoCode);
             }
           } catch {

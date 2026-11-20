@@ -27,9 +27,9 @@ const road = [
 ] as const;
 
 const controls = [
-  { title: "Biraš mleko i litre", text: "Kravlje, kozje ili oba — 2, 4 ili 8 litara po dostavi, ili tačno koliko ti treba." },
-  { title: "Biraš ritam", text: "Svake nedelje ili svake dve nedelje. Paket sadrži četiri nedeljne ili dve dvonedeljne dostave." },
-  { title: "Sve menjaš na nalogu", text: "Pre roka menjaš količinu, preskačeš dostavu, pauziraš ili otkazuješ — bez poziva i objašnjavanja." },
+  { title: "Biraš litre", text: "2, 4 ili 8 litara po dostavi, ili tačno koliko ti treba — najmanje 2 litra." },
+  { title: "Paket od četiri dostave", text: "Pretplata je paket od četiri nedeljne dostave, plaćen unapred. Novi paket kreće tek kada su sve četiri stvarno isporučene." },
+  { title: "Sve menjaš na nalogu", text: "Do 36 sati pre ture dodaješ litre, preskačeš dostavu, pauziraš ili otkazuješ narednu obnovu — bez poziva i objašnjavanja." },
 ] as const;
 
 export default async function SubscriptionPage() {

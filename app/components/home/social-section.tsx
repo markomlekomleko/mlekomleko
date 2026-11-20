@@ -18,12 +18,9 @@ import { INSTAGRAM_URL, TIKTOK_URL } from "../site-shell";
  * still leads to the post on TikTok.
  */
 export const socialVideos = [
-  { id: "7352938823233359109", title: "Pravo mleko više nije daleko — lokacije mlekomata" },
-  { id: "7465682673936207109", title: "Jutro na farmi" },
-  { id: "7258739044731931909", title: "Kako se koristi mlekomat" },
-  { id: "7268735199112924422", title: "Kajmak od dva litra pravog mleka" },
-  { id: "7509530328181034245", title: "Jedna flaša, dve priče" },
-  { id: "7457308316155268358", title: "Poseti mlekomat" },
+  { id: "7465682673936207109", title: "Upoznaj farmu" },
+  { id: "7258739044731931909", title: "Kako radi mlekomat" },
+  { id: "7509530328181034245", title: "Rumenka na farmi" },
 ] as const;
 
 function TikTokClip({ id, title }: { id: string; title: string }) {
@@ -54,6 +51,7 @@ function TikTokClip({ id, title }: { id: string; title: string }) {
           <span className="social-play" aria-hidden="true" />
         </button>
       )}
+      <p className="social-title">{title}</p>
       <a className="social-open" href={`https://www.tiktok.com/@mleko_i_mleko/video/${id}`} target="_blank" rel="noreferrer">Pogledaj na TikToku ↗</a>
     </li>
   );

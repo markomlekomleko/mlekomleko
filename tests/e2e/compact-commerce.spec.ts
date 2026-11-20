@@ -60,16 +60,17 @@ test("the product page reaches price and purchase controls without a long scroll
 test("the shop offers every active product with its own buying controls", async ({ page }) => {
   await page.goto("/prodavnica");
   await acceptNecessary(page);
-  const cards = page.locator(".configurator");
-  await expect(cards).toHaveCount(2);
+  const cards = page.locator(".configurator:not(.goat-waitlist)");
+  await expect(cards).toHaveCount(1);
+  await expect(page.locator(".goat-waitlist")).toBeVisible();
   for (const card of await cards.all()) {
-    await expect(card.locator(".configurator-price strong")).toBeVisible();
-    await expect(card.getByRole("button", { name: cyr("Jednokratno") })).toBeVisible();
+    await expect(card.locator(".purchase-type strong").first()).toBeVisible();
+    await expect(card.getByRole("button", { name: cyr("Jednokratna kupovina") })).toBeVisible();
     await expect(card.locator(".configurator-actions button", { hasText: cyr("Napuni frižider") })).toBeEnabled();
     // The photograph must never push the price out of easy reach, whether it sits on
     // top of the card or in the portrait column beside the controls.
     const photo = (await card.locator(".configurator-media, .carousel").first().boundingBox())!;
-    const price = (await card.locator(".configurator-price").boundingBox())!;
+    const price = (await card.locator(".purchase-types").boundingBox())!;
     expect(price.y - photo.y).toBeLessThanOrEqual(page.viewportSize()!.height * 0.75);
   }
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(

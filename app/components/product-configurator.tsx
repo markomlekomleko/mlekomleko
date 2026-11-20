@@ -51,11 +51,14 @@ export function ProductConfigurator({
   product,
   delivery,
   layout = "card",
+  loyaltyNote = true,
   onSelectionChange,
 }: {
   product: Product;
   delivery: DeliveryWindow;
   layout?: ConfiguratorLayout;
+  /** The loyalty line under the subscription choice (shop); the home page says it once under the section instead. */
+  loyaltyNote?: boolean;
   onSelectionChange?: (selection: { label: string; totalRsd: number; addToCart: () => void; disabled: boolean }) => void;
 }) {
   const localize = useLocalize();
@@ -63,9 +66,10 @@ export function ProductConfigurator({
   const { addItem, ready } = useCart();
   const { track } = useAnalytics();
   const fieldId = useId();
-  // New customers start on the one-time purchase, per docs/OPUS-DETALJNA-SPECIFIKACIJA.md D07.
-  const [purchaseType, setPurchaseType] = useState<PurchaseType>("one_time");
-  const [cadence, setCadence] = useState<DeliveryCadence>("weekly");
+  // Spec 19 Nov 2026, §5: the subscription is selected by default; it is a package of
+  // four weekly deliveries (the only rhythm offered from now on).
+  const [purchaseType, setPurchaseType] = useState<PurchaseType>(product.allowSubscription && product.available ? "subscription" : "one_time");
+  const cadence: DeliveryCadence = "weekly";
   const [quantity, setQuantity] = useState(2);
   const [customOpen, setCustomOpen] = useState(false);
   const [customInput, setCustomInput] = useState("2");
@@ -73,6 +77,8 @@ export function ProductConfigurator({
 
   const litres = litresPerUnit(product.unit);
   const presets = litres ? [2, 4, 8] : [1, 2, 4];
+  // Milk is sold from two litres per delivery up.
+  const minimum = litres ? 2 : 1;
   const subscriptionAvailable = product.allowSubscription && product.available;
   const unitPrice = purchaseType === "subscription" ? product.subscriptionPriceRsd : product.priceRsd;
   const perDelivery = unitPrice * quantity;
@@ -80,16 +86,21 @@ export function ProductConfigurator({
   const visits = purchaseType === "subscription" ? occurrences : 1;
   const goodsTotal = perDelivery * visits;
   const shippingKnown = typeof delivery.deliveryFeeMinor === "number";
-  const shippingTotal = shippingKnown && !(Number(delivery.freeDeliveryThresholdMinor)>0 && goodsTotal*100 >= Number(delivery.freeDeliveryThresholdMinor)) ? Number(delivery.deliveryFeeMinor)/100*visits : 0;
+  const shippingPerVisit = shippingKnown && !(Number(delivery.freeDeliveryThresholdMinor)>0 && goodsTotal*100 >= Number(delivery.freeDeliveryThresholdMinor)) ? Number(delivery.deliveryFeeMinor)/100 : 0;
+  const shippingTotal = shippingPerVisit * visits;
+  /** What a subscriber saves per unit against the one-time price. */
+  const saving = Math.max(0, product.priceRsd - product.subscriptionPriceRsd);
   const href = `/proizvodi/${encodeURIComponent(product.slug)}`;
   const selectionLabel = `${quantityLabel(quantity, product.unit)} · ${
     purchaseType === "subscription" ? cadenceLabel(cadence).toLocaleLowerCase("sr-Latn") : "jednokratno"
   }`;
 
   useEffect(() => {
-    // Restored after hydration so the server-rendered default stays "jednokratno".
+    // Restored after hydration so the server-rendered default stays the subscription.
+    // A hero link (?tip=pretplata / ?tip=jednokratno) wins over a remembered choice.
     queueMicrotask(() => {
-      const saved = rememberedChoice(product.id);
+      const fromLink = new URLSearchParams(window.location.search).get("tip");
+      const saved = fromLink === "pretplata" ? "subscription" : fromLink === "jednokratno" ? "one_time" : rememberedChoice(product.id);
       if (saved === "subscription" && product.allowSubscription) setPurchaseType("subscription");
       else if (saved === "one_time") setPurchaseType("one_time");
     });
@@ -154,8 +165,8 @@ export function ProductConfigurator({
       setCustomError("Unesi količinu.");
       return;
     }
-    if (!Number.isInteger(value) || value < 1) {
-      setCustomError("Količina mora biti ceo broj, najmanje 1.");
+    if (!Number.isInteger(value) || value < minimum) {
+      setCustomError(minimum === 2 ? "Najmanja količina je 2 litra." : "Količina mora biti ceo broj, najmanje 1.");
       return;
     }
     if (value > MAX_QUANTITY) {
@@ -191,11 +202,11 @@ export function ProductConfigurator({
             </h3>
           )}
           {compact ? null : <p className="configurator-note">{product.shortDescription}</p>}
-          <p className="configurator-price">
+          {compact ? null : <p className="configurator-price">
             <strong>{formatMoney(unitPrice, locale)}</strong>
             <span>/ {product.unit}</span>
             {litres && litres !== 1 ? <small>{formatMoney(unitPrice / litres, locale)} / L</small> : null}
-          </p>
+          </p>}
         </div>
 
         {!product.available ? (
@@ -204,6 +215,36 @@ export function ProductConfigurator({
           </p>
         ) : (
           <>
+            <fieldset className="configurator-step configurator-types" disabled={!ready}>
+              <legend>Način kupovine</legend>
+              <div className="purchase-types">
+                <button
+                  type="button"
+                  className="purchase-type"
+                  aria-pressed={purchaseType === "subscription"}
+                  disabled={!subscriptionAvailable}
+                  onClick={() => choosePurchaseType("subscription")}
+                >
+                  <span className="purchase-type-name">Pretplata</span>
+                  <strong>{`${formatMoney(product.subscriptionPriceRsd, locale)}/${litres ? "l" : product.unit}`}</strong>
+                  {saving > 0 ? <small className="purchase-type-badge">{`Uštediš ${formatMoney(saving, locale)} po litru`}</small> : null}
+                </button>
+                <button
+                  type="button"
+                  className="purchase-type"
+                  aria-pressed={purchaseType === "one_time"}
+                  onClick={() => choosePurchaseType("one_time")}
+                >
+                  <span className="purchase-type-name">Jednokratna kupovina</span>
+                  <strong>{`${formatMoney(product.priceRsd, locale)}/${litres ? "l" : product.unit}`}</strong>
+                  {litres ? <small>Staklena flaša uključena</small> : null}
+                </button>
+              </div>
+              {!subscriptionAvailable ? (
+                <p className="configurator-hint">Za ovaj proizvod je moguća samo jednokratna kupovina.</p>
+              ) : null}
+            </fieldset>
+
             <fieldset className="configurator-step" disabled={!ready}>
               <legend>Količina po dostavi</legend>
               <div className="choice-row">
@@ -233,7 +274,7 @@ export function ProductConfigurator({
                     <span>Broj jedinica ({product.unit})</span>
                     <input
                       type="number"
-                      min={1}
+                      min={minimum}
                       max={MAX_QUANTITY}
                       step={1}
                       inputMode="numeric"
@@ -251,70 +292,21 @@ export function ProductConfigurator({
               ) : null}
             </fieldset>
 
-            <fieldset className="configurator-step" disabled={!ready}>
-              <legend>Način kupovine</legend>
-              <div className="choice-row">
-                <button
-                  type="button"
-                  aria-pressed={purchaseType === "one_time"}
-                  onClick={() => choosePurchaseType("one_time")}
-                >
-                  Jednokratno
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={purchaseType === "subscription"}
-                  disabled={!subscriptionAvailable}
-                  onClick={() => choosePurchaseType("subscription")}
-                >
-                  Redovna dostava
-                </button>
-              </div>
-              {!subscriptionAvailable ? (
-                <p className="configurator-hint">Za ovaj proizvod je moguća samo jednokratna kupovina.</p>
-              ) : null}
-            </fieldset>
+            <div className="configurator-total configurator-receipt">
+              <p><span>{litres ? "Mleko" : "Proizvod"} <small>{`${quantityLabel(quantity, product.unit)} × ${formatMoney(unitPrice, locale)}`}</small></span><strong>{formatMoney(perDelivery, locale)}</strong></p>
+              {shippingKnown ? <p><span>Dostava</span><strong>{formatMoney(shippingPerVisit, locale)}</strong></p> : null}
+              <p className="configurator-package-total"><span>Ukupno po isporuci</span> <strong>{formatMoney(perDelivery + (shippingKnown ? shippingPerVisit : 0), locale)}</strong></p>
+              {purchaseType === "subscription" && saving > 0 ? <p className="configurator-saving">{`Sa pretplatom štediš ${formatMoney(saving * quantity, locale)} po isporuci.`}</p> : null}
+              {purchaseType === "subscription" ? <p className="configurator-occurrences">{`Paket od ${visits} dostave, plaćen unapred: ${formatMoney(goodsTotal + shippingTotal, locale)}. Prva dostava: ${formatDate(delivery.deliveryDate, locale)}`}</p> : <p className="configurator-occurrences">{`Dostava: ${formatDate(delivery.deliveryDate, locale)}`}</p>}
+            </div>
 
             {purchaseType === "subscription" ? (
-              <fieldset className="configurator-step" disabled={!ready}>
-                <legend>Ritam dostave</legend>
-                <div className="choice-row">
-                  {(["weekly", "biweekly"] as const).map((value) => (
-                    <button
-                      key={value}
-                      type="button"
-                      aria-pressed={cadence === value}
-                      onClick={() => {
-                        setCadence(value);
-                        track("delivery_cadence_selected", { productId: product.id, cadence: value });
-                      }}
-                    >
-                      {cadenceLabel(value)}
-                    </button>
-                  ))}
-                </div>
-                <p className="configurator-hint">
-                  Prva dostava: {formatDate(delivery.deliveryDate, locale)}
-                </p>
-              </fieldset>
+              <div className="configurator-subscription-note">
+                <p>Redovna dostava, koju možeš da izmeniš, pauziraš ili otkažeš kad god poželiš.</p>
+                <p className="configurator-hint">{`Izmene predstojeće dostave važe samo do roka od ${delivery.cutoffHours} sati pre početka ture.`}</p>
+                {loyaltyNote ? <p className="configurator-loyalty">💙 Posle 12 realizovanih dostava poklanjamo ti 2 l mleka i dostavu.</p> : null}
+              </div>
             ) : null}
-
-            {compact ? null : <div className="configurator-total">
-              <p>
-                <span>
-                  Proizvodi po dostavi
-                  <small>{selectionLabel}</small>
-                </span>
-                <strong>{formatMoney(perDelivery, locale)}</strong>
-              </p>
-              {shippingKnown ? <>
-                <p className="configurator-occurrences">{`${visits} ${visits === 1 ? "dostava" : "dostave"} · ${quantityLabel(quantity*visits,product.unit)} ukupno`}</p>
-                <p className="configurator-occurrences">Dostava: {formatMoney(shippingTotal,locale)}{visits>1 ? ` (${formatMoney(shippingTotal/visits,locale)} po poseti)` : ""}</p>
-                <p className="configurator-package-total"><span>Ukupno za ovaj izbor</span> <strong>{formatMoney(goodsTotal+shippingTotal,locale)}</strong></p>
-                {purchaseType === "subscription" ? <p className="configurator-occurrences">Ceo paket plaćaš gotovinom pri prvoj dostavi.</p> : null}
-                <small className="configurator-occurrences">Zajednička dostava i popusti proveravaju se u korpi.</small>
-              </> : <p className="configurator-occurrences">Ukupan iznos sa dostavom vidiš u korpi pre potvrde.</p>}
-            </div>}
 
             <div className="configurator-actions">
               <button className="button" type="button" disabled={!ready} onClick={addToCart}>

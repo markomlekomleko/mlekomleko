@@ -3,6 +3,7 @@ import { beforeEach, afterEach, test } from 'node:test';
 import { register } from 'node:module';
 import { createHash, randomUUID } from 'node:crypto';
 import { createDatabase } from './sqlite-d1.mjs';
+import { legacyBiweekly, weeklyItems, biweeklyProducts } from './legacy-biweekly.mjs';
 
 const realDate = Date;
 let database;
@@ -32,7 +33,13 @@ async function api(path, data, { method = 'POST', admin = false, cookie, key = r
 function line(productId='prod_kravlje_1l', quantity=3, purchaseType='subscription', cadence='weekly') { return { productId, quantity, purchaseType, ...(purchaseType==='subscription'?{cadence}:{}) }; }
 function checkoutData(items=[line()],extra={}) { return { customer:{email:'qa@example.test',fullName:'Željko QA Kupac',phone:'+381600000000',addressLine1:'Test ulica 1',city:'Beograd',postalCode:'11000'},items,paymentMethod:'cash',deliveryDate:'2027-01-01',...extra }; }
 function expectStatus(r,status=200) { assert.equal(r.status,status,JSON.stringify(r.body)); return r.body; }
-async function create(extra={},items=[line()]) { return expectStatus(await api('/api/checkout',checkoutData(items,extra)),201); }
+// Biweekly lines are legacy packages (sold before weekly-only): bought weekly, rewritten to the old rows.
+async function create(extra={},items=[line()]) {
+ const legacy=biweeklyProducts(items);
+ const body=expectStatus(await api('/api/checkout',checkoutData(weeklyItems(items),extra)),201);
+ if (legacy.length) body.order.totalMinor=legacyBiweekly(database.raw,body.order.id,legacy).total_minor;
+ return body;
+}
 function session() {
  const c=database.raw.prepare('SELECT id,email FROM customers LIMIT 1').get();
  const token=randomUUID()+randomUUID();
@@ -43,7 +50,13 @@ const scalar=(sql,...args)=>Object.values(database.raw.prepare(sql).get(...args)
 async function mutate(id, action, details={}, cookie=session(), key=randomUUID()) { const version=scalar('SELECT version FROM subscriptions WHERE id=?',id); return api('/api/account/subscriptions/'+id,{action,expectedVersion:version,...details},{cookie,key,method:'PATCH'}); }
 async function delivery(date='2027-01-01') { return expectStatus(await api('/api/admin/deliveries',{action:'generate',date},{admin:true})); }
 
-async function paid(items=[line()], extra={}) { return create({paymentMethod:'card',paymentToken:'mock-token',...extra},items); }
+async function paid(items=[line()], extra={}) {
+ if (!biweeklyProducts(items).length) return create({paymentMethod:'card',paymentToken:'mock-token',...extra},items);
+ // A legacy package is paid after its rows exist, so the advance matches the old biweekly total.
+ const order=await create(extra,items);
+ expectStatus(await api('/api/admin/orders',{id:order.order.id,paymentStatus:'paid'},{admin:true,method:'PATCH'}));
+ return order;
+}
 async function handover(date, status='delivered') {
  at(date+'T10:00:00Z');
  const snapshot=await delivery(date);
@@ -51,12 +64,13 @@ async function handover(date, status='delivered') {
  return snapshot;
 }
 test('fixed package quantity and price at month end; quote equals charged amount',async()=>{
- const items=[line(),line('prod_jogurt_1l',2,'subscription','biweekly'),line('prod_sir_500g',1,'one_time')];
+ // Weekly only since the final specification: every subscription line is four deliveries.
+ const items=[line(),line('prod_jogurt_1l',2,'subscription','weekly'),line('prod_sir_500g',1,'one_time')];
  const q=expectStatus(await api('/api/cart',checkoutData(items,{deliveryDate:'2027-01-29'})));
- assert.deepEqual(q.lines.map(x=>x.occurrences),[4,2,1]);
+ assert.deepEqual(q.lines.map(x=>x.occurrences),[4,4,1]);
  const order=await paid(items,{deliveryDate:'2027-01-29'});
  assert.equal(order.order.totalMinor,q.totalMinor);
- assert.equal(scalar('SELECT SUM(required_deliveries) FROM package_lines'),7);
+ assert.equal(scalar('SELECT SUM(required_deliveries) FROM package_lines'),9);
 });
 test('weekly package issues advance on payment, a receipt on every confirmed handover, once',async()=>{
  const order=await paid();
@@ -105,7 +119,9 @@ test('mixed cart waits for both rhythms and one-time item; all actual quantities
 });
 test('future catalog and subscription edits never change purchased quantities, price or cadence',async()=>{
  const order=await paid(), id=scalar('SELECT id FROM subscription_items');
- expectStatus(await mutate(order.subscription.id,'update_item',{itemId:id,quantity:1,cadence:'biweekly'}));
+ // Final specification: a paid quantity cannot be reduced and only the weekly rhythm is sold.
+ expectStatus(await mutate(order.subscription.id,'update_item',{itemId:id,quantity:1}),422);
+ expectStatus(await mutate(order.subscription.id,'update_item',{itemId:id,cadence:'biweekly'}),422);
  expectStatus(await api('/api/admin/products/prod_kravlje_1l',{subscriptionPriceMinor:99900},{admin:true,method:'PATCH'}));
  const next=await delivery('2027-01-08');
  assert.equal(next.preparation[0].total_quantity,3);
@@ -172,13 +188,14 @@ test('three calendar month pause limit, future completion, payment reversal and 
 });
 test('new package renewal only after prior fulfillment and with new configured quantities',async()=>{
  const order=await paid();
- expectStatus(await mutate(order.subscription.id,'update_item',{itemId:scalar('SELECT id FROM subscription_items'),quantity:1,cadence:'biweekly'}));
+ // A regular addition (+1) applies to the open package and every package after it.
+ expectStatus(await mutate(order.subscription.id,'update_item',{itemId:scalar('SELECT id FROM subscription_items'),quantity:4,scope:'regular'}));
  for(const date of ['2027-01-01','2027-01-08','2027-01-15','2027-01-22']) await handover(date);
  const first=expectStatus(await api('/api/jobs/billing',{month:'2027-02'},{admin:true}));
- assert.equal(first.results[0].deliveryOccurrences,2);
+ assert.equal(first.results[0].deliveryOccurrences,4);
  expectStatus(await api('/api/jobs/billing',{month:'2027-02'},{admin:true}));
  assert.equal(scalar('SELECT COUNT(*) FROM subscription_packages'),2);
- assert.equal(scalar("SELECT quantity FROM order_items WHERE order_id != ?",order.order.id),1);
+ assert.equal(scalar("SELECT oi.quantity FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE o.kind='subscription_invoice' AND o.id != ?",order.order.id),4);
 });
 test('calendar preview never invents a fifth paid occurrence',async()=>{
  await paid();

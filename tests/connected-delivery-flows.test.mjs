@@ -60,32 +60,43 @@ async function mutate(id,action,details={},key=randomUUID()) {
 const emails=()=>sent.filter(x=>x.channel==='email');
 const whatsapps=()=>sent.filter(x=>x.channel==='whatsapp');
 const waText=(m)=>m.content.templateData.body.placeholders[0];
-for (const [action, expected] of [['skip_next','Vaša sledeća isporuka je preskočena'],['pause','Pretplata je pauzirana'],['resume','Pretplata je nastavljena'],['cancel','Obnova pretplate je otkazana'],['add_item','Proizvod je dodat'],['update_item','Proizvod u pretplati je izmenjen'],['remove_item','Proizvod je uklonjen'],['slow_down','svake dve nedelje'],['add_next_only','Dodatak za sledeću dostavu']]) {
+for (const [action, expected] of [['skip_next','Vaša sledeća isporuka je preskočena'],['pause','Pretplata je pauzirana'],['resume','Pretplata je nastavljena'],['cancel','Obnova pretplate je otkazana'],['add_item','Proizvod je dodat'],['update_item','Proizvod u pretplati je izmenjen'],['add_quantity','Doplata je evidentirana'],['add_next_only','Dodatak za sledeću dostavu']]) {
  test(`customer ${action} reaches admin, delivery preparation, email and opted-in WhatsApp`,async()=>{
   const result=await create('2026-09-15',[line(),line('prod_kozje_1l')]),id=result.subscription.id;
   optIn();
   if(action==='resume') await mutate(id,'pause',{pauseUntil:'2026-09-22'});
   await generate('2026-09-15'); await generate('2026-09-22'); sent=[];
   const itemId=one("SELECT id FROM subscription_items WHERE product_id='prod_kravlje_1l'").id;
-  const details={pause:{pauseUntil:'2026-09-22'},add_item:{productId:'prod_jogurt_1l',quantity:1,cadence:'biweekly'},update_item:{itemId,quantity:4,cadence:'biweekly'},remove_item:{itemId},add_next_only:{productId:'prod_jogurt_1l',quantity:1}}[action]??{};
+  const details={pause:{pauseUntil:'2026-09-22'},add_item:{productId:'prod_jogurt_1l',quantity:1,cadence:'weekly'},update_item:{itemId,quantity:4,scope:'regular'},add_quantity:{productId:'prod_kravlje_1l',quantity:1,scope:'next_only'},add_next_only:{productId:'prod_jogurt_1l',quantity:1}}[action]??{};
   const changed=await mutate(id,action,details);
   const admin=(await api('/api/admin/subscriptions',null,{admin:true,method:'GET'})).subscriptions.find(s=>s.id===id);
   assert.equal(admin.version,changed.version);
   const expectedStatus=action==='pause'?'paused':'active';
   assert.equal(admin.status,expectedStatus);
   if(action==='skip_next') assert.equal(admin.skips[0].delivery_date,'2026-09-15');
-  if(action==='update_item') { assert.equal(admin.items.find(i=>i.id===itemId).quantity,4); assert.equal(admin.items.find(i=>i.id===itemId).cadence,'biweekly'); }
+  if(action==='update_item') { assert.equal(admin.items.find(i=>i.id===itemId).quantity,4); assert.equal(admin.items.find(i=>i.id===itemId).cadence,'weekly'); }
   const projection=await api('/api/admin/deliveries?date=2026-09-15',null,{admin:true,method:'GET'});
   if(['skip_next','pause'].includes(action)) assert.equal(projection.orders.length,0);
   if(action==='resume') assert.equal(projection.orders.length,1);
-  if(action==='update_item') assert.equal(projection.preparation.find(i=>i.product_id==='prod_kravlje_1l').total_quantity,2);
-  if(action==='remove_item') assert.ok(projection.preparation.some(i=>i.product_id==='prod_kravlje_1l'));
+  // A regular addition rides on the open deliveries of the paid package (2 → 4 L).
+  if(action==='update_item') assert.equal(projection.preparation.find(i=>i.product_id==='prod_kravlje_1l').total_quantity,4);
+  if(action==='add_quantity') assert.equal(projection.preparation.find(i=>i.product_id==='prod_kravlje_1l').total_quantity,3);
   assert.ok(emails().some(m=>m.subject.includes(expected)), JSON.stringify({emails:emails(),outbox:database.raw.prepare("SELECT topic,status,last_error_message FROM outbox").all()}));
   assert.ok(whatsapps().some(m=>waText(m).includes(expected)), JSON.stringify(whatsapps()));
   assert.ok(emails().every(m=>m.text.includes('http://localhost/nalog')));
   if(action==='cancel') assert.ok(emails().find(m=>m.subject===expected).text.includes('Preostale plaćene dostave'));
  });
 }
+test('rejected decrease, removal and biweekly slow-down change nothing and send nothing',async()=>{
+ const result=await create('2026-09-15'),id=result.subscription.id;
+ optIn(); sent=[];
+ const itemId=one("SELECT id FROM subscription_items WHERE product_id='prod_kravlje_1l'").id;
+ for(const [action,details] of [['remove_item',{itemId}],['update_item',{itemId,quantity:1}],['slow_down',{}]]) await assert.rejects(mutate(id,action,details));
+ assert.equal(one('SELECT version FROM subscriptions WHERE id=?',id).version,1);
+ assert.equal(one("SELECT quantity FROM subscription_items WHERE id=?",itemId).quantity,2);
+ await process();
+ assert.equal(sent.length,0);
+});
 for(const [date,day,previous] of [['2026-09-15','u utorak','2026-09-14'],['2026-09-18','u petak','2026-09-17']]) {
  test(`${day}: cron generates tomorrow after cutoff and sends one reminder per channel across regeneration`,async()=>{
   await create(date,[line(),line('prod_jogurt_1l','one_time')]); optIn(); sent=[];
@@ -110,7 +121,8 @@ test('skipped and paused subscriptions never get next-day reminders',async()=>{
 });
 test('queued reminder is suppressed after a skip and after its intended day',async()=>{
  const r=await create(); optIn(); await generate('2026-09-15');
- at('2026-09-14T04:00:00Z');
+ // Still before the 36-hour cutoff (13 Sep 19:00 Belgrade) for the 07:00 route on 15 Sep.
+ at('2026-09-13T04:00:00Z');
  await api('/api/admin/integrations',{action:'delivery_reminders',date:'2026-09-15'},{admin:true});
  await mutate(r.subscription.id,'skip_next'); sent=[]; await process();
  assert.equal(emails().filter(m=>m.subject==='Podsetnik za sutrašnju dostavu').length,0);
@@ -184,9 +196,10 @@ test('cron does not wake customers at midnight and handles Belgrade daylight sav
 });
 test('one-time purchase conversion activates a subscription and sends both confirmations immediately',async()=>{
  const order=await create('2026-09-15',[line('prod_kravlje_1l','one_time')]); optIn(); sent=[];
- const result=await api('/api/orders/convert-to-subscription',{token:order.subscriptionOffer.token,cadence:'biweekly'});
+ await assert.rejects(api('/api/orders/convert-to-subscription',{token:order.subscriptionOffer.token,cadence:'biweekly'}));
+ const result=await api('/api/orders/convert-to-subscription',{token:order.subscriptionOffer.token,cadence:'weekly'});
  const admin=(await api('/api/admin/subscriptions',null,{admin:true,method:'GET'})).subscriptions;
- assert.equal(admin[0].id,result.subscription.id); assert.equal(admin[0].items[0].cadence,'biweekly');
+ assert.equal(admin[0].id,result.subscription.id); assert.equal(admin[0].items[0].cadence,'weekly');
  assert.equal(emails().length,1); assert.equal(emails()[0].subject,'Pretplata je aktivirana');
  assert.equal(whatsapps().length,1); assert.match(waText(whatsapps()[0]),/Pretplata je aktivirana/);
 });
@@ -195,7 +208,8 @@ test('daily job sends editable reminder before cutoff, deduplicates, then locks 
  await create('2026-09-15'); optIn(); sent=[];
  at('2026-09-13T08:00:00Z'); await jobs();
  const notice=emails().find(m=>m.subject==='Još možete izmeniti sledeću dostavu');
- assert.ok(notice); assert.match(notice.html,/14\. 9\. 2026|14\.09\.2026|14\. sept/); assert.match(notice.html,/08:00/);
+ // 36 hours before the 07:00 route start on 15 Sep: 13 Sep at 19:00 Belgrade.
+ assert.ok(notice); assert.match(notice.html,/13\. 9\. 2026|13\.09\.2026|13\. sept/); assert.match(notice.html,/19:00/);
  assert.match(notice.html,/Izmene i otkazivanje/);
  const before=sent.length; await jobs(); assert.equal(sent.length,before);
  at('2026-09-14T08:00:00Z'); await jobs();

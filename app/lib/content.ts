@@ -6,53 +6,44 @@
  */
 export const frequentlyAskedQuestions = [
   {
-    question: "Da li moram da se pretplatim?",
-    answer: "Ne. Svaki proizvod možeš uzeti samo uz sledeću dostavu ili ga uključiti u redovan nedeljni ili dvonedeljni ritam.",
+    question: "Da li je mleko bezbedno i kako se koristi?",
+    answer: "Naše mleko je domaće, sirovo i punomasno, bez obiranja i homogenizacije. Sirovo mleko zadržava svoje prirodne enzime, mlečnu mast i karakterističan pun ukus. Redovno se laboratorijski testira u Zavodu za mlekarstvo Srbije, a rezultate analiza delimo transparentno. Neki naši kupci biraju da ga konzumiraju sirovo, ali naša preporuka je da se mleko obavezno prokuva pre konzumiranja.",
   },
   {
-    question: "Koliko mleka mogu da poručim?",
-    answer: "Brzo biraš 2, 4 ili 8 litara po dostavi, ili uneseš drugu količinu. Paket sadrži četiri nedeljne ili dve dvonedeljne dostave. Ukupnu količinu i cenu vidiš pre potvrde.",
+    question: "Kako funkcioniše pretplata?",
+    answer: "Pretplata je paket od četiri isporuke koji se automatski obnavlja tek kada su sve četiri stvarno realizovane. Na nalogu možeš da dodaš proizvode, preskočiš dostavu, pauziraš ili otkažeš narednu obnovu.",
   },
   {
-    question: "Kada su dostave?",
-    answer: "Dostavljamo u Beogradu i Novom Sadu. Tačan sledeći termin za tvoju adresu vidiš u korpi i pre potvrde porudžbine.",
+    question: "Kada i gde dostavljate?",
+    answer: "U Beogradu utorkom i petkom, u Novom Sadu petkom. Mleko donosimo do tvojih vrata.",
   },
   {
-    question: "Kako funkcionišu povratne flaše?",
-    answer: "Mleko stiže u staklenim flašama. Od druge dostave vraćaš čiste korišćene flaše, a preuzimaš nove pune.",
+    question: "Mogu li da dodam proizvod samo za jednu isporuku?",
+    answer: "Da. Biraš da li dodatak stiže samo uz sledeću isporuku ili redovno, a doplatu obračunavamo automatski i vidiš je pre potvrde.",
   },
   {
-    question: "Do kada mogu da izmenim dostavu?",
-    answer: "Tačan rok je prikazan u korpi i na nalogu. Posle roka zaključavamo količine zbog pripreme i organizacije rute.",
+    question: "Šta radim sa staklenim flašama?",
+    answer: "Isperi ih i očisti, po mogućstvu u mašini za sudove, i vrati pri sledećoj dostavi. Mi ih zatim profesionalno peremo i sanitarno obrađujemo pre ponovne upotrebe.",
   },
   {
-    question: "Mogu li da preskočim, pauziram ili otkažem?",
-    answer: "Da. Na nalogu možeš preskočiti sledeću dostavu, pauzirati do izabranog datuma ili trajno otkazati redovnu dostavu.",
+    question: "Kako mogu da platim?",
+    answer: "Gotovinom pri prvoj isporuci ili uplatom na račun. Onlajn plaćanje će biti dostupno uskoro.",
   },
   {
-    question: "Kako se plaća?",
-    answer: "Jednokratnu porudžbinu plaćaš gotovinom pri dostavi. Kod redovne dostave ceo paket plaćaš pri prvom uručenju; preostale dostave tog paketa već su plaćene.",
-  },
-  {
-    question: "Koliko košta dostava?",
-    answer: "Dostava se naplaćuje po terminu. Tačan iznos za tvoj izbor i broj termina prikazan je u korpi pre potvrde.",
-  },
-  {
-    question: "Šta ako proizvod stigne oštećen?",
-    answer: "Prijavi problem uz broj porudžbine. Nakon provere evidentiramo zamenu ili kredit u skladu sa uslovima kupovine.",
+    question: "Do kada mogu da izmenim porudžbinu?",
+    answer: "Do 36 sati pre početka dostavne ture. Odbrojavanje do roka vidiš na vrhu sajta.",
   },
 ];
 
-/** Subscription questions, shown on the Mesečna pretplata page. No delivery price here. */
+/** Subscription questions, shown on the Mesečna pretplata page. */
 export const subscriptionQuestions = frequentlyAskedQuestions.filter(({ question }) =>
   [
-    "Da li moram da se pretplatim?",
-    "Koliko mleka mogu da poručim?",
-    "Kada su dostave?",
-    "Kako funkcionišu povratne flaše?",
-    "Do kada mogu da izmenim dostavu?",
-    "Mogu li da preskočim, pauziram ili otkažem?",
-    "Kako se plaća?",
+    "Kako funkcioniše pretplata?",
+    "Kada i gde dostavljate?",
+    "Mogu li da dodam proizvod samo za jednu isporuku?",
+    "Šta radim sa staklenim flašama?",
+    "Kako mogu da platim?",
+    "Do kada mogu da izmenim porudžbinu?",
   ].includes(question),
 );
 
@@ -99,23 +90,24 @@ export const homeCopy = {
     rhythmTitle: "Ti biraš ritam, mi donosimo.",
     rhythmSub: "Kravlje. Kozje. Oba.",
   },
-  band: ["MLEKO KOJE ZNAŠ", "KRAVLJE", "KOZJE", "TVOJ RITAM", "POVRATNE FLAŠE", "DOSTAVA DO VRATA"],
+  band: ["DIREKTNO SA FARME", "REDOVNO TESTIRANO", "STAKLENA AMBALAŽA", "DOSTAVA DO VRATA"],
   offer: {
     eyebrow: "",
     title: "Izaberi svoje mleko",
-    lead: "Biraš vrstu, količinu i koliko često dolazimo. Želiš oba? Može i to.",
+    lead: "Domaće sirovo mleko, u povratnoj staklenoj flaši, do tvojih vrata. Izaberi pretplatu ili jednokratnu kupovinu i količinu po dostavi.",
   },
   // Why this milk, first thing under the hero (17 Nov 2026). Facts only, no health
   // claims and no comparison with named dairies: both are regulated advertising.
+  // "Sa paše do flaše" (spec 19 Nov 2026, §4): four short icons, no long explanations.
   milk: {
-    title: "Ništa dodato. Ništa oduzeto.",
-    titleLines: ["Ništa dodato.", "Ništa oduzeto."],
-    lead: "Mleko kakvo daju krava i koza — samo ohlađeno i flaširano.",
+    title: "Sa paše do flaše",
+    titleLines: ["Sa paše", "do flaše"],
+    lead: "Znamo odakle dolazi tvoje mleko.",
     items: [
-      { icon: "sirovo", title: "Sirovo i punomasno", text: "Bez obiranja, bez homogenizacije, bez produžavanja roka." },
-      { icon: "sveze", title: "Sveže, pravo do tebe", text: "Preuzimamo ga posle muže i donosimo pravo na tvoja vrata." },
-      { icon: "poreklo", title: "Znaš odakle je", text: "Iza svake flaše je prava farma i pravi ljudi." },
-      { icon: "ukus", title: "Ukus koji pamtiš", text: "Gusto, sa kajmakom, kao nekad." },
+      { icon: "sirovo", title: "Sirovo i punomasno" },
+      { icon: "testirano", title: "Redovno testirano" },
+      { icon: "poreklo", title: "Poznato poreklo" },
+      { icon: "sveze", title: "Sveže do tvojih vrata" },
     ],
   },
   origin: {
@@ -134,25 +126,21 @@ export const homeCopy = {
       },
       {
         title: "Svake nedelje",
-        text: "Četiri dostave u paketu. Plaćaš pri prvoj, a ostale stižu jednom nedeljno.",
-      },
-      {
-        title: "Svake 2 nedelje",
-        text: "Dve dostave u paketu, na svake dve nedelje. Preskakanje i pauzu uređuješ na nalogu.",
+        text: "Četiri dostave u paketu, jednom nedeljno, plaćene unapred.",
       },
     ],
     note: "Promena plana? Izmene, preskakanje i pauza mogući su do roka navedenog uz svaku dostavu, na tvom nalogu.",
   },
   faq: {
-    eyebrow: "Pre prve flaše",
-    title: "Nema glupih pitanja.",
+    eyebrow: "Nema glupih pitanja",
+    title: "Pre prve flaše",
     contactPrompt: "Tvoje pitanje nije tu?",
     contactLink: "Piši nam.",
   },
   social: {
     eyebrow: "@mleko_i_mleko",
     title: "Mleko uživo.",
-    lead: "Sa farme, iz mlekomata i iz kuhinje — pogledaj kako izgleda pravo mleko.",
+    lead: "Upoznaj farmu, vidi kako radi mlekomat i pozdravi Rumenku.",
     instagram: "Prati nas na Instagramu",
     tiktok: "Prati nas na TikToku",
   },

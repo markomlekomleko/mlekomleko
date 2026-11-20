@@ -23,7 +23,7 @@ test("responsive navigation has no overflow and exposes every primary destinatio
     await menu.click();
     await expect(menu).toHaveAttribute("aria-expanded", "true");
     const nav = page.getByRole("navigation", { name: cyr("Glavna navigacija") });
-    for (const label of ["Izaberi svoje mleko", "Mesečna pretplata", "Poreklo tvog mleka", "Mlekomati", "Česta pitanja", "Kontakt"]) {
+    for (const label of ["Početna", "Izaberi svoje mleko", "Mlekomati", "O nama", "Analize"]) {
       await expect(nav.getByRole("link", { name: cyr(label), exact: true })).toBeVisible();
     }
     await expect(nav.getByRole("link", { name: cyr("Moj nalog"), exact: true })).toBeVisible();
@@ -43,14 +43,15 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   const email = `e2e-${crypto.randomUUID()}@example.test`;
   await page.goto("/prodavnica");
   await acceptNecessary(page);
-  const cards = page.locator(".configurator");
-  expect(await cards.count()).toBeGreaterThanOrEqual(2);
-  await cards.nth(0).getByRole("button", { name: cyr("Redovna dostava") }).click();
-  await expect(cards.nth(0).getByRole("button", { name: cyr("Redovna dostava") })).toHaveAttribute("aria-pressed", "true");
+  // Goat milk is off sale (spec 19 Nov 2026): its card only collects emails.
+  const cards = page.locator(".configurator:not(.goat-waitlist)");
+  expect(await cards.count()).toBeGreaterThanOrEqual(1);
+  // The subscription is selected by default.
+  await expect(cards.nth(0).getByRole("button", { name: cyr("Pretplata") })).toHaveAttribute("aria-pressed", "true");
   await cards.nth(0).locator(".configurator-actions button", { hasText: cyr("Napuni frižider") }).click();
   await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
-  await cards.nth(1).getByRole("button", { name: cyr("Jednokratno") }).click();
-  await cards.nth(1).locator(".configurator-actions button", { hasText: cyr("Napuni frižider") }).click();
+  await cards.nth(0).getByRole("button", { name: cyr("Jednokratna kupovina") }).click();
+  await cards.nth(0).locator(".configurator-actions button", { hasText: cyr("Napuni frižider") }).click();
   await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
   await page.locator(".cart-link").click();
   await expect(page.locator(".drawer-item")).toHaveCount(2);
@@ -226,21 +227,19 @@ test("hero priorities remain visible and a custom milk selection survives the ca
 
   const card = page.locator(".configurator").first();
   await card.getByRole("button", { name: cyr("4 L"), exact: true }).click();
-  // The home card is trimmed (17 Nov 2026): no totals block, no details link; the price stays.
-  await expect(card.locator(".configurator-total")).toHaveCount(0);
-  await expect(card.locator(".configurator-price strong")).toBeVisible();
+  // Spec 19 Nov 2026: milk, delivery and the total per delivery are shown on the card.
+  await expect(card.locator(".configurator-receipt")).toBeVisible();
   await card.getByRole("button", { name: cyr("Druga količina"), exact: true }).click();
   await card.getByRole("spinbutton").fill("3");
-  await card.getByRole("button", { name: cyr("Redovna dostava") }).click();
-  await card.getByRole("button", { name: cyr("Svake 2 nedelje") }).click();
+  await card.getByRole("button", { name: cyr("Pretplata") }).click();
   await card.locator(".configurator-actions button", { hasText: cyr("Napuni frižider") }).click();
   await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
   await page.locator(".cart-link").click();
 
-  await expect(page.locator(".drawer-item-meta").first()).toContainText(cyr("3 L po dostavi · svake 2 nedelje"));
+  await expect(page.locator(".drawer-item-meta").first()).toContainText(cyr("3 L po dostavi · svake nedelje"));
   await page.locator(".cart-drawer").getByRole("link", { name: cyr("Otvori ceo frižider") }).click();
   await expect(page.getByRole("spinbutton", { name: cyr("Količina za Domaće kravlje mleko") })).toHaveValue("3");
-  await expect(page.getByLabel(cyr("Ritam isporuke za Domaće kravlje mleko"))).toHaveValue("biweekly");
+  await expect(page.getByLabel(cyr("Ritam isporuke za Domaće kravlje mleko"))).toHaveValue("weekly");
   await expect(page.getByLabel(cyr("Tip kupovine za Domaće kravlje mleko"))).toHaveValue("subscription");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });

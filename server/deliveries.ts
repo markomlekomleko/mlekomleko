@@ -11,6 +11,7 @@ import { buildXlsx } from "./xlsx";
 import { mutationGuard } from "./mutation-guard";
 import { buildSpokeCsv } from "../integrations/spoke-csv.mjs";
 import { packagePaymentEligibleSql } from "./cash-collection";
+import { pendingGiftRewards } from "./loyalty";
 
 interface DeliveryRow extends Record<string, unknown> {
   id: string; delivery_date: string; cutoff_at: string; status: "open" | "locked" | "completed";
@@ -23,7 +24,7 @@ interface CustomerSnapshotRow extends Record<string, unknown> {
 }
 
 interface ItemSnapshotRow extends Record<string, unknown> {
-  source_id: string; product_id: string; product_name: string; unit_label: string; quantity: number; unit_price_minor: number; source_type: "order" | "subscription" | "next_only"; package_line_id?: string | null; order_item_id?: string | null;
+  source_id: string; product_id: string; product_name: string; unit_label: string; quantity: number; unit_price_minor: number; source_type: "order" | "subscription" | "next_only" | "surcharge" | "loyalty_gift"; package_line_id?: string | null; order_item_id?: string | null; package_surcharge_id?: string | null; loyalty_reward_id?: string | null;
 }
 
 interface DeliveryOrderView extends Record<string, unknown> {
@@ -108,6 +109,14 @@ export async function generateDelivery(rawDate: unknown, rawKey: string | null, 
     return true;
   }));
   const addons = subscriptionSources.length ? await all<ItemSnapshotRow>(`SELECT a.subscription_id AS source_id, (SELECT id FROM order_items WHERE order_id=a.order_id LIMIT 1) AS order_item_id, a.product_id, p.name AS product_name, p.unit_label, a.quantity, a.unit_price_minor, 'next_only' AS source_type FROM next_delivery_addons a JOIN products p ON p.id = a.product_id WHERE a.delivery_date = ? AND a.consumed_at IS NULL AND a.cancelled_at IS NULL AND a.subscription_id IN (${subscriptionSources.map(() => "?").join(",")})`, date, ...subscriptionSources.map((source) => source.subscription_id)) : [];
+  // Regular surcharges (doplata) ride on each remaining realized visit of their package, like a package line.
+  const surcharges = subscriptionSources.length ? await all<ItemSnapshotRow & { deliveries: number; interval_days: number; reserved: number }>(`SELECT ps.subscription_id AS source_id, ps.id AS package_surcharge_id, ps.order_item_id, ps.product_id, oi.product_name, oi.unit_label, ps.quantity_per_delivery AS quantity, ps.unit_price_minor, 'surcharge' AS source_type, ps.deliveries, ps.interval_days,
+      (SELECT COALESCE(SUM(CASE WHEN dor.status = 'delivered' THEN COALESCE(di.delivered_quantity,di.quantity) ELSE di.quantity END),0) FROM delivery_items di JOIN delivery_orders dor ON dor.id = di.delivery_order_id JOIN deliveries d ON d.id = dor.delivery_id WHERE di.package_surcharge_id = ps.id AND dor.status IN ('locked','delivered') AND d.delivery_date != ?) AS reserved
+    FROM package_surcharges ps JOIN order_items oi ON oi.id = ps.order_item_id JOIN orders o ON o.id = ps.order_id
+    WHERE ps.scope = 'regular' AND ps.status = 'active' AND o.fulfillment_status != 'cancelled' AND ps.subscription_id IN (${subscriptionSources.map(() => "?").join(",")})`, date, ...subscriptionSources.map((source) => source.subscription_id)) : [];
+  // Loyalty gift (2 L, price 0): attached to the first realized visit after the reward was applied.
+  const gifts = await pendingGiftRewards(date);
+  const giftItem = (reward: (typeof gifts)[number], sourceId: string): ItemSnapshotRow => ({ source_id: sourceId, product_id: reward.gift_product_id, product_name: `${reward.product_name} (poklon za vernost)`, unit_label: reward.unit_label, quantity: Number(reward.gift_quantity), unit_price_minor: 0, source_type: "loyalty_gift", loyalty_reward_id: reward.id });
 
   const conditions = [delivery ? "EXISTS (SELECT 1 FROM deliveries WHERE id = ? AND status = 'open' AND generation_key = ?)" : "NOT EXISTS (SELECT 1 FROM deliveries WHERE delivery_date = ?)"];
   const guardBindings: SqlValue[] = delivery ? [delivery.id, delivery.generation_key] : [date];
@@ -136,12 +145,32 @@ export async function generateDelivery(rawDate: unknown, rawKey: string | null, 
       customer_id: source.customer_id, customer_snapshot_json: JSON.stringify(snapshot), customer_snapshot: snapshot,
       status: "planned", items: sourceItems.map(item => ({ ...item, delivery_order_id: id })) });
     statements.push({ sql: "INSERT INTO delivery_orders (id, delivery_id, source_order_id, subscription_id, customer_id, customer_snapshot_json, note, status) VALUES (?, ?, ?, ?, ?, ?, ?, 'planned')", bindings: [id, deliveryId, sourceOrderId, subscriptionId, source.customer_id, JSON.stringify(snapshot), source.delivery_note] });
-    for (const item of sourceItems) statements.push({ sql: "INSERT INTO delivery_items (id, delivery_order_id, product_id, product_name, unit_label, quantity, unit_price_minor, source_type, package_line_id, order_item_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", bindings: [crypto.randomUUID(), id, item.product_id, item.product_name, item.unit_label, item.quantity, item.unit_price_minor, item.source_type, item.package_line_id ?? null, item.order_item_id ?? null] });
+    for (const item of sourceItems) statements.push({ sql: "INSERT INTO delivery_items (id, delivery_order_id, product_id, product_name, unit_label, quantity, unit_price_minor, source_type, package_line_id, order_item_id, package_surcharge_id, loyalty_reward_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", bindings: [crypto.randomUUID(), id, item.product_id, item.product_name, item.unit_label, item.quantity, item.unit_price_minor, item.source_type, item.package_line_id ?? null, item.order_item_id ?? null, item.package_surcharge_id ?? null, item.loyalty_reward_id ?? null] });
   };
-  for (const source of oneTimeSources) addDeliveryOrder(source, source.source_order_id, null, orderItems.filter((item) => item.source_id === source.source_order_id));
+  for (const source of oneTimeSources) {
+    const items = orderItems.filter((item) => item.source_id === source.source_order_id);
+    const gift = gifts.find((reward) => reward.applied_order_id === source.source_order_id && !reward.applied_subscription_id);
+    addDeliveryOrder(source, source.source_order_id, null, gift && items.some((item) => item.quantity > 0) ? [...items, giftItem(gift, source.source_order_id)] : items);
+  }
   for (const source of subscriptionSources) {
-    const due = subscriptionItems.filter((item) => item.source_id === source.subscription_id && isCadenceDue(item.cadence_anchor_date, date, item.cadence));
-    addDeliveryOrder(source, null, source.subscription_id, [...due, ...addons.filter((item) => item.source_id === source.subscription_id)]);
+    const sourceItems = subscriptionItems.filter((item) => item.source_id === source.subscription_id);
+    const due = sourceItems.filter((item) => isCadenceDue(item.cadence_anchor_date, date, item.cadence) && item.quantity > 0);
+    // First visit on or after next_delivery_date that actually carries the subscription.
+    let firstDate = source.next_delivery_date ?? date;
+    for (let n = 0; n < 110 && firstDate < date && (settings.holidays.includes(firstDate) || !sourceItems.some((item) => isCadenceDue(item.cadence_anchor_date, firstDate, item.cadence))); n++) firstDate = addLocalDays(firstDate, 7);
+    const extras: ItemSnapshotRow[] = [];
+    if (due.length) {
+      for (const item of surcharges.filter((row) => row.source_id === source.subscription_id)) {
+        const offset = daysBetween(firstDate, date);
+        const index = offset / Number(item.interval_days);
+        const remaining = Number(item.quantity) * Number(item.deliveries) - Number(item.reserved) - Math.max(0, Math.floor(index)) * Number(item.quantity);
+        if (offset < 0 || !Number.isInteger(index) || remaining <= 0) continue;
+        extras.push({ ...item, quantity: Math.min(Number(item.quantity), remaining) });
+      }
+      const gift = gifts.find((reward) => reward.applied_subscription_id === source.subscription_id);
+      if (gift && firstDate === date) extras.push(giftItem(gift, source.subscription_id));
+    }
+    addDeliveryOrder(source, null, source.subscription_id, [...due, ...extras, ...addons.filter((item) => item.source_id === source.subscription_id)]);
   }
   if (preview) {
     const totals = new Map<string, Record<string, unknown>>();

@@ -4,7 +4,7 @@ import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
 import { canonicalUrl } from "../lib/seo";
 import { MlekomatMap, type Mlekomat } from "./mlekomat-map";
-import { PartnerForm } from "./partner-form";
+import { LeadForm } from "./partner-form";
 
 export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
   title: "Mlekomati",
@@ -18,7 +18,7 @@ const locations: readonly Mlekomat[] = [
   // Coordinates from OpenStreetMap, cross-checked on Google Maps (18 Nov 2026).
   { name: "Beo šoping centar", query: "Beo Shopping Center, Beograd", milk: "kravlje mleko", lat: 44.78673, lng: 20.50256 },
   { name: "Lidl Bežanijska kosa", query: "Lidl Bežanijska kosa, Beograd", milk: "kravlje i kozje mleko", lat: 44.81794, lng: 20.38335 },
-  { name: "Mega Roda Novi Beograd", query: "Mega Roda, Đorđa Stanojevića 35, Beograd", milk: "kravlje mleko", lat: 44.80971, lng: 20.39687 },
+  { name: "Mega Roda Novi Beograd", address: "Đorđa Stanojevića 35, Novi Beograd", query: "Mega Roda, Đorđa Stanojevića 35, Beograd", milk: "kravlje mleko", lat: 44.80971, lng: 20.39687 },
 ];
 
 // The client's own mlekomat photos (sent 17 Nov 2026), web-sized into
@@ -96,18 +96,20 @@ export default async function MlekomatiPage() {
       </section>
 
       <section id="partnerstvo" className="content-band content-band--soft" aria-labelledby="partner-title">
-        <div className="page-shell partner-grid">
-          <div className="page-heading">
-            <p className="eyebrow">Poslovno partnerstvo</p>
-            <h2 id="partner-title">Imaš prostor? Postavimo mlekomat.</h2>
-            <p className="lead">Pijaca, tržni centar, market ili pumpa — ako kod tebe prolaze ljudi koji vole pravo mleko, mi donosimo mlekomat, punimo ga i održavamo.</p>
-            <ul className="content-list partner-points">
-              <li><strong>Mi postavljamo i punimo</strong><span>Aparat, mleko i održavanje su naša briga.</span></li>
-              <li><strong>Ti daješ mesto</strong><span>Malo prostora i priključak za struju.</span></li>
-              <li><strong>Dogovor po meri</strong><span>Najam ili partnerstvo — dogovaramo se za svaku lokaciju.</span></li>
-            </ul>
+        <div className="page-shell">
+          <div className="section-head"><p className="eyebrow">Poslovno partnerstvo</p><h2 id="partner-title">Mlekomat kod tebe?</h2></div>
+          <div className="lead-forms">
+            <article className="lead-form-card" aria-labelledby="prostor-title">
+              <h3 id="prostor-title">Imaš prostor za naš mlekomat?</h3>
+              <p>Pijaca, tržni centar, market ili pumpa — ako kod tebe prolaze ljudi koji vole pravo mleko, mi donosimo mlekomat, punimo ga i održavamo.</p>
+              <LeadForm kind="mlekomat_space" />
+            </article>
+            <article className="lead-form-card" aria-labelledby="svoj-title">
+              <h3 id="svoj-title">Želiš svoj mlekomat?</h3>
+              <p>Iznajmljivanje mlekomata je u pripremi i još nije dostupno. Ostavi kontakt i javićemo ti se čim krene.</p>
+              <LeadForm kind="mlekomat_rent" />
+            </article>
           </div>
-          <PartnerForm />
         </div>
       </section>
     </div>

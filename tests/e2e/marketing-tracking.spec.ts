@@ -17,7 +17,7 @@ test("no measurement storage before consent; SPA views and campaign survive navi
   const before = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), attributionKey);
   expect(before.lastTouch.parameters.utm_campaign).toBe("e2e-jesen");
   expect(JSON.stringify(before)).not.toContain("private@example.test");
-  await page.getByRole("navigation", {name:cyr("Pomoć")}).getByRole("link", {name:cyr("Česta pitanja"),exact:true}).click();
+  await page.getByRole("navigation", {name:cyr("Mleko i Mleko")}).getByRole("link", {name:cyr("Česta pitanja"),exact:true}).click();
   await expect(page).toHaveURL(/\/faq$/);
   await expect.poll(() => events.filter(event => event.eventName === "page_view").length).toBe(2);
   const after = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), attributionKey);

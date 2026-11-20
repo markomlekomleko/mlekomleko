@@ -183,11 +183,12 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
   assert.match(html, /Млеко које знаш/);
   assert.match(html, /class="hero-slider"/);
   assert.match(html, /Изабери своје млеко/);
-  assert.match(html, /href="\/#izaberite-mleko"/);
+  // Final spec (19 Nov 2026): the menu opens the separate shop; subscription info sits in the footer.
+  assert.match(html, /href="\/prodavnica"/);
+  assert.match(html, /href="\/analize"/);
   assert.match(html, /href="\/kako-funkcionise"/);
   assert.match(html, /href="\/gde-kupiti"/);
   assert.match(html, /href="\/nalog"/);
-  assert.doesNotMatch(html, /href="\/prodavnica"/);
   assert.match(html, /<img[^>]+(?:src|srcSet)="[^"]*mleko-i-mleko-logo-mark(?:\.|%2E)png/i);
   assert.match(html, /class="skip-link"[^>]*href="#glavni-sadrzaj"/);
   assert.match(html, /<main id="glavni-sadrzaj">/);
@@ -212,7 +213,7 @@ test("public catalog and product content are present in server-rendered HTML", a
 
   assert.equal(storeResponse.status, 200);
   const storeHtml = await storeResponse.text();
-  assert.match(storeHtml, /<h1[^>]*>Добро са фарме\. Право на сто\.<\/h1>/);
+  assert.match(storeHtml, /<h1[^>]*>Изабери своје млеко<\/h1>/);
   assert.match(storeHtml, /href="\/proizvodi\/kravlje-mleko"/);
   assert.match(storeHtml, /Кравље млеко/);
   assert.doesNotMatch(storeHtml, /Učitavamo proizvode|Учитавамо производе/);

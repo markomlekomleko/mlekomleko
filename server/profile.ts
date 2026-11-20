@@ -1,7 +1,7 @@
 import { assertDomain, optionalString, requiredString } from './domain';
 import { all, batch, first, type Row, type SqlValue } from './sql';
 import { shippingSnapshot } from './address-snapshot';
-import { getBusinessSettings } from './settings';
+import { getBusinessSettings, isServiceablePostalCode } from './settings';
 import { serviceCity } from './service-policy';
 import { assertDeliveryEditable } from './delivery-cutoff';
 import { audit } from './outbox';
@@ -11,7 +11,9 @@ export async function updateProfile(customerId:string,input:Row){
  const saved=shippingSnapshot(before);const next={...saved};
  for(const key of ['fullName','phone','addressLine1','city','postalCode'])next[key as keyof typeof next]=requiredString(input[key]??saved[key as keyof typeof saved],key,200);
  for(const key of ['addressLine2','deliveryNote'])if(input[key]!==undefined)next[key as keyof typeof next]=optionalString(input[key],key,500);
- const city=serviceCity(await getBusinessSettings(),String(next.city),String(next.postalCode));assertDomain(city,'DELIVERY_AREA_UNAVAILABLE','Adresa nije u zoni dostave.',422);next.city=city;
+ // Self-service address change: the same delivery-zone rules as checkout (city and postal code).
+ const settings=await getBusinessSettings();
+ const city=serviceCity(settings,String(next.city),String(next.postalCode));assertDomain(city&&isServiceablePostalCode(settings,String(next.postalCode)),'DELIVERY_AREA_UNAVAILABLE','Adresa nije u zoni dostave.',422,{field:'postalCode'});next.city=city;
  const statements: {sql:string;bindings:SqlValue[]}[]=[{sql:'UPDATE customers SET full_name=?,phone=?,address_line_1=?,address_line_2=?,city=?,postal_code=?,delivery_note=?,updated_at=? WHERE id=?',bindings:[String(next.fullName),String(next.phone),String(next.addressLine1),next.addressLine2 as string|null,city,String(next.postalCode),next.deliveryNote as string|null,new Date().toISOString(),customerId]}];
  if(input.smsNotifications!==undefined){
   if(input.smsNotifications===true)assertDomain(await first("SELECT customer_id FROM customer_credentials WHERE customer_id=? AND whatsapp_verified_at IS NOT NULL",customerId),'PHONE_NOT_VERIFIED','Najpre potvrdite broj u podešavanjima prijave.',409);

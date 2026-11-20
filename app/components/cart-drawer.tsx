@@ -18,7 +18,6 @@ import {
   pluralUnits,
   quantityLabel,
   type CartQuote,
-  type DeliveryCadence,
   type Product,
   type PurchaseType,
 } from "../lib/frontend";
@@ -288,18 +287,7 @@ export function CartDrawer() {
                             </select>
                           </label>
                           {item.purchaseType === "subscription" ? (
-                            <label className="field drawer-item-cadence">
-                              <span className="visually-hidden">{`Ritam za ${item.name}`}</span>
-                              <select
-                                value={item.cadence ?? "weekly"}
-                                onChange={(event) =>
-                                  updateItem(item.key, { cadence: event.target.value as DeliveryCadence })
-                                }
-                              >
-                                <option value="weekly">Svake nedelje</option>
-                                <option value="biweekly">Svake 2 nedelje</option>
-                              </select>
-                            </label>
+                            <span className="field drawer-item-cadence">Svake nedelje</span>
                           ) : null}
                           <button
                             type="button"

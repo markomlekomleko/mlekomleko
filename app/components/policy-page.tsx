@@ -33,6 +33,26 @@ export function ContentStamp() {
   ));
 }
 
+/**
+ * The contact page's round animation (spec 19 Nov 2026, §14): the official Mleko i Mleko
+ * logo — wordmark with the goat and the cow — in the centre, and bottles and drops
+ * turning slowly around it. Same colours and stamp style as ContentStamp, drawn smaller.
+ */
+export function ContactStamp() {
+  return (
+    <svg className="content-stamp contact-stamp" viewBox="0 0 160 160" aria-hidden="true" focusable="false">
+      <circle className="content-stamp-disc" cx="80" cy="80" r="78" />
+      <circle className="content-stamp-inner" cx="80" cy="80" r="46" />
+      <g className="content-stamp-spin">
+        {Array.from({ length: 8 }, (_, index) => (
+          <path key={index} d={glyphPaths[stampRing[index % stampRing.length]]} transform={`rotate(${index * 45} 80 80) translate(69.1 8.1) scale(0.34)`} />
+        ))}
+      </g>
+      <image href="/images/mleko-i-mleko-logo-mark.png" x="35" y="35" width="90" height="90" />
+    </svg>
+  );
+}
+
 export function PolicyPage({ eyebrow, title, intro, sections }: { eyebrow: string; title: string; intro: string; sections: PolicySection[] }) {
   const localize = useLocalize();
   return localize((

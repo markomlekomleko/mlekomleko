@@ -7,7 +7,7 @@ import { canonicalUrl } from "../lib/seo";
 import { getStorefront } from "../../server/storefront";
 
 export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
-  title: "Prodavnica",
+  title: "Izaberi svoje mleko",
   description:
     "Domaći proizvodi sa dostavom na tvoju adresu. Istraži ponudu prodavnice Mleko i Mleko i izaberi količinu i ritam dostave.",
   alternates: { canonical: canonicalUrl("/prodavnica") },

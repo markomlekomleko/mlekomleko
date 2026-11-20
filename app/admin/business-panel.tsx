@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { PolicyEditor } from "./policy-editor";
 import { MessagesPanel } from "./messages-panel";
+import { LeadsPanel } from "./leads-panel";
 import { LegacyPanel } from "./legacy-panel";
 import { formatMoney } from '../lib/frontend';
 type Row=Record<string,unknown>;
@@ -19,6 +20,7 @@ export function BusinessPanel({request,role}:{request:Requester;role:string}){
  <PolicyEditor key={JSON.stringify(settings)} settings={settings} busy={busy} onSave={v=>void act('/api/admin/settings',v,'PATCH')} />
  </>:null}
  {role==='owner'?<details><summary>Zaposleni i pristup</summary><form onSubmit={e=>{const v=values(e);void act('/api/admin/staff',v);}}><div className="form-grid"><label className="field"><span>Ime zaposlenog</span><input name="fullName" required /></label><label className="field"><span>Email za prijavu</span><input name="email" type="email" required /></label><label className="field"><span>Početna lozinka (najmanje 12 znakova)</span><input name="password" type="password" minLength={12} autoComplete="new-password" required /></label><label className="field"><span>Pristup</span><select name="role"><option value="driver">Dostavljač — dostave</option><option value="finance">Finansije — računi i povraćaji</option><option value="manager">Menadžer — vođenje prodaje</option></select></label></div><button className="button small" disabled={busy}>Dodaj zaposlenog</button></form><ul>{staff.map(person=><li key={String(person.id)}>{String(person.full_name)} · {String(person.email)} · {String(person.role)} <button className="text-button" disabled={busy} onClick={()=>void act('/api/admin/staff',{id:person.id,isActive:!person.is_active})}>{person.is_active?'Ukini pristup':'Vrati pristup'}</button></li>)}</ul></details>:null}
+ <LeadsPanel request={request} />
  <MessagesPanel request={request} />
  {role!=="finance"?<LegacyPanel request={request} />:null}
  <details><summary>Ponovni pokušaj kartične naplate</summary><p>Neuspešna naplata može dobiti najviše tri pokušaja. Nepoznat ishod zahteva proveru u banci. Dok banka nije povezana, zahtevi ostaju na čekanju.</p><form onSubmit={e=>{const v=values(e);void act('/api/admin/payments',{action:'retry',orderId:v.orderId});}}><label className="field"><span>Porudžbina za ponovnu naplatu</span><select name="orderId" required><option value="">Izaberite porudžbinu</option>{orders.map(o=><option key={String(o.id)} value={String(o.id)}>{String(o.order_number)} · {String(o.full_name??"")} · {formatMoney(Number(o.total_minor)/100)}</option>)}</select></label><button className="button small" disabled={busy}>Stavi u red za naplatu</button></form></details>

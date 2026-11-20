@@ -13,7 +13,6 @@ import {
   formatMoney,
   normalizeProduct,
   type CartQuote,
-  type DeliveryCadence,
   type Product,
   type PurchaseType,
 } from "../lib/frontend";
@@ -137,7 +136,7 @@ export function CartView() {
               <article className="card cart-item" key={item.key}>
                 <div><h2><a href={`/proizvodi/${encodeURIComponent(item.slug)}`}>{item.name}</a></h2><p className="muted small-text">{line ? `${formatMoney(line.unitPriceMinor / 100, locale)} / ${line.unitLabel}` : item.unit}</p></div>
                 <label className="field"><span>Tip kupovine</span><select aria-label={`Tip kupovine za ${item.name}`} value={item.purchaseType} onChange={(event) => { const purchaseType = event.target.value as PurchaseType; updateItem(item.key, { purchaseType, cadence: purchaseType === "subscription" ? "weekly" : undefined }); }}><option value="one_time">Jednokratno</option><option value="subscription">Redovna dostava</option></select></label>
-                <label className="field"><span>Ritam</span><select aria-label={`Ritam isporuke za ${item.name}`} disabled={item.purchaseType === "one_time"} value={item.cadence ?? "weekly"} onChange={(event) => updateItem(item.key, { cadence: event.target.value as DeliveryCadence })}><option value="weekly">Svake nedelje</option><option value="biweekly">Svake 2 nedelje</option></select></label>
+                <div className="field"><span>Ritam</span><p className="small-text">{item.purchaseType === "one_time" ? "Jednom" : "Svake nedelje"}</p></div>
                 <label className="field"><span>Količina</span><input aria-label={`Količina za ${item.name}`} type="number" min="1" max="99" value={item.quantity} onChange={(event) => updateItem(item.key, { quantity: Math.max(1, Number(event.target.value) || 1) })} /></label>
                 <div className="cart-line-total"><p className="price">{line ? formatMoney(line.lineTotalMinor / 100, locale) : "…"}</p>{line && line.occurrences > 1 ? <small>{line.occurrences} isporuke u paketu</small> : null}<button className="text-button danger-text" type="button" onClick={() => removeItem(item.key)} aria-label={`Ukloni ${item.name} iz korpe`}>Ukloni</button></div>
               </article>

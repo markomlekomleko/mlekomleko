@@ -5,6 +5,8 @@ import { useLocalize } from "@/app/lib/i18n/client";
 import { useRef, useState } from "react";
 import { homeCopy } from "../../lib/content";
 
+type Action = { label: string; href: string; icon: string };
+
 type Slide = {
   image: string;
   /** Where the photo's subject sits, so a phone crop keeps it in frame. */
@@ -12,19 +14,21 @@ type Slide = {
   alt: string;
   title: string;
   lead: string;
-  /** Small pictogram before the button label, decorative. */
-  icon: string;
-  action: { label: string; href: string };
+  actions: readonly Action[];
 };
 
+/** Public Google profile of the business, where its real reviews live. */
+export const GOOGLE_REVIEWS_URL = "https://www.google.com/maps/search/?api=1&query=Mleko%20i%20Mleko%20Beograd";
+
 /**
- * The home hero after Farmit (18 Nov 2026): full-screen photos that slide in from the
- * right every three seconds, a centred headline in sentence case, one line of copy, a
- * single white pill action with a pictogram, the same reassurance line under every
- * slide, and a segmented progress bar that fills like a loading bar. The bar's own
- * animation is the timer: keyboard focus or a touch pauses it, reduced motion turns
- * autoplay off. A copy of the first slide sits after the last, so the loop always
- * moves forward and then snaps back to the start unseen.
+ * The home hero (spec 19 Nov 2026, §2): seven full-screen slides that slide in from the
+ * right every three seconds, a centred headline, one line of copy and the slide's action
+ * (two on the purchase-type slide, each opening the shop with that type chosen), with a
+ * segmented progress bar that fills like a loading bar. The bar's own animation is the
+ * timer: keyboard focus or a touch pauses it, reduced motion turns autoplay off. A copy
+ * of the first slide sits after the last, so the loop always moves forward.
+ * Slide 5 is the real photo of a partner farm family; the reviews slide links to the
+ * real Google reviews and never quotes invented ones.
  */
 const slides: readonly Slide[] = [
   {
@@ -32,36 +36,59 @@ const slides: readonly Slide[] = [
     focus: "65% 50%",
     alt: "Mleko se sipa u čašu",
     title: "Mleko koje znaš.",
-    lead: "Sirovo i punomasno, sa malih domaćih farmi, u povratnoj staklenoj flaši.",
-    icon: "🥛",
-    action: { label: "Izaberi svoje mleko", href: "#izaberite-mleko" },
-  },
-  {
-    image: "/images/hero/flase.webp",
-    focus: "78% 60%",
-    alt: "Flaše kravljeg i kozjeg mleka na drvenom stolu",
-    title: "Sveže mleko do praga.",
-    lead: "Biraš mleko i ritam — mi donosimo. Preskakanje i pauzu uređuješ na nalogu.",
-    icon: "🚚",
-    action: { label: "Počni pretplatu", href: "#izaberite-mleko" },
+    lead: "Domaće sirovo mleko direktno sa farme, poznatog porekla, redovno testirano i dostavljeno na tvoja vrata.",
+    actions: [{ icon: "🥛", label: "Izaberi svoje mleko", href: "/prodavnica" }],
   },
   {
     image: "/images/hero/mlekomat.webp",
     focus: "50% 55%",
     alt: "Ljudi ispred mlekomata Mleko i Mleko u tržnom centru",
     title: "Natoči sebi pravo mleko.",
-    lead: "Domaće mleko iz mlekomata u Beogradu — natočiš koliko ti treba i platiš na licu mesta, gotovinom ili karticom.",
-    icon: "📍",
-    action: { label: "Pronađi mlekomat", href: "/gde-kupiti" },
+    lead: "Pravo domaće mleko, bez odlaska na selo — na našim mlekomatima.",
+    actions: [{ icon: "📍", label: "Pronađi svoj mlekomat", href: "/gde-kupiti" }],
   },
   {
-    image: "/images/hero/farma.webp",
+    image: "/images/hero/paket.webp",
     focus: "70% 60%",
-    alt: "Krave na pašnjaku pored seoske kuće u svitanje",
-    title: "Sa paše do flaše.",
-    lead: "Biramo male domaće farme i radimo direktno sa domaćinima.",
-    icon: "🐄",
-    action: { label: "Poreklo tvog mleka", href: "/farme" },
+    alt: "Korpa sa staklenim flašama mleka i jedna flaša pored nje, na pragu kuće",
+    title: "Ozbiljna veza ili avantura?",
+    lead: "Pretplata sa redovnom dostavom ili jednokratna kupovina — ti biraš.",
+    actions: [
+      { icon: "💙", label: "Pretplata", href: "/prodavnica?tip=pretplata" },
+      { icon: "✨", label: "Jednokratno", href: "/prodavnica?tip=jednokratno" },
+    ],
+  },
+  {
+    image: "/images/hero/flase.webp",
+    focus: "78% 60%",
+    alt: "Staklene flaše kravljeg i kozjeg mleka na drvenom stolu",
+    title: "Pravo mleko zaslužuje staklo.",
+    lead: "Povratne staklene flaše: praznu čistu flašu vratiš pri sledećoj dostavi, a mi donesemo punu.",
+    actions: [{ icon: "🔁", label: "Pogledaj kako funkcioniše", href: "/kako-funkcionise" }],
+  },
+  {
+    image: "/images/domacini/porodica-glisic.webp",
+    focus: "50% 45%",
+    alt: "Porodica Glišić ispred bala sena na svojoj farmi",
+    title: "Znaš od koga piješ.",
+    lead: "Pravi proizvođači i prave farme — ljudi koji iza svog mleka stoje imenom i prezimenom.",
+    actions: [{ icon: "🐄", label: "Upoznaj naše farmere", href: "/o-nama#farmeri" }],
+  },
+  {
+    image: "/images/hero/analize.webp",
+    focus: "70% 50%",
+    alt: "Uzorci mleka u epruvetama na laboratorijskom stolu",
+    title: "Ne veruj nam na reč.",
+    lead: "Redovne laboratorijske analize i transparentni izveštaji koje možeš sam da pogledaš.",
+    actions: [{ icon: "🔬", label: "Uveri se i ti", href: "/analize" }],
+  },
+  {
+    image: "/images/hero/utisci.webp",
+    focus: "50% 40%",
+    alt: "Porodica za doručkom, mama sipa mleko iz staklene flaše",
+    title: "Vi najbolje pričate o nama. 💙",
+    lead: "Pročitaj šta kažu naši kupci — stvarne recenzije na Google-u.",
+    actions: [{ icon: "⭐", label: "Pogledaj utiske", href: GOOGLE_REVIEWS_URL }],
   },
 ];
 
@@ -147,10 +174,23 @@ export function HeroSlider() {
               <div className="page-shell hero-slide-copy">
                 <h2 className="hero-slide-title">{slide.title}</h2>
                 <p className="hero-slide-lead">{slide.lead}</p>
-                <a className={`hero-slide-action${index === 0 ? " hero-cta" : ""}`} href={slide.action.href}>
-                  <span aria-hidden="true">{slide.icon}</span>
-                  {slide.action.label}
-                </a>
+                <div className="hero-slide-actions">
+                  {slide.actions.map((action, actionIndex) => {
+                    const external = /^https:/.test(action.href);
+                    return (
+                      <a
+                        key={action.href}
+                        className={`hero-slide-action${index === 0 && actionIndex === 0 ? " hero-cta" : ""}`}
+                        href={action.href}
+                        target={external ? "_blank" : undefined}
+                        rel={external ? "noopener noreferrer" : undefined}
+                      >
+                        <span aria-hidden="true">{action.icon}</span>
+                        {action.label}
+                      </a>
+                    );
+                  })}
+                </div>
                 <p className="hero-slide-note">Dostava u Beogradu i Novom Sadu · povratne staklene flaše</p>
               </div>
             </div>

@@ -164,3 +164,19 @@ Mobilni izvoz je nepromenjen: `scale=720:1280:flags=lanczos` i crf 27.
 4. Ako materijala privremeno nema, postavi `heroMedia` na `null` u `app/lib/hero-media.ts`.
    Hero tada prikazuje statičnu kompoziciju iz postojeće fotografije proizvoda, bez
    praznog zadržanog prostora.
+
+## 20. 11. 2026 — hero slajdovi iz finalne specifikacije
+
+Model `gpt_image_2_6`, 16:9, 1344×752, po jedna generacija (3 ukupno), topla jutarnja
+svetlost kao postojeći hero snimci, bez teksta i etiketa na flašama. Web verzije (webp, q80)
+u `public/images/hero/`:
+
+| Fajl | Slajd | Sadržaj |
+| --- | --- | --- |
+| `paket.webp` | 3 — „Ozbiljna veza ili avantura?“ | korpa sa flašama i jedna flaša pored nje na pragu |
+| `analize.webp` | 6 — „Ne veruj nam na reč.“ | uzorci mleka u epruvetama na laboratorijskom stolu |
+| `utisci.webp` | 7 — „Vi najbolje pričate o nama.“ | porodica za doručkom, mama sipa mleko iz flaše |
+
+Slajd 5 („Znaš od koga piješ.“) koristi stvarnu fotografiju porodice Glišić. Ikonica
+„Redovno testirano“ (`public/images/ikone/testirano.svg`) nacrtana je ručno u istom stilu kao
+ostale četiri, bez generisanja.

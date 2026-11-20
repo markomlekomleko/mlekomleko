@@ -8,6 +8,8 @@ import "leaflet/dist/leaflet.css";
 
 export type Mlekomat = {
   name: string;
+  /** Street address shown under the name; empty until confirmed. */
+  address?: string;
   /** What Google Maps searches for; the place's name plus city finds the listing. */
   query: string;
   milk: string;
@@ -15,6 +17,8 @@ export type Mlekomat = {
   lng: number;
 };
 
+const mapLink = (query: string) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 const directions = (query: string) =>
   `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`;
 
@@ -79,9 +83,13 @@ export function MlekomatMap({ locations }: { locations: readonly Mlekomat[] }) {
           <li key={place.name} data-active={index === active}>
             <button type="button" aria-pressed={index === active} onClick={() => focus(index)}>
               <strong>{place.name}</strong>
+              {place.address ? <span className="mlekomat-address">{place.address}</span> : null}
               <span>{place.milk}</span>
             </button>
-            <a className="text-link" href={directions(place.query)} target="_blank" rel="noreferrer">Put do mene ↗</a>
+            <span className="mlekomat-links">
+              <a className="text-link" href={mapLink(place.query)} target="_blank" rel="noreferrer">Otvori mapu ↗</a>
+              <a className="text-link" href={directions(place.query)} target="_blank" rel="noreferrer">Put do mene ↗</a>
+            </span>
           </li>
         ))}
       </ul>

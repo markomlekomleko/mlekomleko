@@ -32,7 +32,6 @@ export function MilkSection() {
               <li key={item.title}>
                 <img className="milk-why-icon" src={`/images/ikone/${item.icon}.svg`} alt="" width="72" height="72" loading="lazy" />
                 <h3>{item.title}</h3>
-                <p>{item.text}</p>
               </li>
             ))}
           </ul>

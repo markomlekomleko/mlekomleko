@@ -18,6 +18,9 @@ import {
   type DeliverySchedule,
 } from "../lib/frontend";
 
+type LoyaltyLine = { rewardId: string; deliveryDiscountMinor: number; deductedNowMinor: number; giftQuantity: number; giftProductName: string } | null;
+type QuoteWithLoyalty = CartQuote & { loyalty?: LoyaltyLine };
+
 type CheckoutResult = {
   id?: string;
   orderId?: string;
@@ -48,7 +51,18 @@ export function CheckoutForm() {
   const [scheduleAttempt, setScheduleAttempt] = useState(0);
   const quoteCity = city && postalCode.length === 5 ? city : "";
   const quotePostalCode = quoteCity ? postalCode : "";
-  const quoteKey = JSON.stringify({ city: quoteCity, postalCode: quotePostalCode, deliveryDate, items, promoCode });
+  // Loyalty reward: offered only to a signed-in customer who has one available; the server re-validates.
+  const [reward, setReward] = useState<{ id: string; giftQuantity: number; deliveryDiscountMinor: number } | null>(null);
+  const [useReward, setUseReward] = useState(false);
+  const rewardId = useReward && reward ? reward.id : undefined;
+  useEffect(() => {
+    let active = true;
+    void fetchJson<{ available: { id: string; giftQuantity: number; deliveryDiscountMinor: number } | null }>("/api/account/loyalty")
+      .then((value) => { if (active) setReward(value.available ?? null); })
+      .catch(() => { if (active) setReward(null); });
+    return () => { active = false; };
+  }, []);
+  const quoteKey = JSON.stringify({ city: quoteCity, postalCode: quotePostalCode, deliveryDate, items, promoCode, rewardId });
   function changeAddress(field: "city" | "postalCode", value: string) {
     if (field === "city") setCity(value); else setPostalCode(value);
     setDeliveryDate(""); setSchedule(null); setScheduleError("");
@@ -69,7 +83,7 @@ export function CheckoutForm() {
   const [phone, setPhone] = useState("");
   const [conversionBusy, setConversionBusy] = useState(false);
   const [conversionDone, setConversionDone] = useState(false);
-  const [quoted, setQuote] = useState<CartQuote | null>(null);
+  const [quoted, setQuote] = useState<QuoteWithLoyalty | null>(null);
   const quote = quotedRequest === quoteKey ? quoted : null;
   const [quoteError, setQuoteError] = useState("");
   const promoTracked = useRef("");
@@ -104,10 +118,11 @@ export function CheckoutForm() {
     let active = true;
     const timer = window.setTimeout(() => {
       setQuoteError("");
-      void fetchJson<CartQuote>("/api/cart", {
+      void fetchJson<QuoteWithLoyalty>("/api/cart", {
         method: "POST",
         body: JSON.stringify({
           items: items.map((item) => ({ productId: item.productId, quantity: item.quantity, purchaseType: item.purchaseType, cadence: item.cadence })),
+          loyaltyRewardId: rewardId,
           deliveryDate: deliveryDate || undefined,
           promoCode: promoCode || undefined,
           city: quoteCity || undefined,
@@ -121,7 +136,7 @@ export function CheckoutForm() {
       });
     }, 0);
     return () => { active = false; window.clearTimeout(timer); };
-  }, [items, quoteCity, quotePostalCode, promoCode, ready, deliveryDate, quoteKey]);
+  }, [items, quoteCity, quotePostalCode, promoCode, ready, deliveryDate, quoteKey, rewardId]);
 
   async function submitCheckout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -156,6 +171,7 @@ export function CheckoutForm() {
           note: form.get("note"),
           paymentMethod,
           deliveryDate,
+          loyaltyRewardId: rewardId,
           promoCode: promoCode || undefined,
           items: items.map((item) => ({
             productId: item.productId,
@@ -362,13 +378,28 @@ export function CheckoutForm() {
               <span>Dostava{quote.deliveryOccurrences && quote.deliveryOccurrences > 1 && quote.deliveryFeePerOccurrenceMinor ? ` (${quote.deliveryOccurrences} × ${formatMoney(quote.deliveryFeePerOccurrenceMinor / 100, locale)})` : ""}</span>
               <span>{quote.deliveryFeeMinor ? formatMoney(quote.deliveryFeeMinor / 100, locale) : "Besplatno"}</span>
             </div>
+            {reward ? (
+              <div className="loyalty-summary">
+                <label className="checkbox-row">
+                  <input type="checkbox" checked={useReward} onChange={(event) => setUseReward(event.target.checked)} />
+                  <span><strong>Iskoristi nagradu</strong> za vernost</span>
+                </label>
+                {quote.loyalty ? (
+                  <div className="summary-row discount-row">
+                    <span>{quote.loyalty.deductedNowMinor > 0 ? `Nagrada: dostava −${formatMoney(quote.loyalty.deductedNowMinor / 100, locale)} + ${quote.loyalty.giftQuantity} L mleka na poklon` : `Nagrada: ${quote.loyalty.giftQuantity} L mleka na poklon, a besplatna dostava se odbija od sledeće naplate`}</span>
+                    <span>{quote.loyalty.deductedNowMinor > 0 ? `−${formatMoney(quote.loyalty.deductedNowMinor / 100, locale)}` : "0 RSD"}</span>
+                  </div>
+                ) : null}
+                {useReward ? <p className="muted small-text">Nagrada važi za porudžbinu sa email adresom tvog naloga.</p> : null}
+              </div>
+            ) : null}
             <div className="summary-row summary-total">
               <span>{hasSubscription ? "Ukupno za ceo paket" : "Danas plaćate"}</span>
               <span>{formatMoney(quote.totalMinor / 100, locale)}</span>
             </div>
             {addressVerified ? <p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate, locale)}</strong><br /><small>Izmene do {formatDateTime(quote.cutoffAt, locale)}</small></p> : <p className="muted small-text">Termin dostave potvrđujemo nakon unosa adrese.</p>}
           </> : <p className={quoteError ? "notice error" : "loading-state"}>{quoteError || "Računamo tačan iznos…"}</p>}
-          {hasSubscription ? <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Paket obuhvata 4 nedeljne ili 2 dvonedeljne dostave. Pauza i preskakanje čuvaju plaćene količine.</p> : null}
+          {hasSubscription ? <p className="muted small-text">Redovna dostava je bez ugovorne obaveze. Paket obuhvata 4 stvarno realizovane nedeljne dostave. Pauza i preskakanje čuvaju plaćene dostave.</p> : null}
           <label className="checkbox-row">
             <input type="checkbox" required />
             <span>

@@ -7,6 +7,7 @@ import { MarqueeBand } from "./components/home/marquee-band";
 import { OfferSection } from "./components/home/offer-section";
 import { SocialSection } from "./components/home/social-section";
 import { MilkSection } from "./components/home/milk-section";
+import { ProducersSection } from "./components/home/producers-section";
 import { frequentlyAskedQuestions } from "./lib/content";
 import { normalizeProduct } from "./lib/frontend";
 import { canonicalUrl, serializeJsonLd } from "./lib/seo";
@@ -30,9 +31,11 @@ export default async function HomePage() {
     <div className="home">
       <HeroSlider />
       <MarqueeBand />
-      {/* Order agreed on 17 Nov 2026: why this milk, the shop, "Mleko uživo", and the questions last. */}
+      {/* Order from the final spec (19 Nov 2026): "Sa paše do flaše", buying, the producers,
+          "Mleko uživo", and the questions last. */}
       <MilkSection />
       <OfferSection products={products} delivery={delivery} />
+      <ProducersSection />
       <SocialSection />
       <FaqSection />
 

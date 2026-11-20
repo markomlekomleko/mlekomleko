@@ -41,12 +41,14 @@ export async function loginDemoCustomer(request: Request) {
 export function getDemoAccount() {
   const currentDate = localDateAt();
   const nextDeliveryDate = nextWeekday(new Date(Date.now() + 3 * 86_400_000), 2);
+  const skippedDate = addLocalDays(nextDeliveryDate, -7);
   const previousDate = addLocalDays(nextDeliveryDate, -14);
   const firstDate = addLocalDays(nextDeliveryDate, -21);
+  // Weekly only: 2 L per delivery in a paid package of four realized deliveries.
   const items = [
-    { id: "demo-cow", productName: "Kravlje mleko", unitLabel: "1 L", priceMinor: 25000, quantity: 4, cadence: "weekly", cadenceAnchorDate: firstDate, status: "active", dueNext: true },
-    { id: "demo-goat", productName: "Kozje mleko", unitLabel: "1 L", priceMinor: 35000, quantity: 2, cadence: "biweekly", cadenceAnchorDate: firstDate, status: "active", dueNext: true },
+    { id: "demo-cow", productId: "prod_kravlje_1l", productName: "Kravlje mleko", unitLabel: "1 L", priceMinor: 25000, quantity: 2, cadence: "weekly", cadenceAnchorDate: firstDate, status: "active", dueNext: true },
   ];
+  const cutoffAt = cutoffForDelivery(nextDeliveryDate, 36, "07:00");
   return {
     demo: true,
     currentDate,
@@ -54,20 +56,27 @@ export function getDemoAccount() {
     subscriptions: [{
       id: "demo-subscription", version: 1, status: "active", nextDeliveryDate,
       pauseUntil: null, renewalEnabled: true, maxPauseUntil: addLocalDays(nextDeliveryDate, 60),
-      cutoffAt: cutoffForDelivery(nextDeliveryDate, 24), locked: false,
+      cutoffAt, locked: Date.now() >= Date.parse(cutoffAt),
       afterSkipDate: addLocalDays(nextDeliveryDate, 7), items, nextOnlyAddons: [],
-      currentPackage: items.map((item, index) => ({
+      packageSummary: { purchased: 4, realized: 2, remaining: 2, openForAdditions: 2, paymentStatus: "paid" },
+      currentPackage: items.map((item) => ({
         line_id: item.id, product_name: item.productName, quantity: item.quantity,
-        required_deliveries: index ? 2 : 4, delivered: index ? 1 : 2,
-        delivered_units: item.quantity * (index ? 1 : 2), required_units: item.quantity * (index ? 2 : 4),
+        required_deliveries: 4, delivered: 2, delivered_units: item.quantity * 2, required_units: item.quantity * 4,
       })),
     }],
-    orders: [{ id: "demo-order", order_number: "DEMO-001", kind: "subscription_invoice", delivery_date: firstDate, total_minor: 540000, payment_status: "paid", fulfillment_status: "planned" }],
+    orders: [{ id: "demo-order", order_number: "DEMO-001", kind: "subscription_invoice", role: "package", payment_method: "cash", delivery_date: firstDate, subtotal_minor: 200000, delivery_fee_minor: 140000, discount_minor: 0, total_minor: 340000, payment_status: "paid", fulfillment_status: "planned", surcharge: null }],
     addonProducts: [],
-    deliveryHistory: [previousDate, firstDate].map((date, index) => ({
-      id: `demo-delivery-${index}`, date, status: "delivered",
-      items: items.filter((_, itemIndex) => !itemIndex || index === 1).map((item) => ({ product_name: item.productName, unit_label: item.unitLabel, quantity: item.quantity })),
-    })),
+    deliveryHistory: [
+      { id: "demo-skip", date: skippedDate, status: "skipped", items: [] },
+      ...[previousDate, firstDate].map((date, index) => ({
+        id: `demo-delivery-${index}`, date, status: "delivered",
+        items: items.map((item) => ({ product_name: item.productName, unit_label: item.unitLabel, quantity: item.quantity, source_type: "subscription" })),
+      })),
+    ],
     oneTimeDeliveries: [],
+    loyalty: {
+      target: 12, startDate: addLocalDays(firstDate, -42), realizedSinceStart: 8, progress: 8, remaining: 4,
+      gift: { quantity: 2, deliveryDiscountMinor: 35000 }, rewards: [], available: null,
+    },
   };
 }

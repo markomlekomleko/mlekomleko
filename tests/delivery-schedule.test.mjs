@@ -56,7 +56,15 @@ test('Novi Sad cannot bypass Friday-only delivery via quote or checkout', async 
   }
   assert.equal(database.raw.prepare('SELECT COUNT(*) n FROM orders').get().n,0);
 });
-for (const cadence of [undefined,'weekly','biweekly']) for (const date of ['2027-01-05','2027-01-15']) {
+for (const date of ['2027-01-05','2027-01-15']) test(`a new biweekly subscription for ${date} is rejected: weekly only`, async () => {
+  const payload = {items:items('biweekly'),deliveryDate:date,paymentMethod:'cash',customer};
+  for (const path of ['/api/cart','/api/checkout']) {
+    const result = await request(path,payload);
+    assert.equal(result.status,422); assert.equal(result.body.error.code,'CADENCE_UNAVAILABLE');
+  }
+  assert.equal(database.raw.prepare('SELECT COUNT(*) n FROM orders').get().n,0);
+});
+for (const cadence of [undefined,'weekly']) for (const date of ['2027-01-05','2027-01-15']) {
   test(`chosen ${date} persists through quote, order and cadence anchors (${cadence ?? 'one time'})`, async () => {
     const payload = {items:items(cadence),deliveryDate:date,paymentMethod:'cash',customer};
     const quote = await request('/api/cart',{...payload,city:customer.city,postalCode:customer.postalCode});

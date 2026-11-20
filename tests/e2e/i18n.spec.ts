@@ -78,7 +78,7 @@ for (const locale of ["sr-cyrl", "en", "ru"] as const) test(`${locale}: purchase
   const email = `i18n-${locale}-${crypto.randomUUID()}@example.test`;
   await page.goto(localizedPath("/prodavnica", locale));
   const card = page.locator(".configurator").first();
-  await card.getByRole("button", { name: t("Redovna dostava"), exact: true }).click();
+  await card.getByRole("button", { name: t("Pretplata") }).click();
   await card.locator(".configurator-actions button").click();
   await page.locator(".cart-link").click();
   await page.locator(".cart-drawer-foot .button").click();

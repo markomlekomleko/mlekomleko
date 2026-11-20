@@ -7,6 +7,7 @@ import { fiscommSelected } from "./fiscomm";
 import { getBusinessSettings, getNextDeliveryWindow, deliveryWeekdaysForCity } from "./settings";
 import { addLocalDays, localDateAt } from "./time";
 import { cashCollectionStatements, deliveryPaymentOrders } from "./cash-collection";
+import { consumeRewardStatements, loyaltyContext, unlockStatements } from "./loyalty";
 
 /** Only an explicit successful handover consumes entitlements. Locking/packing never does. */
 export async function completeDeliveryOrder(input: Record<string, unknown>) {
@@ -27,11 +28,13 @@ export async function completeDeliveryOrder(input: Record<string, unknown>) {
     assertDomain(!supplied || items.every(item => Number(item.delivered_quantity ?? item.quantity) === quantities.find(row => row.id === item.id)?.quantity), "DELIVERY_ALREADY_CONFIRMED", "Dostava je potvrđena sa drugom količinom.", 409);
     return { id, status, replay: true };
   }
-  const partial = status === "delivered" && quantities.some(item => item.quantity < Number(items.find(row => row.id === item.id)!.quantity));
+  // A loyalty gift that was not handed over simply stays applied and rides on the next visit.
+  const isGift = (itemId: string) => Boolean(items.find(row => row.id === itemId)?.loyalty_reward_id);
+  const partial = status === "delivered" && quantities.some(item => !isGift(item.id) && item.quantity < Number(items.find(row => row.id === item.id)!.quantity));
   // Partial handover is supported for package lines and one-time orders alike (Q060): the
   // remainder moves to the next open route without another charge. Only an item that is
   // linked to nothing can't carry a remainder.
-  assertDomain(!partial || items.every(item => item.package_line_id || item.order_item_id), "PARTIAL_REQUIRES_PACKAGE", "Za delimičnu jednokratnu dostavu evidentirajte zamenu ili povraćaj pre potvrde.", 409);
+  assertDomain(!partial || items.every(item => item.package_line_id || item.order_item_id || item.loyalty_reward_id), "PARTIAL_REQUIRES_PACKAGE", "Za delimičnu jednokratnu dostavu evidentirajte zamenu ili povraćaj pre potvrde.", 409);
   assertDomain(before.status === "locked" && before.route_status === "locked", "DELIVERY_STATE_INVALID", "Najpre završite pripremu. Potvrđena dostava ne može ponovo da se menja.", 409);
   assertDomain(String(before.delivery_date) <= localDateAt(), "DELIVERY_IN_FUTURE", "Buduća dostava ne može biti označena kao izvršena.", 409);
   const paymentOrders = status === "delivered" ? await deliveryPaymentOrders(id) : [];
@@ -43,12 +46,19 @@ export async function completeDeliveryOrder(input: Record<string, unknown>) {
     JOIN order_items oi ON oi.id=di.order_item_id WHERE di.delivery_order_id=? ${fiscommSelected() ? "" : "AND EXISTS(SELECT 1 FROM subscription_packages sp WHERE sp.order_id=oi.order_id)"}`, id) : []).filter(order => items.some(item => item.fiscal_order_id === order.order_id && quantities.find(row => row.id === item.id)!.quantity > 0));
   const now = new Date().toISOString();
   const guard = mutationGuard("EXISTS (SELECT 1 FROM delivery_orders WHERE id = ? AND status = 'locked')", [id]);
+  const postStatusStatements: Array<{sql: string; bindings?: SqlValue[]}> = [];
   const statements: Array<{sql: string; bindings?: SqlValue[]}> = [guard.check,
     ...collected.flatMap(cashCollectionStatements),
     {sql: "UPDATE delivery_orders SET status = ? WHERE id = ?", bindings: [status, id]},
     audit("admin", "admin-panel", `delivery.${status}`, "delivery_order", id, before, {status}),
   ];
-  if (status === "delivered") statements.push(...await consumeInventory(id, quantities));
+  if (status === "delivered") statements.push(...await consumeInventory(id, quantities.filter(item => !isGift(item.id))));
+  if (status === "delivered") {
+    for (const item of items.filter(row => row.loyalty_reward_id && quantities.find(q => q.id === row.id)!.quantity > 0)) statements.push(...consumeRewardStatements(String(item.loyalty_reward_id), id));
+    // Each confirmed subscription visit counts toward loyalty; the 12th unlocks the reward + email.
+    const customer = before.subscription_id ? await first<{id: string; email: string} & Record<string, unknown>>("SELECT id, email, full_name FROM customers WHERE id = ?", String(before.customer_id)) : null;
+    if (customer) postStatusStatements.push(...unlockStatements(customer, await loyaltyContext()));
+  }
   for (const item of quantities) statements.push({ sql: "UPDATE delivery_items SET delivered_quantity = ? WHERE id = ?", bindings: [item.quantity, item.id] });
   if (before.source_order_id && status === "delivered" && !partial) {
     statements.push({sql: "UPDATE orders SET fulfillment_status = 'delivered', updated_at = ? WHERE id = ? AND NOT EXISTS (SELECT 1 FROM subscription_packages WHERE order_id = ?)", bindings: [now, String(before.source_order_id), String(before.source_order_id)]});
@@ -87,6 +97,13 @@ export async function completeDeliveryOrder(input: Record<string, unknown>) {
       statements.push(enqueueOnce("fiscal.delivery.requested", "order", String(order.order_id), {deliveryOrderId:id}, `delivery-fiscal:${order.order_id}:${id}`));
   }
 
+  if (status === "delivered") {
+    // Regular surcharges (doplata) finish once all their paid units are handed over.
+    postStatusStatements.push({sql: `UPDATE package_surcharges SET status = 'completed' WHERE status = 'active' AND id IN (SELECT package_surcharge_id FROM delivery_items WHERE delivery_order_id = ? AND package_surcharge_id IS NOT NULL)
+      AND (SELECT COALESCE(SUM(COALESCE(di.delivered_quantity, di.quantity)),0) FROM delivery_items di JOIN delivery_orders dor ON dor.id = di.delivery_order_id WHERE di.package_surcharge_id = package_surcharges.id AND dor.status = 'delivered') >= quantity_per_delivery * deliveries`, bindings: [id]});
+    postStatusStatements.push({sql: "UPDATE orders SET fulfillment_status = 'delivered', updated_at = ? WHERE id IN (SELECT order_id FROM package_surcharges WHERE status = 'completed' AND id IN (SELECT package_surcharge_id FROM delivery_items WHERE delivery_order_id = ? AND package_surcharge_id IS NOT NULL))", bindings: [now, id]});
+  }
+  statements.push(...postStatusStatements);
   for (const {package_id: packageId} of packageIds) {
     if (status !== "delivered") continue;
     // Recheck inside the transaction: racing confirmations can complete the package only once.

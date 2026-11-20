@@ -48,6 +48,12 @@ export function renderTransactionalMessage(topic: string, data: Record<string, u
     const label = data.documentKind === "advance" ? "Avansni fiskalni račun" : data.documentKind === "final" ? "Konačni fiskalni račun" : data.documentKind === "refund" ? "Zatvaranje avansa" : "Fiskalni račun";
     return shell(label, [greeting, `${label} za porudžbinu ${orderNumber}: ${data.invoiceNumber}.`, data.documentKind === "advance" ? "Uplata je evidentirana unapred. Za svaku pojedinačnu isporuku sledi račun uz razduženje pripadajućeg dela avansa." : data.documentKind === "refund" ? "Ovaj dokument razdužuje deo avansa za konkretnu isporuku. Ne predstavlja novu naplatu niti povraćaj novca kupcu." : "Ovo nije nova naplata."], data.documentUrl ? {label: "Otvori račun", url: String(data.documentUrl)} : accountAction);
   }
+  if (topic === "email.loyalty_reward_unlocked.requested") {
+    return shell("Tvoj poklon je spreman!", [
+      "Hvala ti što si sa nama. Za tvoju vernost poklanjamo ti besplatnu dostavu uz koju stižu i 2 litra mleka.",
+      "Nagradu preuzmi na svom nalogu, u delu Pregled. Jednim klikom je primenjuješ na sledeću dostavu.",
+    ], data.accountUrl ? { label: "Preuzmi nagradu", url: `${String(data.accountUrl)}#pregled` } : undefined);
+  }
   if (topic === "email.receipt.requested") {
     return shell("Uplata je evidentirana", [greeting, `Uplata za porudžbinu ${orderNumber} je evidentirana. Fiskalni račun se obrađuje i biće poslat na ovu email adresu.`], accountAction);
   }
@@ -64,12 +70,16 @@ export function renderTransactionalMessage(topic: string, data: Record<string, u
       cancel: "Pretplata je otkazana", cancelled: "Pretplata je otkazana", skip_next: "Vaša sledeća isporuka je preskočena",
       add_item: "Proizvod je dodat u pretplatu", update_item: "Proizvod u pretplati je izmenjen", remove_item: "Proizvod je uklonjen iz pretplate",
       slow_down: "Dostava je promenjena na svake dve nedelje", add_next_only: "Dodatak za sledeću dostavu je evidentiran", activated: "Pretplata je aktivirana",
+      add_quantity: "Doplata je evidentirana",
     };
     const title = data.cancelAfterPackage ? "Obnova pretplate je otkazana" : labels[action] ?? "Pretplata je ažurirana";
     const cancelled = !data.cancelAfterPackage && ["cancel", "cancelled"].includes(action);
     return shell(title, [greeting, `${title}.`,
       data.cancelAfterPackage ? "Preostale plaćene dostave ostaju zakazane do završetka paketa." : "",
       data.appliesTo === "next_package" ? "Izmena važi od sledećeg paketa. Već kupljeni paket ostaje nepromenjen." : "",
+      data.appliesTo === "package_and_onward" ? "Dodata količina stiže u svim preostalim dostavama paketa i u narednim paketima." : "",
+      data.appliesTo === "next_delivery" ? "Dodata količina stiže samo u sledećoj dostavi." : "",
+      surchargeLine(data.surcharge),
       action === "skip_next" && data.previousDeliveryDate ? `Preskočena isporuka: ${formatDeliveryDate(String(data.previousDeliveryDate))}.` : "",
       action === "pause" && data.pauseUntil ? `Pauza traje do ${formatDeliveryDate(String(data.pauseUntil))}.` : "",
       !cancelled && deliveryDate ? `Sledeća dostava: ${formatDeliveryDate(deliveryDate)}.` : "",
@@ -87,6 +97,12 @@ export function renderTransactionalMessage(topic: string, data: Record<string, u
   return shell("Potvrda porudžbine", [greeting, `Porudžbina ${orderNumber} je primljena. Ukupno: ${total}.`, data.kind === "subscription_invoice" && data.paymentMethod === "cash" && data.paymentStatus !== "paid" ? "Ceo paket plaćate gotovinom pri prvoj dostavi. Preostale dostave tog paketa zatim su već plaćene." : "", deliveryDate ? `Planirana dostava: ${deliveryDate}.` : "", itemSummary ? `Stavke: ${itemSummary}.` : ""].filter(Boolean), accountAction);
 }
 
+function surchargeLine(value: unknown) {
+  if (!value || typeof value !== "object") return "";
+  const surcharge = value as Record<string, unknown>;
+  if (!Number(surcharge.amountMinor)) return "";
+  return `Doplata: +${Number(surcharge.addedQuantity)} × ${money(surcharge.unitPriceMinor)}${Number(surcharge.deliveries) > 1 ? ` × ${Number(surcharge.deliveries)} dostave` : ""} = ${money(surcharge.amountMinor)} (porudžbina ${String(surcharge.orderNumber ?? "")}, plaćanje gotovinom ili uplatom na račun).`;
+}
 function formatDeliveryDate(date: string) {
   return new Intl.DateTimeFormat("sr-Latn-RS", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Belgrade" }).format(new Date(`${date}T12:00:00Z`));
 }
