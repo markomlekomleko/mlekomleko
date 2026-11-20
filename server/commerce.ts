@@ -140,6 +140,12 @@ function loyaltyQuote(reward: CheckoutReward, deductedMinor: number) {
   return reward ? { rewardId: reward.id, deliveryDiscountMinor: reward.deliveryDiscountMinor, deductedNowMinor: deductedMinor, giftQuantity: reward.giftQuantity, giftProductName: reward.giftProductName } : null;
 }
 
+/** Milk is sold from two litres per delivery up (final spec, §5). Staff orders are exempt. */
+export function assertMinimumLitres(unitLabel: string, quantity: number, minimumLitres: number) {
+  const litres = /^\s*(\d+(?:[.,]\d+)?)\s*l\s*$/i.exec(unitLabel);
+  assertDomain(!(minimumLitres > 0) || !litres || Number(litres[1].replace(",", ".")) * quantity >= minimumLitres, "MINIMUM_QUANTITY", `Najmanja količina je ${minimumLitres} litra po dostavi.`, 422);
+}
+
 export async function quoteCart(input: Record<string, unknown>, reward: CheckoutReward = null) {
   const items = parseCheckoutItems(input.items);
   const settings = await getBusinessSettings();
@@ -250,7 +256,7 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   for (const item of items) {
     const product = products.get(item.productId);
     assertDomain(product, "PRODUCT_UNAVAILABLE", `Proizvod ${item.productId} nije dostupan.`, 409, { productId: item.productId });
-    assertDomain(item.purchaseType !== "subscription" || Boolean(product.allow_subscription), "SUBSCRIPTION_UNAVAILABLE", "Redovna dostava nije dostupna za ovaj proizvod.", 409, { productId: item.productId });
+    assertDomain(item.purchaseType !== "subscription" || Boolean(product.allow_subscription), "SUBSCRIPTION_UNAVAILABLE", "Redovna dostava nije dostupna za ovaj proizvod.", 409, { productId: item.productId });    if (!admin) assertMinimumLitres(product.unit_label, item.quantity, Number(settings.minimumLitres) || 0);
   }
 
   const hasSubscription = items.some((item) => item.purchaseType === "subscription");

@@ -7,8 +7,8 @@ import { assertDomain, requiredString } from "./domain";
 import { localPaymentGateway } from "./integrations";
 import { audit, enqueue } from "./outbox";
 import { all, batch, first, type SqlValue } from "./sql";
-import { localDateAt } from "./time";
-import { getBusinessSettings, getNextDeliveryWindow } from "./settings";
+import { addLocalDays, cutoffForDelivery, localDateAt } from "./time";
+import { getBusinessSettings } from "./settings";
 import { purchaseAnalyticsEvent } from "./analytics";
 
 interface BillingSubscription extends Record<string, unknown> {
@@ -44,7 +44,7 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
   }
 
   const settings = await getBusinessSettings();
-  const nextWindow = await getNextDeliveryWindow();
+  const closedDates = new Set((await all<{ delivery_date: string } & Record<string, unknown>>("SELECT delivery_date FROM deliveries WHERE status != 'open' AND delivery_date >= ?", localDateAt())).map((row) => row.delivery_date));
   const subscriptions = await all<BillingSubscription>("SELECT s.*, COALESCE((SELECT o.source_json FROM orders o WHERE o.subscription_id = s.id ORDER BY o.created_at, o.id LIMIT 1), c.source_json) AS source_json FROM subscriptions s JOIN customers c ON c.id = s.customer_id WHERE s.renewal_enabled = 1 AND s.status IN ('active', 'paused') AND substr(s.started_at, 1, 7) <= ? ORDER BY s.id", month);
   const results: Array<Record<string, unknown>> = [];
   for (const subscription of subscriptions) {
@@ -53,13 +53,17 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
       results.push({ subscriptionId: subscription.id, skipped: "unfinished_package" });
       continue;
     }
-    if ((subscription.status === "paused" && (!subscription.pause_until || subscription.pause_until > localDateAt())) || subscription.next_delivery_date.slice(0, 7) > month) {
+    if ((subscription.status === "paused" && (!subscription.pause_until || subscription.pause_until > localDateAt()))) {
       results.push({ subscriptionId: subscription.id, skipped: "not_due" });
       continue;
     }
     const legacy = await first<Record<string, unknown>>("SELECT id FROM orders WHERE subscription_id = ? AND kind = 'subscription_invoice' AND fulfillment_status != 'cancelled' AND NOT EXISTS (SELECT 1 FROM subscription_packages WHERE subscription_id = ?) LIMIT 1", subscription.id, subscription.id);
     if (legacy) { results.push({subscriptionId: subscription.id, skipped: "legacy_review_required"}); continue; }
-    const firstDate = subscription.next_delivery_date < nextWindow.deliveryDate ? nextWindow.deliveryDate : subscription.next_delivery_date;
+    // A finished package renews at once, whatever the calendar month (final spec, §12),
+    // and stays on the customer's own weekday: when that day's change deadline has
+    // passed, the route is locked or it is a holiday, the package starts a week later.
+    let firstDate = subscription.next_delivery_date;
+    for (let guard = 0; guard < 26 && (settings.holidays.includes(firstDate) || closedDates.has(firstDate) || Date.now() >= Date.parse(cutoffForDelivery(firstDate, settings.cutoffHours, settings.deliveryLocalTime))); guard++) firstDate = addLocalDays(firstDate, 7);
     const orderKey = `package:${subscription.id}:${firstDate}`;
     const alreadyBilled = await first<Record<string, unknown>>("SELECT id FROM orders WHERE idempotency_key = ?", orderKey);
     if (alreadyBilled) { results.push({subscriptionId: subscription.id, skipped: "already_billed"}); continue; }

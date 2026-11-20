@@ -41,7 +41,7 @@ export async function CityDeliveryPage({
     },
     {
       question: "Da li moram da naručujem svake nedelje?",
-      answer: "Ne. Možeš da poručiš jednom ili da izabereš nedeljni ili dvonedeljni ritam koji kasnije možeš da preskočiš, pauziraš ili otkažeš.",
+      answer: "Ne. Možeš da poručiš jednom ili da izabereš pretplatu — paket od četiri nedeljne dostave — u kojoj dostavu možeš da preskočiš, pauziraš ili da otkažeš obnovu.",
     },
     {
       question: "Kako proveravam da li dostavljate na moju adresu?",
@@ -62,11 +62,11 @@ export async function CityDeliveryPage({
                 <p className="eyebrow">{deliveryDays}</p>
                 <h1>Dostava domaćeg mleka u {city === "Beograd" ? "Beogradu" : "Novom Sadu"}.</h1>
                 <p className="lead">
-                  Poruči domaće kravlje ili kozje mleko u povratnim staklenim flašama.
+                  Poruči domaće sirovo mleko u povratnim staklenim flašama.
                   Biraš litre i da li želiš jednu ili redovnu dostavu.
                 </p>
                 <div className="button-row">
-                  <Link className="button" href="/#izaberite-mleko">Izaberi svoje mleko</Link>
+                  <Link className="button" href="/prodavnica">Izaberi svoje mleko</Link>
                   <a className="button secondary" href="/kako-funkcionise">Kako funkcioniše</a>
                 </div>
               </div>

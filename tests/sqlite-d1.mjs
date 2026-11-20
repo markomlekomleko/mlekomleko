@@ -6,6 +6,9 @@ export function createDatabase() {
  const db = new DatabaseSync(':memory:');
  db.exec('PRAGMA foreign_keys = ON');
  for (const file of readdirSync(new URL('../migrations/', import.meta.url)).filter(f => f.endsWith('.sql')).sort()) db.exec(readFileSync(new URL('../migrations/' + file, import.meta.url), 'utf8'));
+ // The 2-litre minimum (migration 0024) is a shop setting; the domain tests buy single
+ // units on purpose, so it is switched off here and tested on its own.
+ db.exec("DELETE FROM settings WHERE key = 'minimumLitres'");
  function statement(sql, bindings = []) {
   const execute = () => {
    const result = db.prepare(sql).run(...bindings);

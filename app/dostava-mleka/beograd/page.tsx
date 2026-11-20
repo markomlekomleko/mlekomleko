@@ -7,7 +7,7 @@ import { canonicalUrl } from "../../lib/seo";
 export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
   title: "Dostava domaćeg mleka u Beogradu",
   description:
-    "Domaće kravlje i kozje mleko sa dostavom u Beogradu utorkom i petkom, u povratnim staklenim flašama.",
+    "Domaće sirovo mleko sa dostavom u Beogradu utorkom i petkom, u povratnim staklenim flašama.",
   alternates: { canonical: canonicalUrl("/dostava-mleka/beograd") },
 }); }
 

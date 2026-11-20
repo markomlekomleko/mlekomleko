@@ -324,3 +324,15 @@ test('checkout with the reward: delivery −350 RSD and 2 L gift on that order, 
  assert.equal(scalar('SELECT status FROM loyalty_rewards'), 'used');
  assert.equal(scalar("SELECT COUNT(*) FROM credits_ledger WHERE reason LIKE 'loyalty_reward:%'"), 0, 'already deducted in the order: no second deduction');
 });
+
+test('the 2-litre minimum is a shop setting: cart and checkout reject 1 L, accept 2 L', async () => {
+ database.raw.exec(`INSERT INTO settings (key, value_json) VALUES ('minimumLitres', '2') ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json`);
+ const one = [line(1, null, 'prod_kravlje_1l', 'one_time')];
+ expectError(await api('/api/cart', { items: one, deliveryDate: '2027-01-01' }), 422, 'MINIMUM_QUANTITY');
+ expectError(await api('/api/checkout', { customer: customer(), items: one, paymentMethod: 'cash', deliveryDate: '2027-01-01' }), 422, 'MINIMUM_QUANTITY');
+ expectError(await api('/api/checkout', { customer: customer(), items: [line(1)], paymentMethod: 'cash', deliveryDate: '2027-01-01' }), 422, 'MINIMUM_QUANTITY');
+ assert.equal(scalar('SELECT count(*) FROM orders'), 0);
+ expectStatus(await api('/api/cart', { items: [line(2, null, 'prod_kravlje_1l', 'one_time')], deliveryDate: '2027-01-01' }));
+ await buy([line(2)]);
+ assert.equal(scalar('SELECT count(*) FROM orders'), 1);
+});

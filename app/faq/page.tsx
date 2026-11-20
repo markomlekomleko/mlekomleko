@@ -18,7 +18,7 @@ export default async function FaqPage() {
     <div className="content-page">
       <header className="content-band content-hero">
         <div className="page-shell content-head">
-          <div className="page-heading"><p className="eyebrow">Pre prve flaše</p><h1>Česta pitanja</h1></div>
+          <div className="page-heading"><p className="eyebrow">Česta pitanja</p><h1>Pre prve flaše</h1></div>
           <ContentStamp />
         </div>
       </header>

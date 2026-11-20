@@ -9,6 +9,8 @@ export interface BusinessSettings {
   indjijaDeliveryWeekdays: number[];
   originCowImageUrl: string;
   originGoatImageUrl: string;
+  /** Smallest amount of milk per delivery line, in litres; 0 switches the rule off. */
+  minimumLitres: number;
   minimumOrderMinor: number; holidays: string[]; serviceRegions: ServiceRegion[]; deliverySlots: DeliverySlot[];
   timezone: "Europe/Belgrade";
   currency: "RSD";
@@ -49,6 +51,7 @@ export interface BusinessSettings {
 
 const defaults: BusinessSettings = {
   indjijaEnabled: false, indjijaDeliveryWeekdays: [], originCowImageUrl: "", originGoatImageUrl: "",
+  minimumLitres: 0,
   minimumOrderMinor: 0, holidays: [], serviceRegions: [], deliverySlots: [],
   timezone: "Europe/Belgrade",
   currency: "RSD",
