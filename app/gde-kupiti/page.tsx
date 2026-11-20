@@ -16,8 +16,8 @@ export async function generateMetadata(): Promise<Metadata> { return localizedMe
 // (their posts mention more), only this array changes.
 const locations: readonly Mlekomat[] = [
   // Coordinates from OpenStreetMap, cross-checked on Google Maps (18 Nov 2026).
-  { name: "Beo šoping centar", query: "Beo Shopping Center, Beograd", milk: "kravlje mleko", lat: 44.78673, lng: 20.50256 },
-  { name: "Lidl Bežanijska kosa", query: "Lidl Bežanijska kosa, Beograd", milk: "kravlje i kozje mleko", lat: 44.81794, lng: 20.38335 },
+  { name: "Beo šoping centar", address: "Vojislava Ilića 141, Zvezdara", query: "Beo Shopping Center, Beograd", milk: "kravlje mleko", lat: 44.78673, lng: 20.50256 },
+  { name: "Lidl Bežanijska kosa", address: "Partizanske avijacije bb, Novi Beograd", query: "Lidl Bežanijska kosa, Beograd", milk: "kravlje i kozje mleko", lat: 44.81794, lng: 20.38335 },
   { name: "Mega Roda Novi Beograd", address: "Đorđa Stanojevića 35, Novi Beograd", query: "Mega Roda, Đorđa Stanojevića 35, Beograd", milk: "kravlje mleko", lat: 44.80971, lng: 20.39687 },
 ];
 

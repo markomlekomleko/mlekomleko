@@ -9,7 +9,9 @@ Implementirano u commit-u „Final site spec…“ (migracije 0022 i 0023). Vlas
 5. Poklon od 2 l automatski ide uz sledeću realizovanu dostavu; kupac ne bira datum.
 6. `loyaltyStartDate` (dan migracije) i doplate nemaju posebnu admin kontrolu; doplate se evidentiraju kao porudžbine.
 
-Čeka materijal klijenta: mesto gazdinstava i ime druge domaćice (`app/lib/producers.ts`), fotografije
-laboratorijskih izveštaja (`app/lib/analyses.ts`), fotografija osnivača i potvrda izjave (`app/o-nama/page.tsx`),
-link ka Google recenzijama (`GOOGLE_REVIEWS_URL` u `app/components/home/hero-slider.tsx`), adrese mlekomata
-Beo šoping centar i Lidl Bežanijska kosa (`app/gde-kupiti/page.tsx`).
+Upisano 20. 11.: Glišić — Deliblato; druga domaćica — Slobodanka Dragojević, Mramorak; adrese
+Beo šoping centar (Vojislava Ilića 141) i Lidl Bežanijska kosa (Partizanske avijacije bb) sa Google mapa;
+link ka recenzijama je Google Maps lista „Mlekomat Mleko i Mleko“ (sve lokacije sa stvarnim recenzijama).
+
+Čeka materijal: fotografije laboratorijskih izveštaja (`app/lib/analyses.ts`) i fotografija osnivača
+(`app/o-nama/page.tsx`). Pitanja za klijenta: `docs/klijent/Mleko-i-Mleko-pitanja-za-potvrdu.docx`.

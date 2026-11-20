@@ -4,6 +4,7 @@ import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { milkQuestions } from "../lib/content";
+import { producers } from "../lib/producers";
 import { canonicalUrl } from "../lib/seo";
 
 export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
@@ -27,12 +28,8 @@ const chain = [
   { title: "Donosimo na tvoja vrata", text: "Sa farme ide pravo do tebe, u Beogradu i Novom Sadu." },
 ] as const;
 
-// Real photos from the farms we buy from. The second name is a placeholder until the
-// owner confirms it (19 Nov 2026).
-const hosts = [
-  { name: "Porodica Glišić", image: "/images/domacini/porodica-glisic.webp", width: 1400, height: 1050, alt: "Porodica Glišić, od najmlađe do najstarije, ispred velikih bala sena na svojoj farmi", text: "Cela porodica na okupu, ispred sena spremljenog za krave. Takve domaćine biramo — ljude koji iza svog mleka stoje imenom i prezimenom." },
-  { name: "Domaćica Milena", image: "/images/domacini/domacica-krave.webp", width: 1200, height: 1500, alt: "Domaćica u štali, naslonjena na ogradu između svojih krava", text: "Mala štala i krave koje poznaje jednu po jednu. Od ovakvih domaćina preuzimamo mleko odmah posle muže." },
-] as const;
+// Real photos of the farms we buy from: one list shared with the home page and O nama.
+const hosts = producers;
 
 /**
  * Where the milk comes from: what raw milk is next to shop milk, what you make from it
@@ -83,9 +80,9 @@ export default async function OriginPage() {
             <div className="hosts-head"><p className="eyebrow">Naši domaćini</p><h3 id="domacini-title">Pravi ljudi, prave farme.</h3></div>
             <div className="hosts-grid">
               {hosts.map((host) => (
-                <figure className="host" key={host.name}>
+                <figure className="host" key={host.id}>
                   <img src={host.image} alt={host.alt} width={host.width} height={host.height} loading="lazy" />
-                  <figcaption><strong>{host.name}</strong><span>{host.text}</span></figcaption>
+                  <figcaption><strong>{host.place ? `${host.name}, ${host.place}` : host.name}</strong><span>{host.story}</span></figcaption>
                 </figure>
               ))}
             </div>

@@ -17,8 +17,8 @@ type Slide = {
   actions: readonly Action[];
 };
 
-/** Public Google profile of the business, where its real reviews live. */
-export const GOOGLE_REVIEWS_URL = "https://www.google.com/maps/search/?api=1&query=Mleko%20i%20Mleko%20Beograd";
+/** Google Maps list of the brand's own mlekomats, each with its real Google reviews. */
+export const GOOGLE_REVIEWS_URL = "https://www.google.com/maps/search/?api=1&query=Mlekomat%20Mleko%20i%20Mleko";
 
 /**
  * The home hero (spec 19 Nov 2026, §2): seven full-screen slides that slide in from the
