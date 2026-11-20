@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { formatDate, formatDateTime } from "../lib/frontend";
-import { plusDays, today, type Requester } from "./workspace-shared";
+import { plural, plusDays, today, type Requester } from "./workspace-shared";
 type Day = {
   date: string;
   status: string;
@@ -106,7 +106,7 @@ export function DeliveryCalendar({
             >
               <strong>{formatDate(day.date)}</strong>
               <span>
-                {day.customers} kupaca · {day.packages} pakovanja
+                {plural(day.customers, "kupac", "kupca", "kupaca")} · {plural(day.packages, "pakovanje", "pakovanja", "pakovanja")}
               </span>
               <small>
                 {day.status === "open"

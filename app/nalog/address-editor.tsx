@@ -8,11 +8,13 @@ import { fetchJson } from "../lib/frontend";
 type Address = { addressLine1: string; addressLine2?: string; city: string; postalCode: string };
 
 /** Self-service address change; the server checks the delivery zone exactly as in checkout. */
-export function AddressEditor({ customer, onSaved }: { customer: Address; onSaved: (message: string) => void }) {
+export function AddressEditor({ customer, onSaved, indjijaEnabled = false }: { customer: Address; onSaved: (message: string) => void; indjijaEnabled?: boolean }) {
   const localize = useLocalize();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Inđija is listed only while its delivery is active (or it is already the saved city).
+  const cities = DELIVERY_CITIES.filter((city) => city !== "Inđija" || indjijaEnabled || customer.city === city);
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -47,8 +49,8 @@ export function AddressEditor({ customer, onSaved }: { customer: Address; onSave
       <label className="field"><span>Sprat i stan</span><input name="addressLine2" defaultValue={customer.addressLine2 ?? ""} autoComplete="address-line2" /></label>
       <div className="form-grid">
         <label className="field"><span>Grad</span>
-          <select name="city" defaultValue={DELIVERY_CITIES.find((city) => city === customer.city) ?? DELIVERY_CITIES[0]}>
-            {DELIVERY_CITIES.map((city) => <option key={city} value={city}>{city}</option>)}
+          <select name="city" defaultValue={cities.find((city) => city === customer.city) ?? cities[0]}>
+            {cities.map((city) => <option key={city} value={city}>{city}</option>)}
           </select>
         </label>
         <label className="field"><span>Poštanski broj</span><input name="postalCode" defaultValue={customer.postalCode} required inputMode="numeric" pattern="\d{5}" autoComplete="postal-code" /></label>

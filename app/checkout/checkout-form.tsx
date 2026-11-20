@@ -14,6 +14,7 @@ import {
   formatMoney,
   formatDate,
   formatDateTime,
+  quantityLabel,
   type CartQuote,
   type DeliverySchedule,
 } from "../lib/frontend";
@@ -24,7 +25,7 @@ type QuoteWithLoyalty = CartQuote & { loyalty?: LoyaltyLine };
 type CheckoutResult = {
   id?: string;
   orderId?: string;
-  order?: { id?: string; orderNumber?: string; deliveryDate?: string };
+  order?: { id?: string; orderNumber?: string; deliveryDate?: string; subtotalMinor?: number; discountMinor?: number; deliveryFeeMinor?: number; totalMinor?: number };
   subscriptionIds?: string[];
   message?: string;
   subscription?: { id?: string } | null;
@@ -84,6 +85,7 @@ export function CheckoutForm() {
   const [conversionBusy, setConversionBusy] = useState(false);
   const [conversionDone, setConversionDone] = useState(false);
   const [quoted, setQuote] = useState<QuoteWithLoyalty | null>(null);
+  const [placedQuote, setPlacedQuote] = useState<QuoteWithLoyalty | null>(null);
   const quote = quotedRequest === quoteKey ? quoted : null;
   const [quoteError, setQuoteError] = useState("");
   const promoTracked = useRef("");
@@ -184,6 +186,7 @@ export function CheckoutForm() {
           marketingConsent: consent.marketing,
         }),
       });
+      setPlacedQuote(quote);
       setResult(payload);
       const orderId = payload.order?.id ?? payload.orderId ?? payload.id;
       track("order_created", { paymentMethod }, orderId);
@@ -223,6 +226,19 @@ export function CheckoutForm() {
             ) : null}
           </p>
           {result.order?.deliveryDate ? <p>Prva dostava: <strong>{formatDate(result.order.deliveryDate, locale)}</strong>.</p> : null}
+          {placedQuote ? (
+            <div className="order-confirmation-summary">
+              {placedQuote.lines.map((line, index) => (
+                <div className="summary-row small-text" key={`${line.productId}-${index}`}>
+                  <span>{line.purchaseType === "subscription" ? `${line.quantity} × ${line.productName} po dostavi × ${line.occurrences}` : <>{line.quantity} × {line.productName}</>}</span>
+                  <strong>{formatMoney(line.lineTotalMinor / 100, locale)}</strong>
+                </div>
+              ))}
+              {(result.order?.discountMinor ?? placedQuote.discountMinor) > 0 ? <div className="summary-row small-text"><span>Popust</span><span>−{formatMoney((result.order?.discountMinor ?? placedQuote.discountMinor) / 100, locale)}</span></div> : null}
+              <div className="summary-row small-text"><span>Dostava</span><span>{(result.order?.deliveryFeeMinor ?? placedQuote.deliveryFeeMinor) ? formatMoney((result.order?.deliveryFeeMinor ?? placedQuote.deliveryFeeMinor) / 100, locale) : "Besplatno"}</span></div>
+              <div className="summary-row summary-total"><span>{placedQuote.lines.some((line) => line.purchaseType === "subscription") ? "Ukupno za ceo paket" : "Ukupno"}</span><span>{formatMoney((result.order?.totalMinor ?? placedQuote.totalMinor) / 100, locale)}</span></div>
+            </div>
+          ) : null}
           <p className="muted small-text">Za prvi pristup nalogu dovoljan je kod poslat na email sa porudžbine. Lozinka nije potrebna.</p>
           {result.subscriptionOffer ? <section className="post-purchase-offer" aria-labelledby="post-purchase-title"><p className="eyebrow">Jedan klik do mirnog frižidera</p><h2 id="post-purchase-title">Neka ista porudžbina stiže svake nedelje.</h2><p>Uključujemo {result.subscriptionOffer.eligibleItemCount} {result.subscriptionOffer.eligibleItemCount === 1 ? "proizvod" : "proizvoda"} u nedeljni ritam. Pretplata je paket od četiri nedeljne dostave: prva stiže sledeće nedelje, a ceo paket plaćaš pri toj prvoj dostavi.{result.subscriptionOffer.savingPerDeliveryMinor > 0 ? <> Štedite <strong>{formatMoney(result.subscriptionOffer.savingPerDeliveryMinor / 100, locale)}</strong> po dostavi.</> : null}</p>{conversionDone ? <p className="notice success">Redovna dostava je uključena. Možete je menjati iz naloga.</p> : <button className="button" type="button" disabled={conversionBusy} onClick={() => void convertToSubscription(result.subscriptionOffer!.token)}>{conversionBusy ? "Uključujemo…" : "Da, ponovi svake nedelje"}</button>}<small>Bez ugovorne obaveze · preskakanje i pauza online</small></section> : null}
           {error ? <p className="notice error" role="alert">{error}</p> : null}
@@ -364,7 +380,7 @@ export function CheckoutForm() {
                 {line.quantity} × {line.productName}<br />
                 <span className="muted">
                   {line.purchaseType === "one_time" ? "Jednokratno" : `${cadenceLabel(line.cadence ?? undefined)} · ${formatMoney(line.unitPriceMinor * line.quantity / 100, locale)} po dostavi · ${line.occurrences}× u paketu`}
-                  {line.purchaseType === "subscription" ? <><br />Ukupno u paketu: {line.quantity * line.occurrences} komada</> : null}
+                  {line.purchaseType === "subscription" ? <><br />{`Ukupno u paketu: ${quantityLabel(line.quantity * line.occurrences, line.unitLabel)}`}</> : null}
                   {addressVerified && line.deliveryDates.length ? <><br />Termini: {line.deliveryDates.map((date) => formatDate(date, locale)).join(", ")}</> : null}
                 </span>
               </span>

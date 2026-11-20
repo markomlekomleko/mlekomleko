@@ -14,7 +14,7 @@ import { cutoffForDelivery } from "./time";
 import { assertDeliveryEditable } from "./delivery-cutoff";
 import { mutationGuard } from "./mutation-guard";
 import { fiscommMode, fiscommSelected } from "./fiscomm";
-import { activatePaidPackage } from "./packages";
+import { activatePaidPackage, scheduledDeliveryDateSql } from "./packages";
 import { actorContext } from "./staff";
 
 export async function dashboard() {
@@ -150,7 +150,7 @@ export async function listOrders(params = new URLSearchParams()) {
   const { where, bindings, orderBy, page, pageSize } = orderFilters(params);
   const from = "FROM orders o JOIN customers c ON c.id = o.customer_id LEFT JOIN fiscal_receipts fr ON fr.order_id = o.id AND fr.id = (SELECT fx.id FROM fiscal_receipts fx WHERE fx.order_id = o.id AND fx.kind != 'refund' ORDER BY CASE WHEN fx.kind = 'final' THEN 0 WHEN fx.kind = 'advance' THEN 1 ELSE 2 END LIMIT 1)";
   const [orders, count] = await Promise.all([
-    all<Record<string, unknown>>(`SELECT o.*, c.full_name, c.email, c.phone, fr.status AS fiscal_status, fr.invoice_number ${from} ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`, ...bindings, pageSize, (page - 1) * pageSize),
+    all<Record<string, unknown>>(`SELECT o.*, ${scheduledDeliveryDateSql("o")} AS scheduled_delivery_date, c.full_name, c.email, c.phone, fr.status AS fiscal_status, fr.invoice_number ${from} ${where} ORDER BY ${orderBy} LIMIT ? OFFSET ?`, ...bindings, pageSize, (page - 1) * pageSize),
     first<Record<string, unknown>>(`SELECT COUNT(*) AS total ${from} ${where}`, ...bindings),
   ]);
   return { orders, total: Number(count?.total ?? 0), page, pageSize };

@@ -146,7 +146,11 @@ export async function getLoyalty(customerId: string) {
     WHERE r.customer_id = ? ORDER BY r.cycle_number DESC`, customerId);
   const progress = Math.min(LOYALTY_TARGET, Math.max(0, realized - LOYALTY_TARGET * rows.length));
   const rewards = rows.map((row) => publicReward(row, row.status === "used" || row.status === "applied" ? String(row.packed_date ?? row.order_delivery_date ?? row.next_delivery_date ?? "") || null : null));
+  // A handed-over reward whose package was already paid leaves an open delivery credit; the
+  // next package charge (renewal) deducts it. Shown in the account until it is applied.
+  const credit = await first<Row>("SELECT COALESCE(SUM(amount_minor), 0) AS amount FROM credits_ledger WHERE customer_id = ? AND status = 'open' AND reason LIKE 'loyalty_reward:%'", customerId);
   return {
+    openDeliveryCreditMinor: Number(credit?.amount ?? 0),
     target: LOYALTY_TARGET,
     startDate: context.startDate,
     realizedSinceStart: realized,
@@ -241,4 +245,47 @@ export function checkoutRewardStatements(reward: { id: string }, customerId: str
       bindings: [rewardCode(), now, now, subscriptionId, orderId, deductedMinor > 0 ? orderId : null, deductedMinor > 0 ? "deducted" : "pending", reward.id, customerId] },
     audit("customer", customerId, "loyalty.reward_applied", "loyalty_reward", reward.id, null, { status: "applied", orderId, subscriptionId, deliveryDiscountMinor: deductedMinor }),
     guard.cleanup];
+}
+
+/**
+ * Admin overview (read-only): every subscriber or reward holder with realized deliveries toward
+ * the current 12-delivery round, their rewards and any open free-delivery credit. It counts with
+ * the same rule as the account card and does not unlock anything itself.
+ */
+export async function adminLoyaltyOverview() {
+  const context = await loyaltyContext();
+  const [customers, realized, rewards, credits] = await Promise.all([
+    all<Row>(`SELECT c.id, c.full_name, c.email, c.phone FROM customers c
+      WHERE EXISTS (SELECT 1 FROM subscriptions s WHERE s.customer_id = c.id) OR EXISTS (SELECT 1 FROM loyalty_rewards r WHERE r.customer_id = c.id)
+      ORDER BY c.full_name, c.id LIMIT 1000`),
+    all<Row>(`SELECT dor.customer_id, COUNT(DISTINCT d.delivery_date) AS realized FROM delivery_orders dor JOIN deliveries d ON d.id = dor.delivery_id
+      WHERE dor.status = 'delivered' AND dor.subscription_id IS NOT NULL AND d.delivery_date >= ? GROUP BY dor.customer_id`, context.startDate),
+    all<Row>(`SELECT r.id, r.customer_id, r.cycle_number, r.status, r.discount_status, r.gift_quantity, r.delivery_discount_minor, r.unlocked_at, r.claimed_at, r.applied_at, r.used_at, p.name AS product_name
+      FROM loyalty_rewards r JOIN products p ON p.id = r.gift_product_id ORDER BY r.customer_id, r.cycle_number DESC`),
+    all<Row>(`SELECT customer_id, SUM(amount_minor) AS amount FROM credits_ledger WHERE status = 'open' AND reason LIKE 'loyalty_reward:%' GROUP BY customer_id`),
+  ]);
+  const realizedBy = new Map(realized.map((row) => [String(row.customer_id), Number(row.realized)]));
+  const creditBy = new Map(credits.map((row) => [String(row.customer_id), Number(row.amount)]));
+  return {
+    startDate: context.startDate,
+    target: LOYALTY_TARGET,
+    giftQuantity: context.giftQuantity,
+    deliveryDiscountMinor: context.deliveryDiscountMinor,
+    customers: customers.map((customer) => {
+      const id = String(customer.id);
+      const own = rewards.filter((reward) => String(reward.customer_id) === id);
+      const total = realizedBy.get(id) ?? 0;
+      return {
+        id, fullName: customer.full_name, email: customer.email, phone: customer.phone,
+        realizedSinceStart: total,
+        progress: Math.min(LOYALTY_TARGET, Math.max(0, total - LOYALTY_TARGET * own.length)),
+        openDeliveryCreditMinor: creditBy.get(id) ?? 0,
+        rewards: own.map((reward) => ({
+          id: String(reward.id), cycle: Number(reward.cycle_number), status: String(reward.status) as LoyaltyStatus, discountStatus: String(reward.discount_status),
+          giftQuantity: Number(reward.gift_quantity), giftProductName: String(reward.product_name ?? ""), deliveryDiscountMinor: Number(reward.delivery_discount_minor),
+          unlockedAt: reward.unlocked_at ?? null, claimedAt: reward.claimed_at ?? null, appliedAt: reward.applied_at ?? null, usedAt: reward.used_at ?? null,
+        })),
+      };
+    }),
+  };
 }

@@ -50,7 +50,7 @@ export function renderTransactionalMessage(topic: string, data: Record<string, u
   }
   if (topic === "email.loyalty_reward_unlocked.requested") {
     return shell("Tvoj poklon je spreman!", [
-      "Hvala ti što si sa nama. Za tvoju vernost poklanjamo ti besplatnu dostavu uz koju stižu i 2 litra mleka.",
+      `Hvala ti što si sa nama. Za tvoju vernost poklanjamo ti ${Number(data.giftQuantity ?? 2)} litra mleka i jednu dostavu: ${money(data.deliveryDiscountMinor ?? 35000)} oduzimamo od sledećeg paketa ili porudžbine.`,
       "Nagradu preuzmi na svom nalogu, u delu Pregled. Jednim klikom je primenjuješ na sledeću dostavu.",
     ], data.accountUrl ? { label: "Preuzmi nagradu", url: `${String(data.accountUrl)}#pregled` } : undefined);
   }
@@ -58,7 +58,7 @@ export function renderTransactionalMessage(topic: string, data: Record<string, u
     return shell("Uplata je evidentirana", [greeting, `Uplata za porudžbinu ${orderNumber} je evidentirana. Fiskalni račun se obrađuje i biće poslat na ovu email adresu.`], accountAction);
   }
   if (topic === "email.invoice.requested") {
-    return shell("Obračun novog paketa pretplate", [greeting, `Obračun ${orderNumber} iznosi ${total}.`, data.paymentMethod === "cash" && data.paymentStatus !== "paid" ? "Ceo paket plaćate gotovinom pri prvoj dostavi. Preostale dostave tog paketa zatim su već plaćene." : "", deliveryDate ? `Prva planirana dostava u ovom obračunu je ${deliveryDate}.` : "", itemSummary ? `Stavke: ${itemSummary}.` : ""].filter(Boolean), accountAction);
+    return shell("Obračun novog paketa pretplate", [greeting, `Obračun ${orderNumber} iznosi ${total}.`, data.paymentMethod === "cash" && data.paymentStatus !== "paid" ? "Ceo paket plaćate gotovinom pri prvoj dostavi. Preostale dostave tog paketa zatim su već plaćene." : "", deliveryDate ? `Prva planirana dostava u ovom obračunu je ${formatDeliveryDate(deliveryDate)}` : "", itemSummary ? `Stavke: ${itemSummary}.` : ""].filter(Boolean), accountAction);
   }
   if (topic === "payment.method_required") {
     return shell("Potrebna je provera načina plaćanja", [greeting, `Automatska naplata za ${orderNumber} nije uspela. Porudžbina je sačuvana, ali je potrebno ažurirati način plaćanja.`], accountAction);
@@ -80,9 +80,9 @@ export function renderTransactionalMessage(topic: string, data: Record<string, u
       data.appliesTo === "package_and_onward" ? "Dodata količina stiže u svim preostalim dostavama paketa i u narednim paketima." : "",
       data.appliesTo === "next_delivery" ? "Dodata količina stiže samo u sledećoj dostavi." : "",
       surchargeLine(data.surcharge),
-      action === "skip_next" && data.previousDeliveryDate ? `Preskočena isporuka: ${formatDeliveryDate(String(data.previousDeliveryDate))}.` : "",
-      action === "pause" && data.pauseUntil ? `Pauza traje do ${formatDeliveryDate(String(data.pauseUntil))}.` : "",
-      !cancelled && deliveryDate ? `Sledeća dostava: ${formatDeliveryDate(deliveryDate)}.` : "",
+      action === "skip_next" && data.previousDeliveryDate ? `Preskočena isporuka: ${formatDeliveryDate(String(data.previousDeliveryDate))}` : "",
+      action === "pause" && data.pauseUntil ? `Pauza traje do ${formatDeliveryDate(String(data.pauseUntil))}` : "",
+      !cancelled && deliveryDate ? `Sledeća dostava: ${formatDeliveryDate(deliveryDate)}` : "",
       data.quantity ? `Nova količina: ${data.quantity}.` : "",
       data.cadence ? `Ritam: ${data.cadence === "biweekly" ? "svake dve nedelje" : "svake nedelje"}.` : "",
       !cancelled && data.cutoffAt ? `Rok za izmene: ${new Intl.DateTimeFormat("sr-Latn-RS", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/Belgrade" }).format(new Date(String(data.cutoffAt)))}.` : "",
@@ -94,7 +94,21 @@ export function renderTransactionalMessage(topic: string, data: Record<string, u
     return shell("Porudžbina je ažurirana", [greeting, `Porudžbina ${orderNumber}: ${statuses[String(data.fulfillmentStatus)] ?? "ažurirano"}.`, `Plaćanje: ${statuses[String(data.paymentStatus)] ?? "na čekanju"}.`, data.detailsChanged ? "Stavke ili adresa dostave su ažurirane." : "", itemSummary, `Ukupno: ${total}.`].filter(Boolean), accountAction);
   }
 
-  return shell("Potvrda porudžbine", [greeting, `Porudžbina ${orderNumber} je primljena. Ukupno: ${total}.`, data.kind === "subscription_invoice" && data.paymentMethod === "cash" && data.paymentStatus !== "paid" ? "Ceo paket plaćate gotovinom pri prvoj dostavi. Preostale dostave tog paketa zatim su već plaćene." : "", deliveryDate ? `Planirana dostava: ${deliveryDate}.` : "", itemSummary ? `Stavke: ${itemSummary}.` : ""].filter(Boolean), accountAction);
+  const confirmationLines = items.map((item) => {
+    const lineTotal = Number(item.line_total_minor ?? 0), unit = Number(item.unit_price_minor ?? 0), quantity = Number(item.quantity ?? 0);
+    const deliveries = unit > 0 && quantity > 0 ? Math.round(lineTotal / (unit * quantity)) : 1;
+    const label = `${quantity} × ${String(item.product_name ?? item.name ?? "")}${item.unit_label ? ` (${String(item.unit_label)})` : ""}`;
+    if (!("line_total_minor" in item)) return `${label}.`;
+    return deliveries > 1 ? `${label} po dostavi × ${deliveries} = ${money(lineTotal)}.` : `${label} = ${money(lineTotal)}.`;
+  });
+  const totals = data.subtotalMinor !== undefined ? [
+    `Proizvodi: ${money(data.subtotalMinor)}`,
+    Number(data.discountMinor ?? 0) > 0 ? `Popust: −${money(data.discountMinor)}` : "",
+    `Dostava: ${Number(data.deliveryFeeMinor ?? 0) > 0 ? money(data.deliveryFeeMinor) : "bez naknade"}`,
+    Number(data.creditAppliedMinor ?? 0) > 0 ? `Kredit: −${money(data.creditAppliedMinor)}` : "",
+    `Ukupno: ${total}`,
+  ].filter(Boolean).join(" · ") + "." : "";
+  return shell("Potvrda porudžbine", [greeting, `Porudžbina ${orderNumber} je primljena. Ukupno: ${total}.`, data.kind === "subscription_invoice" && data.paymentMethod === "cash" && data.paymentStatus !== "paid" ? "Ceo paket plaćate gotovinom pri prvoj dostavi. Preostale dostave tog paketa zatim su već plaćene." : "", deliveryDate ? `${data.kind === "subscription_invoice" ? "Prva dostava paketa" : "Planirana dostava"}: ${formatDeliveryDate(deliveryDate)}` : "", ...(confirmationLines.length ? ["Stavke:", ...confirmationLines] : []), totals].filter(Boolean), accountAction);
 }
 
 function surchargeLine(value: unknown) {
@@ -104,6 +118,8 @@ function surchargeLine(value: unknown) {
   return `Doplata: +${Number(surcharge.addedQuantity)} × ${money(surcharge.unitPriceMinor)}${Number(surcharge.deliveries) > 1 ? ` × ${Number(surcharge.deliveries)} dostave` : ""} = ${money(surcharge.amountMinor)} (porudžbina ${String(surcharge.orderNumber ?? "")}, plaćanje gotovinom ili uplatom na račun).`;
 }
 function formatDeliveryDate(date: string) {
+  if (!/^\d{4}-\d{2}-\d{2}/.test(date)) return date;
+  date = date.slice(0, 10);
   return new Intl.DateTimeFormat("sr-Latn-RS", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Belgrade" }).format(new Date(`${date}T12:00:00Z`));
 }
 function deliveryDay(date: string) {

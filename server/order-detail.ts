@@ -2,10 +2,11 @@ import { applyShippingSnapshot } from "./address-snapshot";
 import { all, first, type Row } from "./sql";
 import { assertDomain } from "./domain";
 import { deliveryDeadline } from "./delivery-cutoff";
+import { scheduledDeliveryDateSql } from "./packages";
 
 export async function orderDetail(id: string, customerId?: string) {
   let order = await first<Row>(
-    `SELECT o.*, c.full_name, c.phone, c.address_line_1, c.address_line_2, c.city, c.postal_code FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.id = ?${customerId ? " AND o.customer_id = ?" : ""}`,
+    `SELECT o.*, ${scheduledDeliveryDateSql("o")} AS scheduled_delivery_date, c.full_name, c.phone, c.address_line_1, c.address_line_2, c.city, c.postal_code FROM orders o JOIN customers c ON c.id = o.customer_id WHERE o.id = ?${customerId ? " AND o.customer_id = ?" : ""}`,
     id,
     ...(customerId ? [customerId] : []),
   );
@@ -31,6 +32,7 @@ export async function orderDetail(id: string, customerId?: string) {
           "payment_status",
           "fulfillment_status",
           "delivery_date",
+          "scheduled_delivery_date",
           "subtotal_minor",
           "discount_minor",
           "delivery_fee_minor",
@@ -51,7 +53,7 @@ export async function orderDetail(id: string, customerId?: string) {
     editReason: editable
       ? ""
       : locked
-        ? "Rok za izmenu i otkazivanje ove dostave je istekao."
+        ? "Ova dostava je zaključana, pa izmena i otkazivanje više nisu mogući."
         : "Samostalna izmena je dostupna za nenaplaćene jednokratne porudžbine koje čekaju pripremu. Za plaćenu porudžbinu javite nam se radi korekcije ili povraćaja.",
   };
 }

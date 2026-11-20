@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { MarketingReport } from "./marketing-report";
 import { formatDate, formatMoney, statusLabel } from "../lib/frontend";
-import { Empty, num, obj, plusDays, rows, str, today, type Requester, type Row } from "./workspace-shared";
+import { Empty, num, obj, plural, plusDays, rows, str, today, type Requester, type Row } from "./workspace-shared";
 export function Reports({request, version, onOrders}: {request: Requester; version: number; onOrders: (filters: Record<string,string>) => void}) {
   const [period, setPeriod] = useState("30"),
     [from, setFrom] = useState(plusDays(today(), -29)),
@@ -259,7 +259,7 @@ export function Reports({request, version, onOrders}: {request: Requester; versi
                           })
                         }
                       >
-                        {num(clicked.orders)} porudžbina · otvori dan →
+                        {plural(num(clicked.orders), "porudžbina", "porudžbine", "porudžbina")} · otvori dan →
                       </button>
                     ) : null}
                   </>

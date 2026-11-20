@@ -530,7 +530,7 @@ test("admin delivery export returns a complete formula-safe UTF-8 Spoke CSV", as
   const csv = new TextDecoder().decode(bytes);
   assert.match(
     csv,
-    /^"Address Line 1","Address Line 2","City","Postal Code","Customer name","Phone","Email","Notes","Order ID","Products"\r\n/,
+    /^"Address Line 1","Address Line 2","City","Postal Code","Customer name","Phone","Email","Notes","Order ID","Products","Cash to collect"\r\n/,
   );
   assert.match(csv, /Željko Petrović/);
   assert.match(csv, /3 x Kravlje mleko \(L\)/);
@@ -539,6 +539,8 @@ test("admin delivery export returns a complete formula-safe UTF-8 Spoke CSV", as
     /"'=HYPERLINK\(""https:\/\/attacker\.invalid""\)"/,
   );
   assert.match(csv, /"order_1"/);
+  // The stop's cash column comes last; nothing is pending in this fixture.
+  assert.match(csv, /"3 x Kravlje mleko \(L\)","0 RSD"\r\n$/);
 });
 
 test("an ungenerated admin delivery is an actionable empty state", async () => {

@@ -3,6 +3,7 @@
 
 import { BusinessPanel } from "./business-panel";
 import { PackageProgress } from "./package-progress";
+import { LoyaltyPanel } from "./loyalty-panel";
 import { FiscommPanel } from "./fiscomm-panel";
 import { ContentPagesPanel } from "./content-pages-panel";
 import { CommerceReadinessPanel } from "./commerce-readiness-panel";
@@ -61,7 +62,10 @@ export function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
+  // A success notice belongs to the tab where it was shown; switching tabs hides it.
+  const [noticeState, setNoticeState] = useState<{ text: string; tab: Tab }>({ text: "", tab: "pregled" });
+  const notice = noticeState.tab === activeTab ? noticeState.text : "";
+  const setNotice = (text: string) => setNoticeState({ text, tab: activeTab });
   const [deliveryDate, setDeliveryDate] = useState(businessDate);
   const [billingMonth, setBillingMonth] = useState(() => businessDate().slice(0, 7));
   const [ordersVersion, setOrdersVersion] = useState(0);
@@ -319,8 +323,9 @@ export function AdminDashboard() {
 
 
 
-          {activeTab === "kupci" ? <div className="work-segment" aria-label="Prikaz kupaca"><button aria-pressed={customerView === "list"} className={customerView === "list" ? "active" : ""} onClick={() => setCustomerView("list")}>Spisak kupaca</button><button aria-pressed={customerView === "packages"} className={customerView === "packages" ? "active" : ""} onClick={() => setCustomerView("packages")}>Preostale količine</button></div> : null}
+          {activeTab === "kupci" ? <div className="work-segment" aria-label="Prikaz kupaca"><button aria-pressed={customerView === "list"} className={customerView === "list" ? "active" : ""} onClick={() => setCustomerView("list")}>Spisak kupaca</button><button aria-pressed={customerView === "packages"} className={customerView === "packages" ? "active" : ""} onClick={() => setCustomerView("packages")}>Preostale količine</button><button aria-pressed={customerView === "loyalty"} className={customerView === "loyalty" ? "active" : ""} onClick={() => setCustomerView("loyalty")}>Vernost</button></div> : null}
           {activeTab === "kupci" && customerView === "packages" ? <PackageProgress request={adminFetch} version={ordersVersion} /> : null}
+          {activeTab === "kupci" && customerView === "loyalty" ? <LoyaltyPanel request={adminFetch} version={ordersVersion} /> : null}
           {activeTab === "kupci" ? <div hidden={customerView !== "list"}><CustomersPanel request={adminFetch} customers={data.customers} subscriptions={data.subscriptions} selectedId={selectedCustomer} onSelect={setSelectedCustomer} onNew={customer => { setSelectedCustomer(""); setManualCustomer(customer); setManualOpen(true); }} onChanged={() => void loadAdmin(true)} /></div> : null}
 
           {activeTab === "dostave" ? <DeliveriesPanel canCollectCash={role === "owner" || role === "manager"} initialView={role === "driver" ? "driver" : "pack"} request={adminFetch} date={deliveryDate} onDate={setDeliveryDate} version={ordersVersion} onExport={downloadDeliveryExport} onChanged={() => void loadAdmin(true)} /> : null}

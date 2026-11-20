@@ -9,6 +9,8 @@ const DEFAULT_HEADERS = Object.freeze([
   "Notes",
   "Order ID",
   "Products",
+  // Appended last so existing Spoke column mappings keep working.
+  "Cash to collect",
 ]);
 
 function text(value) {
@@ -58,7 +60,8 @@ function itemSummary(items, orderIndex) {
 }
 
 /**
- * Builds a deterministic RFC 4180 CSV: one finalized delivery per row.
+ * Builds a deterministic RFC 4180 CSV: one finalized delivery per row. `cashToCollect` is the
+ * amount the driver collects at that stop (already formatted, e.g. "1.050 RSD").
  * The UTF-8 BOM is on by default because this file is usually opened in Excel.
  */
 export function buildSpokeCsv(orders, { includeBom = true } = {}) {
@@ -80,6 +83,7 @@ export function buildSpokeCsv(orders, { includeBom = true } = {}) {
       text(order.note).trim(),
       requiredString(order.orderId, "orderId", index),
       itemSummary(order.items, index),
+      text(order.cashToCollect).trim(),
     ];
   });
 

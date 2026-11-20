@@ -4,7 +4,7 @@ import { serviceCity, assertSaleDate, selectSlot, slotGuard } from "./service-po
 import { resolvePromotions, reservePromotions } from "./promotions";
 import { effectivePrice } from "./product-details";
 import { billingSnapshot } from "./address-snapshot";
-import { createPackageStatements, openPackage, packageDates, packageOccurrences, packageProgress, packageSchedule, maximumPauseDate } from "./packages";
+import { createPackageStatements, openPackage, packageDates, packageOccurrences, packageProgress, packageSchedule, maximumPauseDate, scheduledDeliveryDateSql } from "./packages";
 import { normalizeDeliveryCity, deliveryCityForPostalCode } from "../app/lib/delivery-area";
 import { randomToken, sha256, stableJsonHash } from "./crypto";
 import { DomainError, assertDomain, emailAddress, enumValue, optionalString, positiveInt, rejectCardData, requiredString } from "./domain";
@@ -428,7 +428,7 @@ export async function getAccount(customerId: string) {
   const items = subscriptions.length ? await all<SubscriptionItemRow>(`SELECT si.*, p.name AS product_name, p.unit_label, p.price_minor AS catalog_price_minor, p.subscription_price_minor, p.sale_subscription_price_minor, p.sale_starts_at, p.sale_ends_at, p.allow_subscription FROM subscription_items si JOIN products p ON p.id = si.product_id WHERE si.subscription_id IN (${sqlPlaceholders(subscriptions.length)}) ORDER BY si.created_at`, ...subscriptions.map((subscription) => subscription.id)) : [];
   // The same unit price the server charges for a surcharge (doplata), so the preview matches.
   for (const item of items) item.price_minor = effectivePrice({ ...item, price_minor: item.catalog_price_minor }, Boolean(item.allow_subscription));
-  const orderRows = await all<Record<string, unknown> & { id: string }>("SELECT id, order_number, kind, payment_method, payment_status, fulfillment_status, delivery_date, subtotal_minor, discount_minor, delivery_fee_minor, credit_applied_minor, total_minor, currency, source_json, created_at FROM orders WHERE customer_id = ? ORDER BY created_at DESC LIMIT 50", customerId);
+  const orderRows = await all<Record<string, unknown> & { id: string }>(`SELECT o.id, o.order_number, o.kind, o.payment_method, o.payment_status, o.fulfillment_status, o.delivery_date, ${scheduledDeliveryDateSql("o")} AS scheduled_delivery_date, o.subtotal_minor, o.discount_minor, o.delivery_fee_minor, o.credit_applied_minor, o.total_minor, o.currency, o.source_json, o.created_at FROM orders o WHERE o.customer_id = ? ORDER BY o.created_at DESC LIMIT 50`, customerId);
   const surcharges = await customerSurcharges(customerId);
   // Orders are shown as base package, surcharge (doplata), add-on or one-time purchase with their payment.
   const orders = orderRows.map(({ source_json: source, ...order }) => {
@@ -487,6 +487,8 @@ export async function getAccount(customerId: string) {
     oneTimeDeliveries: [...new Set(oneTimeItems.map((item) => item.delivery_date))].map((date) => ({ date, items: oneTimeItems.filter((item) => item.delivery_date === date) })),
     orders,
     credits,
+    // The account address form offers Inđija only once its delivery is switched on.
+    indjijaEnabled: settings.indjijaEnabled,
   };
 }
 

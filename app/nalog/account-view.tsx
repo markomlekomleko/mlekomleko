@@ -46,6 +46,7 @@ type AccountPayload = {
   };
   subscriptions: Subscription[];
   loyalty?: Loyalty;
+  indjijaEnabled?: boolean;
   orders: Row[];
   addonProducts: Row[];
   deliveryHistory: Delivery[];
@@ -462,7 +463,7 @@ export function AccountView() {
                           <p>{surchargeText(order.surcharge as Row, locale)}</p>
                         ) : null}
                         <p>
-                          {order.role === "package" ? `Prva dostava paketa: ${formatDate(label(order.delivery_date), locale)}` : `Termin dostave: ${formatDate(label(order.delivery_date), locale)}`}
+                          {order.role === "package" ? `Prva dostava paketa: ${formatDate(label(order.scheduled_delivery_date) || label(order.delivery_date), locale)}` : `Termin dostave: ${formatDate(label(order.scheduled_delivery_date) || label(order.delivery_date), locale)}`}
                         </p>
                         <p>
                           {`Uplata: ${statusLabel(label(order.payment_status))} · ${deliveryStatus(label(order.fulfillment_status))}`}
@@ -610,6 +611,7 @@ export function AccountView() {
                 ) : (
                   <AddressEditor
                     customer={customer}
+                    indjijaEnabled={Boolean(account.indjijaEnabled)}
                     onSaved={(message) => { setNotice(message); setError(""); void loadAccount(); }}
                   />
                 )}

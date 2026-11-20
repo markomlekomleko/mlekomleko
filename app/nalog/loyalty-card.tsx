@@ -22,6 +22,8 @@ export type Loyalty = {
   gift: { quantity: number; deliveryDiscountMinor: number };
   rewards: LoyaltyReward[];
   available: LoyaltyReward | null;
+  /** Free-delivery credit from a handed-over reward, deducted from the next package charge. */
+  openDeliveryCreditMinor?: number;
 };
 
 /** 2 L at the subscription price + one delivery: the reward's sale value (850 RSD). */
@@ -45,13 +47,14 @@ export function LoyaltyCard({ loyalty, readOnly, onChange }: { loyalty: Loyalty;
   const [error, setError] = useState("");
   const value = loyalty.gift.quantity * GIFT_MILK_PRICE_MINOR + loyalty.gift.deliveryDiscountMinor;
   const reward = loyalty.available;
+  const credit = Number(loyalty.openDeliveryCreditMinor ?? 0);
   const history = loyalty.rewards.filter((item) => item.status === "applied" || item.status === "used");
   async function act(action: "claim" | "apply", rewardId: string) {
     setBusy(true);
     setError("");
     try {
       const result = await fetchJson<{ loyalty: Loyalty }>("/api/account/loyalty", { method: "POST", body: JSON.stringify({ action, rewardId }) });
-      onChange(result.loyalty, action === "claim" ? "Nagrada je preuzeta. Klikni „Iskoristi“ i stiže uz sledeću dostavu." : "Nagrada je primenjena na sledeću dostavu: 2 L mleka na poklon i dostava bez naknade.");
+      onChange(result.loyalty, action === "claim" ? "Nagrada je preuzeta. Klikni „Iskoristi“ i stiže uz sledeću dostavu." : `Nagrada je primenjena: ${loyalty.gift.quantity} L mleka stiže na poklon uz sledeću dostavu, a ${formatMoney(loyalty.gift.deliveryDiscountMinor / 100, locale)} za dostavu oduzimamo od sledećeg paketa.`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Nagrada trenutno nije dostupna. Pokušaj ponovo.");
     } finally {
@@ -80,7 +83,7 @@ export function LoyaltyCard({ loyalty, readOnly, onChange }: { loyalty: Loyalty;
           : "Krug je završen. Novi počinje sa sledećom dostavom."}
       </p>
       <p className="account-loyalty-gift">
-        {`Posle 12 realizovanih dostava poklanjamo ti 2 L mleka i besplatnu dostavu (vrednost ${formatMoney(value / 100, locale)}).`}
+        {`Posle 12 realizovanih dostava poklanjamo ti 2 L mleka i jednu dostavu: njenu cenu oduzimamo od sledećeg paketa (ukupna vrednost ${formatMoney(value / 100, locale)}).`}
       </p>
       <p className="small-text account-muted">Računaju se samo realizovane dostave. Preskočene i pauzirane ne ulaze u brojanje.</p>
       {reward ? (
@@ -88,7 +91,7 @@ export function LoyaltyCard({ loyalty, readOnly, onChange }: { loyalty: Loyalty;
           <div>
             <span className="account-status is-ready">{rewardStatus(reward.status)}</span>
             <strong>Tvoj poklon je spreman!</strong>
-            <span>{`${reward.giftQuantity} L mleka + dostava bez naknade (${formatMoney(reward.deliveryDiscountMinor / 100, locale)} manje)`}</span>
+            <span>{`${reward.giftQuantity} L mleka + ${formatMoney(reward.deliveryDiscountMinor / 100, locale)} popusta na dostavu, koji oduzimamo od sledećeg paketa`}</span>
           </div>
           {reward.status === "unlocked" ? (
             <button className="button small" type="button" disabled={busy || readOnly} onClick={() => void act("claim", reward.id)}>Preuzmi nagradu</button>
@@ -96,6 +99,11 @@ export function LoyaltyCard({ loyalty, readOnly, onChange }: { loyalty: Loyalty;
             <button className="button small" type="button" disabled={busy || readOnly} onClick={() => void act("apply", reward.id)}>Iskoristi</button>
           )}
         </div>
+      ) : null}
+      {credit > 0 ? (
+        <p className="account-loyalty-credit" role="status">
+          <strong>{`Imaš ${formatMoney(credit / 100, locale)} popusta na dostavu — oduzimamo ga od sledećeg paketa.`}</strong>
+        </p>
       ) : null}
       {error ? <p className="notice error" role="alert">{error}</p> : null}
       {history.length ? (
@@ -106,7 +114,7 @@ export function LoyaltyCard({ loyalty, readOnly, onChange }: { loyalty: Loyalty;
               <span>
                 {item.status === "used"
                   ? <>Poklon uručen: {formatDate(item.deliveryDate ?? item.usedAt ?? undefined, locale)}</>
-                  : <>Stiže uz dostavu: {formatDate(item.deliveryDate ?? undefined, locale)} <br />Ako je preskočiš, poklon prelazi na sledeću.</>}
+                  : <>Stiže uz dostavu: {formatDate(item.deliveryDate ?? undefined, locale)} <br />Ako je preskočiš, poklon prelazi na sledeću.{item.discountStatus === "pending" ? <><br />{`Posle te dostave ${formatMoney(item.deliveryDiscountMinor / 100, locale)} za dostavu oduzimamo od sledećeg paketa.`}</> : null}</>}
               </span>
             </li>
           ))}

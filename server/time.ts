@@ -52,7 +52,8 @@ export function cutoffForDelivery(date: string, cutoffHours: number, localTime =
 
 export function assertBeforeCutoff(cutoffAt: string, lockedAt?: string | null, now = new Date()): void {
   if (lockedAt || !isBeforeCutoff(cutoffAt, now)) {
-    throw new DomainError("DELIVERY_LOCKED", "Rok za izmene ove dostave je prošao, pa se više ne može menjati. Izaberite sledeći termin dostave.", 409, { cutoffAt });
+    // Neutral wording: staff may lock (start preparing) a route before the customer deadline.
+    throw new DomainError("DELIVERY_LOCKED", "Ova dostava je zaključana i više ne može da se menja. Izmene važe od sledećeg termina dostave.", 409, { cutoffAt });
   }
 }
 

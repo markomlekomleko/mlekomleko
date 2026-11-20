@@ -1,8 +1,9 @@
 import { env } from "@/server/runtime";
-import { assertDomain } from "./domain";
+import { assertDomain, enumValue, requiredString } from "./domain";
+import { audit } from "./outbox";
 import { emailConfigured, sendEmailMessage } from "./messaging";
 import { enforceRateLimit } from "./rate-limit";
-import { all, run } from "./sql";
+import { all, batch, first, run, type Row } from "./sql";
 
 /**
  * Leads from the public site (spec 19 Nov 2026): the two mlekomat B2B forms and the
@@ -84,6 +85,22 @@ export async function submitLead(request: Request, input: Record<string, unknown
   return { saved: true };
 }
 
+/** New (unhandled) leads first, newest first within each group. */
 export async function listLeads(limit = 200) {
-  return all("SELECT id, kind, name, email, phone, city, address, details, locale, status, created_at FROM site_leads ORDER BY created_at DESC LIMIT ?", Math.min(Math.max(limit, 1), 500));
+  return all("SELECT id, kind, name, email, phone, city, address, details, locale, status, created_at FROM site_leads ORDER BY CASE WHEN status = 'new' THEN 0 ELSE 1 END, created_at DESC, id DESC LIMIT ?", Math.min(Math.max(limit, 1), 500));
+}
+
+/** „Obrađeno": marks a lead handled (or back to new) with an audit entry in the same batch. */
+export async function setLeadStatus(input: Record<string, unknown>) {
+  const id = requiredString(input.id, "id", 100);
+  const status = enumValue(input.status, "status", ["new", "handled"] as const);
+  const lead = await first<Row>("SELECT id, status FROM site_leads WHERE id = ?", id);
+  assertDomain(lead, "LEAD_NOT_FOUND", "Prijava nije pronađena.", 404);
+  if (lead.status !== status) {
+    await batch([
+      { sql: "UPDATE site_leads SET status = ? WHERE id = ?", bindings: [status, id] },
+      audit("admin", "admin-panel", status === "handled" ? "lead.handled" : "lead.reopened", "site_lead", id, { status: lead.status }, { status }),
+    ]);
+  }
+  return { lead: { id, status } };
 }

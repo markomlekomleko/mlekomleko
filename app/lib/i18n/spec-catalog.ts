@@ -211,4 +211,7 @@ export const specCatalog: Record<string, readonly [string, string]> = {
   "Pretplata stiže jednom nedeljno, na dan koji ovde izabereš.": ["The subscription arrives once a week, on the day you choose here.", "Подписка приезжает раз в неделю, в выбранный здесь день."],
   "Plaćaš pri dostavi": ["You pay on delivery", "Оплата при доставке"],
   "U ovom gradu ne dostavljamo na dan tvoje pretplate. Piši nam da zajedno promenimo dan dostave.": ["We don't deliver in this city on your subscription's day. Write to us and we'll change the delivery day together.", "В этом городе мы не доставляем в день вашей подписки. Напишите нам, и мы вместе изменим день доставки."],
+  "Marko Krsmančić": ["Marko Krsmančić", "Марко Крсманчич"],
+  "osnivač Mleko i Mleko": ["founder of Mleko i Mleko", "основатель Mleko i Mleko"],
+  "Marko Krsmančić, osnivač Mleko i Mleko, ispred mlekomata": ["Marko Krsmančić, founder of Mleko i Mleko, in front of a milk machine", "Марко Крсманчич, основатель Mleko i Mleko, у молокомата"],
 };

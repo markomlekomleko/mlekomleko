@@ -26,6 +26,12 @@ export const shortDate = (date: string) =>
         timeZone: "Europe/Belgrade",
       }).format(new Date(date.length === 10 ? `${date}T12:00:00Z` : date))
     : "—";
+/** Serbian count with its noun: plural(1, "kupac", "kupca", "kupaca") → "1 kupac", 3 → "3 kupca", 5 → "5 kupaca". */
+export function plural(count: number, one: string, few: string, many: string) {
+  const last = Math.abs(count) % 10, lastTwo = Math.abs(count) % 100;
+  const word = lastTwo >= 11 && lastTwo <= 14 ? many : last === 1 ? one : last >= 2 && last <= 4 ? few : many;
+  return `${count} ${word}`;
+}
 export const plusDays = (date: string, n: number) =>
   new Date(Date.parse(`${date}T12:00:00Z`) + n * 86400000)
     .toISOString()

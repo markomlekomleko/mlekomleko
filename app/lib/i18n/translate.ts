@@ -9,7 +9,7 @@ const cyrillic = "абвгдђежзијклмнопрстћуфхцчш";
 const letters = Object.fromEntries([...latin].map((letter, i) => [letter, cyrillic[i]]));
 // Order numbers and codes (MM-20261117-PK1686YU, B2B) must stay byte-identical to
 // emails and support records, so uppercase tokens that carry a digit are never converted.
-const codeToken = /([A-Z]{1,4}-\d{6,}-[A-Z0-9]+|\b(?=[A-Z]*\d)[A-Z0-9]*[A-Z][A-Z0-9]*\b)/;
+const codeToken = /([A-Z]{1,4}-\d{6,}-[A-Z0-9_-]+|\b(?=[A-Z]*\d)[A-Z0-9]*[A-Z][A-Z0-9]*\b)/;
 export function toCyrillic(text: string): string {
   return text.split(codeToken).map((piece, index) => (index % 2 ? piece : transliterate(piece))).join("");
 }

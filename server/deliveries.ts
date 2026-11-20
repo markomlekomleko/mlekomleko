@@ -8,9 +8,10 @@ import { all, batch, first, type SqlValue } from "./sql";
 import { addLocalDays, assertLocalDate, cutoffForDelivery, daysBetween, isCadenceDue } from "./time";
 import { getBusinessSettings } from "./settings";
 import { buildXlsx } from "./xlsx";
+import { serbianDate } from "./order-export";
 import { mutationGuard } from "./mutation-guard";
 import { buildSpokeCsv } from "../integrations/spoke-csv.mjs";
-import { packagePaymentEligibleSql } from "./cash-collection";
+import { deliveryPaymentOrders, packagePaymentEligibleSql } from "./cash-collection";
 import { pendingGiftRewards } from "./loyalty";
 
 interface DeliveryRow extends Record<string, unknown> {
@@ -270,45 +271,75 @@ export async function lockOverdueDeliveries(customerId?: string) {
   return [...completed];
 }
 
-function exportRows(payload: Awaited<ReturnType<typeof deliveryPayload>>) {
-  return payload.orders.map((order) => {
+/** "1.050 RSD": what the driver collects at a stop, in whole dinars when possible. */
+function cashLabel(minor: number) {
+  return `${new Intl.NumberFormat("sr-Latn-RS", { minimumFractionDigits: minor % 100 ? 2 : 0, maximumFractionDigits: 2 }).format(minor / 100)} RSD`;
+}
+
+/**
+ * One line per product for the driver ("7 x Domaće kravlje mleko (1 L)"), however many sources
+ * (package, surcharge, next-only addition, one-time order) contribute to it. The loyalty gift
+ * stays its own line so it is handed over as a gift.
+ */
+export function aggregateStopItems(items: Array<Record<string, unknown>>) {
+  const lines = new Map<string, { name: string; unit: string; quantity: number }>();
+  for (const item of items) {
+    const quantity = Number(item.quantity);
+    if (!(quantity > 0)) continue;
+    const gift = item.source_type === "loyalty_gift";
+    const key = `${gift ? "gift" : "product"}|${String(item.product_id ?? item.product_name)}|${String(item.unit_label ?? "")}`;
+    const line = lines.get(key);
+    if (line) line.quantity += quantity;
+    else lines.set(key, { name: String(item.product_name), unit: String(item.unit_label ?? ""), quantity });
+  }
+  return [...lines.values()];
+}
+
+async function exportRows(payload: Awaited<ReturnType<typeof deliveryPayload>>) {
+  return Promise.all(payload.orders.map(async (order) => {
     const snapshot = order.customer_snapshot as Record<string, unknown>;
     const items = order.items as Array<Record<string, unknown>>;
+    // The same rule as the admin route view (Razvoz): every pending cash order behind this stop.
+    const due = (await deliveryPaymentOrders(String(order.id), items.map((item) => String(item.order_item_id ?? "")).filter(Boolean), order.source_order_id))
+      .filter((row) => row.payment_method === "cash" && row.payment_status === "pending")
+      .reduce((sum, row) => sum + Number(row.total_minor), 0);
     return {
       deliveryAddress: { line1: snapshot.addressLine1, line2: snapshot.addressLine2, city: snapshot.city, postalCode: snapshot.postalCode },
       customer: { fullName: snapshot.fullName, phone: snapshot.phone, email: snapshot.email },
       note: order.note,
       orderId: order.source_order_id ?? order.subscription_id ?? order.id,
-      items: items.map((item) => ({ name: item.product_name, unit: item.unit_label, quantity: Number(item.quantity) })),
+      items: aggregateStopItems(items),
+      cashToCollect: cashLabel(due),
+      cashToCollectMinor: due,
     };
-  });
+  }));
 }
 
 export async function spokeCsv(rawDate: unknown): Promise<string> {
   const date = assertLocalDate(rawDate);
   await getDelivery(date);
   const payload = await deliveryPayload(date);
-  return buildSpokeCsv(exportRows(payload));
+  return buildSpokeCsv(await exportRows(payload));
 }
 
 export async function deliveryXlsx(rawDate: unknown): Promise<Uint8Array> {
   const date = assertLocalDate(rawDate);
   await getDelivery(date);
   const payload = await deliveryPayload(date);
-  const deliveries = exportRows(payload);
+  const deliveries = await exportRows(payload);
   return buildXlsx([
     {
       name: "Dostave",
       rows: [
-        ["Address Line 1", "Address Line 2", "City", "Postal Code", "Customer name", "Phone", "Email", "Notes", "Order ID", "Products"],
-        ...deliveries.map((order) => [order.deliveryAddress.line1 as string, order.deliveryAddress.line2 as string, order.deliveryAddress.city as string, order.deliveryAddress.postalCode as string, order.customer.fullName as string, order.customer.phone as string, order.customer.email as string, order.note, order.orderId as string, order.items.map((item) => `${item.quantity} x ${String(item.name)}${item.unit ? ` (${String(item.unit)})` : ""}`).join("; ")]),
+        ["Address Line 1", "Address Line 2", "City", "Postal Code", "Customer name", "Phone", "Email", "Notes", "Order ID", "Products", "Cash to collect"],
+        ...deliveries.map((order) => [order.deliveryAddress.line1 as string, order.deliveryAddress.line2 as string, order.deliveryAddress.city as string, order.deliveryAddress.postalCode as string, order.customer.fullName as string, order.customer.phone as string, order.customer.email as string, order.note, order.orderId as string, order.items.map((item) => `${item.quantity} x ${item.name}${item.unit ? ` (${item.unit})` : ""}`).join("; "), order.cashToCollect]),
       ],
     },
     {
       name: "Priprema",
       rows: [
         ["Datum dostave", "Proizvod", "Jedinica", "Ukupna količina"],
-        ...payload.preparation.map((item) => [date, item.product_name as string, item.unit_label as string, Number(item.total_quantity)]),
+        ...payload.preparation.map((item) => [serbianDate(date), item.product_name as string, item.unit_label as string, Number(item.total_quantity)]),
       ],
     },
   ]);

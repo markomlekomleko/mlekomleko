@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> { return localizedMe
  * statement. The photo stays empty until the owner sends it; until then the official
  * logo stands in its place. The statement's authorship still needs the owner's confirmation.
  */
-const founder = { photo: "", alt: "" };
+const founder = { photo: "", alt: "Marko Krsmančić, osnivač Mleko i Mleko, ispred mlekomata" };
 
 export default async function AboutPage() {
   const localize = await getLocalize();
@@ -66,6 +66,7 @@ export default async function AboutPage() {
             <h2 id="osnivac-title">Ko stoji iza Mleko i Mleko?</h2>
             <blockquote className="about-founder-quote">
               <p>„Želeli smo da domaće mleko ponovo bude lako dostupno. Da kupci znaju ko ga proizvodi, da mogu da pogledaju analize i da ga dobiju na svoju adresu. Naš posao je da povežemo dobre proizvođače i ljude koji cene njihov rad.“</p>
+              <footer className="about-founder-name"><strong>Marko Krsmančić</strong><span>osnivač Mleko i Mleko</span></footer>
             </blockquote>
           </div>
         </div>

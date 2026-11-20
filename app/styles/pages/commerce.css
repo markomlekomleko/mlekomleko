@@ -1054,3 +1054,6 @@ body:has(.buy-bar[data-visible="true"]) .site-footer { padding-bottom: 5.5rem; }
 
 .product-detail-media { padding: 20px; background: var(--blush); }
 .product-detail-media img { object-fit: contain; }
+
+/* Order confirmation: short line/total summary of what was just ordered. */
+.order-confirmation-summary { display: grid; gap: 6px; margin: 16px 0; padding: 14px 16px; border-radius: 14px; background: rgba(255, 255, 255, 0.7); text-align: left; }

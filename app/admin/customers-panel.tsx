@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { formatDate, formatMoney, statusLabel } from "../lib/frontend";
+import { ApiError, formatDate, formatMoney, statusLabel } from "../lib/frontend";
 import {
   actionLabel,
   Dialog,
@@ -8,6 +8,7 @@ import {
   email,
   num,
   obj,
+  plural,
   plusDays,
   rows,
   str,
@@ -129,7 +130,7 @@ export function CustomersPanel({
             <h2>Kupci i njihove dostave</h2>
           </div>
           <span className="work-badge">
-            {found?.total ?? customers.length} kupaca
+            {plural(found?.total ?? customers.length, "kupac", "kupca", "kupaca")}
           </span>
         </div>
         <div className="form-grid">
@@ -194,7 +195,7 @@ export function CustomersPanel({
                   {str(c.phone) || email(c.email) || "Kontakt nije unet"}
                 </small>
                 <small>
-                  {str(c.city)} · {num(c.order_count)} porudžbina
+                  {str(c.city)} · {plural(num(c.order_count), "porudžbina", "porudžbine", "porudžbina")}
                 </small>
               </span>
               <span className="work-card-end">
@@ -332,7 +333,7 @@ export function CustomersPanel({
                   <span>
                     <strong>{str(o.order_number)}</strong>
                     <small>
-                      {formatDate(str(o.delivery_date))} ·{" "}
+                      {formatDate(str(o.scheduled_delivery_date ?? o.delivery_date))} ·{" "}
                       {statusLabel(str(o.fulfillment_status))}
                     </small>
                   </span>
@@ -385,6 +386,7 @@ function SubscriptionControl({
   const [action, setAction] = useState(""),
     [date, setDate] = useState(plusDays(str(s.nextDeliveryDate), 14)),
     [quantity, setQuantity] = useState(1),
+    [currentQuantity, setCurrentQuantity] = useState(1),
     [itemId, setItemId] = useState(""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -423,8 +425,10 @@ function SubscriptionControl({
       setAction("");
       onChanged(true);
     } catch (e) {
+      // Keep the form open with the server's reason (e.g. a paid quantity cannot be reduced).
+      // Only a version conflict needs fresh data; reloading otherwise would hide the message.
       setError(e instanceof Error ? e.message : "Promena nije sačuvana.");
-      onChanged();
+      if (e instanceof ApiError && e.code === "SUBSCRIPTION_VERSION_CONFLICT") onChanged();
     } finally {
       setBusy(false);
     }
@@ -462,6 +466,8 @@ function SubscriptionControl({
                 setAction("update_item");
                 setItemId(str(i.id));
                 setQuantity(num(i.quantity));
+                setCurrentQuantity(num(i.quantity));
+                setError("");
               }}
             >
               Promeni količinu
@@ -471,8 +477,8 @@ function SubscriptionControl({
       ))}
       {s.locked && s.status === "active" ? (
         <p className="work-hint">
-          Rok za promenu ovog termina je prošao. Pripremljena dostava se ne
-          menja.
+          Ovaj termin je zaključan (rok je prošao ili je priprema počela).
+          Pripremljena dostava se ne menja.
         </p>
       ) : null}
       <div className="button-row">
@@ -537,7 +543,7 @@ function SubscriptionControl({
               <span>Nova količina po dostavi</span>
               <input
                 type="number"
-                min="1"
+                min={currentQuantity}
                 max="100"
                 value={quantity}
                 onChange={(e) => setQuantity(Number(e.target.value))}
@@ -551,7 +557,7 @@ function SubscriptionControl({
                 busy ||
                 (action === "update_item" &&
                   (!Number.isInteger(quantity) ||
-                    quantity < 1 ||
+                    quantity < currentQuantity ||
                     quantity > 100)) ||
                 (action === "pause" && date <= str(s.nextDeliveryDate))
               }

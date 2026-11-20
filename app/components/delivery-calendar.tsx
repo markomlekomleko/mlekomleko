@@ -40,7 +40,8 @@ export function DeliveryCalendar({ schedule, value, onChange, recurring }: {
           <div className="choice-row">
             {schedule.weekdays.map(day => <label key={day} className={`delivery-day-choice ${selectedDay === day ? "is-selected" : ""}`}>
               <input type="radio" name="deliveryWeekday" value={day} checked={selectedDay === day} disabled={!schedule.dates.some(date => weekday(date) === day)} onChange={() => {
-                const next = schedule.dates.find(date => weekday(date) === day && date >= value) ?? schedule.dates.find(date => weekday(date) === day)!;
+                // Switching the weekday always starts from its nearest available date.
+                const next = schedule.dates.find(date => weekday(date) === day)!;
                 onChange(next); setMonth(next.slice(0, 7));
               }} />{dayNames[day]}
             </label>)}
@@ -48,7 +49,7 @@ export function DeliveryCalendar({ schedule, value, onChange, recurring }: {
         </fieldset>
         <div className="field">
           <span>{recurring ? "Datum prve dostave" : "Datum dostave"}</span>
-          <button className="button secondary calendar-trigger" type="button" aria-expanded={open} aria-controls="delivery-calendar" onClick={() => { setMonth(value.slice(0, 7)); setOpen(!open); }}>
+          <button className="button secondary calendar-trigger" type="button" aria-label={value ? `Otvori kalendar dostave, izabrano: ${formatDate(value, locale)}` : "Otvori kalendar dostave"} aria-expanded={open} aria-controls="delivery-calendar" onClick={() => { setMonth(value.slice(0, 7)); setOpen(!open); }}>
             <span>{value ? formatDate(value, locale) : "Izaberi datum"}</span><span aria-hidden="true">▦</span>
           </button>
         </div>

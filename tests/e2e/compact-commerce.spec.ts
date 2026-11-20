@@ -28,7 +28,7 @@ test("the product page reaches price and purchase controls without a long scroll
   await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "false");
   await expect(page.locator(".cart-count")).toHaveText(cyr("2"));
   await expect(page.locator(".cart-link svg")).toBeVisible();
-  await page.getByRole("button", { name: cyr("Napuni frižider, 2 jedinica"), exact: true }).click();
+  await page.getByRole("button", { name: cyr("Otvori frižider, 2 jedinice"), exact: true }).click();
   await expect(page.locator(".cart-drawer")).toHaveAttribute("data-open", "true");
   await expect(page.locator(".drawer-item")).toHaveCount(1);
   await expect(page.locator(".cart-drawer-foot .button")).toHaveAttribute("href", "/checkout");

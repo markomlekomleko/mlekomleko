@@ -89,7 +89,9 @@ test('V-3 cart and checkout skip a route locked ahead of its cutoff and explain 
 
   const locked = await checkout([line()], { deliveryDate: '2027-01-01' });
   expectError(locked, 409, 'DELIVERY_LOCKED');
-  assert.match(locked.body.error.message, /Rok za izmene/);
+  // Locked by staff before its cutoff: neutral wording, no claim that the deadline passed.
+  assert.match(locked.body.error.message, /zaključana/);
+  assert.doesNotMatch(locked.body.error.message, /prošao|istekao/);
 });
 
 // ---------- V-4: refund execution issues the fiscal refund of the undelivered remainder ----------

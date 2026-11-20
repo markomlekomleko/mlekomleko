@@ -263,6 +263,7 @@
 .account-loyalty-gift { margin: 0 0 6px; }
 .account-loyalty-reward { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 6px; padding: 14px 16px; border: 1.5px solid var(--brand-dark); border-radius: 16px; background: #fff; }
 .account-loyalty-reward > div { display: grid; gap: 4px; justify-items: start; }
+.account-loyalty-credit { margin: 14px 0 6px; padding: 12px 16px; border-radius: 14px; background: var(--cream, #f5f1e8); }
 .account-dashboard .account-status.is-ready { background: var(--brand-dark); color: #fff; }
 .account-loyalty-history { display: grid; gap: 8px; margin: 10px 0; }
 .account-loyalty-history li { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: .86rem; }

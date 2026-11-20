@@ -13,6 +13,7 @@ import {
   today,
   type Row,
   type Requester,
+  plural,
 } from "./workspace-shared";
 export function DeliveriesPanel({
   request,
@@ -180,7 +181,7 @@ export function DeliveriesPanel({
             {!data ? "Spisak nije učitan" : isLocked ? "Spisak je zaključan" : "Otvoreno za pripremu"}
           </span>
         </div>
-        {data ? <p className="work-delivery-summary">{orders.length} dostava · {rows(data.preparation).reduce((sum, item) => sum + num(item.total_quantity), 0)} pakovanja</p> : null}
+        {data ? <p className="work-delivery-summary">{plural(orders.length, "dostava", "dostave", "dostava")} · {plural(rows(data.preparation).reduce((sum, item) => sum + num(item.total_quantity), 0), "pakovanje", "pakovanja", "pakovanja")}</p> : null}
         <details className="work-date-picker"><summary>Promeni datum</summary>
         <div className="work-delivery-controls">
           <label className="field">
@@ -392,7 +393,7 @@ export function DeliveriesPanel({
           <div className="work-form">
             <p>
               Zaključavate spisak za <strong>{formatDate(date)}</strong> sa{" "}
-              {orders.length} dostava. Posle ovoga promene neće menjati spisak,
+              {plural(orders.length, "dostava", "dostave", "dostava")}. Posle ovoga promene neće menjati spisak,
               čak ni ako redovan rok još nije prošao.
             </p>
             <p>Proverite proizvode i adrese pre potvrde.</p>

@@ -76,7 +76,7 @@ export function getDemoAccount() {
     oneTimeDeliveries: [],
     loyalty: {
       target: 12, startDate: addLocalDays(firstDate, -42), realizedSinceStart: 8, progress: 8, remaining: 4,
-      gift: { quantity: 2, deliveryDiscountMinor: 35000 }, rewards: [], available: null,
+      gift: { quantity: 2, deliveryDiscountMinor: 35000 }, rewards: [], available: null, openDeliveryCreditMinor: 0,
     },
   };
 }

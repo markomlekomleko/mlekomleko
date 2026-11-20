@@ -295,6 +295,15 @@ export async function insights(params: URLSearchParams) {
     )
   )
     nextDate = addLocalDays(nextDate, 1);
+  // On a delivery day the Home screen shows today's (often already locked) route separately,
+  // so also name the next route after today for the "Sledeći termin" card.
+  let nextRouteDate = addLocalDays(today, 1);
+  for (let guard = 0; guard < 14 &&
+    !allDeliveryWeekdays(settings).includes(
+      new Date(`${nextRouteDate}T12:00:00Z`).getUTCDay(),
+    ); guard++
+  )
+    nextRouteDate = addLocalDays(nextRouteDate, 1);
   const upcoming = await generateDelivery(nextDate, "admin-preview", true);
   const paymentRows = (await Promise.all(upcoming.orders.map(order=>deliveryPaymentOrders(String(order.id),order.items.map(item=>String(item.order_item_id ?? "")).filter(Boolean),order.source_order_id)))).flat();
   const due = [...new Map(paymentRows.map(order=>[order.id,order])).values()].filter(order=>order.payment_method === "cash" && order.payment_status === "pending").reduce((sum,order)=>sum+Number(order.total_minor),0);
@@ -308,6 +317,7 @@ export async function insights(params: URLSearchParams) {
     failures,
     upcoming,
     nextDate,
+    nextRouteDate,
     nextBookingDate: nextWindow.deliveryDate,
     marketing: await marketingReport(from, to),
     totals: {

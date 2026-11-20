@@ -328,7 +328,7 @@ export function formatDate(value: string | number | Date | undefined, locale: Lo
     day: "2-digit",
     month: "long",
     year: "numeric",
-  }).format(date);
+  }).format(date).replace(/\.$/, ""); // Serbian dates end in "." — sentences add their own ("2026..").
 }
 
 /** Server-side `positiveInt(item.quantity, …, 100)` in server/commerce.ts is the real limit. */
@@ -402,6 +402,24 @@ export function statusLabel(value?: string) {
     delivered: "Isporučena",
     pending: "Na čekanju",
     paid: "Plaćeno",
+    planned: "Planirana",
+    failed: "Neuspešno",
+    refunded: "Refundirano",
+    open: "Otvorena",
+    completed: "Završena",
+    out_for_delivery: "Na putu",
+    // Fiscal receipts and refund requests
+    issued: "Izdat",
+    processing: "U obradi",
+    requested: "Zatraženo",
+    approved: "Odobreno",
+    rejected: "Odbijeno",
+    unknown: "Čeka proveru",
+    // Staff roles
+    owner: "Vlasnik",
+    manager: "Menadžer",
+    finance: "Finansije",
+    driver: "Dostavljač",
   };
   return labels[value ?? ""] ?? value ?? "-";
 }

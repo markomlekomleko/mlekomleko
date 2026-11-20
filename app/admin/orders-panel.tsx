@@ -5,7 +5,7 @@ import {
   OrderItemEditor,
   type EditableOrder,
 } from "../components/order-item-editor";
-import { Dialog, obj, rows, email } from "./workspace-shared";
+import { Dialog, obj, plural, rows, email } from "./workspace-shared";
 import { formatDate, formatMoney, statusLabel } from "../lib/frontend";
 
 type Row = Record<string, unknown>;
@@ -307,7 +307,7 @@ export function OrdersPanel({
       ) : result ? (
         <>
           <p role="status">
-            Pronađeno: {result.total} porudžbina
+            Pronađeno: {plural(result.total, "porudžbina", "porudžbine", "porudžbina")}
             {result.total
               ? ` · Prikaz ${(result.page - 1) * result.pageSize + 1}–${Math.min(result.page * result.pageSize, result.total)}`
               : ""}
@@ -380,7 +380,7 @@ export function OrdersPanel({
         </>
       ) : null}
       {bulk ? <Dialog title="Potvrda gotovinskih uplata" busy={bulkBusy} onClose={()=>setBulk(null)}><div className="work-form">
-        <p>Izabrano je <strong>{bulk.length} porudžbina</strong>. Ukupno primljeno: <strong>{formatMoney(bulk.reduce((sum,o)=>sum+number(o.total_minor),0)/100)}</strong>.</p>
+        <p>Izabrano je <strong>{plural(bulk.length, "porudžbina", "porudžbine", "porudžbina")}</strong>. Ukupno primljeno: <strong>{formatMoney(bulk.reduce((sum,o)=>sum+number(o.total_minor),0)/100)}</strong>.</p>
         <p>Ovo evidentira uplatu. Uručene količine potvrđujete u Dostavama.</p>
         <label className="work-check"><input type="checkbox" checked={cashConfirmed} onChange={e=>setCashConfirmed(e.target.checked)} /> Potvrđujem da je navedena gotovina stvarno primljena.</label>
         {error ? <p role="alert" className="notice error">{error}</p> : null}
@@ -402,12 +402,12 @@ export function OrdersPanel({
                 {string(obj(detail.order).city)}
               </p>
               <p>
-                Dostava {formatDate(string(obj(detail.order).delivery_date))} ·{" "}
+                Dostava {formatDate(string(obj(detail.order).scheduled_delivery_date ?? obj(detail.order).delivery_date))} ·{" "}
                 {statusLabel(string(obj(detail.order).fulfillment_status))}
               </p>
               <p className="work-hint">
-                Adresa iz trenutnih podataka kupca. Zaključana dostava čuva
-                adresu u svom spisku.
+                Adresa sačuvana uz ovu porudžbinu (u trenutku kupovine).
+                Zaključana dostava čuva adresu u svom spisku.
               </p>
             </div>
             {rows(detail.items).map((item) => (
@@ -459,7 +459,7 @@ function OrderRow({order, onOpen, canSelect, selected, selectionDisabled, onSele
     {canSelect ? <td data-label="Izbor"><input type="checkbox" aria-label={`Izaberi uplatu ${string(order.order_number)}`} checked={selected} disabled={selectionDisabled} onChange={e=>onSelect(e.target.checked)} /></td> : null}
     <td data-label="Porudžbina"><button className="text-button" onClick={() => onOpen(idOf(order))}>{string(order.order_number)} →</button><br /><small>{formatDate(string(order.created_at, ""))}</small></td>
     <td data-label="Kupac">{string(order.full_name)}<br /><small>{email(order.email)}</small></td>
-    <td data-label="Datum dostave">{formatDate(string(order.delivery_date, ""))}</td>
+    <td data-label="Datum dostave">{formatDate(string(order.scheduled_delivery_date ?? order.delivery_date, ""))}</td>
     <td data-label="Ukupno">{formatMoney(number(order.total_minor) / 100)}</td>
     <td data-label="Naplata"><span className="work-badge">{statusLabel(string(order.payment_status))}</span></td>
     <td data-label="Račun"><span className="work-badge">{statusLabel(string(order.fiscal_status, order.payment_status === "paid" ? "pending" : "nije dospeo"))}</span>{order.invoice_number ? <small>{string(order.invoice_number)}</small> : null}</td>

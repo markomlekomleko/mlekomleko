@@ -67,3 +67,21 @@ export async function packageProgress(subscriptionId?: string) {
 export async function packageSchedule(subscriptionId: string) {
   return all<{cadence: "weekly" | "biweekly"; cadence_anchor_date: string} & Record<string, unknown>>("SELECT oi.cadence, pl.anchor_date AS cadence_anchor_date FROM package_lines pl JOIN subscription_packages sp ON sp.id = pl.package_id JOIN order_items oi ON oi.id = pl.order_item_id WHERE sp.subscription_id = ? AND sp.status = 'open' AND oi.purchase_type = 'subscription'", subscriptionId);
 }
+
+/**
+ * The date to show for an order's delivery. `orders.delivery_date` is what was booked (and what
+ * fiscal documents and payments refer to), so it is never rewritten when the customer skips or
+ * pauses. For a package (base package or a package surcharge) the displayed date follows the
+ * package instead: its first packed/handed-over visit once there is one, otherwise the
+ * subscription's next scheduled delivery while the package is still open — never earlier than
+ * the booked date. Every other order keeps its booked date.
+ */
+export function scheduledDeliveryDateSql(alias = "o") {
+  const visits = `FROM delivery_items di JOIN delivery_orders dor ON dor.id = di.delivery_order_id JOIN deliveries d ON d.id = dor.delivery_id`;
+  return `COALESCE(
+    (SELECT MIN(d.delivery_date) ${visits} JOIN package_lines pl ON pl.id = di.package_line_id JOIN subscription_packages sp ON sp.id = pl.package_id WHERE sp.order_id = ${alias}.id AND dor.status IN ('locked','delivered')),
+    (SELECT MIN(d.delivery_date) ${visits} JOIN package_surcharges ps ON ps.id = di.package_surcharge_id WHERE ps.order_id = ${alias}.id AND dor.status IN ('locked','delivered')),
+    (SELECT s.next_delivery_date FROM subscription_packages sp JOIN subscriptions s ON s.id = sp.subscription_id WHERE sp.order_id = ${alias}.id AND sp.status = 'open' AND s.status IN ('active','paused') AND s.next_delivery_date > ${alias}.delivery_date),
+    (SELECT s.next_delivery_date FROM package_surcharges ps JOIN subscriptions s ON s.id = ps.subscription_id WHERE ps.order_id = ${alias}.id AND ps.status = 'active' AND s.status IN ('active','paused') AND s.next_delivery_date > ${alias}.delivery_date),
+    ${alias}.delivery_date)`;
+}

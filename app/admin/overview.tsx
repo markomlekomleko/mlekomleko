@@ -23,7 +23,7 @@ export function Overview({request, version, onDelivery, onCustomer, onOrders, on
     {error ? <p role="alert" className="notice error">{error} <button className="text-button" onClick={() => setRetry(v => v + 1)}>Pokušaj ponovo</button></p> : null}
     {!data && !error ? <p role="status">Učitavamo sledeći termin i promene…</p> : null}
     {data ? <>
-      {str(data.nextDate) !== date ? <TodayPreparation request={request} version={version} date={str(data.nextDate)} title="Sledeći termin" onDelivery={onDelivery} /> : null}
+      {str(data.nextRouteDate, str(data.nextDate)) !== date ? <TodayPreparation request={request} version={version} date={str(data.nextRouteDate, str(data.nextDate))} title="Sledeći termin" onDelivery={onDelivery} /> : null}
       <div className="work-two">
         <section className="admin-panel"><h2>Potrebne provere</h2>
           <button className="work-attention-link" onClick={() => onDelivery(str(data.nextDate))}>

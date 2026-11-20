@@ -48,7 +48,7 @@ async function orderData(orderId: string) {
 }
 
 function messageData(order: OrderRow, items: OrderItemRow[], payload: Record<string, unknown>) {
-  return { ...payload, kind:order.kind, paymentMethod:order.payment_method, paymentStatus:order.payment_status, fullName: order.full_name, email: order.email, orderId: order.id, orderNumber: order.order_number, deliveryDate: order.delivery_date, totalMinor: order.total_minor, items };
+  return { ...payload, kind:order.kind, paymentMethod:order.payment_method, paymentStatus:order.payment_status, fullName: order.full_name, email: order.email, orderId: order.id, orderNumber: order.order_number, deliveryDate: order.delivery_date, subtotalMinor: order.subtotal_minor, discountMinor: order.discount_minor, deliveryFeeMinor: order.delivery_fee_minor, creditAppliedMinor: order.credit_applied_minor, totalMinor: order.total_minor, items };
 }
 
 async function notificationData(row: OutboxRow, payload: Record<string, unknown>) {

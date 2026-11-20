@@ -10,6 +10,7 @@ import { LanguageSwitcher } from "./language-switcher";
 import { translate, toCyrillic } from "../lib/i18n/translate";
 import { shellCopy } from "../lib/content";
 import { company, companyLine } from "../lib/company";
+import { pluralUnits } from "../lib/frontend";
 
 // One source for the contact pair the footer and the mobile menu both show.
 const PHONE = { href: company.phoneHref, label: company.phone };
@@ -208,7 +209,7 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
                 <path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7" />
               </svg>
             </Link>
-            <button className="cart-link" type="button" onClick={openDrawer} aria-label={ready && count > 0 ? `Napuni frižider, ${count} jedinica` : "Napuni frižider"}>
+            <button className="cart-link" type="button" onClick={openDrawer} aria-label={ready && count > 0 ? `Otvori frižider, ${pluralUnits(count)}` : "Otvori frižider"}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
                 <path d="M3 3h2l2.4 12h11.2l2-8H6" />
                 <circle cx="9" cy="20" r="1" />
