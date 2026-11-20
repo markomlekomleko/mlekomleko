@@ -39,10 +39,19 @@ export type BundleOffer = {
   description: string;
   isFeatured: boolean;
   isActive: boolean;
+  /** Every line is a product on sale, bought the way the line says. */
+  available: boolean;
   sortOrder: number;
+  /** At least one line is a weekly subscription; the package can then also be bought once. */
+  offersSubscription: boolean;
+  /** Deliveries in a prepaid subscription package (4). */
+  packageDeliveries: number;
+  /** Products of the first delivery as the lines are defined, without delivery. */
   perDeliveryMinor: number;
-  regularPerDeliveryMinor: number;
-  savingPerDeliveryMinor: number;
+  /** Products when every line is bought once, without delivery. */
+  oneTimeMinor: number;
+  /** Products of the whole prepaid package (subscription lines × deliveries), without delivery. */
+  subscriptionPackageMinor: number | null;
   lines: Array<{
     id: string;
     productId: string;
@@ -53,11 +62,14 @@ export type BundleOffer = {
     purchaseType: PurchaseType;
     cadence: DeliveryCadence | null;
     unitPriceMinor: number;
+    oneTimeUnitPriceMinor: number;
+    subscriptionUnitPriceMinor: number | null;
   }>;
 };
 
 export type StorefrontSettings = {
-  indjijaEnabled?: boolean;
+  /** Built-in delivery cities plus the ones added in the admin. */
+  deliveryCities?: string[];
   originCowImageUrl?: string;
   originGoatImageUrl?: string;
   storeName: string;

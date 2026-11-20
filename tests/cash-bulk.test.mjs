@@ -88,21 +88,26 @@ test('imported customer logs into the existing balance and fiscal allocations st
  await handover('2027-01-08');assert.equal(scalar('SELECT SUM(quantity) FROM fiscal_delivery_allocations'),4);assert.equal(scalar('SELECT status FROM subscription_packages'),'completed');
  assert.equal(scalar("SELECT COUNT(*) FROM fiscal_receipts WHERE kind='advance'"),1);
 });
-test('Indjija stays unavailable until its schedule is approved and Novi Sad remains Friday-only',async()=>{
+test('Indjija is no longer served, its retired switch is refused, and Novi Sad remains Friday-only',async()=>{
  const customer={...checkoutData().customer,city:'Inđija',postalCode:'22320'};
  expectStatus(await api('/api/checkout',checkoutData([line()],{customer})),422);
  expectStatus(await api('/api/admin/settings',{indjijaEnabled:true},{admin:true,method:'PATCH'}),422);
- expectStatus(await api('/api/admin/settings',{indjijaEnabled:true,indjijaDeliveryWeekdays:[5],servicePostalCodes:['11','21']},{admin:true,method:'PATCH'}),422);
- expectStatus(await api('/api/admin/settings',{indjijaEnabled:true,indjijaDeliveryWeekdays:[5],servicePostalCodes:['11','21','22320']},{admin:true,method:'PATCH'}));
- expectStatus(await api('/api/checkout',checkoutData([line()],{customer})),201);
+ expectStatus(await api('/api/admin/settings',{indjijaDeliveryWeekdays:[5]},{admin:true,method:'PATCH'}),422);
+ // Rows left in an older database are ignored.
+ database.raw.exec(`INSERT INTO settings (key,value_json,updated_at) VALUES ('indjijaEnabled','true','2026-11-01'),('indjijaDeliveryWeekdays','[5]','2026-11-01') ON CONFLICT(key) DO UPDATE SET value_json=excluded.value_json`);
+ expectStatus(await api('/api/admin/settings',{servicePostalCodes:['11','21','22320']},{admin:true,method:'PATCH'}));
+ expectStatus(await api('/api/checkout',checkoutData([line()],{customer})),422);
  expectStatus(await api('/api/checkout',checkoutData([line()],{customer:{...customer,city:'Novi Sad',postalCode:'21000'},deliveryDate:'2027-01-05'})),422);
 });
-test('approved Indjija weekday outside Belgrade schedule reaches checkout, admin options and calendar',async()=>{
- expectStatus(await api('/api/admin/settings',{indjijaEnabled:true,indjijaDeliveryWeekdays:[3],servicePostalCodes:['11','21','22320']},{admin:true,method:'PATCH'}));
- const options=expectStatus(await api('/api/admin/orders/quote',null,{admin:true,method:'GET'}));assert.deepEqual(options.deliveryWeekdaysByCity['Inđija'],[3]);assert.ok(options.dates.includes('2027-01-06'));assert.deepEqual(options.deliveryWeekdaysByCity['Novi Sad'],[5]);
+test('a city added in the admin runs on its own route day through checkout, admin options and calendar',async()=>{
+ // Its days must be among the route days (Tuesday, Friday).
+ expectStatus(await api('/api/admin/settings',{serviceRegions:[{city:'Inđija',postalCodes:['22320'],weekdays:[3]}]},{admin:true,method:'PATCH'}),422);
+ expectStatus(await api('/api/admin/settings',{serviceRegions:[{city:'Inđija',postalCodes:['22320'],weekdays:[2]}]},{admin:true,method:'PATCH'}));
+ const options=expectStatus(await api('/api/admin/orders/quote',null,{admin:true,method:'GET'}));assert.deepEqual(options.deliveryWeekdaysByCity['Inđija'],[2]);assert.ok(options.dates.includes('2027-01-05'));assert.deepEqual(options.deliveryWeekdaysByCity['Novi Sad'],[5]);
  const customer={...checkoutData().customer,city:'Inđija',postalCode:'22320'};
- expectStatus(await api('/api/checkout',checkoutData([line()],{customer,deliveryDate:'2027-01-06'})),201);
- const calendar=expectStatus(await api('/api/admin/delivery-calendar?from=2027-01-06&to=2027-01-06',null,{admin:true,method:'GET'}));assert.ok(JSON.stringify(calendar).includes('2027-01-06'));
+ expectStatus(await api('/api/checkout',checkoutData([line()],{customer})),422);
+ expectStatus(await api('/api/checkout',checkoutData([line()],{customer,deliveryDate:'2027-01-05'})),201);
+ const calendar=expectStatus(await api('/api/admin/delivery-calendar?from=2027-01-05&to=2027-01-05',null,{admin:true,method:'GET'}));assert.ok(JSON.stringify(calendar).includes('2027-01-05'));
 });
 test('failed Novi Sad one-off visit is rescheduled to Friday',async()=>{
  const customer={...checkoutData().customer,city:'Novi Sad',postalCode:'21000'};

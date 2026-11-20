@@ -191,7 +191,7 @@ test('F-B10 minimum order is checked on products only, at the exact boundary, be
 test('F-B11 addresses outside the delivery zone are rejected before any customer or order is created', async () => {
   for (const [index, address] of [
     { postalCode: '99999' }, { postalCode: '11' }, { postalCode: '1100x' }, { postalCode: '' }, { postalCode: '18000', city: 'Niš' }, { postalCode: '26000', city: 'Pančevo' },
-    { postalCode: '22320', city: 'Inđija' }, // Inđija stays closed until its schedule is approved
+    { postalCode: '22320', city: 'Inđija' }, // Inđija is no longer a delivery city (owner, 20 Nov 2026)
     { postalCode: '21000', city: 'Beograd' }, // city and postal code disagree
     { postalCode: '11000', city: 'Niš' },
   ].entries()) {

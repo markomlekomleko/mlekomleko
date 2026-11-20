@@ -5,7 +5,6 @@ import { resolvePromotions, reservePromotions } from "./promotions";
 import { effectivePrice } from "./product-details";
 import { billingSnapshot } from "./address-snapshot";
 import { createPackageStatements, openPackage, packageDates, packageOccurrences, packageProgress, packageSchedule, maximumPauseDate, scheduledDeliveryDateSql } from "./packages";
-import { normalizeDeliveryCity, deliveryCityForPostalCode } from "../app/lib/delivery-area";
 import { randomToken, sha256, stableJsonHash } from "./crypto";
 import { DomainError, assertDomain, emailAddress, enumValue, optionalString, positiveInt, rejectCardData, requiredString } from "./domain";
 import { assertCardPaymentAvailable, localPaymentGateway } from "./integrations";
@@ -13,7 +12,7 @@ import { audit, enqueue } from "./outbox";
 import { ProductRow, publicProduct } from "./products";
 import { all, batch, first, sqlPlaceholders, type SqlValue } from "./sql";
 import { addLocalDays, assertBeforeCutoff, assertLocalDate, cutoffForDelivery, isCadenceDue, localDateAt, nextWeekday } from "./time";
-import { getBusinessSettings, getNextDeliveryWindow, isServiceablePostalCode, deliveryWeekdaysForCity } from "./settings";
+import { getBusinessSettings, getNextDeliveryWindow, isServiceablePostalCode, deliveryWeekdaysForCity, deliveryCityForPostal, deliveryCityName, deliveryCityNames } from "./settings";
 import { generateDelivery, lockOverdueDeliveries } from "./deliveries";
 import { assertDeliveryEditable } from "./delivery-cutoff";
 import { purchaseAnalyticsEvent } from "./analytics";
@@ -149,9 +148,17 @@ export function assertMinimumLitres(unitLabel: string, quantity: number, minimum
 export async function quoteCart(input: Record<string, unknown>, reward: CheckoutReward = null) {
   const items = parseCheckoutItems(input.items);
   const settings = await getBusinessSettings();
-  const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow(new Date(), String(input.city ?? deliveryCityForPostalCode(String(input.postalCode ?? "")) ?? ""))).deliveryDate : assertLocalDate(input.deliveryDate);
+  const postalCode = optionalString(input.postalCode, "postalCode", 20);
+  const city = optionalString(input.city, "city", 100);
+  const serviceable = postalCode
+    ? isServiceablePostalCode(settings, postalCode) && (!city || serviceCity(settings, city, postalCode) !== null)
+    : city ? deliveryCityName(settings, city) !== null : undefined;
+  // Route days follow the delivery city (named, or found from the postal code). An address
+  // outside the zone gets an informational quote (serviceable: false) on any route day.
+  const routeCity = serviceable === false ? "" : (city ? deliveryCityName(settings, city) : null) ?? (postalCode ? deliveryCityForPostal(settings, postalCode) : null) ?? "";
+  const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow(new Date(), routeCity)).deliveryDate : assertLocalDate(input.deliveryDate);
   assertSaleDate(settings, deliveryDate);
-  assertDomain(deliveryWeekdaysForCity(settings, String(input.city ?? deliveryCityForPostalCode(String(input.postalCode ?? "")) ?? "")).includes(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay()), "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
+  assertDomain(deliveryWeekdaysForCity(settings, routeCity).includes(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay()), "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
   assertBeforeCutoff(cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime));
   const productIds = [...new Set(items.map((item) => item.productId))];
   const rows = await all<ProductRow>(`SELECT * FROM products WHERE id IN (${sqlPlaceholders(productIds.length)}) AND is_active = 1`, ...productIds);
@@ -171,11 +178,6 @@ export async function quoteCart(input: Record<string, unknown>, reward: Checkout
   const deliveryFeeMinor = settings.deliveryFeeMinor > 0 && !(settings.freeDeliveryThresholdMinor > 0 && subtotalMinor >= settings.freeDeliveryThresholdMinor)
     ? settings.deliveryFeeMinor * deliveryOccurrences
     : 0;
-  const postalCode = optionalString(input.postalCode, "postalCode", 20);
-  const city = optionalString(input.city, "city", 100);
-  const serviceable = postalCode
-    ? isServiceablePostalCode(settings, postalCode) && (!city || serviceCity(settings, city, postalCode) !== null)
-    : city ? normalizeDeliveryCity(city) !== null : undefined;
   const recommendedRows = await all<ProductRow>(
     `SELECT * FROM products WHERE is_active = 1 ${productIds.length ? `AND id NOT IN (${sqlPlaceholders(productIds.length)})` : ""} ORDER BY (price_minor - cost_minor - packaging_cost_minor) DESC, is_featured DESC, sort_order ASC LIMIT 3`,
     ...productIds,
@@ -487,8 +489,8 @@ export async function getAccount(customerId: string) {
     oneTimeDeliveries: [...new Set(oneTimeItems.map((item) => item.delivery_date))].map((date) => ({ date, items: oneTimeItems.filter((item) => item.delivery_date === date) })),
     orders,
     credits,
-    // The account address form offers Inđija only once its delivery is switched on.
-    indjijaEnabled: settings.indjijaEnabled,
+    // Cities the account address form offers: built-in plus those added in the admin.
+    deliveryCities: deliveryCityNames(settings),
   };
 }
 

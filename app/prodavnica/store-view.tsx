@@ -3,16 +3,20 @@
 import { useLocalize } from "@/app/lib/i18n/client";
 import { useEffect, useMemo, useState } from "react";
 import { useAnalytics } from "../components/analytics-provider";
+import { BundleOffers } from "../components/bundle-offers";
 import { ProductConfigurator } from "../components/product-configurator";
 import { GoatWaitlistCard } from "../components/goat-waitlist";
 import { milkKind } from "../components/product-carousel";
-import { type DeliveryWindow, type Product } from "../lib/frontend";
+import { type BundleOffer, type DeliveryWindow, type Product } from "../lib/frontend";
 
 export function StoreView({
   initialProducts,
+  bundles = [],
   delivery,
 }: {
   initialProducts: Product[];
+  /** Active packages; the section renders only when at least one is complete. */
+  bundles?: BundleOffer[];
   delivery: DeliveryWindow;
 }) {
   const localize = useLocalize();
@@ -70,6 +74,7 @@ export function StoreView({
               {goatWaitlist ? <GoatWaitlistCard /> : null}
             </div>
           )}
+          {bundles.length ? <BundleOffers products={products} bundles={bundles} delivery={delivery} /> : null}
         </>
       )}
     </div>

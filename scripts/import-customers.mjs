@@ -6,7 +6,7 @@ import pg from 'pg';
 import { createClient } from '@libsql/client';
 import { postgresConfig, postgresSchema, postgresUrl } from '../db/postgres-config.mjs';
 import { postgresSql } from '../db/postgres-sql.mjs';
-import { deliveryAddressError, deliveryCityForPostalCode, normalizeDeliveryCity } from '../app/lib/delivery-area.ts';
+import { deliveryAddressError, deliveryCityKey, normalizeDeliveryCity } from '../app/lib/delivery-area.ts';
 import { prepareCustomerImport, applyCustomerImport, parseCustomerCsv } from '../integrations/customer-import.mjs';
 
 const args=process.argv.slice(2), option=name=>args[args.indexOf(name)+1];
@@ -33,14 +33,15 @@ if(url){
 }
 try{
   const get=async(key,fallback)=>{const row=await db.first('SELECT value_json FROM settings WHERE key=?',key);return row?JSON.parse(row.value_json):fallback;};
-  const [weekdays,indjijaEnabled,indjijaDays,holidays,prefixes,regions]=await Promise.all([
-    get('deliveryWeekdays',[2,5]),get('indjijaEnabled',false),get('indjijaDeliveryWeekdays',[]),get('holidays',[]),get('servicePostalCodes',[]),get('serviceRegions',[])]);
+  const [weekdays,holidays,prefixes,regions]=await Promise.all([
+    get('deliveryWeekdays',[2,5]),get('holidays',[]),get('servicePostalCodes',[]),get('serviceRegions',[])]);
   const validatePackage=async({city,postalCode,nextDate})=>{
-    const normalized=normalizeDeliveryCity(city),extra=regions.some(r=>r.city.toLowerCase()===city.toLowerCase()&&r.postalCodes.includes(postalCode));
+    // Same rules as server/settings.ts: built-in cities, or a city added in the admin
+    // (its own weekdays, limited to the route days; older entries without days use the route days).
+    const normalized=normalizeDeliveryCity(city),extra=regions.find(r=>deliveryCityKey(r.city)===deliveryCityKey(city)&&r.postalCodes.includes(postalCode));
     if(deliveryAddressError(city,postalCode)&&!extra)throw new Error('Adresa nije u potvrđenom području dostave.');
-    if(deliveryCityForPostalCode(postalCode)==='Inđija'&&(!indjijaEnabled||!indjijaDays.length))throw new Error('Inđija još nije aktivirana.');
     if(!extra&&prefixes.length&&!prefixes.some(p=>postalCode.startsWith(p.replace(/\*$/,''))))throw new Error('Poštanski broj nije aktivan.');
-    const days=normalized==='Inđija'?indjijaDays:weekdays.filter(d=>normalized!=='Novi Sad'||d===5);
+    const days=extra&&!normalized?(Array.isArray(extra.weekdays)&&extra.weekdays.length?extra.weekdays:weekdays).filter(d=>weekdays.includes(d)):weekdays.filter(d=>normalized!=='Novi Sad'||d===5);
     if(!days.includes(new Date(nextDate+'T12:00:00Z').getUTCDay())||holidays.includes(nextDate))throw new Error('Datum nije dozvoljeni termin dostave.');
     const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Belgrade',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
     if(nextDate<today)throw new Error('Sledeća isporuka ne sme biti u prošlosti.');

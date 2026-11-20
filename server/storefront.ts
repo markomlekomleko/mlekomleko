@@ -1,18 +1,18 @@
-import { deliveryCityForPostalCode } from "../app/lib/delivery-area";
 import { listProducts } from "./products";
 import { listBundles } from "./bundles";
-import { getBusinessSettings, getNextDeliveryWindow, isServiceablePostalCode } from "./settings";
+import { deliveryCityForPostal, deliveryCityNames, getBusinessSettings, getNextDeliveryWindow, isServiceablePostalCode } from "./settings";
 
 export async function getStorefront(postalCode?: string | null) {
   const settings = await getBusinessSettings();
   const available = postalCode ? isServiceablePostalCode(settings,postalCode) : undefined;
   const [delivery, products, bundles] = await Promise.all([
-    getNextDeliveryWindow(new Date(), available ? deliveryCityForPostalCode(postalCode ?? "") ?? "" : ""),
+    getNextDeliveryWindow(new Date(), available ? deliveryCityForPostal(settings, postalCode ?? "") ?? "" : ""),
     listProducts(false),
     listBundles(false),
   ]);
   const publicSettings = {
-    indjijaEnabled: settings.indjijaEnabled && settings.indjijaDeliveryWeekdays.length > 0,
+    // Built-in cities plus the ones the owner added in the admin.
+    deliveryCities: deliveryCityNames(settings),
     originCowImageUrl: settings.originCowImageUrl,
     originGoatImageUrl: settings.originGoatImageUrl,
     storeName: settings.storeName,

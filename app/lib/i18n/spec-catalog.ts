@@ -214,4 +214,6 @@ export const specCatalog: Record<string, readonly [string, string]> = {
   "Marko Krsmančić": ["Marko Krsmančić", "Марко Крсманчич"],
   "osnivač Mleko i Mleko": ["founder of Mleko i Mleko", "основатель Mleko i Mleko"],
   "Marko Krsmančić, osnivač Mleko i Mleko, ispred mlekomata": ["Marko Krsmančić, founder of Mleko i Mleko, in front of a milk machine", "Марко Крсманчич, основатель Mleko i Mleko, у молокомата"],
+  "Štediš": ["You save", "Вы экономите"],
+  "Tvoja porudžbina": ["Your order", "Ваш заказ"],
 };

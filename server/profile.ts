@@ -22,7 +22,8 @@ export async function updateProfile(customerId:string,input:Row){
  if(input.applyToSubscriptions===true){
   const subs=await all<Row>("SELECT * FROM subscriptions WHERE customer_id=? AND status!='cancelled'",customerId);
   for(const sub of subs){await assertDeliveryEditable(String(sub.next_delivery_date));
-   // The new city must be served on the subscription's delivery day (Novi Sad has no Tuesday route).
+   // The new city must be served on the subscription's delivery day (Novi Sad has no Tuesday route;
+   // an admin-added city runs only on its own weekdays).
    assertDomain(deliveryWeekdaysForCity(settings,city).includes(new Date(`${String(sub.next_delivery_date)}T12:00:00Z`).getUTCDay()),'DELIVERY_DAY_UNAVAILABLE','U ovom gradu ne dostavljamo na dan tvoje pretplate. Piši nam da zajedno promenimo dan dostave.',422,{field:'city'});const guard=mutationGuard('EXISTS(SELECT 1 FROM subscriptions WHERE id=? AND version=?)',[String(sub.id),Number(sub.version)]);statements.push(guard.check,{sql:'UPDATE subscriptions SET shipping_json=?,version=version+1 WHERE id=?',bindings:[JSON.stringify(next),String(sub.id)]},guard.cleanup);}
  }
  statements.push(audit('customer',customerId,'profile.updated','customer',customerId,null,{...next,applyToSubscriptions:input.applyToSubscriptions===true}));await batch(statements);return {customer:next};

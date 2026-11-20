@@ -13,7 +13,7 @@ import {
   quoteCart,
 } from "./commerce";
 import { stableJsonHash } from "./crypto";
-import { allDeliveryWeekdays, deliveryWeekdaysForCity, getBusinessSettings, getNextDeliveryWindow } from "./settings";
+import { allDeliveryWeekdays, deliveryCityNames, deliveryWeekdaysForCity, getBusinessSettings, getNextDeliveryWindow } from "./settings";
 import {
   addLocalDays,
   assertLocalDate,
@@ -121,7 +121,7 @@ export async function manualOptions() {
     )
       dates.push(date);
   }
-  return { dates, emailAvailable: emailConfigured(), deliveryWeekdaysByCity:Object.fromEntries(["Beograd","Novi Sad","Inđija"].map(city=>[city,deliveryWeekdaysForCity(settings,city)])) };
+  return { dates, emailAvailable: emailConfigured(), deliveryWeekdaysByCity:Object.fromEntries(deliveryCityNames(settings).map(city=>[city,deliveryWeekdaysForCity(settings,city)])) };
 }
 
 export async function adminCustomer(id: string) {
@@ -178,12 +178,14 @@ export async function updateAdminCustomer(
   const address = requiredString(input.addressLine1, "Adresa", 200);
   const city = requiredString(input.city, "Grad", 100);
   const postal = requiredString(input.postalCode, "Poštanski broj", 20);
-  // Use the same service-area validation as ordering, without changing any order.
-  const { deliveryAddressError } = await import("../app/lib/delivery-area");
+  // Use the same service-area validation as ordering (built-in and admin-added cities),
+  // without changing any order; the city is saved under its canonical name.
+  const { serviceCity } = await import("./service-policy");
   const { isServiceablePostalCode } = await import("./settings");
+  const settings = await getBusinessSettings();
+  const servedCity = serviceCity(settings, city, postal);
   assertDomain(
-    !deliveryAddressError(city, postal) &&
-      isServiceablePostalCode(await getBusinessSettings(), postal),
+    servedCity && isServiceablePostalCode(settings, postal),
     "DELIVERY_AREA_UNAVAILABLE",
     "Adresa nije u zoni dostave.",
     422,
@@ -196,7 +198,7 @@ export async function updateAdminCustomer(
         phone,
         address,
         String(input.addressLine2 ?? "").slice(0, 200),
-        city,
+        servedCity,
         postal,
         String(input.deliveryNote ?? "").slice(0, 500),
         new Date().toISOString(),

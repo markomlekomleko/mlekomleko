@@ -1,15 +1,16 @@
-/** Delivery is limited to the administrative territories of Beograd and Novi Sad.
+/** Built-in delivery: the administrative territories of Beograd and Novi Sad.
+ * Further cities are added by the owner in the admin (settings.serviceRegions: name,
+ * postal codes and delivery weekdays), so a new city needs no code change.
  * Exact codes, not the broad 11/21 postal regions (which include other cities).
  * Source: Pošta Srbije public post-office directory, checked 2026-09-15:
  * https://posta.rs/lat/stanovnistvo/usluga.aspx?usluga=servisi-za-gradjane/digitalni-zeleni-sertifikat/digitalni-zeleni-sertifikat
  * Additional city offices: https://www.posta.rs/DocumentViewer.aspx?IdDokument=1000964
  * Unknown codes fail closed; extend this list when a new local office is confirmed.
  */
-export const DELIVERY_CITIES = ["Beograd", "Novi Sad", "Inđija"] as const;
+export const DELIVERY_CITIES = ["Beograd", "Novi Sad"] as const;
 export type DeliveryCity = (typeof DELIVERY_CITIES)[number];
 
 export const DELIVERY_POSTAL_CODES: Record<DeliveryCity, readonly string[]> = {
-  "Inđija": ["22319", "22320"],
   "Beograd": [
     "11000", "11010", "11011", "11030", "11032", "11040", "11041", "11042", "11043", "11050",
     "11051", "11052", "11053", "11054", "11055", "11056", "11060", "11061", "11062", "11070",
@@ -41,21 +42,32 @@ export const DELIVERY_POSTAL_CODES: Record<DeliveryCity, readonly string[]> = {
   ],
 };
 
+// Keys are deliveryCityKey() forms: Latin, lower case, without diacritics.
 const cityAliases: Record<string, DeliveryCity> = {
-  "inđija": "Inđija", indjija: "Inđija", indija: "Inđija",
   beograd: "Beograd", belgrad: "Beograd", belgrade: "Beograd", "novi beograd": "Beograd", zemun: "Beograd",
-  "novi sad": "Novi Sad", "novi-sad": "Novi Sad", petrovaradin: "Novi Sad", "sremska kamenica": "Novi Sad",
+  "novi sad": "Novi Sad", petrovaradin: "Novi Sad", "sremska kamenica": "Novi Sad",
 };
 
+const cyrillic: Record<string, string> = {
+  а: "a", б: "b", в: "v", г: "g", д: "d", ђ: "đ", е: "e", ж: "ž", з: "z",
+  и: "i", ј: "j", к: "k", л: "l", љ: "lj", м: "m", н: "n", њ: "nj", о: "o",
+  п: "p", р: "r", с: "s", т: "t", ћ: "ć", у: "u", ф: "f", х: "h", ц: "c",
+  ч: "č", џ: "dž", ш: "š",
+};
+
+/** A comparison key for a city name typed in Cyrillic or Latin, with or without
+ * diacritics, in any case: "ПАНЧЕВО", "Pančevo" and "pancevo" all give "pancevo". */
+export function deliveryCityKey(value: string): string {
+  return value.normalize("NFC").trim().toLowerCase()
+    .replace(/[а-яђјљњћџ]/g, (letter) => cyrillic[letter] ?? letter)
+    .replace(/đ/g, "dj")
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[-\s]+/g, " ");
+}
+
+/** The built-in city a typed name refers to (aliases included), or null. */
 export function normalizeDeliveryCity(value: string): DeliveryCity | null {
-  const cyrillic: Record<string, string> = {
-    а: "a", б: "b", в: "v", г: "g", д: "d", ђ: "đ", е: "e", ж: "ž", з: "z",
-    и: "i", ј: "j", к: "k", л: "l", љ: "lj", м: "m", н: "n", њ: "nj", о: "o",
-    п: "p", р: "r", с: "s", т: "t", ћ: "ć", у: "u", ф: "f", х: "h", ц: "c",
-    ч: "č", џ: "dž", ш: "š",
-  };
-  const normalized = value.normalize("NFC").trim().toLowerCase().replace(/[а-яђјљњћџ]/g, (letter) => cyrillic[letter] ?? letter).replace(/\s+/g, " ");
-  return cityAliases[normalized] ?? null;
+  return cityAliases[deliveryCityKey(value)] ?? null;
 }
 
 export function deliveryCityForPostalCode(postalCode: string): DeliveryCity | null {

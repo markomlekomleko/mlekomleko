@@ -46,7 +46,7 @@ type AccountPayload = {
   };
   subscriptions: Subscription[];
   loyalty?: Loyalty;
-  indjijaEnabled?: boolean;
+  deliveryCities?: string[];
   orders: Row[];
   addonProducts: Row[];
   deliveryHistory: Delivery[];
@@ -611,7 +611,7 @@ export function AccountView() {
                 ) : (
                   <AddressEditor
                     customer={customer}
-                    indjijaEnabled={Boolean(account.indjijaEnabled)}
+                    cities={account.deliveryCities}
                     onSaved={(message) => { setNotice(message); setError(""); void loadAccount(); }}
                   />
                 )}

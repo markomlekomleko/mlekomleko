@@ -32,7 +32,7 @@ type CheckoutResult = {
   subscriptionOffer?: { token: string; eligibleItemCount: number; savingPerDeliveryMinor: number; expiresAt: string } | null;
 };
 
-export function CheckoutForm() {
+export function CheckoutForm({ cities = DELIVERY_CITIES }: { cities?: readonly string[] } = {}) {
   const localize = useLocalize();
   const locale = useLocale();
   const { items, ready, promoCode, clearCart } = useCart();
@@ -240,7 +240,7 @@ export function CheckoutForm() {
             </div>
           ) : null}
           <p className="muted small-text">Za prvi pristup nalogu dovoljan je kod poslat na email sa porudžbine. Lozinka nije potrebna.</p>
-          {result.subscriptionOffer ? <section className="post-purchase-offer" aria-labelledby="post-purchase-title"><p className="eyebrow">Jedan klik do mirnog frižidera</p><h2 id="post-purchase-title">Neka ista porudžbina stiže svake nedelje.</h2><p>Uključujemo {result.subscriptionOffer.eligibleItemCount} {result.subscriptionOffer.eligibleItemCount === 1 ? "proizvod" : "proizvoda"} u nedeljni ritam. Pretplata je paket od četiri nedeljne dostave: prva stiže sledeće nedelje, a ceo paket plaćaš pri toj prvoj dostavi.{result.subscriptionOffer.savingPerDeliveryMinor > 0 ? <> Štedite <strong>{formatMoney(result.subscriptionOffer.savingPerDeliveryMinor / 100, locale)}</strong> po dostavi.</> : null}</p>{conversionDone ? <p className="notice success">Redovna dostava je uključena. Možete je menjati iz naloga.</p> : <button className="button" type="button" disabled={conversionBusy} onClick={() => void convertToSubscription(result.subscriptionOffer!.token)}>{conversionBusy ? "Uključujemo…" : "Da, ponovi svake nedelje"}</button>}<small>Bez ugovorne obaveze · preskakanje i pauza online</small></section> : null}
+          {result.subscriptionOffer ? <section className="post-purchase-offer" aria-labelledby="post-purchase-title"><p className="eyebrow">Jedan klik do mirnog frižidera</p><h2 id="post-purchase-title">Neka ista porudžbina stiže svake nedelje.</h2><p>Uključujemo {result.subscriptionOffer.eligibleItemCount} {result.subscriptionOffer.eligibleItemCount === 1 ? "proizvod" : "proizvoda"} u nedeljni ritam. Pretplata je paket od četiri nedeljne dostave: prva stiže sledeće nedelje, a ceo paket plaćaš pri toj prvoj dostavi.{result.subscriptionOffer.savingPerDeliveryMinor > 0 ? <> Štediš <strong>{formatMoney(result.subscriptionOffer.savingPerDeliveryMinor / 100, locale)}</strong> po dostavi.</> : null}</p>{conversionDone ? <p className="notice success">Redovna dostava je uključena. Možete je menjati iz naloga.</p> : <button className="button" type="button" disabled={conversionBusy} onClick={() => void convertToSubscription(result.subscriptionOffer!.token)}>{conversionBusy ? "Uključujemo…" : "Da, ponovi svake nedelje"}</button>}<small>Bez ugovorne obaveze · preskakanje i pauza online</small></section> : null}
           {error ? <p className="notice error" role="alert">{error}</p> : null}
           <div className="button-row">
             <a className="button" href="/nalog">
@@ -310,7 +310,7 @@ export function CheckoutForm() {
             <div className="form-grid checkout-address-grid">
               <label className="field">
                 <span>Grad</span>
-                <input name="city" autoComplete="address-level2" list="delivery-cities" value={city} onChange={event=>changeAddress("city", event.target.value)} aria-describedby="delivery-area-help" required /><datalist id="delivery-cities">{DELIVERY_CITIES.map(name=><option key={name} value={name} />)}</datalist>
+                <input name="city" autoComplete="address-level2" list="delivery-cities" value={city} onChange={event=>changeAddress("city", event.target.value)} aria-describedby="delivery-area-help" required /><datalist id="delivery-cities">{cities.map(name=><option key={name} value={name} />)}</datalist>
               </label>
               <label className="field">
                 <span>Poštanski broj</span>

@@ -1,12 +1,10 @@
 import type { ServiceRegion, DeliverySlot } from "./service-policy";
 import { assertDomain } from "./domain";
 import { all } from "./sql";
-import { deliveryCityForPostalCode, normalizeDeliveryCity } from "../app/lib/delivery-area";
+import { DELIVERY_CITIES, deliveryCityForPostalCode, deliveryCityKey, normalizeDeliveryCity } from "../app/lib/delivery-area";
 import { addLocalDays, cutoffForDelivery, localDateAt, nextWeekday } from "./time";
 
 export interface BusinessSettings {
-  indjijaEnabled: boolean;
-  indjijaDeliveryWeekdays: number[];
   originCowImageUrl: string;
   originGoatImageUrl: string;
   /** Smallest amount of milk per delivery line, in litres; 0 switches the rule off. */
@@ -50,7 +48,7 @@ export interface BusinessSettings {
 }
 
 const defaults: BusinessSettings = {
-  indjijaEnabled: false, indjijaDeliveryWeekdays: [], originCowImageUrl: "", originGoatImageUrl: "",
+  originCowImageUrl: "", originGoatImageUrl: "",
   minimumLitres: 0,
   minimumOrderMinor: 0, holidays: [], serviceRegions: [], deliverySlots: [],
   timezone: "Europe/Belgrade",
@@ -90,33 +88,83 @@ const defaults: BusinessSettings = {
   storeDemoMode: false,
 };
 
+/** Settings rows that are no longer used (the retired Inđija switch). They may still exist
+ * in a database; they are never read or offered again. */
+export const RETIRED_SETTINGS = ["indjijaEnabled", "indjijaDeliveryWeekdays"];
+const isWeekday = (day: unknown) => Number.isInteger(day) && Number(day) >= 0 && Number(day) <= 6;
+
+/** Stored cities added before they had their own weekdays keep the route days they used to get. */
+function readServiceRegions(value: unknown, routeDays: number[]): ServiceRegion[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (!item || typeof item !== "object" || typeof item.city !== "string" || !item.city.trim() || !Array.isArray(item.postalCodes)) return [];
+    const postalCodes = item.postalCodes.filter((code: unknown): code is string => typeof code === "string" && /^\d{5}$/.test(code));
+    const weekdays = Array.isArray(item.weekdays) && item.weekdays.length && item.weekdays.every(isWeekday) ? [...new Set(item.weekdays as number[])].sort() : [...routeDays];
+    return [{ city: item.city.trim(), postalCodes, weekdays }];
+  });
+}
+
 export async function getBusinessSettings(): Promise<BusinessSettings> {
   const rows = await all<{ key: string; value_json: string }>("SELECT key, value_json FROM settings");
-  const values = Object.fromEntries(rows.map((row) => {
+  const values = Object.fromEntries(rows.filter((row) => !RETIRED_SETTINGS.includes(row.key)).map((row) => {
     try { return [row.key, JSON.parse(row.value_json)]; } catch { return [row.key, row.value_json]; }
   }));
   const servicePostalCodes = Array.isArray(values.servicePostalCodes)
     ? values.servicePostalCodes.filter((value): value is string => typeof value === "string")
     : defaults.servicePostalCodes;
+  const deliveryWeekdays = Array.isArray(values.deliveryWeekdays) && values.deliveryWeekdays.length && values.deliveryWeekdays.every(isWeekday) ? values.deliveryWeekdays : defaults.deliveryWeekdays;
   return {
     ...defaults,
     ...values,
     servicePostalCodes,
-    deliveryWeekdays: Array.isArray(values.deliveryWeekdays) && values.deliveryWeekdays.length && values.deliveryWeekdays.every((day: unknown) => Number.isInteger(day) && Number(day) >= 0 && Number(day) <= 6) ? values.deliveryWeekdays : defaults.deliveryWeekdays,
+    deliveryWeekdays,
+    serviceRegions: readServiceRegions(values.serviceRegions, deliveryWeekdays),
     timezone: "Europe/Belgrade",
     currency: "RSD",
   } as BusinessSettings;
 }
 
-/** The Novi Sad route runs Fridays only; Belgrade uses the configured route days.
- * Confirmed against the shop linked by mlekoimleko.rs: https://take.app/mlekoimleko. */
-export function allDeliveryWeekdays(settings: BusinessSettings) {
-  return [...new Set([...settings.deliveryWeekdays,...(settings.indjijaEnabled ? settings.indjijaDeliveryWeekdays : [])])].sort();
+/** The admin-added city a typed name refers to (either script, any case, diacritics optional). */
+export function serviceRegionForCity(settings: BusinessSettings, city: string) {
+  const key = deliveryCityKey(city);
+  return key ? settings.serviceRegions.find((region) => deliveryCityKey(region.city) === key) : undefined;
 }
+
+/** Route days of an admin-added city: its own weekdays, limited to the days the route runs. */
+function regionWeekdays(settings: BusinessSettings, region: ServiceRegion) {
+  return region.weekdays.filter((day) => settings.deliveryWeekdays.includes(day));
+}
+
+/** Every city we deliver to: the built-in cities, then the cities added in the admin. */
+export function deliveryCityNames(settings: BusinessSettings): string[] {
+  return [...DELIVERY_CITIES, ...settings.serviceRegions.map((region) => region.city)];
+}
+
+/** Canonical name of a delivery city (built-in alias or admin-added name), or null. */
+export function deliveryCityName(settings: BusinessSettings, city: string): string | null {
+  return normalizeDeliveryCity(city) ?? serviceRegionForCity(settings, city)?.city ?? null;
+}
+
+/** The delivery city a postal code belongs to, built-in or admin-added, or null. */
+export function deliveryCityForPostal(settings: BusinessSettings, postalCode: string): string | null {
+  const code = postalCode.trim();
+  return deliveryCityForPostalCode(code) ?? settings.serviceRegions.find((region) => region.postalCodes.includes(code))?.city ?? null;
+}
+
+export function allDeliveryWeekdays(settings: BusinessSettings) {
+  return [...new Set([...settings.deliveryWeekdays, ...settings.serviceRegions.flatMap((region) => regionWeekdays(settings, region))])].sort();
+}
+
+/** The Novi Sad route runs Fridays only; Belgrade uses the configured route days
+ * (confirmed against the shop linked by mlekoimleko.rs: https://take.app/mlekoimleko).
+ * An admin-added city uses its own weekdays. A city we do not serve has no days. */
 export function deliveryWeekdaysForCity(settings: BusinessSettings, city = "") {
   if (!city.trim()) return allDeliveryWeekdays(settings);
-  if (normalizeDeliveryCity(city) === "Inđija") return settings.indjijaEnabled ? settings.indjijaDeliveryWeekdays : [];
-  return settings.deliveryWeekdays.filter(day => normalizeDeliveryCity(city) !== "Novi Sad" || day === 5);
+  const builtIn = normalizeDeliveryCity(city);
+  if (builtIn === "Novi Sad") return settings.deliveryWeekdays.filter((day) => day === 5);
+  if (builtIn === "Beograd") return [...settings.deliveryWeekdays];
+  const region = serviceRegionForCity(settings, city);
+  return region ? regionWeekdays(settings, region) : [];
 }
 
 export async function getNextDeliveryWindow(now = new Date(), city = "") {
@@ -149,8 +197,8 @@ export async function getNextDeliveryWindow(now = new Date(), city = "") {
 
 export function isServiceablePostalCode(settings: BusinessSettings, postalCode: string) {
   const normalized = postalCode.trim();
-  if (deliveryCityForPostalCode(normalized) === "Inđija" && (!settings.indjijaEnabled || !settings.indjijaDeliveryWeekdays.length)) return false;
-  if (settings.serviceRegions.some(region => region.postalCodes.includes(normalized))) return true;
+  const region = settings.serviceRegions.find((entry) => entry.postalCodes.includes(normalized));
+  if (region) return regionWeekdays(settings, region).length > 0;
   if (!deliveryCityForPostalCode(normalized)) return false;
   if (settings.servicePostalCodes.length === 0) return true;
   return settings.servicePostalCodes.some((entry) => {

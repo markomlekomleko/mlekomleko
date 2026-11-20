@@ -6,7 +6,7 @@
 .bundles { margin-top: var(--space-8); }
 .bundles .section-head { margin-bottom: var(--space-6); }
 
-.bundles .section-head h3 {
+.bundles .section-head h2 {
   max-width: 18ch;
   margin-bottom: 0.75rem;
   font-size: clamp(1.9rem, 5vw, 3.25rem);
@@ -24,12 +24,9 @@
    and wraps instead (acceptance UI-03). */
 .bundle-grid > * { min-width: 0; }
 
+/* Up to three cards in a row, centred under the product cards whatever their number. */
 @media (min-width: 660px) {
-  .bundle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-}
-
-@media (min-width: 1024px) {
-  .bundle-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .bundle-grid { grid-template-columns: repeat(auto-fit, minmax(0, 380px)); justify-content: center; }
 }
 
 /* A column, so the call to action sits on the card's bottom edge and a row of cards
@@ -65,7 +62,7 @@
   transform: rotate(4deg);
 }
 
-.bundle-card h4 {
+.bundle-card h3 {
   margin: 0;
   font-family: var(--ff-card);
   font-size: clamp(1.4rem, 2.4vw, 1.75rem);
@@ -77,6 +74,20 @@
 }
 
 .bundle-card > .muted { margin: 0; font-size: 0.92rem; line-height: 1.45; }
+
+.bundle-eyebrow {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The purchase choice reuses the product card's two buttons; the fieldset adds no frame. */
+.bundle-modes { min-width: 0; margin: 0; padding: 0; border: 0; }
+.bundle-receipt { margin: 0; }
+.bundle-card > .notice { margin: 0; }
 
 .bundle-card ul {
   display: grid;

@@ -35,6 +35,7 @@ export type HeaderSettings = {
 export type DeliveryCountdown = { city: string; slots: { date: string; weekday: number; cutoffAt: string }[] };
 
 const pad = (value: number) => String(value).padStart(2, "0");
+const MAX_COUNTDOWNS = 3;
 const WEEKDAYS = ["nedelja", "ponedeljak", "utorak", "sreda", "četvrtak", "petak", "subota"];
 
 /** "2d 14:03:09", or "14:03:09" in the last day. */
@@ -62,10 +63,13 @@ function DeliveryCountdowns({ items }: { items: DeliveryCountdown[] }) {
     .map((item) => ({ city: item.city, slot: item.slots.find((slot) => now === null || Date.parse(slot.cutoffAt) > now) }))
     .filter((item): item is { city: string; slot: DeliveryCountdown["slots"][number] } => Boolean(item.slot));
   if (!live.length) return null;
+  // Keep the bar tidy: with more than three cities, the three nearest deadlines, in city order.
+  const nearest = new Set([...live].sort((a, b) => a.slot.cutoffAt.localeCompare(b.slot.cutoffAt)).slice(0, MAX_COUNTDOWNS).map((item) => item.city));
+  const shown = live.filter((item) => nearest.has(item.city));
   return localize((
     <p className="delivery-countdowns">
       <span className="delivery-countdowns-label">Rok za izmene:</span>
-      {live.map(({ city, slot }) => (
+      {shown.map(({ city, slot }) => (
         <span className="delivery-countdown" key={city}>
           <span className="delivery-countdown-city">{city}</span>{" "}
           <span className="delivery-countdown-day">({WEEKDAYS[slot.weekday]})</span>{" "}

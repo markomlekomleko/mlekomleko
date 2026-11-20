@@ -223,11 +223,15 @@ body:has(.admin-app, .admin-access) .site-header-stack, body:has(.admin-app, .ad
 .profit-waterfall dd { font-weight: 800; }
 .profit-waterfall .total { margin-top: .3rem; border-bottom: 0; color: var(--forest); font-size: 1.05rem; }
 .bundle-admin-list { display: grid; }
-.bundle-admin-list > article { display: grid; grid-template-columns: minmax(260px, 1fr) 130px auto auto; gap: 1rem; align-items: center; padding: .9rem 0; border-bottom: 1px solid var(--line); }
+.bundle-admin-list > article { display: grid; grid-template-columns: minmax(260px, 1fr) 210px auto auto; gap: 1rem; align-items: center; padding: .9rem 0; border-bottom: 1px solid var(--line); }
 .bundle-admin-list h3 { margin: .4rem 0 .2rem; }
 .bundle-admin-list p, .bundle-admin-list small { display: block; margin: 0; color: var(--muted); font-size: .76rem; }
 .bundle-line-editor { display: grid; gap: .5rem; padding: 1rem 0; }
-.bundle-line { display: grid; grid-template-columns: minmax(180px, 1fr) 90px 130px 130px auto; gap: .45rem; }
+.bundle-line { display: grid; grid-template-columns: minmax(180px, 1fr) 90px 200px auto; gap: .45rem; }
+.bundle-line .field-error { grid-column: 1 / -1; color: var(--danger, #b42318); font-size: .8rem; }
+.bundle-admin-prices { display: grid; gap: .1rem; }
+.bundle-admin-prices strong + small { margin-bottom: .35rem; }
+.bundle-editor-prices { margin: .25rem 0 0; color: var(--muted); font-size: .85rem; }
 .bundle-line input, .bundle-line select { min-height: 40px; }
 
 @media (min-width: 660px) {

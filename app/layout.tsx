@@ -50,11 +50,11 @@ const baseMetadata: Metadata = {
   metadataBase: getSiteUrl(),
   ...(process.env.GOOGLE_SITE_VERIFICATION ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } } : {}),
   title: {
-    default: "Mleko i Mleko | Domaće kravlje i kozje mleko",
+    default: "Mleko i Mleko | Domaće kravlje mleko",
     template: "%s | Mleko i Mleko",
   },
   description:
-    "Poručite domaće kravlje i kozje mleko u povratnim staklenim flašama, sa dostavom u Beogradu i Novom Sadu.",
+    "Poruči domaće kravlje mleko u povratnoj staklenoj flaši, sa dostavom u Beogradu i Novom Sadu.",
   keywords: [
     "sveže mleko",
     "domaće mleko",
@@ -68,13 +68,13 @@ const baseMetadata: Metadata = {
     locale: "sr_RS",
     siteName: "Mleko i Mleko",
     title: "Mleko i Mleko | Domaće mleko na kućnu adresu",
-    description: "Izaberite kravlje ili kozje mleko, količinu i ritam dostave.",
+    description: "Izaberi količinu domaćeg kravljeg mleka, jednokratno ili kao pretplatu od četiri nedeljne dostave.",
     images: [{ url: "/images/mleko-i-mleko-og.jpg", width: 1200, height: 630, alt: "Mleko i Mleko — domaće mleko" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Mleko i Mleko | Domaće mleko na kućnu adresu",
-    description: "Izaberite kravlje ili kozje mleko, količinu i ritam dostave.",
+    description: "Izaberi količinu domaćeg kravljeg mleka, jednokratno ili kao pretplatu od četiri nedeljne dostave.",
     images: ["/images/mleko-i-mleko-og.jpg"],
   },
   icons: {
@@ -110,9 +110,9 @@ export default async function RootLayout({
     logo: absoluteUrl("/images/mleko-i-mleko-logo.png"),
     image: absoluteUrl("/images/mleko-i-mleko-og.jpg"),
     description:
-      "Domaće kravlje i kozje mleko u povratnim staklenim flašama, sa dostavom u Beogradu i Novom Sadu.",
+      "Domaće kravlje mleko u povratnim staklenim flašama, sa dostavom u Beogradu i Novom Sadu.",
     telephone: "+381605022323",
-    areaServed: ["Beograd", "Novi Sad"],
+    areaServed: settings.deliveryCities,
     sameAs: [
       "https://instagram.com/mleko_i_mleko",
       "https://www.tiktok.com/@mleko_i_mleko",

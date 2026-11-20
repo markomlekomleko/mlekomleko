@@ -8,13 +8,15 @@ import { fetchJson } from "../lib/frontend";
 type Address = { addressLine1: string; addressLine2?: string; city: string; postalCode: string };
 
 /** Self-service address change; the server checks the delivery zone exactly as in checkout. */
-export function AddressEditor({ customer, onSaved, indjijaEnabled = false }: { customer: Address; onSaved: (message: string) => void; indjijaEnabled?: boolean }) {
+export function AddressEditor({ customer, onSaved, cities: served }: { customer: Address; onSaved: (message: string) => void; cities?: readonly string[] }) {
   const localize = useLocalize();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  // Inđija is listed only while its delivery is active (or it is already the saved city).
-  const cities = DELIVERY_CITIES.filter((city) => city !== "Inđija" || indjijaEnabled || customer.city === city);
+  // The cities we deliver to (built-in and added in the admin). A saved city we no longer
+  // serve stays listed so the form shows the address as it is; the server rejects saving it.
+  const offered = served?.length ? served : DELIVERY_CITIES;
+  const cities = customer.city && !offered.includes(customer.city) ? [...offered, customer.city] : [...offered];
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);

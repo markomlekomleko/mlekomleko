@@ -6,7 +6,7 @@ import { DomainError, assertDomain, enumValue, nonNegativeInt, optionalString, r
 import { orderFilters } from "./order-filters";
 import { audit, enqueue } from "./outbox";
 import { all, batch, first, type SqlValue } from "./sql";
-import { getBusinessSettings, isServiceablePostalCode, deliveryWeekdaysForCity } from "./settings";
+import { getBusinessSettings, deliveryWeekdaysForCity, RETIRED_SETTINGS } from "./settings";
 import { purchaseAnalyticsEvent } from "./analytics";
 import { quoteCart } from "./commerce";
 import { generateDelivery, lockOverdueDeliveries } from "./deliveries";
@@ -263,9 +263,11 @@ export async function readSettings() {
   const rows = await all<{ key: string; value_json: string } & Record<string, unknown>>(
     "SELECT key, value_json, updated_at FROM settings ORDER BY key",
   );
-  return Object.fromEntries(rows.map((row) => {
+  const values = Object.fromEntries(rows.filter((row) => !RETIRED_SETTINGS.includes(row.key)).map((row) => {
     try { return [row.key, JSON.parse(row.value_json)]; } catch { return [row.key, row.value_json]; }
   }));
+  // Added delivery cities as the shop uses them (older entries get their route days filled in).
+  return { ...values, serviceRegions: (await getBusinessSettings()).serviceRegions };
 }
 
 const textSettings = new Map<string, number>([
@@ -302,7 +304,7 @@ const numericSettings = new Map<string, number>([
   ["estimatedDeliveryCostMinor", 10_000_000],
   ["paymentFeeBps", 10_000],
 ]);
-const booleanSettings = new Set(["announcementEnabled", "indjijaEnabled"]);
+const booleanSettings = new Set(["announcementEnabled"]);
 const urlSettings = new Set(["announcementUrl", "heroPrimaryUrl", "heroSecondaryUrl", "originCowImageUrl", "originGoatImageUrl"]);
 
 function safeLink(value: string, field: string) {
@@ -323,7 +325,7 @@ export async function updateSettings(input: Record<string, unknown>) {
     ...booleanSettings,
     "deliveryLocalTime",
     "servicePostalCodes",
-    "deliveryWeekdays", "indjijaDeliveryWeekdays", "minimumOrderMinor", "holidays", "serviceRegions", "deliverySlots",
+    "deliveryWeekdays", "minimumOrderMinor", "holidays", "serviceRegions", "deliverySlots",
   ]);
   const entries = Object.entries(input);
   assertDomain(
@@ -335,8 +337,8 @@ export async function updateSettings(input: Record<string, unknown>) {
   const normalized: Record<string, unknown> = {};
   for (const [key, value] of entries) {
     if (["minimumOrderMinor", "holidays", "serviceRegions", "deliverySlots"].includes(key)) { normalized[key] = validatePolicy(key,value);
-    } else if (key === "deliveryWeekdays" || key === "indjijaDeliveryWeekdays") {
-      assertDomain(Array.isArray(value) && (key === "indjijaDeliveryWeekdays" || value.length > 0) && value.every((day) => Number.isInteger(day) && day >= 0 && day <= 6), "VALIDATION_ERROR", "Izaberite dane dostave.", 422);
+    } else if (key === "deliveryWeekdays") {
+      assertDomain(Array.isArray(value) && value.length > 0 && value.every((day) => Number.isInteger(day) && day >= 0 && day <= 6), "VALIDATION_ERROR", "Izaberite dane dostave.", 422);
       normalized[key] = [...new Set(value as number[])].sort();
     } else if (numericSettings.has(key)) {
       normalized[key] = nonNegativeInt(value, key, numericSettings.get(key));
@@ -359,13 +361,19 @@ export async function updateSettings(input: Record<string, unknown>) {
   }
   const currentSettings = await getBusinessSettings();
   const role = actorContext.getStore()?.role;
-  for (const key of ["deliveryWeekdays", "indjijaDeliveryWeekdays", "indjijaEnabled"] as const) {
+  for (const key of ["deliveryWeekdays", "serviceRegions"] as const) {
     if (normalized[key] !== undefined && JSON.stringify(normalized[key]) !== JSON.stringify(currentSettings[key]))
-      assertDomain(!role || role === "owner", "ROLE_FORBIDDEN", "Samo vlasnik može da menja raspored i aktivira grad.", 403);
+      assertDomain(!role || role === "owner", "ROLE_FORBIDDEN", "Samo vlasnik može da menja raspored i gradove za dostavu.", 403);
   }
-  assertDomain(!(normalized.indjijaEnabled ?? currentSettings.indjijaEnabled) || ((normalized.indjijaDeliveryWeekdays ?? currentSettings.indjijaDeliveryWeekdays) as number[]).length > 0, "VALIDATION_ERROR", "Pre aktivacije Inđije potvrdite dane dostave.", 422);
   const nextSettings = {...currentSettings,...normalized} as typeof currentSettings;
-  assertDomain(!nextSettings.indjijaEnabled || ["22319","22320"].some(code=>isServiceablePostalCode(nextSettings,code)), "VALIDATION_ERROR", "Pre aktivacije Inđije uključite potvrđene poštanske brojeve u područje dostave.", 422);
+  // An added city runs on route days only: its own days must be among them when it is saved,
+  // and a change of route days must leave every added city at least one day.
+  const dayNames = ["nedelja", "ponedeljak", "utorak", "sreda", "četvrtak", "petak", "subota"];
+  const routeDays = nextSettings.deliveryWeekdays.map((day) => dayNames[day]).join(", ");
+  if (normalized.serviceRegions !== undefined) for (const region of nextSettings.serviceRegions)
+    assertDomain(region.weekdays.every((day) => nextSettings.deliveryWeekdays.includes(day)), "VALIDATION_ERROR", `${region.city}: dani dostave moraju biti među danima ture (${routeDays}).`, 422, { field: "serviceRegions" });
+  if (normalized.deliveryWeekdays !== undefined) for (const region of nextSettings.serviceRegions)
+    assertDomain(region.weekdays.some((day) => nextSettings.deliveryWeekdays.includes(day)), "VALIDATION_ERROR", `${region.city} bi ostao bez dana dostave. Prvo mu promenite dane u Poslovanje → Praznici, gradovi i termini.`, 422, { field: "deliveryWeekdays" });
   const changingDeadline = normalized.cutoffHours !== undefined || normalized.deliveryLocalTime !== undefined;
   // Preserve deliveries that have already crossed the old deadline before changing the policy.
   if (changingDeadline || normalized.holidays !== undefined) await lockOverdueDeliveries();

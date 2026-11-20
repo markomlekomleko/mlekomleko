@@ -2,7 +2,7 @@ import { localizedMetadata } from "@/app/lib/i18n/server";
 import { getLocalize } from "@/app/lib/i18n/server";
 import type { Metadata } from "next";
 import { StoreView } from "./store-view";
-import { normalizeProduct } from "../lib/frontend";
+import { normalizeProduct, type BundleOffer } from "../lib/frontend";
 import { canonicalUrl } from "../lib/seo";
 import { getStorefront } from "../../server/storefront";
 
@@ -17,5 +17,5 @@ export default async function StorePage() {
   const localize = await getLocalize();
   const storefront = await getStorefront();
   const products = storefront.products.map(normalizeProduct);
-  return localize(<StoreView initialProducts={products} delivery={storefront.delivery} />);
+  return localize(<StoreView initialProducts={products} bundles={storefront.bundles as BundleOffer[]} delivery={storefront.delivery} />);
 }

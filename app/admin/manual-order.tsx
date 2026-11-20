@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useRef, useState } from "react";
 import { formatDate, formatMoney, type Product } from "../lib/frontend";
-import { normalizeDeliveryCity } from "../lib/delivery-area";
+import { deliveryCityKey, normalizeDeliveryCity } from "../lib/delivery-area";
 import {
   Dialog,
   email,
@@ -108,7 +108,9 @@ export function ManualOrder({
       });
     return () => controller.abort();
   }, [request]);
-  const routeDays = options?.deliveryWeekdaysByCity?.[normalizeDeliveryCity(customer.city) ?? customer.city];
+  // Route days of the typed city: built-in aliases, or an admin-added city in either script.
+  const cityKey = deliveryCityKey(normalizeDeliveryCity(customer.city) ?? customer.city);
+  const routeDays = Object.entries(options?.deliveryWeekdaysByCity ?? {}).find(([name]) => deliveryCityKey(name) === cityKey)?.[1];
   const dates = options?.dates.filter(day=>!routeDays || routeDays.includes(new Date(`${day}T12:00:00Z`).getUTCDay())) ?? [];
   const dateAvailable = dates.includes(date), firstAvailableDate = dates[0] ?? "";
   useEffect(()=>{if(options && !dateAvailable)queueMicrotask(()=>setDate(firstAvailableDate));},[options,dateAvailable,firstAvailableDate]);

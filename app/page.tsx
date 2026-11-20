@@ -14,9 +14,9 @@ import { canonicalUrl, serializeJsonLd } from "./lib/seo";
 import { getStorefront } from "../server/storefront";
 
 export async function generateMetadata(): Promise<Metadata> { return localizedMetadata({
-  title: "Domaće kravlje i kozje mleko na tvojoj adresi",
+  title: "Domaće kravlje mleko na tvojoj adresi",
   description:
-    "Punomasno sirovo kravlje i kozje mleko u povratnim staklenim flašama, sa dostavom u Beogradu i Novom Sadu.",
+    "Punomasno sirovo kravlje mleko u povratnoj staklenoj flaši, sa dostavom u Beogradu i Novom Sadu.",
   alternates: { canonical: canonicalUrl("/") },
 }); }
 export const dynamic = "force-dynamic";

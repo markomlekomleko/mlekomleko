@@ -5,23 +5,25 @@ import { useState } from "react";
 import { useAnalytics } from "./analytics-provider";
 import { useCart } from "./cart-provider";
 import {
-  cadenceLabel,
   formatDate,
   formatMoney,
   quantityLabel,
   type BundleOffer,
   type DeliveryWindow,
   type Product,
+  type PurchaseType,
 } from "../lib/frontend";
+
+type Line = BundleOffer["lines"][number];
 
 /**
  * Packages are a shortcut, never a separate price.
  *
- * `listBundles(false)` already hides a package whose component is inactive, and this
- * view additionally refuses to render one whose products are missing from the public
- * catalog, so a package is never offered under a name its contents do not match
- * (docs/AOV-LTV-SPECIFIKACIJA.md G04). No bundle discount is claimed: the price is the
- * sum of the real line prices.
+ * `listBundles(false)` already hides a package with a product off sale, and this view
+ * additionally refuses one whose products are missing from the public catalogue, so a
+ * package is never offered under a name its contents do not match
+ * (docs/AOV-LTV-SPECIFIKACIJA.md G04). The price is the sum of the real line prices plus
+ * delivery, worked out like the product card and charged by the same server quote.
  */
 export function BundleOffers({
   products,
@@ -33,24 +35,21 @@ export function BundleOffers({
   delivery: DeliveryWindow;
 }) {
   const localize = useLocalize();
-  const locale = useLocale();
-  const { addItems, ready } = useCart();
+  const { addItems, ready, openDrawer } = useCart();
   const { track } = useAnalytics();
-  const [preview, setPreview] = useState<string>("");
+  const [preview, setPreview] = useState("");
+  const [added, setAdded] = useState("");
   const [error, setError] = useState("");
 
-  const complete = bundles.filter((bundle) => {
-    if (!bundle.lines.length) return false;
-    return bundle.lines.every((line) => {
-      const product = products.find((candidate) => candidate.id === line.productId);
-      return Boolean(product?.available) && (line.purchaseType !== "subscription" || product!.allowSubscription);
-    });
-  });
+  const complete = bundles.filter((bundle) => bundle.lines.length > 0 && bundle.lines.every((line) => {
+    const product = products.find((candidate) => candidate.id === line.productId);
+    return Boolean(product?.available) && (line.purchaseType !== "subscription" || product!.allowSubscription);
+  }));
 
   if (!complete.length) return null;
 
-  function addBundle(bundle: BundleOffer) {
-    const resolved: Array<{ line: BundleOffer["lines"][number]; product: Product }> = [];
+  function addBundle(bundle: BundleOffer, mode: PurchaseType, valueRsd: number) {
+    const resolved: Array<{ line: Line; product: Product }> = [];
     for (const line of bundle.lines) {
       const product = products.find((candidate) => candidate.id === line.productId);
       if (product?.available) resolved.push({ line, product });
@@ -61,98 +60,180 @@ export function BundleOffers({
       return;
     }
     setError("");
-    addItems(
-      resolved.map(({ line, product }) => ({
+    addItems(resolved.map(({ line, product }) => {
+      const purchaseType = linePurchaseType(line, mode);
+      return {
         productId: product.id,
         slug: product.slug,
         name: product.name,
         unit: product.unit,
-        unitPriceRsd: line.unitPriceMinor / 100,
-        purchaseType: line.purchaseType,
-        cadence: line.cadence ?? undefined,
+        unitPriceRsd: linePrice(line, purchaseType) / 100,
+        purchaseType,
+        cadence: purchaseType === "subscription" ? "weekly" as const : undefined,
         quantity: line.quantity,
-      })),
-    );
+      };
+    }));
     // One user action, one add_to_cart event.
     track("add_to_cart", {
       bundleId: bundle.id,
-      placement: "home_bundle",
+      placement: "shop_bundle",
+      purchaseType: mode,
       itemCount: bundle.lines.length,
-      valueRsd: bundle.perDeliveryMinor / 100,
-      amountBasis: "per_delivery",
+      valueRsd,
+      currency: "RSD",
+      amountBasis: mode === "subscription" ? "package" : "per_delivery",
     });
     setPreview("");
+    setAdded(bundle.id);
+    openDrawer();
   }
 
   return localize((
     <section className="bundles" aria-labelledby="bundle-title">
       <div className="section-head">
         <p className="eyebrow">Lakši izbor</p>
-        <h3 id="bundle-title">Gotove kombinacije</h3>
-        <p className="lead">Paket je prečica. U korpi i dalje menjaš količinu i ritam po proizvodu.</p>
+        <h2 id="bundle-title">Gotovi paketi</h2>
+        <p className="lead">Paket je prečica: sve stavke stižu u korpu odjednom, po istim cenama kao kad ih biraš pojedinačno.</p>
       </div>
-      {error ? (
-        <p className="notice error" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <p className="notice error" role="alert">{error}</p> : null}
       <div className="bundle-grid">
-        {complete.map((bundle) => {
-          const open = preview === bundle.id;
-          const hasSubscription = bundle.lines.some((line) => line.purchaseType === "subscription");
-          return (
-            <article className="bundle-card" key={bundle.id}>
-              {bundle.isFeatured ? <p className="bundle-flag">Predlog</p> : null}
-              <h4>{bundle.name}</h4>
-              <p className="muted">{bundle.description}</p>
-              <ul>
-                {bundle.lines.map((line) => (
-                  <li key={line.id}>
-                    <span>{quantityLabel(line.quantity, line.unitLabel)} {line.productName}</span>
-                    <small>
-                      {line.purchaseType === "one_time"
-                        ? "jednokratno"
-                        : cadenceLabel(line.cadence ?? undefined).toLocaleLowerCase("sr-Latn")}
-                    </small>
-                  </li>
-                ))}
-              </ul>
-              <p className="bundle-price">
-                <strong>{formatMoney(bundle.perDeliveryMinor / 100, locale)}</strong>
-                <span>proizvodi po prvoj zajedničkoj dostavi</span>
-                <small>Dostava nije uključena u ovaj iznos.</small>
-              </p>
-              {open ? (
-                <div className="bundle-preview">
-                  <p>
-                    Prva dostava: <strong>{formatDate(delivery.deliveryDate, locale)}</strong>
-                    {hasSubscription
-                      ? " Redovne stavke se ponavljaju do izmene ili pauze."
-                      : " Stavke su jednokratne, samo za ovu dostavu."}
-                  </p>
-                  <button className="button" type="button" disabled={!ready} onClick={() => addBundle(bundle)}>
-                    Dodaj paket u korpu
-                  </button>
-                  <button className="text-button" type="button" onClick={() => setPreview("")}>
-                    Odustani
-                  </button>
-                </div>
-              ) : (
-                <button
-                  className="button secondary"
-                  type="button"
-                  onClick={() => {
-                    setPreview(bundle.id);
-                    track("select_item", { bundleId: bundle.id, placement: "home_bundle" });
-                  }}
-                >
-                  Izaberi paket
-                </button>
-              )}
-            </article>
-          );
-        })}
+        {complete.map((bundle) => (
+          <BundleCard
+            key={bundle.id}
+            bundle={bundle}
+            delivery={delivery}
+            ready={ready}
+            open={preview === bundle.id}
+            added={added === bundle.id}
+            onOpen={() => { setPreview(bundle.id); setAdded(""); track("select_item", { bundleId: bundle.id, placement: "shop_bundle" }); }}
+            onClose={() => setPreview("")}
+            onAdd={(mode, valueRsd) => addBundle(bundle, mode, valueRsd)}
+          />
+        ))}
       </div>
     </section>
+  ));
+}
+
+/** In the one-time choice every line is bought once; in the subscription choice the lines keep the way the owner set them. */
+function linePurchaseType(line: Line, mode: PurchaseType): PurchaseType {
+  return mode === "one_time" ? "one_time" : line.purchaseType;
+}
+
+function linePrice(line: Line, purchaseType: PurchaseType) {
+  return purchaseType === "subscription" ? line.subscriptionUnitPriceMinor ?? line.unitPriceMinor : line.oneTimeUnitPriceMinor;
+}
+
+function BundleCard({
+  bundle,
+  delivery,
+  ready,
+  open,
+  added,
+  onOpen,
+  onClose,
+  onAdd,
+}: {
+  bundle: BundleOffer;
+  delivery: DeliveryWindow;
+  ready: boolean;
+  open: boolean;
+  added: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  onAdd: (mode: PurchaseType, valueRsd: number) => void;
+}) {
+  const localize = useLocalize();
+  const locale = useLocale();
+  // Like the product card: the subscription is the first choice where the package has one.
+  const [mode, setMode] = useState<PurchaseType>(bundle.offersSubscription ? "subscription" : "one_time");
+  const deliveries = mode === "subscription" ? bundle.packageDeliveries : 1;
+  const goodsMinor = bundle.lines.reduce((sum, line) => {
+    const purchaseType = linePurchaseType(line, mode);
+    return sum + linePrice(line, purchaseType) * line.quantity * (purchaseType === "subscription" ? bundle.packageDeliveries : 1);
+  }, 0);
+  const shippingKnown = typeof delivery.deliveryFeeMinor === "number";
+  const threshold = Number(delivery.freeDeliveryThresholdMinor) || 0;
+  const shippingPerDeliveryMinor = shippingKnown && !(threshold > 0 && goodsMinor >= threshold) ? Number(delivery.deliveryFeeMinor) : 0;
+  const totalMinor = goodsMinor + shippingPerDeliveryMinor * deliveries;
+  const mixed = mode === "subscription" && bundle.lines.some((line) => line.purchaseType === "one_time");
+  /** Products of one (first) delivery in the given choice. */
+  const priceOf = (choice: PurchaseType) => formatMoney(bundle.lines.reduce((sum, line) => sum + linePrice(line, linePurchaseType(line, choice)) * line.quantity, 0) / 100, locale);
+
+  return localize((
+    <article className="bundle-card" data-mode={mode}>
+      {bundle.isFeatured ? <p className="bundle-flag">Predlog</p> : null}
+      {bundle.eyebrow ? <p className="bundle-eyebrow">{bundle.eyebrow}</p> : null}
+      <h3>{bundle.name}</h3>
+      {bundle.description ? <p className="muted">{bundle.description}</p> : null}
+      <ul aria-label="Sadržaj paketa po dostavi">
+        {bundle.lines.map((line) => {
+          const purchaseType = linePurchaseType(line, mode);
+          return (
+            <li key={line.id}>
+              <span>{quantityLabel(line.quantity, line.unitLabel)} · {line.productName}</span>
+              <small>{purchaseType === "subscription" ? "svake nedelje" : mixed ? "samo uz prvu dostavu" : "jednokratno"}</small>
+            </li>
+          );
+        })}
+      </ul>
+
+      {bundle.offersSubscription ? (
+        <fieldset className="bundle-modes" disabled={!ready}>
+          <legend className="sr-only">Način kupovine paketa</legend>
+          <div className="purchase-types">
+            <button type="button" className="purchase-type" aria-pressed={mode === "subscription"} onClick={() => setMode("subscription")}>
+              <span className="purchase-type-name">Pretplata</span>
+              <strong>{priceOf("subscription")}</strong>
+              <small>{`po dostavi · paket od ${bundle.packageDeliveries} nedeljne dostave`}</small>
+            </button>
+            <button type="button" className="purchase-type" aria-pressed={mode === "one_time"} onClick={() => setMode("one_time")}>
+              <span className="purchase-type-name">Jednokratno</span>
+              <strong>{priceOf("one_time")}</strong>
+              <small>jedna dostava</small>
+            </button>
+          </div>
+        </fieldset>
+      ) : null}
+
+      <div className="configurator-receipt bundle-receipt">
+        {mode === "subscription" ? (
+          <>
+            <p><span>{!mixed ? "Proizvodi po dostavi" : "Proizvodi prve dostave"}</span><strong>{priceOf(mode)}</strong></p>
+            {shippingKnown ? <p><span>Dostava po dostavi</span><strong>{formatMoney(shippingPerDeliveryMinor / 100, locale)}</strong></p> : null}
+            <p className="configurator-package-total"><span>{`Paket od ${deliveries} dostave, plaćen unapred`}</span> <strong>{formatMoney((shippingKnown ? totalMinor : goodsMinor) / 100, locale)}</strong></p>
+          </>
+        ) : (
+          <>
+            <p><span>Proizvodi</span><strong>{formatMoney(goodsMinor / 100, locale)}</strong></p>
+            {shippingKnown ? <p><span>Dostava</span><strong>{formatMoney(shippingPerDeliveryMinor / 100, locale)}</strong></p> : null}
+            <p className="configurator-package-total"><span>Ukupno</span> <strong>{formatMoney((shippingKnown ? totalMinor : goodsMinor) / 100, locale)}</strong></p>
+          </>
+        )}
+        {!shippingKnown ? <p className="configurator-occurrences">Dostava nije uključena u ovaj iznos.</p> : null}
+      </div>
+
+      {added ? <p className="notice success" role="status">Paket je u korpi.</p> : null}
+
+      {open ? (
+        <div className="bundle-preview">
+          <p>
+            {mode === "subscription"
+              ? `Prva dostava: ${formatDate(delivery.deliveryDate, locale)}. Zatim još ${deliveries - 1} nedeljne dostave istog dana u nedelji. Ceo paket plaćaš unapred.`
+              : `Dostava: ${formatDate(delivery.deliveryDate, locale)}. Jedna dostava, bez pretplate.`}
+          </p>
+          <button className="button" type="button" disabled={!ready} onClick={() => onAdd(mode, totalMinor / 100)}>
+            Dodaj paket u korpu
+          </button>
+          <button className="text-button" type="button" onClick={onClose}>
+            Odustani
+          </button>
+        </div>
+      ) : (
+        <button className="button secondary" type="button" disabled={!ready} onClick={onOpen}>
+          Izaberi paket
+        </button>
+      )}
+    </article>
   ));
 }
