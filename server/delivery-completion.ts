@@ -102,6 +102,11 @@ export async function completeDeliveryOrder(input: Record<string, unknown>) {
     postStatusStatements.push({sql: `UPDATE package_surcharges SET status = 'completed' WHERE status = 'active' AND id IN (SELECT package_surcharge_id FROM delivery_items WHERE delivery_order_id = ? AND package_surcharge_id IS NOT NULL)
       AND (SELECT COALESCE(SUM(COALESCE(di.delivered_quantity, di.quantity)),0) FROM delivery_items di JOIN delivery_orders dor ON dor.id = di.delivery_order_id WHERE di.package_surcharge_id = package_surcharges.id AND dor.status = 'delivered') >= quantity_per_delivery * deliveries`, bindings: [id]});
     postStatusStatements.push({sql: "UPDATE orders SET fulfillment_status = 'delivered', updated_at = ? WHERE id IN (SELECT order_id FROM package_surcharges WHERE status = 'completed' AND id IN (SELECT package_surcharge_id FROM delivery_items WHERE delivery_order_id = ? AND package_surcharge_id IS NOT NULL))", bindings: [now, id]});
+    // A "next delivery only" addition is finished by this one handover: close its
+    // surcharge record and its own order, so the customer stops seeing it as scheduled.
+    const nextOnly = "SELECT order_item_id FROM delivery_items WHERE delivery_order_id = ? AND source_type = 'next_only' AND order_item_id IS NOT NULL AND COALESCE(delivered_quantity, quantity) > 0";
+    postStatusStatements.push({sql: `UPDATE package_surcharges SET status = 'completed' WHERE scope = 'next_only' AND status = 'active' AND order_item_id IN (${nextOnly})`, bindings: [id]});
+    postStatusStatements.push({sql: `UPDATE orders SET fulfillment_status = 'delivered', updated_at = ? WHERE fulfillment_status != 'cancelled' AND id IN (SELECT order_id FROM order_items WHERE id IN (${nextOnly})) AND id IN (SELECT order_id FROM next_delivery_addons WHERE order_id IS NOT NULL)`, bindings: [now, id]});
   }
   statements.push(...postStatusStatements);
   for (const {package_id: packageId} of packageIds) {

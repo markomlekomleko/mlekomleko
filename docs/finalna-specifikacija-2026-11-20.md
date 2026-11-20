@@ -15,3 +15,5 @@ link ka recenzijama je Google Maps lista „Mlekomat Mleko i Mleko“ (sve lokac
 
 Čeka materijal: fotografije laboratorijskih izveštaja (`app/lib/analyses.ts`) i fotografija osnivača
 (`app/o-nama/page.tsx`). Pitanja za klijenta: `docs/klijent/Mleko-i-Mleko-pitanja-za-potvrdu.docx`.
+
+Provera admina i kupovine: `docs/qa-2026-11-20.md`. Pitanja za klijenta su proširena na 14.

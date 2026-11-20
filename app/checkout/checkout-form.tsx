@@ -224,7 +224,7 @@ export function CheckoutForm() {
           </p>
           {result.order?.deliveryDate ? <p>Prva dostava: <strong>{formatDate(result.order.deliveryDate, locale)}</strong>.</p> : null}
           <p className="muted small-text">Za prvi pristup nalogu dovoljan je kod poslat na email sa porudžbine. Lozinka nije potrebna.</p>
-          {result.subscriptionOffer ? <section className="post-purchase-offer" aria-labelledby="post-purchase-title"><p className="eyebrow">Jedan klik do mirnog frižidera</p><h2 id="post-purchase-title">Neka ista porudžbina stiže svake nedelje.</h2><p>Uključujemo {result.subscriptionOffer.eligibleItemCount} {result.subscriptionOffer.eligibleItemCount === 1 ? "proizvod" : "proizvoda"} u nedeljni ritam. Prva redovna dostava je sledeće nedelje, a sada nema nove naplate.{result.subscriptionOffer.savingPerDeliveryMinor > 0 ? <> Štedite <strong>{formatMoney(result.subscriptionOffer.savingPerDeliveryMinor / 100, locale)}</strong> po dostavi.</> : null}</p>{conversionDone ? <p className="notice success">Redovna dostava je uključena. Možete je menjati iz naloga.</p> : <button className="button" type="button" disabled={conversionBusy} onClick={() => void convertToSubscription(result.subscriptionOffer!.token)}>{conversionBusy ? "Uključujemo…" : "Da, ponovi svake nedelje"}</button>}<small>Bez ugovorne obaveze · preskakanje i pauza online</small></section> : null}
+          {result.subscriptionOffer ? <section className="post-purchase-offer" aria-labelledby="post-purchase-title"><p className="eyebrow">Jedan klik do mirnog frižidera</p><h2 id="post-purchase-title">Neka ista porudžbina stiže svake nedelje.</h2><p>Uključujemo {result.subscriptionOffer.eligibleItemCount} {result.subscriptionOffer.eligibleItemCount === 1 ? "proizvod" : "proizvoda"} u nedeljni ritam. Pretplata je paket od četiri nedeljne dostave: prva stiže sledeće nedelje, a ceo paket plaćaš pri toj prvoj dostavi.{result.subscriptionOffer.savingPerDeliveryMinor > 0 ? <> Štedite <strong>{formatMoney(result.subscriptionOffer.savingPerDeliveryMinor / 100, locale)}</strong> po dostavi.</> : null}</p>{conversionDone ? <p className="notice success">Redovna dostava je uključena. Možete je menjati iz naloga.</p> : <button className="button" type="button" disabled={conversionBusy} onClick={() => void convertToSubscription(result.subscriptionOffer!.token)}>{conversionBusy ? "Uključujemo…" : "Da, ponovi svake nedelje"}</button>}<small>Bez ugovorne obaveze · preskakanje i pauza online</small></section> : null}
           {error ? <p className="notice error" role="alert">{error}</p> : null}
           <div className="button-row">
             <a className="button" href="/nalog">
@@ -394,7 +394,7 @@ export function CheckoutForm() {
               </div>
             ) : null}
             <div className="summary-row summary-total">
-              <span>{hasSubscription ? "Ukupno za ceo paket" : "Danas plaćate"}</span>
+              <span>{hasSubscription ? "Ukupno za ceo paket" : "Plaćaš pri dostavi"}</span>
               <span>{formatMoney(quote.totalMinor / 100, locale)}</span>
             </div>
             {addressVerified ? <p className="delivery-summary">Prva dostava: <strong>{formatDate(quote.deliveryDate, locale)}</strong><br /><small>Izmene do {formatDateTime(quote.cutoffAt, locale)}</small></p> : <p className="muted small-text">Termin dostave potvrđujemo nakon unosa adrese.</p>}

@@ -20,6 +20,7 @@ import {
   type CartQuote,
   type Product,
   type PurchaseType,
+  minimumUnits,
 } from "../lib/frontend";
 
 const FOCUSABLE =
@@ -258,14 +259,14 @@ export function CartDrawer() {
                             <span className="visually-hidden">{`Količina za ${item.name}`}</span>
                             <input
                               type="number"
-                              min={1}
+                              min={minimumUnits(item.unit)}
                               max={MAX_QUANTITY}
                               step={1}
                               inputMode="numeric"
                               value={item.quantity}
                               onChange={(event) => {
                                 const value = Number(event.target.value);
-                                if (!Number.isInteger(value) || value < 1 || value > MAX_QUANTITY) return;
+                                if (!Number.isInteger(value) || value < minimumUnits(item.unit) || value > MAX_QUANTITY) return;
                                 updateItem(item.key, { quantity: value });
                               }}
                             />

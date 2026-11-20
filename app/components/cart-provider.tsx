@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { fetchJson, type CartItem } from "../lib/frontend";
+import { fetchJson, minimumUnits, type CartItem } from "../lib/frontend";
 
 const STORAGE_KEY = "mleko-i-mleko-cart-v2";
 
@@ -125,7 +125,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const updated = {
           ...source,
           ...changes,
-          quantity: Math.max(1, Number(changes.quantity ?? source.quantity)),
+          quantity: Math.max(minimumUnits(source.unit), Number(changes.quantity ?? source.quantity)),
         };
         const nextKey = itemKey(updated);
         const withoutSource = current.filter((item) => item.key !== key);

@@ -346,6 +346,12 @@ export function litresPerUnit(unit: string): number | null {
   return Number.isFinite(value) && value > 0 ? value : null;
 }
 
+/** Smallest number of units per delivery: milk is sold from two litres up. */
+export function minimumUnits(unit: string): number {
+  const litres = litresPerUnit(unit);
+  return litres ? Math.max(1, Math.ceil(2 / litres)) : 1;
+}
+
 /** "2 L" when a unit is one litre, otherwise "2 × 500 g" so the unit stays honest. */
 export function quantityLabel(quantity: number, unit: string) {
   const litres = litresPerUnit(unit);

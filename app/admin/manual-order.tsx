@@ -448,12 +448,6 @@ export function ManualOrder({
                       >
                         Svake nedelje
                       </option>
-                      <option
-                        value="biweekly"
-                        disabled={selected.some((p) => !p.allowSubscription)}
-                      >
-                        Svake dve nedelje
-                      </option>
                     </select>
                   </label>
                 </div>

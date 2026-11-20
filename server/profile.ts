@@ -1,7 +1,7 @@
 import { assertDomain, optionalString, requiredString } from './domain';
 import { all, batch, first, type Row, type SqlValue } from './sql';
 import { shippingSnapshot } from './address-snapshot';
-import { getBusinessSettings, isServiceablePostalCode } from './settings';
+import { deliveryWeekdaysForCity, getBusinessSettings, isServiceablePostalCode } from './settings';
 import { serviceCity } from './service-policy';
 import { assertDeliveryEditable } from './delivery-cutoff';
 import { audit } from './outbox';
@@ -21,7 +21,9 @@ export async function updateProfile(customerId:string,input:Row){
  }
  if(input.applyToSubscriptions===true){
   const subs=await all<Row>("SELECT * FROM subscriptions WHERE customer_id=? AND status!='cancelled'",customerId);
-  for(const sub of subs){await assertDeliveryEditable(String(sub.next_delivery_date));const guard=mutationGuard('EXISTS(SELECT 1 FROM subscriptions WHERE id=? AND version=?)',[String(sub.id),Number(sub.version)]);statements.push(guard.check,{sql:'UPDATE subscriptions SET shipping_json=?,version=version+1 WHERE id=?',bindings:[JSON.stringify(next),String(sub.id)]},guard.cleanup);}
+  for(const sub of subs){await assertDeliveryEditable(String(sub.next_delivery_date));
+   // The new city must be served on the subscription's delivery day (Novi Sad has no Tuesday route).
+   assertDomain(deliveryWeekdaysForCity(settings,city).includes(new Date(`${String(sub.next_delivery_date)}T12:00:00Z`).getUTCDay()),'DELIVERY_DAY_UNAVAILABLE','U ovom gradu ne dostavljamo na dan tvoje pretplate. Piši nam da zajedno promenimo dan dostave.',422,{field:'city'});const guard=mutationGuard('EXISTS(SELECT 1 FROM subscriptions WHERE id=? AND version=?)',[String(sub.id),Number(sub.version)]);statements.push(guard.check,{sql:'UPDATE subscriptions SET shipping_json=?,version=version+1 WHERE id=?',bindings:[JSON.stringify(next),String(sub.id)]},guard.cleanup);}
  }
  statements.push(audit('customer',customerId,'profile.updated','customer',customerId,null,{...next,applyToSubscriptions:input.applyToSubscriptions===true}));await batch(statements);return {customer:next};
 }

@@ -33,7 +33,7 @@ export function DeliveryCalendar({ schedule, value, onChange, recurring }: {
   return localize((
     <section className="card form-stack delivery-schedule" aria-labelledby="delivery-schedule-title">
       <h2 id="delivery-schedule-title">Tvoj dan. Tvoj početak.</h2>
-      <p className="muted">{schedule.city} · {schedule.weekdays.map(day => translate(dayNames[day], locale)).join(translate(" i ", locale))}. {recurring ? "Ritam svake nedelje ili svake 2 nedelje biraš za svaki proizvod u korpi." : "Izaberi kada želiš svoju dostavu."}</p>
+      <p className="muted">{schedule.city} · {schedule.weekdays.map(day => translate(dayNames[day], locale)).join(translate(" i ", locale))}. {recurring ? "Pretplata stiže jednom nedeljno, na dan koji ovde izabereš." : "Izaberi kada želiš svoju dostavu."}</p>
       {!schedule.dates.length ? <p role="alert">Trenutno nema dostupnih termina. Kontaktiraj nas za dostavu.</p> : <>
         <fieldset className="fieldset delivery-weekdays">
           <legend>Dan dostave</legend>

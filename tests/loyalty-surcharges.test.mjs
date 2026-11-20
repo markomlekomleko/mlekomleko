@@ -336,3 +336,21 @@ test('the 2-litre minimum is a shop setting: cart and checkout reject 1 L, accep
  await buy([line(2)]);
  assert.equal(scalar('SELECT count(*) FROM orders'), 1);
 });
+
+test('a finished package renews at once on the same weekday, even when the next delivery falls in the next month', async () => {
+ const bought = await buy([line(2)], { deliveryDate: '2027-01-08' });
+ for (const date of ['2027-01-08', '2027-01-15', '2027-01-22', '2027-01-29']) await handover(date);
+ const renewal = expectStatus(await api('/api/jobs/billing', { month: '2027-01' }, { admin: true })).results[0];
+ assert.equal(renewal.skipped, undefined, JSON.stringify(renewal));
+ assert.equal(scalar('SELECT next_delivery_date FROM subscriptions WHERE id=?', bought.subscription.id), '2027-02-05');
+ assert.equal(scalar("SELECT delivery_date FROM orders WHERE subscription_id=? AND kind='subscription_invoice' ORDER BY created_at DESC LIMIT 1", bought.subscription.id), '2027-02-05');
+});
+
+test('a next-delivery-only addition is closed by the handover it rode on', async () => {
+ const bought = await buy([line(2)], { deliveryDate: '2027-01-08' });
+ expectStatus(await mutate(bought.subscription.id, 'add_quantity', { productId: 'prod_kravlje_1l', quantity: 2, scope: 'next_only' }));
+ assert.equal(scalar("SELECT status FROM package_surcharges WHERE scope='next_only'"), 'active');
+ await handover('2027-01-08');
+ assert.equal(scalar("SELECT status FROM package_surcharges WHERE scope='next_only'"), 'completed');
+ assert.equal(scalar("SELECT o.fulfillment_status FROM orders o JOIN package_surcharges ps ON ps.order_id=o.id WHERE ps.scope='next_only'"), 'delivered');
+});

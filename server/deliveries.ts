@@ -175,9 +175,10 @@ export async function generateDelivery(rawDate: unknown, rawKey: string | null, 
   if (preview) {
     const totals = new Map<string, Record<string, unknown>>();
     for (const order of previewOrders) for (const item of order.items) {
-      const key = String(item.product_id);
+      // The loyalty gift keeps its own row, as in the generated list.
+      const key = `${item.product_id}|${item.product_name}`;
       const previous = totals.get(key);
-      totals.set(key, { product_id: key, product_name: item.product_name, unit_label: item.unit_label, total_quantity: Number(previous?.total_quantity ?? 0) + Number(item.quantity) });
+      totals.set(key, { product_id: String(item.product_id), product_name: item.product_name, unit_label: item.unit_label, total_quantity: Number(previous?.total_quantity ?? 0) + Number(item.quantity) });
     }
     return { delivery: delivery ?? { id: deliveryId, delivery_date: date, cutoff_at: cutoffAt, status: "open" as const, generated_at: now, locked_at: null, generation_key: generationKey }, orders: previewOrders, preparation: [...totals.values()] };
   }

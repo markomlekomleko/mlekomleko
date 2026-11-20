@@ -394,6 +394,8 @@ export async function convertOrderToSubscription(input: Record<string, unknown>)
     conversion.order_id,
   );
   assertDomain(sourceItems.length > 0, "SUBSCRIPTION_UNAVAILABLE", "U ovoj porudžbini nema proizvoda dostupnih za redovnu dostavu.", 409);
+  const minimumLitres = Number((await getBusinessSettings()).minimumLitres) || 0;
+  for (const item of sourceItems) assertMinimumLitres(item.unit_label, item.order_quantity, minimumLitres);
   const idHash = await stableJsonHash({ conversion: conversion.token_id });
   const subscriptionId = `sub_${idHash.slice(0, 32)}`;
   const nextDeliveryDate = addLocalDays(conversion.delivery_date, cadence === "weekly" ? 7 : 14);

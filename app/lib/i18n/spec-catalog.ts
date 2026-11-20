@@ -208,4 +208,7 @@ export const specCatalog: Record<string, readonly [string, string]> = {
   "Domaće sirovo mleko sa dostavom u Novom Sadu petkom, u povratnim staklenim flašama.": ["Homemade raw milk delivered in Novi Sad on Fridays, in returnable glass bottles.", "Домашнее сырое молоко с доставкой в Нови-Саде по пятницам, в возвратных стеклянных бутылках."],
   "Domaće sirovo mleko sa dostavom u Beogradu utorkom i petkom, u povratnim staklenim flašama.": ["Homemade raw milk delivered in Belgrade on Tuesdays and Fridays, in returnable glass bottles.", "Домашнее сырое молоко с доставкой в Белграде по вторникам и пятницам, в возвратных стеклянных бутылках."],
   "Najmanja količina je {0} litra po dostavi.": ["The minimum is {0} litres per delivery.", "Минимальное количество — {0} л на доставку."],
+  "Pretplata stiže jednom nedeljno, na dan koji ovde izabereš.": ["The subscription arrives once a week, on the day you choose here.", "Подписка приезжает раз в неделю, в выбранный здесь день."],
+  "Plaćaš pri dostavi": ["You pay on delivery", "Оплата при доставке"],
+  "U ovom gradu ne dostavljamo na dan tvoje pretplate. Piši nam da zajedno promenimo dan dostave.": ["We don't deliver in this city on your subscription's day. Write to us and we'll change the delivery day together.", "В этом городе мы не доставляем в день вашей подписки. Напишите нам, и мы вместе изменим день доставки."],
 };
