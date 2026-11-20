@@ -43,6 +43,30 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
     return replay.response_json ? JSON.parse(replay.response_json) : { month, status: "processing" };
   }
 
+  // Reserve the key before billing: a parallel run of the same job sees the reservation and answers
+  // "processing" instead of colliding on the final insert. A failed run releases it for a retry.
+  const reservationId = crypto.randomUUID();
+  await batch([{ sql: "INSERT INTO idempotency_keys (id, namespace, key, request_hash, response_json, status_code, expires_at) VALUES (?, 'monthly-billing', ?, ?, NULL, NULL, ?) ON CONFLICT(namespace, key) DO NOTHING", bindings: [reservationId, key, requestHash, new Date(Date.now() + 400 * 86_400_000).toISOString()] }]);
+  const reservation = await first<{ id: string; request_hash: string; response_json: string | null } & Record<string, unknown>>("SELECT id, request_hash, response_json FROM idempotency_keys WHERE namespace = 'monthly-billing' AND key = ?", key);
+  if (reservation && reservation.id !== reservationId) {
+    assertDomain(reservation.request_hash === requestHash, "IDEMPOTENCY_CONFLICT", "This Idempotency-Key was used for another billing month.", 409);
+    return reservation.response_json ? JSON.parse(reservation.response_json) : { month, status: "processing" };
+  }
+  let results: Array<Record<string, unknown>>;
+  try { results = await billSubscriptions(month, onlySubscriptionId); }
+  catch (error) {
+    await batch([{ sql: "DELETE FROM idempotency_keys WHERE id = ? AND response_json IS NULL", bindings: [reservationId] }]);
+    throw error;
+  }
+  const response = { month, currency: "RSD", processed: results.length, results };
+  await batch([
+    { sql: "UPDATE idempotency_keys SET response_json = ?, status_code = 200 WHERE id = ?", bindings: [JSON.stringify(response), reservationId] },
+    audit("system", "monthly-billing-job", "billing.month_completed", "billing_month", month, null, { processed: results.length }),
+  ]);
+  return response;
+}
+
+async function billSubscriptions(month: string, onlySubscriptionId?: string) {
   const settings = await getBusinessSettings();
   const closedDates = new Set((await all<{ delivery_date: string } & Record<string, unknown>>("SELECT delivery_date FROM deliveries WHERE status != 'open' AND delivery_date >= ?", localDateAt())).map((row) => row.delivery_date));
   const subscriptions = await all<BillingSubscription>("SELECT s.*, COALESCE((SELECT o.source_json FROM orders o WHERE o.subscription_id = s.id ORDER BY o.created_at, o.id LIMIT 1), c.source_json) AS source_json FROM subscriptions s JOIN customers c ON c.id = s.customer_id WHERE s.renewal_enabled = 1 AND s.status IN ('active', 'paused') AND substr(s.started_at, 1, 7) <= ? ORDER BY s.id", month);
@@ -132,10 +156,5 @@ export async function generateMonthlyBilling(rawMonth: unknown, rawKey: string |
       else throw error;
     }
   }
-  const response = { month, currency: "RSD", processed: results.length, results };
-  await batch([
-    { sql: "INSERT INTO idempotency_keys (id, namespace, key, request_hash, response_json, status_code, expires_at) VALUES (?, 'monthly-billing', ?, ?, ?, 200, ?)", bindings: [crypto.randomUUID(), key, requestHash, JSON.stringify(response), new Date(Date.now() + 400 * 86_400_000).toISOString()] },
-    audit("system", "monthly-billing-job", "billing.month_completed", "billing_month", month, null, { processed: results.length }),
-  ]);
-  return response;
+  return results;
 }

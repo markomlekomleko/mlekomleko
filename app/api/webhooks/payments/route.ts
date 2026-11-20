@@ -28,6 +28,19 @@ export function POST(request: Request) {
     assertDomain(order, "ORDER_NOT_FOUND", "Order was not found.", 404);
     const packageOrder = await first<Record<string, unknown>>("SELECT id FROM subscription_packages WHERE order_id = ?", orderId);
     assertDomain(!packageOrder || order.payment_status !== "paid" || status === "paid", "PACKAGE_PAYMENT_IMMUTABLE", "Za povraćaj uplaćenog paketa potrebna je zasebna refundacija sa fiskalnim dokumentom.", 409);
+    // A late "failed" event never downgrades a captured payment (same rule as FISCAL_PAYMENT_IMMUTABLE on
+    // the admin path; reversing a paid order is the refund flow). The event is still recorded so a
+    // provider retry stays a duplicate.
+    if (status === "failed" && order.payment_status === "paid") {
+      const guard = mutationGuard("EXISTS (SELECT 1 FROM orders WHERE id = ? AND payment_status = 'paid')", [orderId]);
+      await batch([
+        guard.check,
+        { sql: "INSERT INTO webhook_events (id, provider, provider_event_id, payload_json, processed_at) VALUES (?, 'local-mock', ?, ?, ?)", bindings: [crypto.randomUUID(), eventId, JSON.stringify(body), new Date().toISOString()] },
+        audit("system", "payment-webhook", "payment.stale_event_ignored", "order", orderId, { paymentStatus: order.payment_status }, { paymentStatus: order.payment_status, ignoredStatus: status, eventId }),
+        guard.cleanup,
+      ]);
+      return jsonResponse({ received: true, duplicate: false, ignored: true });
+    }
     const activation = status === "paid" && order.payment_status !== "paid" ? await activatePaidPackage(orderId) : null;
     const statements = [
       { sql: "INSERT INTO webhook_events (id, provider, provider_event_id, payload_json, processed_at) VALUES (?, 'local-mock', ?, ?, ?)", bindings: [crypto.randomUUID(), eventId, JSON.stringify(body), new Date().toISOString()] },

@@ -122,7 +122,8 @@ test("F-E04 checkout contract: idempotent replay, conflict, forged prices ignore
   const first = await request.post("/api/checkout", { data: body, headers: headers(ip, { "Idempotency-Key": key }) });
   expect(first.status()).toBe(201);
   const created = await first.json();
-  expect(created.order.totalMinor).toBe(85_000);
+  // One-time: 2 L x 350 + 350 delivery = 1.050 RSD, whatever total the client forged.
+  expect(created.order.totalMinor).toBe(105_000);
   expect(created.order.paymentStatus).toBe("pending");
   const replay = await request.post("/api/checkout", { data: body, headers: headers(ip, { "Idempotency-Key": key }) });
   expect(replay.status()).toBe(201);
@@ -139,7 +140,8 @@ test("F-E04 checkout contract: idempotent replay, conflict, forged prices ignore
   const card = await request.post("/api/checkout", { data: cashBody(email, 2, { paymentMethod: "card", paymentToken: "test-f-token" }), headers: headers(ip, { "Idempotency-Key": `test-f-card-${unique()}` }) });
   expect(card.status()).toBe(503);
   expect((await card.json()).error.code).toBe("PAYMENT_METHOD_UNAVAILABLE");
-  for (const quantity of [0, -1, 1.5, 101]) {
+  // 1 L is below the 2 L minimum.
+  for (const quantity of [0, -1, 1, 1.5, 101]) {
     const response = await request.post("/api/checkout", { data: cashBody(email, quantity), headers: headers(ip, { "Idempotency-Key": `test-f-q-${unique()}` }) });
     expect(response.status(), `quantity ${quantity}`).toBe(422);
   }

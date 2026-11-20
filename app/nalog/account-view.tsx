@@ -421,8 +421,8 @@ export function AccountView() {
                   </ul>
                   <p className="small-text">
                     Ovi proizvodi nisu deo redovne dostave. Pauza ili preskakanje
-                    pretplate ih ne pomera. Izmenu i otkazivanje otvorite u „Moje
-                    porudžbine“ ispod, do prikazanog roka.
+                    pretplate ih ne pomera. Izmenu i otkazivanje otvorite u
+                    „Porudžbine“ ispod, do prikazanog roka.
                   </p>
                 </section>
               ))}

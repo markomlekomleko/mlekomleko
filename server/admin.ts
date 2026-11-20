@@ -402,7 +402,7 @@ export async function updateSettings(input: Record<string, unknown>) {
       const guard=mutationGuard('EXISTS(SELECT 1 FROM subscriptions WHERE id=? AND version=?)',[String(sub.id),Number(sub.version)]);
       statements.push(guard.check,{sql:'UPDATE subscriptions SET next_delivery_date=?,version=version+1,updated_at=? WHERE id=?',bindings:[date,now,String(sub.id)]},{sql:'UPDATE next_delivery_addons SET delivery_date=? WHERE subscription_id=? AND consumed_at IS NULL AND cancelled_at IS NULL',bindings:[date,String(sub.id)]},enqueue('email.order_updated.requested','subscription',String(sub.id),{deliveryDate:date,reason:'holiday'}),guard.cleanup);
     }
-    statements.push({sql:"UPDATE deliveries SET generation_key=? WHERE status='open'",bindings:[`holiday:${crypto.randomUUID()}`]});
+    statements.push({sql:"UPDATE deliveries SET generation_key=? || ':' || id WHERE status='open'",bindings:[`holiday:${crypto.randomUUID()}`]});
   }
   statements.push(audit("admin", "local-admin", "settings.updated", "settings", "business", await getBusinessSettings(), normalized));
   await batch(statements);

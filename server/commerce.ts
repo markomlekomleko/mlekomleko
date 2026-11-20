@@ -14,7 +14,7 @@ import { all, batch, first, sqlPlaceholders, type SqlValue } from "./sql";
 import { addLocalDays, assertBeforeCutoff, assertLocalDate, cutoffForDelivery, isCadenceDue, localDateAt, nextWeekday } from "./time";
 import { getBusinessSettings, getNextDeliveryWindow, isServiceablePostalCode, deliveryWeekdaysForCity, deliveryCityForPostal, deliveryCityName, deliveryCityNames } from "./settings";
 import { generateDelivery, lockOverdueDeliveries } from "./deliveries";
-import { assertDeliveryEditable } from "./delivery-cutoff";
+import { assertDeliveryEditable, deliveryDeadline } from "./delivery-cutoff";
 import { purchaseAnalyticsEvent } from "./analytics";
 import { sanitizeAnalyticsIdentity } from "../integrations/marketing-attribution.mjs";
 import { mutationGuard } from "./mutation-guard";
@@ -159,7 +159,9 @@ export async function quoteCart(input: Record<string, unknown>, reward: Checkout
   const deliveryDate = input.deliveryDate == null ? (await getNextDeliveryWindow(new Date(), routeCity)).deliveryDate : assertLocalDate(input.deliveryDate);
   assertSaleDate(settings, deliveryDate);
   assertDomain(deliveryWeekdaysForCity(settings, routeCity).includes(new Date(`${deliveryDate}T12:00:00Z`).getUTCDay()), "INVALID_DELIVERY_DATE", "Izabrani datum nije dan dostave.", 422);
-  assertBeforeCutoff(cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime));
+  // Same rule as checkout: the stored route deadline, and a route the admin locked early, are closed.
+  const deadline = await deliveryDeadline(deliveryDate);
+  assertBeforeCutoff(deadline.cutoffAt, deadline.locked ? "locked" : null);
   const productIds = [...new Set(items.map((item) => item.productId))];
   const rows = await all<ProductRow>(`SELECT * FROM products WHERE id IN (${sqlPlaceholders(productIds.length)}) AND is_active = 1`, ...productIds);
   const products = new Map(rows.map((row) => [row.id, row]));
@@ -195,7 +197,7 @@ export async function quoteCart(input: Record<string, unknown>, reward: Checkout
     promoCode,
     currency: "RSD",
     deliveryDate,
-    cutoffAt: cutoffForDelivery(deliveryDate, settings.cutoffHours, settings.deliveryLocalTime),
+    cutoffAt: deadline.cutoffAt,
     serviceable,
     freeDeliveryThresholdMinor: settings.freeDeliveryThresholdMinor,
     freeDeliveryRemainingMinor: settings.freeDeliveryThresholdMinor > subtotalMinor ? settings.freeDeliveryThresholdMinor - subtotalMinor : 0,
@@ -359,6 +361,8 @@ export async function checkout(input: Record<string, unknown>, idempotencyKeyRaw
   } catch (error) {
     const replay = await first<{ request_hash: string; response_json: string | null; status_code: number | null } & Record<string, unknown>>("SELECT request_hash, response_json, status_code FROM idempotency_keys WHERE namespace = 'checkout' AND key = ?", idempotencyKey);
     if (replay?.request_hash === requestHash && replay.response_json) return { status: replay.status_code ?? 201, body: JSON.parse(replay.response_json) };
+    // A parallel request with the same key but a different body committed first.
+    assertDomain(!replay, "IDEMPOTENCY_CONFLICT", "This Idempotency-Key was already used for a different checkout.", 409);
     if (promos.length) await resolvePromotions(promoCode, subtotalMinor, customer.email);
     throw error;
   }
@@ -498,6 +502,41 @@ async function assertSubscriptionMutable(subscription: SubscriptionRow): Promise
   await assertDeliveryEditable(subscription.next_delivery_date);
 }
 
+/**
+ * Resume whose pause the deadline lock already ended (the due delivery stays on its locked route and the
+ * subscription moved on to its next date). The lock made the state change; this records the customer's
+ * request once — idempotency record, audit and notification — without a second version bump.
+ */
+async function recordResumeEndedAtDeadline(customerId: string, before: SubscriptionRow, current: SubscriptionRow, input: Record<string, unknown>, mutationKey: string, requestHash: string, actor: "customer" | "admin") {
+  const subscriptionId = before.id;
+  const expectedVersion = before.version;
+  const settings = await getBusinessSettings();
+  const nextDelivery = await first<{ cutoff_at: string } & Record<string, unknown>>("SELECT cutoff_at FROM deliveries WHERE delivery_date = ?", current.next_delivery_date);
+  const cutoffAt = nextDelivery?.cutoff_at ?? cutoffForDelivery(current.next_delivery_date, settings.cutoffHours, settings.deliveryLocalTime);
+  const response = { subscriptionId, action: "resume", appliesTo: "current", cancelAfterPackage: false, version: current.version, adjustmentMinor: 0, currency: "RSD", addonOrder: null, surcharge: null };
+  const guard = mutationGuard("EXISTS (SELECT 1 FROM subscriptions WHERE id = ? AND customer_id = ? AND version = ? AND status = 'active')", [subscriptionId, customerId, current.version]);
+  try {
+    await batch([
+      guard.check,
+      { sql: "INSERT INTO subscription_mutation_versions (id, subscription_id, expected_version, mutation_key) VALUES (?, ?, ?, ?)", bindings: [crypto.randomUUID(), subscriptionId, expectedVersion, mutationKey] },
+      { sql: "INSERT INTO idempotency_keys (id, namespace, key, request_hash, response_json, status_code, expires_at) VALUES (?, 'subscription-mutation', ?, ?, ?, 200, ?)", bindings: [crypto.randomUUID(), mutationKey, requestHash, JSON.stringify(response), new Date(Date.now() + 400 * 86_400_000).toISOString()] },
+      audit(actor, actor === "admin" ? "admin-panel" : customerId, "subscription.resume", "subscription", subscriptionId, before, { ...input, adjustmentMinor: 0, endedAtDeadline: before.next_delivery_date }),
+      enqueue("subscription.resume", "subscription", subscriptionId, { customerId, nextDeliveryDate: current.next_delivery_date, cancelAfterPackage: false, appliesTo: "current", previousDeliveryDate: before.next_delivery_date, cutoffAt, adjustmentMinor: 0, addonOrder: null, surcharge: null }),
+      { sql: "UPDATE deliveries SET generation_key = ? || ':' || id WHERE status = 'open' AND delivery_date >= ?", bindings: [`changed:${crypto.randomUUID()}`, localDateAt()] },
+      guard.cleanup,
+    ]);
+  } catch (error) {
+    const raced = await first<{ request_hash: string; response_json: string | null } & Record<string, unknown>>("SELECT request_hash, response_json FROM idempotency_keys WHERE namespace = 'subscription-mutation' AND key = ?", mutationKey);
+    if (raced?.request_hash === requestHash && raced.response_json) return { ...JSON.parse(raced.response_json), account: await getAccount(customerId) };
+    const latest = await first<{ version: number } & Record<string, unknown>>("SELECT version FROM subscriptions WHERE id = ? AND customer_id = ?", subscriptionId, customerId);
+    if (latest) throw new DomainError("SUBSCRIPTION_VERSION_CONFLICT", "Pretplata je promenjena u drugom prozoru. Učitani su najnoviji podaci.", 409, { expectedVersion, currentVersion: latest.version });
+    throw error;
+  }
+  const openDeliveries = await all<{ delivery_date: string } & Record<string, unknown>>("SELECT delivery_date FROM deliveries WHERE status = 'open' AND delivery_date >= ?", localDateAt());
+  for (const { delivery_date: date } of openDeliveries) await generateDelivery(date, `account-refresh:${subscriptionId}:${date}:${mutationKey}`);
+  return { ...response, account: await getAccount(customerId) };
+}
+
 async function paidThisMonth(subscriptionId: string, date: string): Promise<boolean> {
   return Boolean(await first<Record<string, unknown>>("SELECT id FROM orders WHERE subscription_id = ? AND kind = 'subscription_invoice' AND payment_status = 'paid' AND substr(delivery_date, 1, 7) = ? LIMIT 1", subscriptionId, date.slice(0, 7)));
 }
@@ -524,6 +563,20 @@ export async function mutateSubscription(customerId: string, subscriptionId: str
   }
   // Resume intentionally schedules a new future delivery and never edits a stale/locked snapshot.
   if (action !== "resume") await assertSubscriptionMutable(subscription);
+  else {
+    // The deadline of the current next delivery has passed but the route is not locked yet (page loaded
+    // before the cutoff, daily job not run). Lock it first, exactly as the deadline would: a pause that
+    // already ends on that delivery keeps it on the route and the lock itself turns the subscription active.
+    const deadline = await deliveryDeadline(subscription.next_delivery_date);
+    if (deadline.locked) {
+      await generateDelivery(deadline.date, `deadline:${deadline.date}`);
+      const current = await first<SubscriptionRow>("SELECT * FROM subscriptions WHERE id = ? AND customer_id = ?", subscriptionId, customerId);
+      if (current && current.version !== expectedVersion) {
+        assertDomain(current.status === "active" && current.version === expectedVersion + 1, "SUBSCRIPTION_VERSION_CONFLICT", "Pretplata je promenjena u drugom prozoru. Učitani su najnoviji podaci.", 409, { expectedVersion, currentVersion: current.version });
+        return recordResumeEndedAtDeadline(customerId, subscription, current, input, mutationKey, requestHash, actor);
+      }
+    }
+  }
   const now = new Date().toISOString();
   const statements: Array<{ sql: string; bindings?: SqlValue[] }> = [
     { sql: "INSERT INTO subscription_mutation_versions (id, subscription_id, expected_version, mutation_key) VALUES (?, ?, ?, ?)", bindings: [crypto.randomUUID(), subscriptionId, expectedVersion, mutationKey] },

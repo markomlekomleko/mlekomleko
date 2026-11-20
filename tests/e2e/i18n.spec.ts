@@ -48,12 +48,13 @@ test("switching language preserves the page, query and basket on every viewport"
   await page.locator(".cart-link").click();
   await expect(page.locator(".drawer-item")).toHaveCount(1);
   await page.keyboard.press("Escape");
-  // Latin is reachable by URL but not offered: the switcher lists only Cyrillic, English and Russian.
+  // Final spec (19 Nov 2026): the switcher offers Cyrillic, Latin, English and Russian.
   await page.locator(".language-switcher summary").click();
-  await expect(page.locator(".language-switcher").getByRole("link")).toHaveCount(menuLocales.length);
-  await expect(page.locator(".language-switcher").getByRole("link", { name: "Srpski · latinica", exact: true })).toHaveCount(0);
+  await expect(menuLocales).toEqual(["sr-cyrl", "sr-latn", "en", "ru"]);
+  await expect(page.locator(".language-switcher").getByRole("link")).toHaveCount(4);
+  for (const label of ["Српски · ћирилица", "Srpski · latinica", "English", "Русский"]) await expect(page.locator(".language-switcher").getByRole("link", { name: label, exact: true })).toHaveCount(1);
   await page.keyboard.press("Escape");
-  for (const [locale, label] of [["en", "English"], ["ru", "Русский"], ["sr-cyrl", "Српски · ћирилица"]] as const) {
+  for (const [locale, label] of [["sr-latn", "Srpski · latinica"], ["en", "English"], ["ru", "Русский"], ["sr-cyrl", "Српски · ћирилица"]] as const) {
     await page.locator(".language-switcher summary").click();
     await page.locator(".language-switcher").getByRole("link", { name: label, exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`${localizedPath("/prodavnica", locale)}\\?source=language-test#top$`));
@@ -65,11 +66,27 @@ test("switching language preserves the page, query and basket on every viewport"
     const actions = await page.locator(".header-actions").boundingBox();
     expect(brand!.x + brand!.width).toBeLessThanOrEqual(actions!.x);
     await page.locator(".cart-link").click();
-    await expect(page.locator(".cart-drawer-foot .button")).toHaveAttribute("href", localizedPath("/checkout", locale));
-    await expect(page.locator(".drawer-offer strong")).toHaveText(`${translate("Probaj i", locale)} ${translate("Domaće kozje mleko", locale).toLocaleLowerCase()}.`);
+    // Latin has its own prefix too; its in-page links are covered by the dedicated test below.
+    if (locale !== "sr-latn") await expect(page.locator(".cart-drawer-foot .button")).toHaveAttribute("href", localizedPath("/checkout", locale));
+    // Goat milk is off sale, so the drawer only suggests an add-on when another product is published.
+    await page.waitForTimeout(500);
+    if (await page.locator(".drawer-offer").count()) await expect(page.locator(".drawer-offer strong")).toContainText(translate("Probaj i", locale));
     await page.keyboard.press("Escape");
   }
   expect(errors).toEqual([]);
+});
+
+test("Latin pages keep the /sr-latn prefix on their own links", async ({ page }) => {
+  // Unprefixed URLs serve Cyrillic, so a link without the prefix would throw a Latin reader out of their script.
+  await page.goto(localizedPath("/prodavnica", "sr-latn"));
+  await page.locator(".configurator-actions button").first().click();
+  await page.locator(".cart-link").click();
+  await expect(page.locator(".cart-drawer-foot .button")).toHaveAttribute("href", localizedPath("/checkout", "sr-latn"));
+  await page.keyboard.press("Escape");
+  // The language switcher is the one nav that must point at the other languages.
+  const hrefs = await page.locator('nav:not(.language-switcher nav) a[href^="/"]').evaluateAll(links => links.map(link => link.getAttribute("href")!));
+  expect(hrefs.length).toBeGreaterThan(0);
+  for (const href of hrefs) expect(href, "internal navigation link on a Latin page").toMatch(/^\/sr-latn(\/|$)|^\/(admin|api)/);
 });
 
 for (const locale of ["sr-cyrl", "en", "ru"] as const) test(`${locale}: purchase, calendar and email sign-in retain the language and commerce values`, async ({ page }) => {
@@ -114,13 +131,13 @@ for (const locale of ["sr-cyrl", "en", "ru"] as const) test(`${locale}: purchase
   await page.getByRole("button", { name: t("Potvrdi kod"), exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`${localizedPath("/nalog", locale)}$`));
   await expect(page.locator("html")).toHaveAttribute("lang", languageTags[locale]);
-  await expect(page.getByRole("heading", { name: `${t("Zdravo,")} Mila Test.` })).toBeVisible();
+  await expect(page.getByRole("heading", { name: `${t("Zdravo,")} Mila Test` })).toBeVisible();
   const resultAxe = await new AxeBuilder({ page }).analyze();
   expect(resultAxe.violations.filter(v => ["serious", "critical"].includes(v.impact!))).toEqual([]);
 });
 
 test("announcement has one editable localized message, with optional link, and admin remains Latin", async ({ page, request, baseURL }) => {
-  const login = await request.post("/api/admin/access", { headers: { Origin: baseURL! }, data: { email: "admin@example.test", password: "e2e-admin-password" } });
+  const login = await request.post("/api/admin/access", { headers: { Origin: baseURL!, "cf-connecting-ip": `2001:db8:${crypto.randomUUID().replaceAll("-", "").match(/.{1,4}/g)!.slice(0, 6).join(":")}` }, data: { email: "admin@example.test", password: "e2e-admin-password" } });
   const headers = { Origin: baseURL!, Authorization: `Bearer ${(await login.json()).sessionToken}` };
   const original = (await (await request.get("/api/storefront")).json()).settings;
   const keys = ["announcementEnabled", "announcementText", "announcementTextEn", "announcementTextRu", "announcementTextSrCyrl", "announcementUrl"];
@@ -130,16 +147,19 @@ test("announcement has one editable localized message, with optional link, and a
     for (const locale of languages) {
       await page.goto(localizedPath("/prodavnica", locale));
       const bar = page.locator(".announcement-bar");
-      await expect(bar.locator(":scope > *")).toHaveCount(1);
+      // The bar carries the one announcement message plus the change-deadline countdowns (their own paragraph).
+      const message = bar.locator(":scope > :not(.delivery-countdowns)");
+      await expect(message).toHaveCount(1);
       await expect(bar.locator("a")).toHaveCount(0);
-      await expect(bar).toHaveText(({ "sr-latn": "Sveže mleko", "sr-cyrl": "Свеже млеко", en: "Fresh milk", ru: "Свежее молоко" })[locale]);
+      await expect(message).toHaveText(({ "sr-latn": "Sveže mleko", "sr-cyrl": "Свеже млеко", en: "Fresh milk", ru: "Свежее молоко" })[locale]);
     }
     expect((await request.patch("/api/admin/settings", { headers, data: { announcementUrl: "/prodavnica" } })).ok()).toBe(true);
     await page.reload();
     await expect(page.locator(".announcement-bar > a")).toHaveAttribute("href", "/ru/prodavnica");
     expect((await request.patch("/api/admin/settings", { headers, data: { announcementText: "", announcementTextEn: "", announcementTextRu: "", announcementTextSrCyrl: "" } })).ok()).toBe(true);
     await page.reload();
-    await expect(page.locator(".announcement-bar")).toHaveCount(0);
+    // With no message the bar keeps only the countdowns (or disappears when there are none): no message element is left.
+    await expect(page.locator(".announcement-bar > :not(.delivery-countdowns)")).toHaveCount(0);
     await page.goto("/ru/admin");
     await expect(page).toHaveURL(/\/admin$/);
     await expect(page.locator("html")).toHaveAttribute("lang", "sr-Latn");

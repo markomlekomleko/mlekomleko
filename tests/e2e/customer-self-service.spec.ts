@@ -14,8 +14,9 @@ test("guest email code unlocks permanent subscription additions and one-time edi
     .join(":")}`;
   await context.setExtraHTTPHeaders({ "cf-connecting-ip": ip });
   const storefront = await (await page.request.get("/api/storefront")).json();
+  // The cow milk specifically: a product left published by another spec must not change the prices checked here.
   const product = storefront.products.find(
-    (value: { allowSubscription: boolean }) => value.allowSubscription,
+    (value: { id: string; allowSubscription: boolean }) => value.id === "prod_kravlje_1l" && value.allowSubscription,
   );
   const deliveryDate = new Date(
     Date.parse(storefront.delivery.deliveryDate + "T12:00:00Z") + 28 * 86400000,
@@ -51,7 +52,7 @@ test("guest email code unlocks permanent subscription additions and one-time edi
       items: [
         {
           productId: product.id,
-          quantity: 1,
+          quantity: 2, // the minimum per delivery is 2 L
           purchaseType: "subscription",
           cadence: "weekly",
         },
@@ -71,24 +72,29 @@ test("guest email code unlocks permanent subscription additions and one-time edi
   await page.getByLabel(cyr("Šestocifreni kod")).fill((await code.textContent())!);
   await page.getByRole("button", { name: cyr("Potvrdi kod"), exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: `${cyr("Zdravo,")} Samostalni Kupac.` }),
+    page.getByRole("heading", { name: `${cyr("Zdravo,")} Samostalni Kupac` }),
   ).toBeVisible();
   await page
     .locator("summary")
     .filter({ hasText: cyr("Dodaj proizvod u redovnu dostavu") })
     .click();
   await page.getByLabel(cyr("Proizvod za redovnu dostavu")).selectOption(product.id);
-  await page.getByLabel(cyr("Količina novog proizvoda")).fill("2");
+  await page.getByRole("spinbutton", { name: cyr("Količina po dostavi"), exact: true }).fill("2");
+  // Adding litres is a two-step action now: the surcharge is calculated first, then confirmed.
+  await page.getByRole("button", { name: cyr("Izračunaj doplatu"), exact: true }).click();
+  // 2 L x 250 RSD x the 4 deliveries still left in the package = 2.000 RSD.
+  await expect(page.getByText(cyr("Doplata: +2 × 250 RSD × 4 dostave = 2.000 RSD"), { exact: false })).toBeVisible();
   const mutationResponse = page.waitForResponse(response => response.request().method() === "PATCH" && response.url().includes("/api/account/subscriptions/"));
   await page
-    .getByRole("button", { name: cyr("Dodaj u pretplatu"), exact: true })
+    .getByRole("button", { name: new RegExp(`^${cyr("Potvrdi doplatu")}`) })
     .click();
   const mutation = await mutationResponse;
   expect(mutation.ok(), await mutation.text()).toBe(true);
+  // The quantity is a read-only counter (it can only grow): 2 L per delivery + 2 L added permanently.
   await expect(
-    page.getByLabel(cyr(`Količina za ${product.name}`), { exact: true }),
-  ).toHaveValue("3");
-  await page.locator("summary").filter({ hasText: cyr("Moje porudžbine") }).click();
+    page.getByRole("status", { name: cyr("Količina po dostavi"), exact: true }),
+  ).toHaveText("4");
+  await expect(page.locator("#porudzbine")).toBeVisible();
   await page
     .getByRole("button", {
       // The order number is deliberately not part of the match: the storefront currently
@@ -112,7 +118,7 @@ test("guest email code unlocks permanent subscription additions and one-time edi
     await page.request.get(`/api/account/orders/${orderData.order.id}`)
   ).json();
   expect(detail.items[0].quantity).toBe(4);
-  await page.locator("summary").filter({ hasText: cyr("Moje porudžbine") }).click();
+  await expect(page.locator("#porudzbine")).toBeVisible();
   await page
     .getByRole("button", {
       // The order number is deliberately not part of the match: the storefront currently
@@ -155,7 +161,7 @@ test("admin edits an existing one-time order using the same server quote", async
       .join(":")}`,
   });
   const storefront = await (await page.request.get("/api/storefront")).json();
-  const product = storefront.products[0];
+  const product = storefront.products.find((value: { id: string }) => value.id === "prod_kravlje_1l");
   const earliestDate = new Date(
     Date.parse(storefront.delivery.deliveryDate + "T12:00:00Z") + 35 * 86400000,
   ).toISOString().slice(0, 10);
@@ -176,7 +182,7 @@ test("admin edits an existing one-time order using the same server quote", async
       },
       deliveryDate,
       paymentMethod: "cash",
-      items: [{ productId: product.id, quantity: 1, purchaseType: "one_time" }],
+      items: [{ productId: product.id, quantity: 2, purchaseType: "one_time" }], // 2 L is the minimum
     },
   });
   expect(response.status()).toBe(201);

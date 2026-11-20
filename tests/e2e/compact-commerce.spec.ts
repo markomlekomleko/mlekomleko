@@ -60,9 +60,15 @@ test("the product page reaches price and purchase controls without a long scroll
 test("the shop offers every active product with its own buying controls", async ({ page }) => {
   await page.goto("/prodavnica");
   await acceptNecessary(page);
+  // Earlier specs in the same run may leave extra products published, so the expectation is
+  // "one buying card per product the storefront currently sells", not a fixed number.
+  const { products } = await (await page.request.get("/api/storefront")).json();
+  expect(products.length).toBeGreaterThanOrEqual(1);
   const cards = page.locator(".configurator:not(.goat-waitlist)");
-  await expect(cards).toHaveCount(1);
-  await expect(page.locator(".goat-waitlist")).toBeVisible();
+  await expect(cards).toHaveCount(products.length);
+  // Only cow milk is on sale: the goat milk card is the waiting list, not a product.
+  const goatOnSale = products.some((product: { slug: string; name: string }) => /koz|goat/i.test(`${product.slug} ${product.name}`));
+  await expect(page.locator(".goat-waitlist")).toHaveCount(goatOnSale ? 0 : 1);
   for (const card of await cards.all()) {
     await expect(card.locator(".purchase-type strong").first()).toBeVisible();
     await expect(card.getByRole("button", { name: cyr("Jednokratna kupovina") })).toBeVisible();

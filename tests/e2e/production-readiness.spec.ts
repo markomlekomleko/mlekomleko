@@ -44,7 +44,8 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   await page.goto("/prodavnica");
   await acceptNecessary(page);
   // Goat milk is off sale (spec 19 Nov 2026): its card only collects emails.
-  const cards = page.locator(".configurator:not(.goat-waitlist)");
+  // The cow milk card, whatever else is published (a product left behind by another spec must not matter).
+  const cards = page.locator(".configurator:not(.goat-waitlist)").filter({ hasText: cyr("Domaće kravlje mleko") });
   expect(await cards.count()).toBeGreaterThanOrEqual(1);
   // The subscription is selected by default.
   await expect(cards.nth(0).getByRole("button", { name: cyr("Pretplata") })).toHaveAttribute("aria-pressed", "true");
@@ -112,8 +113,10 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   const replay = await page.request.post("/api/auth/code/verify", { headers: { origin: new URL(page.url()).origin }, data: { challengeId: challenge.challengeId, code: challenge.localDevelopment.code } });
   expect(replay.status()).toBe(401);
   await expect(page.getByRole("heading", { name: new RegExp(`${cyr("Zdravo,")} Fiktivni E2E Kupac`) })).toBeVisible();
-  await page.locator("summary").filter({ hasText: cyr("Moje porudžbine") }).click();
-  await expect(page.locator(".account-orders > li")).toHaveCount(1);
+  // The cart held a subscription and a one-time line and became ONE order: the 4-delivery package
+  // (2 L x 250 x 4 = 2.000 + one-time 2 L x 350 = 700 -> products 2.700, delivery 4 x 350 = 1.400) = 4.100 RSD.
+  await expect(page.locator("#porudzbine .account-orders > li")).toHaveCount(1);
+  await expect(page.locator("#porudzbine .account-orders > li").first()).toContainText(cyr("4.100"));
   await expect(page.locator("body")).not.toContainText(/demo|mockup/i);
   const subscription = page.locator("[data-subscription-id]").first();
   const subscriptionId = (await subscription.getAttribute("data-subscription-id"))!;
@@ -138,33 +141,37 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   expect(conflict.status).toBe(409);
   expect(conflict.body.error.code).toBe("SUBSCRIPTION_VERSION_CONFLICT");
   expect(conflict.body.requestId).toMatch(/^[0-9a-f-]{36}$/i);
-  const quantity = subscription.getByRole("spinbutton");
-  const before = Number(await quantity.inputValue());
+  // The per-delivery quantity is a read-only counter that can only grow, and growing it is a priced addition.
+  const quantity = subscription.getByRole("status", { name: cyr("Količina po dostavi"), exact: true });
+  const before = Number((await quantity.textContent())!);
+  expect(before).toBe(2);
+  await expect(subscription.getByRole("button", { name: new RegExp("^" + cyr("Smanji količinu")) })).toBeDisabled();
   await subscription.getByRole("button", { name: new RegExp("^" + cyr("Povećaj količinu")) }).click();
-  await expect(quantity).toHaveValue(String(before + 1));
+  await expect(quantity).toHaveText(String(before + 1));
   // A draft does not silently change the subscription.
   expect((await (await page.request.get("/api/account")).json()).subscriptions[0].items[0].quantity).toBe(before);
-  await subscription.getByRole("button", { name: cyr("Sačuvaj izmene") }).click();
-  await expect(page.getByRole("status")).toContainText(cyr("Izmena je sačuvana"));
+  await subscription.getByRole("button", { name: new RegExp("^" + cyr("Dodaj 1 ×")) }).click();
+  // 1 L x 250 RSD x the 4 deliveries left in the package.
+  await expect(subscription.getByRole("region", { name: cyr("Doplata pre potvrde") })).toContainText(cyr("Doplata: +1 × 250 RSD × 4 dostave = 1.000 RSD"));
+  await subscription.getByRole("button", { name: cyr("Potvrdi doplatu 1.000 RSD") }).click();
+  await expect(page.locator(".notice.success")).toContainText(cyr("Dodato u sve preostale dostave paketa"));
+  await expect(page.locator(".notice.success")).toContainText(cyr("Doplata 1.000 RSD"));
+  expect((await (await page.request.get("/api/account")).json()).subscriptions[0].items[0].quantity).toBe(before + 1);
   await page.reload();
-  await expect(quantity).toHaveValue(String(before + 1));
-  await subscription.getByRole("button", { name: new RegExp("^" + cyr("Smanji količinu")) }).click();
-  await subscription.getByRole("button", { name: cyr("Sačuvaj izmene") }).click();
-  await expect(page.getByRole("status")).toContainText(cyr("Izmena je sačuvana"));
-  await subscription.getByLabel(new RegExp("^" + cyr("Ritam za"))).selectOption("biweekly");
-  await subscription.getByRole("button", { name: cyr("Sačuvaj izmene") }).click();
-  await expect(page.getByRole("status")).toContainText(cyr("Izmena je sačuvana"));
-  await subscription.locator(".account-extras summary").filter({ hasText: cyr("Dodajte nešto samo sledećoj dostavi") }).click();
-  await subscription.getByRole("region", { name: cyr("Dodajte sledećoj dostavi") }).getByRole("button").first().click();
+  await expect(quantity).toHaveText(String(before + 1));
+  await subscription.locator(".account-extras summary").filter({ hasText: cyr("Dodaj nešto samo sledećoj dostavi") }).click();
+  await subscription.getByRole("region", { name: cyr("Dodaj sledećoj dostavi") }).getByRole("button").first().click();
+  // Only this delivery: 1 L x 250 RSD.
+  await subscription.getByRole("button", { name: cyr("Potvrdi doplatu 250 RSD") }).click();
   await expect(subscription.locator(".next-addon-summary")).toContainText(cyr("Dodato samo sledećoj dostavi"));
   await subscription.getByRole("button", { name: new RegExp(cyr("Pauziraj dostave")) }).click();
   const currentSubscription = (await (await page.request.get("/api/account")).json()).subscriptions[0];
   const pauseUntil = new Date(new Date(`${currentSubscription.nextDeliveryDate}T12:00:00Z`).getTime() + 14 * 86400000).toISOString().slice(0, 10);
-  await subscription.getByLabel(cyr("Pauziraj do")).fill(pauseUntil);
+  await subscription.getByLabel(cyr("Nastavak dostava od")).fill(pauseUntil);
   expect((await (await page.request.get("/api/account")).json()).subscriptions[0].status).toBe("active");
   await subscription.getByRole("button", { name: cyr("Potvrdi pauzu") }).click();
   await expect(subscription.getByRole("button", { name: cyr("Nastavi pretplatu") })).toBeVisible();
-  await expect(subscription).toContainText(cyr("Dostave se zatim nastavljaju automatski"));
+  await expect(subscription).toContainText(cyr("nastavljaju se automatski"));
   await page.reload();
   await expect(subscription.getByRole("button", { name: cyr("Nastavi pretplatu") })).toBeVisible();
   await subscription.getByRole("button", { name: cyr("Nastavi pretplatu") }).click();
@@ -177,9 +184,12 @@ test("mixed cart checkout, email registration and subscription mutation work", a
   expect(axe.violations.filter(v => v.impact === "serious" || v.impact === "critical")).toEqual([]);
   await subscription.getByRole("button", { name: cyr("Otkaži pretplatu"), exact: true }).click();
   await subscription.getByRole("button", { name: cyr("Potvrdi otkazivanje") }).click();
-  await expect(quantity).toBeDisabled();
+  const increase = subscription.getByRole("button", { name: new RegExp("^" + cyr("Povećaj količinu")) });
+  await expect(subscription.getByText(cyr("Pretplata je otkazana"))).toBeVisible();
+  await expect(increase).toBeDisabled();
   await page.reload();
-  await expect(quantity).toBeDisabled();
+  await expect(subscription.getByText(cyr("Pretplata je otkazana"))).toBeVisible();
+  await expect(increase).toBeDisabled();
   await page.getByRole("button", { name: cyr("Odjavi se"), exact: true }).click();
   await expect(page.getByRole("heading", { name: cyr("Prijavite se kodom") })).toBeVisible();
   expect((await page.request.get("/api/account")).status()).toBe(401);
@@ -212,20 +222,24 @@ test("public pages have no serious or critical automated accessibility findings"
 });
 
 test("hero priorities remain visible and a custom milk selection survives the cart", async ({ page }) => {
+  // Reduced motion turns the hero's 3 s autoplay off, so the first slide (and its call to action) stays put
+  // while the test clicks it; autoplay itself is covered in storefront-motion.spec.ts.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await acceptNecessary(page);
-  // The hero carries a visually hidden h1; the first slide's call to action is "Izaberi svoje mleko"; the
-  // action is fully inside the first screen without waiting for media. toBeInViewport
-  // retries, so a poster settling into place cannot turn this into a flake.
-  await expect(page.locator(".scene-intro h1")).toBeAttached();
-  await expect(page.locator(".hero-cta")).toHaveText(cyr("Izaberi svoje mleko"));
+  // The hero is a seven-slide slider with a visually hidden h1; the first slide's call to action is
+  // "Izaberi svoje mleko" and is fully inside the first screen without waiting for the other slides' photos.
+  await expect(page.locator(".hero-slider h1")).toBeAttached();
+  await expect(page.locator(".hero-slide")).toHaveCount(8); // seven slides plus the copy of the first
+  await expect(page.locator(".hero-cta")).toContainText(cyr("Izaberi svoje mleko")); // after its emoji
   await expect(page.locator(".hero-cta")).toBeInViewport({ ratio: 1 });
-  await expect(page.locator(".scene-poster img")).toBeAttached();
+  await expect(page.locator(".hero-slide[data-active] .hero-slide-image")).toBeAttached();
 
-  await page.locator(".scene-actions .button").click();
-  await expect(page.locator("#offer-title")).toBeInViewport();
+  await page.locator(".hero-cta").click();
+  await expect(page).toHaveURL(/\/prodavnica$/);
+  await expect(page.locator(".configurator").first()).toBeVisible();
 
-  const card = page.locator(".configurator").first();
+  const card = page.locator(".configurator").filter({ hasText: cyr("Domaće kravlje mleko") }).first();
   await card.getByRole("button", { name: cyr("4 L"), exact: true }).click();
   // Spec 19 Nov 2026: milk, delivery and the total per delivery are shown on the card.
   await expect(card.locator(".configurator-receipt")).toBeVisible();
@@ -239,7 +253,8 @@ test("hero priorities remain visible and a custom milk selection survives the ca
   await expect(page.locator(".drawer-item-meta").first()).toContainText(cyr("3 L po dostavi · svake nedelje"));
   await page.locator(".cart-drawer").getByRole("link", { name: cyr("Otvori ceo frižider") }).click();
   await expect(page.getByRole("spinbutton", { name: cyr("Količina za Domaće kravlje mleko") })).toHaveValue("3");
-  await expect(page.getByLabel(cyr("Ritam isporuke za Domaće kravlje mleko"))).toHaveValue("weekly");
+  // Delivery rhythm is no longer a choice (weekly only), so the cart offers no rhythm selector.
+  await expect(page.getByLabel(cyr("Ritam isporuke za Domaće kravlje mleko"))).toHaveCount(0);
   await expect(page.getByLabel(cyr("Tip kupovine za Domaće kravlje mleko"))).toHaveValue("subscription");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });

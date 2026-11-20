@@ -1,5 +1,11 @@
 import {expect,test} from "@playwright/test";
 import {mkdir} from "node:fs/promises";
+// Admin sign-in is limited to 10 per 15 minutes per address, and all specs of one project share one address:
+// every browser here signs in from an address of its own so these specs never use up the budget of the others.
+test.beforeEach(async ({ context }) => {
+  await context.setExtraHTTPHeaders({ "cf-connecting-ip": `2001:db8:${crypto.randomUUID().replaceAll("-", "").match(/.{1,4}/g)!.slice(0, 6).join(":")}` });
+});
+
 test("bulk cash selection excludes unchecked orders and the confirmation shows the reviewed total",async({page,request},testInfo)=>{
   test.setTimeout(90000);
   const origin=`http://localhost:${process.env.E2E_PORT||"4173"}`;
@@ -26,7 +32,7 @@ test("bulk cash selection excludes unchecked orders and the confirmation shows t
   await page.screenshot({path:`output/playwright/guide-orders-${testInfo.project.name}.png`,fullPage:true});
   await page.getByRole('button',{name:'Potvrdi primljenu gotovinu'}).click();
   const dialog=page.getByRole('dialog',{name:'Potvrda gotovinskih uplata'});
-  await expect(dialog).toContainText('2 porudžbina');await expect(dialog.getByRole('button',{name:'Sačuvaj 2 uplata'})).toBeDisabled();
+  await expect(dialog).toContainText('2 porudžbine');await expect(dialog.getByRole('button',{name:'Sačuvaj 2 uplata'})).toBeDisabled();
   await page.screenshot({path:`output/playwright/guide-cash-${testInfo.project.name}.png`,fullPage:true});
   await dialog.getByRole('checkbox').check();await dialog.getByRole('button',{name:'Sačuvaj 2 uplata'}).click();
   await expect(page.getByRole('status').filter({hasText:'Sačuvano: 2. Neuspešno: 0.'})).toBeVisible();

@@ -4,6 +4,7 @@ import { useLocalize } from "@/app/lib/i18n/client";
 import { useEffect, useMemo, useState } from "react";
 import { useAnalytics } from "../components/analytics-provider";
 import { BundleOffers } from "../components/bundle-offers";
+import { BUNDLES_ENABLED } from "../lib/features";
 import { ProductConfigurator } from "../components/product-configurator";
 import { GoatWaitlistCard } from "../components/goat-waitlist";
 import { milkKind } from "../components/product-carousel";
@@ -74,7 +75,7 @@ export function StoreView({
               {goatWaitlist ? <GoatWaitlistCard /> : null}
             </div>
           )}
-          {bundles.length ? <BundleOffers products={products} bundles={bundles} delivery={delivery} /> : null}
+          {BUNDLES_ENABLED && bundles.length ? <BundleOffers products={products} bundles={bundles} delivery={delivery} /> : null}
         </>
       )}
     </div>

@@ -3,7 +3,7 @@
 /* ---------------------------------------------------------------- top bar */
 .delivery-countdown { display: inline-flex; align-items: baseline; gap: 5px; padding: 2px 10px; border-radius: 999px; background: rgb(255 255 255 / 0.14); }
 .delivery-countdown-city { font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
-.delivery-countdown-day { opacity: 0.85; font-weight: 600; }
+.delivery-countdown-day { font-weight: 600; }
 
 /* ---------------------------------------------------------------- footer */
 .site-footer--k .footer-k-legal { padding-block: 24px calc(32px + env(safe-area-inset-bottom)); border-top: 1px solid rgb(255 255 255 / 0.16); }
@@ -183,3 +183,24 @@
 .about-founder-name strong { font-weight: 900; color: var(--navy); }
 .about-founder-name span { color: var(--ink-2); }
 .about-founder-photo img[src*="osnivac"] { aspect-ratio: 4 / 5; object-fit: cover; object-position: 50% 20%; border: 2px solid var(--navy); }
+
+/* Phones: the announcement and the change-deadline clocks take two rows, so the
+   ticker token (and with it --header-stack, every sticky offset and anchor) follows. */
+@media (max-width: 760px) {
+  :root:has(.announcement-bar .delivery-countdowns) { --ticker-h: 57px; }
+  .announcement-bar:has(.delivery-countdowns) { min-height: var(--ticker-h); box-sizing: border-box; }
+}
+.delivery-countdowns-label { opacity: 1; }
+
+/* Phones: a fixed two-row bar — one line of announcement, one line of clocks — so its
+   height never depends on wrapping. The "Rok za izmene" label stays for screen readers. */
+@media (max-width: 520px) {
+  .announcement-bar:has(.delivery-countdowns) { height: var(--ticker-h); padding-block: 6px; row-gap: 3px; overflow: hidden; }
+  .announcement-bar:has(.delivery-countdowns) > :not(.delivery-countdowns) { max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .announcement-bar .delivery-countdowns { flex-wrap: nowrap; white-space: nowrap; }
+  .delivery-countdowns-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+@media (max-width: 520px) {
+  /* A small clock stands in for the hidden label. */
+  .announcement-bar .delivery-countdowns::before { content: "⏱"; margin-right: 2px; font-size: 0.85rem; line-height: 1; }
+}

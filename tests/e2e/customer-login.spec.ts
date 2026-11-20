@@ -38,8 +38,9 @@ test("register without an order, verify email, and keep authentication out of br
   await expect(
     page.getByRole("heading", { name: cyr("Prijava i WhatsApp") }),
   ).toBeVisible();
-  await page.locator("summary").filter({ hasText: cyr("Moje porudžbine") }).click();
-  await expect(page.getByText(cyr("Još nema porudžbina."))).toBeVisible();
+  // The orders are a section of the account page now (no longer a collapsed "Moje porudžbine").
+  await expect(page.locator("#porudzbine").getByRole("heading", { name: new RegExp(`^${cyr("Porudžbine")}`) })).toBeVisible();
+  await expect(page.locator("#porudzbine").getByText(cyr("Još nemaš nijednu porudžbinu."))).toBeVisible();
   expect(await page.evaluate(() => document.cookie)).not.toContain(
     "mm_session",
   );

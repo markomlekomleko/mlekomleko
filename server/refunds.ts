@@ -1,4 +1,4 @@
-import { assertDomain, enumValue, positiveInt, requiredString } from './domain';
+import { assertDomain, DomainError, enumValue, positiveInt, requiredString } from './domain';
 import { all, batch, first, type Row, type SqlValue } from './sql';
 import { mutationGuard } from './mutation-guard';
 import { audit } from './outbox';
@@ -26,8 +26,19 @@ export async function requestRefund(input:Row,customerId?:string){
  if(existing){assertDomain(existing.order_id===orderId && (!customerId || existing.customer_id===customerId),'IDEMPOTENCY_CONFLICT','Ključ je već upotrebljen.',409);return existing;}
  const preview=await refundPreview(orderId,customerId);assertDomain(preview.amountMinor>0,'NOTHING_TO_REFUND','Nema neisporučene i nezaključane količine za povraćaj.',409);
  const reason=requiredString(input.reason,'reason',500),id=crypto.randomUUID();
+ const openRequest=()=>first<Row>("SELECT id FROM refund_requests WHERE order_id=? AND status IN ('requested','approved','processing','unknown')",orderId);
+ assertDomain(!await openRequest(),'REFUND_ALREADY_REQUESTED','Za ovu porudžbinu već postoji otvoren zahtev za povraćaj.',409);
  const guard=mutationGuard("NOT EXISTS(SELECT 1 FROM refund_requests WHERE order_id=? AND status IN ('requested','approved','processing','unknown')) AND NOT EXISTS(SELECT 1 FROM delivery_items di JOIN delivery_orders dor ON dor.id=di.delivery_order_id JOIN package_lines pl ON pl.id=di.package_line_id JOIN subscription_packages sp ON sp.id=pl.package_id WHERE sp.order_id=? AND dor.status='locked')",[orderId,orderId]);
- await batch([guard.check,{sql:"INSERT INTO refund_requests(id,order_id,customer_id,status,amount_minor,items_json,reason,idempotency_key) VALUES(?,?,?,'requested',?,?,?,?)",bindings:[id,orderId,String(preview.order.customer_id),preview.amountMinor,JSON.stringify(preview.lines),reason,key]},audit(customerId?'customer':'admin',customerId??'admin-panel','refund.requested','refund',id,null,{orderId,amountMinor:preview.amountMinor,reason}),guard.cleanup]);return first<Row>('SELECT * FROM refund_requests WHERE id=?',id);
+ try{await batch([guard.check,{sql:"INSERT INTO refund_requests(id,order_id,customer_id,status,amount_minor,items_json,reason,idempotency_key) VALUES(?,?,?,'requested',?,?,?,?)",bindings:[id,orderId,String(preview.order.customer_id),preview.amountMinor,JSON.stringify(preview.lines),reason,key]},audit(customerId?'customer':'admin',customerId??'admin-panel','refund.requested','refund',id,null,{orderId,amountMinor:preview.amountMinor,reason}),guard.cleanup]);}
+ catch(error){
+   // A parallel request won the race: replay the same key, or answer with the domain conflict the guard enforced.
+   const replay=await first<Row>('SELECT * FROM refund_requests WHERE idempotency_key=?',key);
+   if(replay){assertDomain(replay.order_id===orderId && (!customerId || replay.customer_id===customerId),'IDEMPOTENCY_CONFLICT','Ključ je već upotrebljen.',409);return replay;}
+   assertDomain(!await openRequest(),'REFUND_ALREADY_REQUESTED','Za ovu porudžbinu već postoji otvoren zahtev za povraćaj.',409);
+   if(/mutation_guards|allowed|CHECK constraint/i.test(String(error)))throw new DomainError('NOTHING_TO_REFUND','Nema neisporučene i nezaključane količine za povraćaj.',409);
+   throw error;
+ }
+ return first<Row>('SELECT * FROM refund_requests WHERE id=?',id);
 }
 export async function reviewRefund(input:Row){
  const id=requiredString(input.id,'id',100),action=enumValue(input.action,'action',['approve','reject','execute'] as const),version=positiveInt(input.expectedVersion,'expectedVersion');

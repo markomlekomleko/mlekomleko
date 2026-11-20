@@ -51,7 +51,7 @@ export async function activatePaidPackage(orderId: string) {
     {sql: "UPDATE subscriptions SET next_delivery_date = ?, version = version + 1 WHERE id = ?", bindings: [date, String(row.subscription_id)]},
     {sql: "UPDATE package_lines SET anchor_date = ? WHERE package_id = ?", bindings: [date, String(row.id)]},
     {sql: "UPDATE orders SET delivery_date = ? WHERE id = ?", bindings: [date, orderId]},
-    {sql: "UPDATE deliveries SET generation_key = ? WHERE delivery_date IN (?, ?) AND status = 'open'", bindings: [`payment:${crypto.randomUUID()}`, anchor, date]},
+    {sql: "UPDATE deliveries SET generation_key = ? || ':' || id WHERE delivery_date IN (?, ?) AND status = 'open'", bindings: [`payment:${crypto.randomUUID()}`, anchor, date]},
     guard.cleanup,
   ] };
 }

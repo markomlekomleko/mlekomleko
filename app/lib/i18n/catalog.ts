@@ -1966,9 +1966,9 @@ export const catalog: Record<string, readonly [string, string]> = {
     "Ordered once",
     "Заказано разово"
   ],
-  "Ovi proizvodi nisu deo redovne dostave. Pauza ili preskakanje pretplate ih ne pomera. Izmenu i otkazivanje otvorite u „Moje porudžbine“ ispod, do prikazanog roka.": [
-    "These products are not part of recurring delivery. Pausing or skipping a subscription does not move them. Open changes and cancellation under “My orders” below, before the stated deadline.",
-    "Эти товары не входят в регулярную доставку. Пауза или пропуск подписки не переносит их. Изменить или отменить их можно в разделе «Мои заказы» ниже до указанного срока."
+  "Ovi proizvodi nisu deo redovne dostave. Pauza ili preskakanje pretplate ih ne pomera. Izmenu i otkazivanje otvorite u „Porudžbine“ ispod, do prikazanog roka.": [
+    "These products are not part of recurring delivery. Pausing or skipping a subscription does not move them. Open changes and cancellation under “Orders” below, before the stated deadline.",
+    "Эти товары не входят в регулярную доставку. Пауза или пропуск подписки не переносит их. Изменить или отменить их можно в разделе «Заказы» ниже до указанного срока."
   ],
   "Sve na jednom mestu": [
     "Everything in one place",

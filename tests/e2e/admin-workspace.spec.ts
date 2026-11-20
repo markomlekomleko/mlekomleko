@@ -4,6 +4,7 @@ import {
   type APIRequestContext,
   type Page,
 } from "@playwright/test";
+import { BUNDLES_ENABLED } from "../../app/lib/features";
 import AxeBuilder from "@axe-core/playwright";
 const origin = `http://localhost:${process.env.E2E_PORT || "4173"}`;
 const testIp = () =>
@@ -169,7 +170,7 @@ test("admin manages subscription quantities, skips and pauses with version prote
           productId: "prod_kravlje_1l",
           quantity: 2,
           purchaseType: "subscription",
-          cadence: "biweekly",
+          cadence: "weekly",
         },
       ],
     },
@@ -540,10 +541,11 @@ test("admin UI manages an existing customer subscription and confirms a locked d
   );
   await manual.getByRole("button", { name: "Dalje →" }).click();
   await manual
-    .getByLabel("Količina: Domaće kozje mleko", { exact: true })
+    .getByLabel("Količina: Domaće kravlje mleko", { exact: true })
     .fill("2");
   await manual.getByRole("button", { name: "Dalje →" }).click();
-  await manual.getByLabel("Koliko često?").selectOption("biweekly");
+  // Goat milk is off sale and only weekly delivery exists, so the manual order is a weekly cow-milk subscription.
+  await manual.getByLabel("Koliko često?").selectOption("weekly");
   const farDate = options.dates[options.dates.length - 2];
   await manual.getByLabel("Datum dostave").selectOption(farDate);
   await expect(
@@ -637,10 +639,10 @@ test("admin settings expose every editor with keyboard navigation and no horizon
   if (await more.isVisible()) await more.click();
   await nav.getByRole("button", {name: "Podešavanja", exact: true}).click();
   const settings = page.getByRole("navigation", {name: "Podešavanja prodavnice"});
-  await expect(settings.getByRole("button")).toHaveCount(9);
+  await expect(settings.getByRole("button")).toHaveCount(BUNDLES_ENABLED ? 9 : 8);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true);
   await page.screenshot({path: testInfo.outputPath("admin-settings.png"), fullPage: true});
-  for (const name of ["Dostava i naplata", "Proizvodi", "Paketi", "Popusti", "Sadržaj sajta", "Poslovanje", "Fiskalizacija", "Provera prodavnice", "Tehničke operacije"]) {
+  for (const name of ["Dostava i naplata", "Proizvodi", ...(BUNDLES_ENABLED ? ["Paketi"] : []), "Popusti", "Sadržaj sajta", "Poslovanje", "Fiskalizacija", "Provera prodavnice", "Tehničke operacije"]) {
     await settings.getByRole("button", {name, exact: true}).focus();
     await page.keyboard.press("Enter");
     await expect(page.locator(".admin-topbar h1")).toHaveText(name);

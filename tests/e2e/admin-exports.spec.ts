@@ -1,6 +1,12 @@
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 
+// Admin sign-in is limited to 10 per 15 minutes per address, and all specs of one project share one address:
+// every browser here signs in from an address of its own so these specs never use up the budget of the others.
+test.beforeEach(async ({ context }) => {
+  await context.setExtraHTTPHeaders({ "cf-connecting-ip": `2001:db8:${crypto.randomUUID().replaceAll("-", "").match(/.{1,4}/g)!.slice(0, 6).join(":")}` });
+});
+
 async function signIn(page: Page) {
   await page.getByLabel("Email", { exact: true }).fill("admin@example.test");
   await page.getByLabel("Lozinka", { exact: true }).fill("e2e-admin-password");

@@ -12,10 +12,10 @@ async function acceptNecessary(page: Page) {
   );
 }
 
-// The marquee pauses under the pointer, so motion checks park it away from the ticker.
+// The marquee pauses under the pointer. The teal band now overlaps the bottom of the hero, inside the
+// first screen, so motion checks park the pointer in the top-left corner (over the announcement bar).
 async function parkPointer(page: Page) {
-  const viewport = page.viewportSize()!;
-  await page.mouse.move(Math.round(viewport.width / 2), viewport.height - 4);
+  await page.mouse.move(2, 2);
 }
 
 async function measureStack(page: Page) {
@@ -118,14 +118,21 @@ test("Escape closes the mobile menu and returns focus to Meni", async ({ page })
   await expect(menu).toBeFocused();
 });
 
-test("the footer holds only the company, contact, social and policy links", async ({ page }) => {
+test("the footer has three link columns, the company line and the contact and social links", async ({ page }) => {
   await acceptNecessary(page);
   await page.goto("/");
   const footer = page.locator("footer.site-footer");
   await expect(footer.locator(".footer-company")).toBeVisible();
+  // Three columns: contact, the shop's own pages, and policies.
+  const columns = footer.locator("nav.footer-links");
+  await expect(columns).toHaveCount(3);
+  await expect(columns.nth(0).getByRole("heading", { name: cyr("Kontakt") })).toBeVisible();
+  await expect(columns.nth(1).getByRole("heading", { name: cyr("Mleko i Mleko") })).toBeVisible();
+  for (const label of ["Izaberi svoje mleko", "Mlekomati", "O nama", "Analize"]) await expect(columns.nth(1).getByRole("link", { name: cyr(label), exact: true })).toBeVisible();
+  for (const href of ["/uslovi-kupovine", "/pravila-pretplate", "/dostava", "/reklamacije", "/privatnost"]) await expect(columns.nth(2).locator(`a[href="${href}"]`)).toHaveCount(1);
   await expect(footer.locator('a[href^="mailto:"]')).toHaveCount(1);
   await expect(footer.locator('a[href^="tel:"]')).toHaveCount(1);
   await expect(footer.locator('a[href*="instagram.com"], a[href*="tiktok.com"]')).toHaveCount(2);
-  await expect(footer.locator(".footer-wordmark, .footer-links, .footer-pay")).toHaveCount(0);
+  await expect(footer.locator(".footer-wordmark")).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });

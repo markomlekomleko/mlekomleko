@@ -5,7 +5,6 @@ import { getSiteUrl } from "../seo";
 
 /** Localize render output only. Form values, event handlers and commerce data stay intact. */
 export function localizeTree(node: ReactNode, locale: Locale): ReactNode {
-  if (locale === "sr-latn") return node;
   if (typeof node === "string") return translate(node, locale);
   if (Array.isArray(node)) return Children.map(node, child => localizeTree(child, locale));
   if (!isValidElement(node)) return node;

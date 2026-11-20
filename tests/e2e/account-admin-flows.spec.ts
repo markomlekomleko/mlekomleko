@@ -1,5 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { cyr } from "./cyr";
+import { BUNDLES_ENABLED } from "../../app/lib/features";
+
+// Admin sign-in is limited to 10 per 15 minutes per address, and all specs of one project share one address:
+// every browser here signs in from an address of its own so these specs never use up the budget of the others.
+test.beforeEach(async ({ context }) => {
+  await context.setExtraHTTPHeaders({ "cf-connecting-ip": `2001:db8:${crypto.randomUUID().replaceAll("-", "").match(/.{1,4}/g)!.slice(0, 6).join(":")}` });
+});
 
 async function openAdmin(page: Page) {
   await page.goto("/admin");
@@ -36,7 +43,7 @@ test("every public destination and admin tab is connected without development la
     await assertNoDevelopmentLabels(page);
   }
   await openAdmin(page);
-  for (const name of ["Početna", "Porudžbine", "Proizvodi", "Paketi", "Kupci", "Dostave", "Popusti", "Sadržaj sajta", "Podešavanja"]) {
+  for (const name of ["Početna", "Porudžbine", "Proizvodi", ...(BUNDLES_ENABLED ? ["Paketi"] : []), "Kupci", "Dostave", "Popusti", "Sadržaj sajta", "Podešavanja"]) {
     await adminTab(page, name);
     await assertNoDevelopmentLabels(page);
     await expect(page.locator(".notice.error")).toHaveCount(0);
@@ -122,8 +129,9 @@ test("the mobile buy bar appears below the panel and keeps the selected quantity
   const bar = page.locator(".buy-bar");
   await expect(bar).toHaveAttribute("data-visible", "true");
   await expect(bar).toContainText(cyr("4 L"));
-  await expect(bar).toContainText(cyr("1.350"));
-  await expect(bar).toContainText(cyr("sa dostavom"));
+  // Subscription is the default: the bar shows the whole prepaid package, 4 deliveries x (4 L x 250 + 350) = 5.400.
+  await expect(bar).toContainText(cyr("5.400"));
+  await expect(bar).toContainText(cyr("ceo paket sa dostavom"));
   await page.screenshot({ path: "test-results/mobile-buy-bar.png" });
 
   await bar.getByRole("button", { name: cyr("Napuni frižider") }).click();
@@ -162,12 +170,14 @@ test("catalog editors preserve decimal prices, report duplicates and switch bund
   await expect(page.locator(".admin-main .notice.error")).toContainText("ovim URL slugom već postoji");
   await expect(editor.getByLabel("Naziv", { exact: true })).toHaveValue(`Duplikat ${suffix}`);
 
-  await adminTab(page, "Paketi");
   const names = [`Prvi ${suffix}`, `Drugi ${suffix}`];
+  // Ready-made packages are switched off for now; the bundle parts run again with the flag.
+  if (BUNDLES_ENABLED) {
+  await adminTab(page, "Paketi");
   for (const [index, bundleName] of names.entries()) {
     await page.getByRole("button", { name: "＋ Novi paket" }).click();
     await editor.getByLabel("Naziv", { exact: true }).fill(bundleName);
-    await editor.getByLabel("Slug", { exact: true }).fill(`paket-${suffix}-${index}`);
+    await editor.getByLabel("Slug (adresa)", { exact: true }).fill(`paket-${suffix}-${index}`);
     await editor.getByLabel("Proizvod 1", { exact: true }).selectOption(product.id);
     await editor.getByLabel("Količina 1").fill(String(index + 2));
     await editor.getByRole("button", { name: "Sačuvaj paket" }).click();
@@ -183,24 +193,33 @@ test("catalog editors preserve decimal prices, report duplicates and switch bund
   await expect(editor.getByLabel("Količina 1")).toHaveValue("3");
   await editor.getByLabel("Količina 1").fill("4");
   await editor.getByRole("button", { name: "Sačuvaj paket" }).click();
-  await expect(second).toContainText(`4× ${name}`);
+  // The card now reads "4 L <name> (pretplata, ...)" and prices the whole prepaid package: 4 deliveries x 4 x 350,55 = 5.609.
+  await expect(second).toContainText(`4 L ${name}`, { timeout: 15_000 });
+  await expect(second).toContainText("5.609");
   await page.getByRole("button", { name: "＋ Novi paket" }).click();
   await expect(editor.getByLabel("Naziv", { exact: true })).toHaveValue("");
-  await expect(editor.getByLabel("Količina 1")).toHaveValue("1");
+  // A blank bundle starts at the 2 L minimum, not at the 4 of the bundle edited before it.
+  await expect(editor.getByLabel("Količina 1")).toHaveValue("2");
   await editor.getByRole("button", { name: "Odustani" }).click();
+  }
 
   await adminTab(page, "Proizvodi");
   const article = page.locator(".product-admin-list article").filter({ hasText: name });
   page.once("dialog", dialog => dialog.accept());
   await article.getByRole("button", { name: "Obriši", exact: true }).click();
+  // A product used by a bundle is archived first; with packages switched off nothing
+  // references it, so this one click already deletes it.
+  if (!BUNDLES_ENABLED) { await expect(article).toHaveCount(0); return; }
   await expect(article.getByText("Sakriven", { exact: true })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: "arhiviran" })).toBeVisible();
+  if (BUNDLES_ENABLED) {
   await adminTab(page, "Paketi");
   for (const bundleName of names) {
     const bundle = page.locator(".bundle-admin-list article").filter({ hasText: bundleName });
     page.once("dialog", dialog => dialog.accept());
     await bundle.getByRole("button", { name: "Obriši" }).click();
     await expect(bundle).toHaveCount(0);
+  }
   }
   await adminTab(page, "Proizvodi");
   page.once("dialog", dialog => dialog.accept());

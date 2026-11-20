@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element -- Optimized catalog photography and admin-managed image URLs are served directly. */
 
+import { BUNDLES_ENABLED } from "../lib/features";
 import { BusinessPanel } from "./business-panel";
 import { PackageProgress } from "./package-progress";
 import { LoyaltyPanel } from "./loyalty-panel";
@@ -44,7 +45,7 @@ const nav: Array<{ id: Tab; label: string; icon: string }> = [
   { id: "podesavanja", label: "Podešavanja", icon: "⚙" },
 ];
 const settingTabs: Array<{id:Tab;label:string}> = [
-  {id:"pravila",label:"Dostava i naplata"}, {id:"proizvodi",label:"Proizvodi"}, {id:"paketi",label:"Paketi"}, {id:"popusti",label:"Popusti"}, {id:"sadrzaj",label:"Sadržaj sajta"},
+  {id:"pravila",label:"Dostava i naplata"}, {id:"proizvodi",label:"Proizvodi"}, ...(BUNDLES_ENABLED ? [{id:"paketi" as const,label:"Paketi"}] : []), {id:"popusti",label:"Popusti"}, {id:"sadrzaj",label:"Sadržaj sajta"},
   {id:"poslovanje",label:"Poslovanje"}, {id:"fiskalizacija",label:"Fiskalizacija"}, {id:"provera",label:"Provera prodavnice"}, {id:"operacije",label:"Tehničke operacije"},
 ];
 
