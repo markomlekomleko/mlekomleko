@@ -41,9 +41,12 @@ export async function loginDemoCustomer(request: Request) {
 export function getDemoAccount() {
   const currentDate = localDateAt();
   const nextDeliveryDate = nextWeekday(new Date(Date.now() + 3 * 86_400_000), 2);
-  const skippedDate = addLocalDays(nextDeliveryDate, -7);
-  const previousDate = addLocalDays(nextDeliveryDate, -14);
-  const firstDate = addLocalDays(nextDeliveryDate, -21);
+  // History is always in the past: from Sunday to Tuesday the next delivery is more than
+  // a week away, so the Tuesday before it has not happened yet (or is today).
+  let skippedDate = addLocalDays(nextDeliveryDate, -7);
+  while (skippedDate >= currentDate) skippedDate = addLocalDays(skippedDate, -7);
+  const previousDate = addLocalDays(skippedDate, -7);
+  const firstDate = addLocalDays(skippedDate, -14);
   // Weekly only: 2 L per delivery in a paid package of four realized deliveries.
   const items = [
     { id: "demo-cow", productId: "prod_kravlje_1l", productName: "Kravlje mleko", unitLabel: "1 L", priceMinor: 25000, quantity: 2, cadence: "weekly", cadenceAnchorDate: firstDate, status: "active", dueNext: true },

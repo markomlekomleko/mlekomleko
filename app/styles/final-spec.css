@@ -204,3 +204,72 @@
   /* A small clock stands in for the hidden label. */
   .announcement-bar .delivery-countdowns::before { content: "⏱"; margin-right: 2px; font-size: 0.85rem; line-height: 1; }
 }
+
+/* ---------------------------------------------------------------- 23 Nov: phones */
+/* Account icon at every width (spec §0: language, account, cart on the right). Below
+   1024px it used to live only inside the menu sheet, so people could not find it. */
+.header-account,
+.site-header-stack[data-nav-collapsed] .header-account { display: inline-grid; }
+@media (max-width: 767px) {
+  .header-actions { gap: 0; }
+  .header-account { width: 40px; height: 44px; border-radius: 12px; }
+  .header-actions .language-switcher summary { padding-inline: 4px; }
+}
+/* Narrow phones: the wordmark alone, sized by the bar's height so it never spills over
+   the announcement above it. */
+@media (max-width: 360px) {
+  .nav-shell .brand-wordmark { width: auto; max-width: 100%; height: auto; max-height: 40px; }
+}
+
+/* Home "Izaberi svoje mleko": the head is a one-column grid on phones. Centring its
+   track let the column shrink to its content, and the head measures its own width
+   (container-type), so it collapsed to nothing: the title vanished and the lead broke
+   one word per line. The column now always spans the page. */
+.offer .offer-head { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 768px) { .offer .offer-head { grid-template-columns: minmax(0, 1fr) auto; } }
+/* The shop section sits on white, like the cards inside it. */
+.offer { background: var(--surface, #fff); }
+/* Small phones: both change-deadline clocks fit inside the bar instead of being cut
+   off at its edges. */
+@media (max-width: 400px) {
+  .announcement-bar .delivery-countdowns { column-gap: 4px; font-size: 0.66rem; }
+  .delivery-countdown { gap: 4px; padding: 1px 6px; }
+  .delivery-countdown-city { letter-spacing: 0.02em; }
+}
+@media (max-width: 340px) {
+  .announcement-bar .delivery-countdowns { font-size: 0.62rem; }
+  .announcement-bar .delivery-countdowns::before { content: none; }
+}
+
+/* ---------------------------------------------------------------- 23 Nov: tablets */
+/* Top bar between a phone and a desktop: the announcement sat in a sliver beside the
+   clocks and broke one word per line. It now stacks above them up to 1023px. */
+@media (max-width: 1023px) {
+  .announcement-bar:has(.delivery-countdowns) { grid-template-columns: minmax(0, 1fr); row-gap: 4px; justify-items: center; min-height: var(--ticker-h); box-sizing: border-box; }
+  .announcement-bar:has(.delivery-countdowns) > :not(.delivery-countdowns),
+  .announcement-bar .delivery-countdowns { grid-column: 1; justify-self: center; }
+  :root:has(.announcement-bar > :not(.delivery-countdowns) + .delivery-countdowns) { --ticker-h: 57px; }
+}
+/* "Mleko uživo": three clips in a row from tablet width up; phones keep the swipe row. */
+@media (min-width: 700px) and (max-width: 899px) {
+  .social-grid { grid-auto-flow: row; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 0; padding: 0; overflow: visible; }
+}
+/* Purchase-type prices ("250 RSD/л") stay on one line in narrow cards: the price is
+   sized against the pair of buttons instead of breaking before the unit. */
+.purchase-types { container-type: inline-size; }
+.purchase-type strong { font-size: clamp(0.95rem, 5.6cqi, 1.25rem); white-space: nowrap; }
+/* Contact: "Instagram @mleko_i_mleko ↗" keeps the spaces between its parts (the link
+   is a flex row, which drops the plain spaces between them). */
+.contact-links .text-link { gap: 0.35em; }
+/* Amounts ("2.000 RSD") never break between the number and the currency; the label
+   beside them wraps instead. */
+.checkout-page .summary-row > :last-child:not(:only-child),
+.cart-summary .summary-row > :last-child:not(:only-child),
+.cart-drawer-foot .summary-row > :last-child:not(:only-child) { flex: none; white-space: nowrap; }
+.checkout-page .summary-row > :first-child,
+.cart-summary .summary-row > :first-child { min-width: 0; }
+/* The narrowest phones: a long single word in a page title ("Рекламације") fits the
+   column instead of pushing the page sideways. */
+@media (max-width: 360px) {
+  .page-heading h1 { font-size: min(var(--fs-h1), 11vw); }
+}

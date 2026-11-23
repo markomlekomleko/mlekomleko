@@ -24,8 +24,11 @@ export const socialVideos = [
 ] as const;
 
 function TikTokClip({ id, title }: { id: string; title: string }) {
+  // A component of its own, so it runs its own localize pass; the title arrives already
+  // localised (the parent's pass translates `title` props) and passes through unchanged.
+  const localize = useLocalize();
   const [playing, setPlaying] = useState(false);
-  return (
+  return localize((
     <li>
       {playing ? (
         // eslint-disable-next-line jsx-a11y/media-has-caption -- TikTok clips carry their captions burned into the picture; there are no separate caption files.
@@ -54,7 +57,7 @@ function TikTokClip({ id, title }: { id: string; title: string }) {
       <p className="social-title">{title}</p>
       <a className="social-open" href={`https://www.tiktok.com/@mleko_i_mleko/video/${id}`} target="_blank" rel="noreferrer">Pogledaj na TikToku ↗</a>
     </li>
-  );
+  ));
 }
 
 export function SocialSection() {
