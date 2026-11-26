@@ -2,7 +2,7 @@ import { assertSameOrigin, requireAdmin } from "../../../../server/auth";
 import { jsonResponse, readJson, withRoute } from "../../../../server/domain";
 import { listLeads, setLeadStatus } from "../../../../server/leads";
 
-/** Stored mlekomat partnership requests and goat-milk waiting-list sign-ups. */
+/** Stored contacts from the public storefront. */
 export function GET(request: Request) {
   return withRoute(async () => {
     await requireAdmin(request);

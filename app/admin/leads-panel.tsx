@@ -5,6 +5,7 @@ const kinds: Record<string, string> = {
   mlekomat_space: "Ima prostor za mlekomat",
   mlekomat_rent: "Želi svoj mlekomat",
   goat_waitlist: "Kozje mleko — obavesti me",
+  chat_support: "Chat podrška",
 };
 /** Stored UTC timestamps ("2026-11-20 10:00:00") shown in Serbian local time. */
 function localTime(value: string) {
@@ -39,8 +40,8 @@ export function LeadsPanel({ request }: { request: <T>(url: string, init?: Reque
   }
   return (
     <details>
-      <summary>Prijave sa sajta: mlekomati i kozje mleko ({fresh} {fresh === 1 ? "nova" : fresh % 10 >= 2 && fresh % 10 <= 4 && !(fresh % 100 >= 12 && fresh % 100 <= 14) ? "nove" : "novih"} · ukupno {leads.length})</summary>
-      <p>Upiti iz formi na stranici Mlekomati i prijave za obaveštenje o kozjem mleku. Kopija stiže i na poslovni email kada je slanje podešeno. Nove prijave su na vrhu; kada se javite, označite ih kao obrađene.</p>
+      <summary>Prijave sa sajta: chat podrška, mlekomati i kozje mleko ({fresh} {fresh === 1 ? "nova" : fresh % 10 >= 2 && fresh % 10 <= 4 && !(fresh % 100 >= 12 && fresh % 100 <= 14) ? "nove" : "novih"} · ukupno {leads.length})</summary>
+      <p>Kontakti ostavljeni u chatu, upiti za mlekomate i prijave za obaveštenje o kozjem mleku. Upiti za mlekomate i kozje mleko stižu i na poslovni email kada je slanje podešeno. Nove prijave su na vrhu; kada se javite, označite ih kao obrađene.</p>
       {notice ? <p role="alert" className="notice error">{notice}</p> : null}
       <div className="table-scroll"><table><thead><tr><th>Datum</th><th>Vrsta</th><th>Kontakt</th><th>Grad / adresa</th><th>Opis</th><th>Obrađeno</th></tr></thead><tbody>
         {leads.map((lead) => (

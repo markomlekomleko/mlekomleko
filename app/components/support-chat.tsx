@@ -1,87 +1,83 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocale, useLocalize } from "../lib/i18n/client";
-import { toCyrillic, translate } from "../lib/i18n/translate";
-import { frequentlyAskedQuestions } from "../lib/content";
+import { translate } from "../lib/i18n/translate";
+import { answerSupportQuestion, getSupportChoices, quickTopicIds, searchSupportFaqs, type SupportReply, type SupportTarget } from "../lib/support-chat";
+import { supportMenu, type SupportMenu, type SupportMenuItem } from "../lib/support-menu";
+import { SupportChatContact } from "./support-chat-contact";
 import styles from "./support-chat.module.css";
 
-type Reply = { answer: string; href: string; link: string };
-type Exchange = { question: string; reply: Reply };
-
-const faqTopics = [
-  { id: "deadline", keywords: "rok,izmen,promen,odbrojav,cutoff,deadline,срок,измен", href: "/kako-funkcionise" },
-  { id: "bottles", keywords: "flas,ambalaz,stakl,bottle,бутыл,тар", href: "/kako-funkcionise" },
-  { id: "addition", keywords: "dodam,dodati,dodat,add,добав", href: "/nalog" },
-  { id: "subscription", keywords: "pretplat,pauz,otkaz,preskoc,subscription,pause,skip,подпис,пропуст", href: "/pravila-pretplate" },
-  { id: "payment", keywords: "plat,gotov,kartic,payment,cash,pay,оплат,налич", href: "/kako-funkcionise" },
-  { id: "delivery", keywords: "dostav,isporuk,beograd,novi sad,delivery,deliver,достав", href: "/dostava" },
-  { id: "milk", keywords: "sirov,prokuv,kuva,bezbed,analiz,laborator,raw,boil,safe,сыр,кипят,анализ", href: "/analize" },
-];
-const suggestedQuestions = ["delivery", "subscription", "bottles"].flatMap((id) =>
-  frequentlyAskedQuestions.filter((item) => item.id === id),
-);
-
-const fallback: Reply = {
-  answer: "Nemam odgovor na to pitanje. Probaj neku od ponuđenih tema ili nam piši preko stranice Kontakt.",
-  href: "/kontakt",
-  link: "Kontakt",
-};
-
-function normalize(text: string) {
-  // Normalise Serbian Latin and Cyrillic together, including typing without diacritics.
-  return toCyrillic(text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replaceAll("đ", "dj"))
-    .replace(/[чћ]/g, "ц").replace(/ш/g, "с").replace(/ж/g, "з")
-    .replace(/њ/g, "нј").replace(/љ/g, "лј").replace(/ђ/g, "дј")
-    .replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-}
-
-const searchableTopics = faqTopics.map((topic) => ({
-  ...topic,
-  prefixes: topic.keywords.split(",").map(normalize),
-}));
+type Exchange = { question: string; reply: SupportReply };
 
 export function SupportChat() {
   const localize = useLocalize();
   const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"chat" | "faq">("chat");
+  const [contactOpen, setContactOpen] = useState(false);
+  const [menuTrail, setMenuTrail] = useState<SupportMenu[]>([]);
+  const [browsing, setBrowsing] = useState(true);
   const [draft, setDraft] = useState("");
+  const [faqQuery, setFaqQuery] = useState("");
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
+  const widget = useRef<HTMLDivElement>(null);
   const launcher = useRef<HTMLButtonElement>(null);
-  const modeButton = useRef<HTMLButtonElement>(null);
+  const chatButton = useRef<HTMLButtonElement>(null);
+  const faqButton = useRef<HTMLButtonElement>(null);
   const log = useRef<HTMLDivElement>(null);
-  const input = useRef<HTMLInputElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const contactButton = useRef<HTMLButtonElement>(null);
+  const lastExchange = useRef<HTMLDivElement>(null);
+  const previousTopic = exchanges.at(-1)?.reply.answers.at(-1)?.topic;
+  const choices = getSupportChoices(exchanges.at(-1)?.reply.choices ?? quickTopicIds);
+  const currentMenu = menuTrail.at(-1);
+  const filteredFaqs = view === "faq" ? searchSupportFaqs(faqQuery, locale) : [];
 
   useEffect(() => {
-    if (open) modeButton.current?.focus();
+    if (open && !contactOpen) (view === "chat" ? chatButton : faqButton).current?.focus({ preventScroll: true });
+  }, [open, view, contactOpen]);
+
+  useEffect(() => {
+    const messages = log.current;
+    if (messages) {
+      messages.scrollTop = (browsing ? menu.current : lastExchange.current)?.offsetTop ?? 0;
+    }
+  }, [open, view, contactOpen, browsing, exchanges, menuTrail]);
+
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    const root = widget.current;
+    if (!open || !viewport || !root) return;
+    const fit = () => {
+      const offset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
+      root.style.setProperty("--chat-keyboard-offset", `${offset}px`);
+      root.style.setProperty("--chat-viewport-height", `${viewport.height}px`);
+    };
+    fit();
+    viewport.addEventListener("resize", fit);
+    viewport.addEventListener("scroll", fit);
+    return () => {
+      viewport.removeEventListener("resize", fit);
+      viewport.removeEventListener("scroll", fit);
+      root.style.removeProperty("--chat-keyboard-offset");
+      root.style.removeProperty("--chat-viewport-height");
+    };
   }, [open]);
-
-  useEffect(() => {
-    if (log.current) log.current.scrollTop = log.current.scrollHeight;
-  }, [open, view, exchanges]);
 
   function close() {
     setOpen(false);
-    launcher.current?.focus();
+    launcher.current?.focus({ preventScroll: true });
   }
 
-  function ask(question: string) {
+  function ask(question: string, target?: SupportTarget) {
     const text = question.trim();
     if (!text) return;
-    const normalized = normalize(text);
-    const exact = frequentlyAskedQuestions.find(({ question }) =>
-      normalize(translate(question, locale)) === normalized || normalize(question) === normalized,
-    );
-    const topic = exact
-      ? searchableTopics.find(({ id }) => id === exact.id)
-      : searchableTopics.find(({ prefixes }) =>
-          prefixes.some((prefix) => (" " + normalized).includes(" " + prefix)),
-        );
-    const match = exact ?? frequentlyAskedQuestions.find(({ id }) => id === topic?.id);
-    const reply = match ? { answer: match.answer, href: topic?.href ?? "/faq", link: "Pogledaj više" } : fallback;
-    setExchanges((previous) => [...previous, { question: text, reply }]);
+    const reply = answerSupportQuestion(text, previousTopic, target);
+    setBrowsing(false);
+    setExchanges((history) => [...history, { question: text, reply }]);
     setDraft("");
   }
 
@@ -90,60 +86,145 @@ export function SupportChat() {
     ask(draft);
   }
 
+  function selectMenu(item: SupportMenuItem) {
+    if ("children" in item) {
+      setMenuTrail((trail) => [...trail, item]);
+    } else {
+      ask(translate(item.label, locale), item.target);
+    }
+    log.current?.focus({ preventScroll: true });
+  }
+
+  function reset() {
+    setMenuTrail([]);
+    setBrowsing(true);
+    setDraft("");
+    setExchanges([]);
+    chatButton.current?.focus({ preventScroll: true });
+  }
+
   return localize((
     // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- Escape closes the widget from any of its controls.
-    <div className={styles.widget} onKeyDown={(event) => {
-      if (open && event.key === "Escape") {
+    <div ref={widget} className={styles.widget} onKeyDown={(event) => {
+      if (open && event.key === "Escape" && !event.defaultPrevented) {
         event.stopPropagation();
         close();
       }
     }}>
       {open ? (
-        <section id="support-chat" className={styles.panel} aria-labelledby="support-chat-title">
+        <section id="support-chat" className={styles.panel} aria-labelledby="support-chat-title" data-clarity-mask="true">
           <header className={styles.header}>
             <Image src="/images/mleko-i-mleko-logo-mark.png" alt="" width={36} height={36} />
-            <h2 id="support-chat-title">Pomoć Mleko i Mleko</h2>
+            <div>
+              <h2 id="support-chat-title">Pomoć Mleko i Mleko</h2>
+              <p>Automatski odgovori</p>
+            </div>
+            {(exchanges.length > 0 || menuTrail.length > 0) && view === "chat" && !contactOpen ? (
+              <button className={styles.reset} type="button" onClick={reset}>Novi razgovor</button>
+            ) : null}
           </header>
           <div className={styles.switch} role="group" aria-label="Način pomoći">
-            <button ref={modeButton} type="button" aria-pressed={view === "chat"} onClick={() => setView("chat")}>Razgovor</button>
-            <button type="button" aria-pressed={view === "faq"} onClick={() => setView("faq")}>Česta pitanja</button>
+            <button ref={chatButton} type="button" aria-pressed={!contactOpen && view === "chat"} onClick={() => { setContactOpen(false); setView("chat"); }}>Razgovor</button>
+            <button ref={faqButton} type="button" aria-pressed={!contactOpen && view === "faq"} onClick={() => { setContactOpen(false); setView("faq"); }}>Česta pitanja</button>
           </div>
-          {view === "chat" ? (
+          {contactOpen ? (
+            <SupportChatContact onBack={() => {
+              setContactOpen(false);
+              requestAnimationFrame(() => contactButton.current?.focus({ preventScroll: true }));
+            }} />
+          ) : view === "chat" ? (
             <>
               {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- Keep the scrollable conversation keyboard-accessible. */}
-              <div className={styles.log} ref={log} role="log" aria-label="Poruke" tabIndex={0} data-clarity-mask="true">
-                <p className={styles.reply}>Ćao! Pitaj me o dostavi, pretplati, plaćanju ili vraćanju flaša.</p>
-                {exchanges.length === 0 ? (
+              <div className={styles.log} ref={log} role="log" aria-label="Poruke" tabIndex={0}>
+                <p className={styles.reply}>Ćao! Izaberi temu ili napiši svoje pitanje.</p>
+                {exchanges.map(({ question, reply }, index) => (
+                  <div className={styles.exchange} key={index} ref={index === exchanges.length - 1 ? lastExchange : undefined}>
+                    <p className={styles.question} data-no-translate>{question}</p>
+                    {reply.prompt ? <p className={styles.reply}>{reply.prompt}</p> : null}
+                    {reply.answers.map(({ topic, question: faqQuestion, answer, link }) => (
+                      <div className={styles.reply} key={topic}>
+                        <p className={styles.answerTitle}>{faqQuestion}</p>
+                        <p>{answer}</p>
+                        {link ? <Link prefetch={false} href={link.href}>{link.label}</Link> : null}
+                      </div>
+                    ))}
+                    {reply.guides.map(({ message, links }) => (
+                      <div className={styles.reply} key={message}>
+                        <p>{message}</p>
+                        <div className={styles.replyLinks}>
+                          {links.map((link) => <Link prefetch={false} href={link.href} key={link.href}>{link.label}</Link>)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+                {browsing ? (
+                  <div className={styles.menu} ref={menu}>
+                    <div className={styles.menuHeading}>
+                      <h3>{currentMenu?.label ?? "Izaberi temu"}</h3>
+                      {currentMenu ? (
+                        <button className={styles.back} type="button" onClick={() => {
+                          setMenuTrail((trail) => trail.slice(0, -1));
+                          log.current?.focus({ preventScroll: true });
+                        }}>Nazad</button>
+                      ) : null}
+                    </div>
+                    <ul className={styles.menuList}>
+                      {(currentMenu?.children ?? supportMenu).map((item) => (
+                        <li key={item.label}>
+                          <button type="button" onClick={() => selectMenu(item)}>
+                            <span>{item.label}</span><span aria-hidden="true">›</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : choices.length ? (
                   <div className={styles.suggestions}>
-                    {suggestedQuestions.map(({ question }) => (
-                      <button key={question} type="button" onClick={() => { ask(translate(question, locale)); input.current?.focus(); }}>
+                    {choices.map(({ id, question }) => (
+                      <button key={id} type="button" onClick={() => {
+                        ask(translate(question, locale), { topic: id });
+                        log.current?.focus({ preventScroll: true });
+                      }}>
                         {question}
                       </button>
                     ))}
                   </div>
-                ) : exchanges.map(({ question, reply }, index) => (
-                  <div className={styles.exchange} key={index}>
-                    <p className={styles.question} data-no-translate>{question}</p>
-                    <p className={styles.reply}>{reply.answer} <a href={reply.href}>{reply.link}</a></p>
-                  </div>
-                ))}
+                ) : null}
               </div>
               <form className={styles.form} onSubmit={submit}>
-                <input ref={input} aria-label="Tvoje pitanje" placeholder="Napiši pitanje…" maxLength={300} value={draft} onChange={(event) => setDraft(event.target.value)} autoComplete="off" />
+                <input aria-label="Tvoje pitanje" placeholder="Napiši pitanje…" maxLength={300} value={draft} onChange={(event) => setDraft(event.target.value)} autoComplete="off" />
                 <button type="submit" disabled={!draft.trim()}>Pošalji</button>
               </form>
             </>
           ) : (
-            <div className={styles.faq}>
-              {frequentlyAskedQuestions.map(({ question, answer }) => (
-                <details key={question}>
-                  <summary>{question}</summary>
-                  <p>{answer}</p>
-                </details>
-              ))}
-              <a href="/faq">Sva česta pitanja</a>
-            </div>
+            <>
+              <div className={styles.search}>
+                <input type="search" aria-label="Pretraži česta pitanja" placeholder="Pretraži česta pitanja" maxLength={120} value={faqQuery} onChange={(event) => setFaqQuery(event.target.value)} />
+              </div>
+              <div className={styles.faq}>
+                {filteredFaqs.map(({ id, question, answer }) => (
+                  <details key={id}>
+                    <summary>{question}</summary>
+                    <p>{answer}</p>
+                  </details>
+                ))}
+                {filteredFaqs.length === 0 ? <p role="status">Nema rezultata. Probaj drugu reč ili nam piši.</p> : null}
+                <Link prefetch={false} href="/faq">Sva česta pitanja</Link>
+              </div>
+            </>
           )}
+          {!contactOpen ? (
+            <footer className={styles.contact}>
+              {view === "chat" && !browsing ? (
+                <button type="button" onClick={() => {
+                  setBrowsing(true);
+                  log.current?.focus({ preventScroll: true });
+                }}>Nazad na teme</button>
+              ) : null}
+              <button ref={contactButton} type="button" onClick={() => setContactOpen(true)}>Ostavi kontakt</button>
+            </footer>
+          ) : null}
         </section>
       ) : null}
       <button

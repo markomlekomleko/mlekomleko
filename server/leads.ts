@@ -5,15 +5,11 @@ import { emailConfigured, sendEmailMessage } from "./messaging";
 import { enforceRateLimit } from "./rate-limit";
 import { all, batch, first, run, type Row } from "./sql";
 
-/**
- * Leads from the public site (spec 19 Nov 2026): the two mlekomat B2B forms and the
- * goat-milk waiting list. Every lead is stored first, so nothing is lost when email is
- * not configured, and then forwarded to the business inbox (CONTACT_EMAIL_TO) when it is.
- */
-export const leadKinds = ["mlekomat_space", "mlekomat_rent", "goat_waitlist"] as const;
+/** Lead types accepted from the public storefront. */
+export const leadKinds = ["mlekomat_space", "mlekomat_rent", "goat_waitlist", "chat_support"] as const;
 export type LeadKind = typeof leadKinds[number];
 
-const kindLabels: Record<LeadKind, string> = {
+const kindLabels: Record<Exclude<LeadKind, "chat_support">, string> = {
   mlekomat_space: "Imam prostor za mlekomat",
   mlekomat_rent: "Želim svoj mlekomat (iznajmljivanje u pripremi)",
   goat_waitlist: "Obavesti me kad kozje mleko bude dostupno",
@@ -41,15 +37,30 @@ export async function submitLead(request: Request, input: Record<string, unknown
   const kind = input.kind as LeadKind;
   assertDomain(leadKinds.includes(kind), "VALIDATION_ERROR", "Nepoznata vrsta prijave.", 422);
   const goat = kind === "goat_waitlist";
+  const chat = kind === "chat_support";
   const name = text(input.name, "Ime", 100, !goat);
-  const email = text(input.email, "Email", 254, goat).toLowerCase();
+  const email = text(input.email, "Email", 254, goat || chat).toLowerCase();
   if (email) assertDomain(/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email), "VALIDATION_ERROR", "Unesi ispravnu email adresu.", 422);
   const phone = text(input.phone, "Telefon", 40, !goat, 6);
   if (phone) assertDomain(/^[+\d][\d\s()/-]{5,39}$/.test(phone), "VALIDATION_ERROR", "Unesi ispravan broj telefona.", 422);
+  const locale = typeof input.locale === "string" ? input.locale.slice(0, 10) : "";
+  if (chat) {
+    const digitCount = phone.replace(/\D/g, "").length;
+    assertDomain(digitCount >= 6 && digitCount <= 15 && /^\+?\d[\d\s()/-]*$/.test(phone), "VALIDATION_ERROR", "Unesi ispravan broj telefona.", 422);
+    const submissionId = text(input.submissionId, "ID zahteva", 36, false);
+    assertDomain(!submissionId || /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(submissionId), "VALIDATION_ERROR", "ID zahteva nije ispravan.", 422);
+    const id = `lead_chat_${(submissionId || crypto.randomUUID()).toLowerCase()}`;
+    await enforceRateLimit(request, `lead:${kind}`, 5, 3600);
+    await run(
+      "INSERT INTO site_leads (id, kind, name, email, phone, locale) VALUES (?, 'chat_support', ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING",
+      id, name, email, phone, locale || null,
+    );
+    return { saved: true };
+  }
+
   const city = text(input.city, "Grad", 80, !goat);
   const address = text(input.address, "Adresa", 200, kind === "mlekomat_space");
   const details = text(input.details, kind === "mlekomat_space" ? "Opis prostora" : "Napomena", 3000, kind === "mlekomat_space", kind === "mlekomat_space" ? 10 : 1);
-  const locale = typeof input.locale === "string" ? input.locale.slice(0, 10) : "";
   await enforceRateLimit(request, `lead:${kind}`, goat ? 10 : 5, 3600);
   if (goat) {
     // One waiting-list entry per address: a second sign-up is quietly accepted.

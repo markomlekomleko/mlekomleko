@@ -2,7 +2,7 @@
   position: fixed;
   z-index: 35;
   right: max(14px, env(safe-area-inset-right));
-  bottom: max(14px, env(safe-area-inset-bottom));
+  bottom: calc(var(--chat-keyboard-offset, 0px) + max(14px, env(safe-area-inset-bottom)));
   display: grid;
   justify-items: end;
   gap: 10px;
@@ -12,8 +12,8 @@
 .panel {
   display: flex;
   flex-direction: column;
-  width: min(380px, calc(100vw - 32px));
-  height: min(490px, calc(100dvh - 88px));
+  width: min(410px, calc(100vw - 32px));
+  height: min(560px, calc(var(--chat-viewport-height, 100dvh) - 80px));
   overflow: hidden;
   border: 2px solid var(--navy);
   border-radius: 18px;
@@ -25,7 +25,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 10px 12px;
   background: var(--teal);
   color: white;
 }
@@ -38,7 +38,29 @@
   text-transform: none;
 }
 
-.header img { border-radius: 8px; }
+.header img { flex: none; border-radius: 8px; }
+
+.header p {
+  margin: 2px 0 0;
+  color: #e4f1f4;
+  font-size: 0.75rem;
+}
+
+.reset {
+  flex: none;
+  min-height: 36px;
+  max-width: 35%;
+  margin-inline-start: auto;
+  padding: 4px 7px;
+  border: 1px solid #ffffff8c;
+  border-radius: 6px;
+  background: transparent;
+  color: white;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.reset:hover { background: #ffffff1c; }
 
 .launcher,
 .switch button,
@@ -88,6 +110,7 @@
 .switch button { min-height: 40px; padding: 4px 8px; }
 .switch button[aria-pressed="true"] { background: var(--teal); color: white; }
 .widget :is(button, summary, a, input):focus-visible { outline: 2px solid var(--brand-dark); outline-offset: 2px; }
+.widget .reset:focus-visible { outline-color: white; }
 
 .log,
 .faq {
@@ -99,7 +122,7 @@
   font-size: 0.91rem;
 }
 
-.log { background: var(--bg); }
+.log { position: relative; background: var(--bg); }
 .reply, .question {
   width: fit-content;
   max-width: 94%;
@@ -110,12 +133,26 @@
   overflow-wrap: anywhere;
 }
 
+.reply p { margin: 0; }
+.reply p + p { margin-top: 4px; }
+.reply .answerTitle { font-weight: 800; }
+.reply > a { display: inline-block; margin-top: 6px; }
+.replyLinks { display: flex; flex-wrap: wrap; column-gap: 12px; margin-top: 6px; }
+
 .question { margin-left: auto; background: #f9e6b2; }
 .exchange { display: grid; gap: 7px; margin-top: 10px; }
 .panel a { color: var(--brand-dark); font-weight: 700; text-decoration: underline; }
 
 .suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-.suggestions button { min-height: 36px; padding: 4px 8px; text-align: left; }
+.suggestions button {
+  min-height: 40px;
+  padding: 5px 9px;
+  border-color: var(--teal);
+  color: var(--brand-dark);
+  font-size: 0.84rem;
+  text-align: left;
+}
+.suggestions button:hover { background: var(--blush); }
 
 .form {
   display: grid;
@@ -125,11 +162,152 @@
   border-top: 1px solid var(--rule-soft);
 }
 
-.form input { min-height: 42px; border: 1px solid var(--navy); border-radius: 7px; padding: 8px; font: inherit; }
+.form input,
+.search input {
+  min-width: 0;
+  min-height: 42px;
+  border: 1px solid var(--navy);
+  border-radius: 7px;
+  padding: 8px 10px;
+  background: var(--surface);
+  color: var(--navy);
+  font: inherit;
+  font-size: max(1rem, 16px);
+}
 .form button { padding-inline: 10px; background: var(--teal); color: white; }
 .form button:disabled { opacity: 0.6; cursor: default; }
+
+.search { padding: 8px 10px 0; }
+.search input { width: 100%; }
+
+.contact {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 36px;
+  padding: 3px 12px;
+  border-top: 1px solid var(--rule-soft);
+  background: var(--surface);
+  font-size: 0.81rem;
+}
 
 .faq details { border-bottom: 1px solid var(--rule-soft); }
 .faq summary { padding: 10px 2px; cursor: pointer; font-weight: 750; }
 .faq details p { margin: 0 0 10px; }
 .faq > a { display: inline-block; margin-top: 10px; }
+
+.menu {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid var(--rule-soft);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.menuHeading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.menuHeading h3,
+.contactView h3 {
+  margin: 0;
+  font-size: 1rem;
+  text-transform: none;
+}
+
+.menuList {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menuList button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 6px 10px;
+  border: 1px solid var(--rule-soft);
+  border-radius: 7px;
+  background: var(--bg);
+  color: var(--navy);
+  font: inherit;
+  font-weight: 650;
+  text-align: start;
+  cursor: pointer;
+}
+
+.menuList button:hover { background: var(--blush); border-color: var(--teal); }
+.menuList button span[aria-hidden] { color: var(--brand-dark); font-size: 1.2rem; }
+
+.back,
+.contact button {
+  min-height: 36px;
+  padding: 3px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--brand-dark);
+  font: inherit;
+  font-weight: 750;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.contact { gap: 8px; }
+.contact button:first-child:not(:last-child) { margin-inline-end: auto; }
+.contact button:last-child { border-radius: 7px; padding-inline: 10px; background: var(--blush); text-decoration: none; }
+
+.contactView {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+}
+
+.contactView p { margin: 6px 0 10px; }
+
+.contactForm {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.contactForm label { display: grid; gap: 3px; font-weight: 700; }
+
+.contactForm input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px;
+  border: 1px solid var(--navy);
+  border-radius: 7px;
+  color: var(--navy);
+  background: var(--surface);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.contactForm button {
+  min-height: 42px;
+  padding: 6px 10px;
+  border: 1px solid var(--navy);
+  border-radius: 7px;
+  color: white;
+  background: var(--teal);
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.contactForm button:disabled { opacity: 0.65; cursor: default; }
+.contactForm .formError { margin: 0; color: var(--danger); }
