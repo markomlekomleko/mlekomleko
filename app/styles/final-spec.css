@@ -109,7 +109,6 @@
 @media (max-width: 520px) {
   /* Phones: both clocks on one line under the announcement, without the weekday. */
   .delivery-countdowns { column-gap: 6px; font-size: 0.74rem; }
-  .delivery-countdowns-label { flex-basis: auto; }
   .delivery-countdown { padding: 1px 7px; }
   .delivery-countdown-day { display: none; }
 }
@@ -120,8 +119,7 @@
 .announcement-bar:has(.delivery-countdowns) { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; column-gap: 20px; }
 .announcement-bar:has(.delivery-countdowns) > :not(.delivery-countdowns) { grid-column: 1; justify-self: end; margin: 0; }
 .announcement-bar .delivery-countdowns { grid-column: 2; align-items: center; line-height: 1.2; }
-.delivery-countdown, .delivery-countdowns-label { display: inline-flex; align-items: center; }
-.delivery-countdown { gap: 5px; line-height: 1.2; }
+.delivery-countdown { display: inline-flex; align-items: center; gap: 5px; line-height: 1.2; }
 @media (max-width: 760px) {
   .announcement-bar:has(.delivery-countdowns) { grid-template-columns: minmax(0, 1fr); row-gap: 4px; justify-items: center; }
   .announcement-bar:has(.delivery-countdowns) > :not(.delivery-countdowns),
@@ -190,18 +188,15 @@
   :root:has(.announcement-bar .delivery-countdowns) { --ticker-h: 57px; }
   .announcement-bar:has(.delivery-countdowns) { min-height: var(--ticker-h); box-sizing: border-box; }
 }
-.delivery-countdowns-label { opacity: 1; }
 
 /* Phones: a fixed two-row bar — one line of announcement, one line of clocks — so its
-   height never depends on wrapping. The "Rok za izmene" label stays for screen readers. */
+   height never depends on wrapping. */
 @media (max-width: 520px) {
   .announcement-bar:has(.delivery-countdowns) { height: var(--ticker-h); padding-block: 6px; row-gap: 3px; overflow: hidden; }
   .announcement-bar:has(.delivery-countdowns) > :not(.delivery-countdowns) { max-width: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .announcement-bar .delivery-countdowns { flex-wrap: nowrap; white-space: nowrap; }
-  .delivery-countdowns-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
 @media (max-width: 520px) {
-  /* A small clock stands in for the hidden label. */
   .announcement-bar .delivery-countdowns::before { content: "⏱"; margin-right: 2px; font-size: 0.85rem; line-height: 1; }
 }
 

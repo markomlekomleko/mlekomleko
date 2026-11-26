@@ -19,23 +19,16 @@ export function milkKind(product: Pick<Product, "slug" | "name">): MilkKind | nu
   return null;
 }
 
-/**
- * Same order for both milks, so the two cards read as a pair; only the art and the
- * colour differ (meeting 17 Nov 2026). The bottle shots are Higgsfield renders of the real
- * bottle (client photos) wearing the new labels; the other images are temporary renders;
- * the client sends the final set, which replaces the files under
- * public/images/karusel/ without touching this component.
- */
 const slides: Record<MilkKind, readonly Slide[]> = {
   cow: [
-    { type: "image", src: "/images/karusel/kravlje-flasa.webp", alt: "Staklena flaša kravljeg mleka sa etiketom, na drvenoj dasci", caption: "Domaće kravlje mleko" },
+    { type: "image", src: "/images/catalog/kravlje-mleko-studio.webp", alt: "Staklena flaša kravljeg mleka sa brendiranim poklopcem", caption: "Domaće kravlje mleko" },
     { type: "image", src: "/images/karusel/kravlje-mlekomat.webp", alt: "Ruka drži flašu kravljeg mleka ispred mlekomata", caption: "I u mlekomatu" },
     { type: "image", src: "/images/karusel/kravlje-krava.webp", alt: "Krava na pašnjaku", caption: "Sa domaćih farmi" },
     { type: "story", title: "Šta je u flaši", points: ["Punomasno i sirovo", "Bez dodataka i bez obiranja", "Muženo i flaširano za tvoju dostavu"] },
     { type: "image", src: "/images/karusel/kravlje-casa.webp", alt: "Mleko se sipa iz staklene flaše u čašu", caption: "Staklo koje se vraća" },
   ],
   goat: [
-    { type: "image", src: "/images/karusel/kozje-flasa.webp", alt: "Staklena flaša kozjeg mleka sa etiketom, na drvenoj dasci", caption: "Domaće kozje mleko" },
+    { type: "image", src: "/images/catalog/kozje-mleko-studio.webp", alt: "Staklena flaša kozjeg mleka sa brendiranim poklopcem", caption: "Kozje mleko" },
     { type: "image", src: "/images/karusel/kozje-mlekomat.webp", alt: "Ruka drži flašu kozjeg mleka ispred mlekomata", caption: "I u mlekomatu" },
     { type: "image", src: "/images/karusel/kozje-koza.webp", alt: "Koza na pašnjaku", caption: "Sa domaćih farmi" },
     { type: "story", title: "Šta je u flaši", points: ["Punomasno i sirovo", "Bez dodataka i bez obiranja", "Blago i lako svarljivo"] },

@@ -768,28 +768,12 @@ button.button { border-radius: 999px; }
 }
 .milk-card * { color: inherit; }
 
-/* Heading beside the pasture illustration on wide screens, above it on a phone. */
 .milk-why-top {
-  display: grid;
-  gap: clamp(20px, 4vw, 48px);
-  align-items: center;
-  justify-items: center;
   margin-bottom: clamp(28px, 4vw, 48px);
   text-align: center;
 }
-@media (min-width: 900px) {
-  .milk-why-top { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); justify-items: start; text-align: left; }
-}
 .milk-why .section-head { width: 100%; margin: 0; container-type: inline-size; }
 .milk-why .section-head .lead { max-width: 40ch; margin-inline: auto; color: var(--ink-2); }
-@media (min-width: 900px) { .milk-why .section-head .lead { margin-inline: 0; } }
-.milk-why-art {
-  width: 100%;
-  max-width: 460px;
-  height: auto;
-  border: 2px solid var(--navy);
-  border-radius: 16px;
-}
 
 /* Always exactly two lines: each half holds one line, sized against its own column
    per language (the English and Russian halves run longer than the Serbian). */
@@ -1024,22 +1008,24 @@ button.button { border-radius: 999px; }
 .hero-slide-action {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  margin-top: clamp(28px, 4vw, 48px);
-  min-height: 58px;
-  padding: 14px 30px;
-  border-radius: 999px;
-  background: #fff;
+  justify-content: center;
+  min-height: 54px;
+  max-width: 100%;
+  padding: 14px clamp(20px, 4.5vw, 40px);
+  border: 2px solid var(--navy);
+  border-radius: 5px;
+  background: #efc760;
   color: var(--navy);
-  font-size: 1.05rem;
-  font-weight: 800;
+  font-family: var(--ff-display);
+  font-size: clamp(0.95rem, 2.3vw, 1.25rem);
+  font-weight: 900;
+  line-height: 1.2;
+  text-transform: uppercase;
   text-decoration: none;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.15s ease;
 }
-.hero-slide-action:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgb(0 0 0 / 0.24); color: var(--navy); }
-.hero-slide-action span { font-size: 1.2em; line-height: 1; }
-.hero-slide-note { margin: 18px 0 0; color: rgb(255 255 255 / 0.9); font-size: 0.92rem; }
+.hero-slide-action:hover { background: #ffdb7e; color: var(--navy); }
+.hero-slide-action:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
 
 .hero-arrow {
   position: absolute;

@@ -7,7 +7,6 @@ import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type R
 import { useCart } from "./cart-provider";
 import { CookieSettingsButton } from "./analytics-provider";
 import { LanguageSwitcher } from "./language-switcher";
-import { translate, toCyrillic } from "../lib/i18n/translate";
 import { shellCopy } from "../lib/content";
 import { company, companyLine } from "../lib/company";
 import { pluralUnits } from "../lib/frontend";
@@ -68,7 +67,6 @@ function DeliveryCountdowns({ items }: { items: DeliveryCountdown[] }) {
   const shown = live.filter((item) => nearest.has(item.city));
   return localize((
     <p className="delivery-countdowns">
-      <span className="delivery-countdowns-label">Rok za izmene:</span>
       {shown.map(({ city, slot }) => (
         <span className="delivery-countdown" key={city}>
           <span className="delivery-countdown-city">{city}</span>{" "}
@@ -86,12 +84,6 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   const { count, ready, openDrawer, drawerOpen } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
-  const announcementText = locale === "en" ? settings.announcementTextEn || translate(settings.announcementText, locale)
-    : locale === "ru" ? settings.announcementTextRu || translate(settings.announcementText, locale)
-    : locale === "sr-cyrl" ? settings.announcementTextSrCyrl || toCyrillic(settings.announcementText) : settings.announcementText;
-  const announcementUrl = settings.announcementUrl.trim();
-  const externalAnnouncement = /^https:\/\//i.test(announcementUrl);
-  const showAnnouncement = settings.announcementEnabled && Boolean(announcementText.trim());
   const countdowns = settings.deliveryCountdowns ?? [];
   // Only one overlay is ever active: the cart takes precedence over the menu.
   const menuVisible = menuOpen && !drawerOpen;
@@ -166,8 +158,8 @@ export function SiteHeader({ settings }: { settings: HeaderSettings }) {
   // so the tab order never jumps around the bar.
   return localize((
     <div ref={stackRef} className="site-header-stack" data-hero-header data-nav-tight={navFit === "tight" ? "" : undefined} data-nav-collapsed={navFit === "collapsed" ? "" : undefined}>
-      {showAnnouncement || countdowns.length ? <aside className="announcement-bar" aria-label="Obaveštenje">
-        {showAnnouncement ? announcementUrl ? <a href={announcementUrl} target={externalAnnouncement ? "_blank" : undefined} rel={externalAnnouncement ? "noopener noreferrer" : undefined}>{announcementText}</a> : <p>{announcementText}</p> : null}
+      {settings.announcementEnabled || countdowns.length > 0 ? <aside className="announcement-bar" aria-label="Obaveštenje">
+        <p>Rok za porudžbine i izmene</p>
         {countdowns.length ? <DeliveryCountdowns items={countdowns} /> : null}
       </aside> : null}
       <header className="site-header">

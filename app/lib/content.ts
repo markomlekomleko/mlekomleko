@@ -6,30 +6,37 @@
  */
 export const frequentlyAskedQuestions = [
   {
+    id: "milk",
     question: "Da li je mleko bezbedno i kako se koristi?",
     answer: "Naše mleko je domaće, sirovo i punomasno, bez obiranja i homogenizacije. Sirovo mleko zadržava svoje prirodne enzime, mlečnu mast i karakterističan pun ukus. Redovno se laboratorijski testira u Zavodu za mlekarstvo Srbije, a rezultate analiza delimo transparentno. Neki naši kupci biraju da ga konzumiraju sirovo, ali naša preporuka je da se mleko obavezno prokuva pre konzumiranja.",
   },
   {
+    id: "subscription",
     question: "Kako funkcioniše pretplata?",
     answer: "Pretplata je paket od četiri isporuke koji se automatski obnavlja tek kada su sve četiri stvarno realizovane. Na nalogu možeš da dodaš proizvode, preskočiš dostavu, pauziraš ili otkažeš narednu obnovu.",
   },
   {
+    id: "delivery",
     question: "Kada i gde dostavljate?",
     answer: "U Beogradu utorkom i petkom, u Novom Sadu petkom. Mleko donosimo do tvojih vrata.",
   },
   {
+    id: "addition",
     question: "Mogu li da dodam proizvod samo za jednu isporuku?",
     answer: "Da. Biraš da li dodatak stiže samo uz sledeću isporuku ili redovno, a doplatu obračunavamo automatski i vidiš je pre potvrde.",
   },
   {
+    id: "bottles",
     question: "Šta radim sa staklenim flašama?",
     answer: "Isperi ih i očisti, po mogućstvu u mašini za sudove, i vrati pri sledećoj dostavi. Mi ih zatim profesionalno peremo i sanitarno obrađujemo pre ponovne upotrebe.",
   },
   {
+    id: "payment",
     question: "Kako mogu da platim?",
     answer: "Gotovinom pri prvoj isporuci ili uplatom na račun. Onlajn plaćanje će biti dostupno uskoro.",
   },
   {
+    id: "deadline",
     question: "Do kada mogu da izmenim porudžbinu?",
     answer: "Do 36 sati pre početka dostavne ture. Odbrojavanje do roka vidiš na vrhu sajta.",
   },

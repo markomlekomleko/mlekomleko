@@ -6,19 +6,9 @@ import { useState } from "react";
 import { homeCopy } from "../../lib/content";
 import { INSTAGRAM_URL, TIKTOK_URL } from "../site-shell";
 
-/**
- * Six of the brand's own TikTok clips, playable in place (meeting 17 Nov 2026: replace
- * the "Pogledaj video" link with a grid of six videos). The ids are public posts of
- * @mleko_i_mleko; swap them here when the client picks different ones.
- *
- * TikTok's player sits on tracker block lists (Safari and Firefox tracking protection,
- * Brave, ad blockers), so for some visitors the embed stayed black. The clips are now
- * served from this site (/video/tiktok/<id>.mp4, covers in /images/tiktok/<id>.webp)
- * and play in a plain <video>, so every browser can play them; the link under each
- * still leads to the post on TikTok.
- */
+// The original posts are linked below each clip. Playback and covers are served locally.
 export const socialVideos = [
-  { id: "7465682673936207109", title: "Upoznaj farmu" },
+  { id: "7278650033472294150", title: "Upoznaj farmu" },
   { id: "7258739044731931909", title: "Kako radi mlekomat" },
   { id: "7509530328181034245", title: "Rumenka na farmi" },
 ] as const;

@@ -7,6 +7,7 @@ import { protectReplayRoute } from "../lib/session-replay";
 import { AnalyticsProvider } from "./analytics-provider";
 import { CartProvider } from "./cart-provider";
 import { CartDrawer } from "./cart-drawer";
+import { SupportChat } from "./support-chat";
 import { SiteHeader, SiteFooter, type HeaderSettings } from "./site-shell";
 export function ApplicationShell({
   children,
@@ -39,6 +40,7 @@ export function ApplicationShell({
         <SiteHeader key={path} settings={settings} />
         {content}
         <SiteFooter />
+        <SupportChat />
         <CartDrawer />
       </CartProvider>
     </AnalyticsProvider>

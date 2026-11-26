@@ -749,11 +749,9 @@ html { scroll-padding-top: calc(var(--header-stack) + 12px); }
    stacked on phones. Tabular digits keep the bar from twitching every second. */
 .announcement-bar:has(.delivery-countdowns) { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 20px; row-gap: 2px; }
 .delivery-countdowns { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 14px; row-gap: 2px; margin: 0; }
-.delivery-countdowns-label { opacity: .85; font-weight: 600; }
 .delivery-countdown { white-space: nowrap; }
 .delivery-countdown time { font-variant-numeric: tabular-nums; font-weight: 800; }
 @media (max-width: 520px) {
-  .delivery-countdowns-label { flex-basis: 100%; }
 }
 .language-switcher { position: relative; font-size: .8rem; font-family: var(--ff-body); }
 .language-switcher summary { cursor: pointer; display: flex; align-items: center; gap: 5px; min-height: 44px; padding: 6px; list-style: none; font-weight: 750; }

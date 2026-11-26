@@ -3,9 +3,9 @@
 /* eslint-disable @next/next/no-img-element -- Pre-optimised local hero photographs. */
 import { useLocalize } from "@/app/lib/i18n/client";
 import { useRef, useState } from "react";
-import { homeCopy } from "../../lib/content";
+import { producers } from "../../lib/producers";
 
-type Action = { label: string; href: string; icon: string };
+type Action = { label: string; href: string };
 
 type Slide = {
   image: string;
@@ -27,8 +27,7 @@ export const GOOGLE_REVIEWS_URL = "https://www.google.com/maps/search/?api=1&que
  * segmented progress bar that fills like a loading bar. The bar's own animation is the
  * timer: keyboard focus or a touch pauses it, reduced motion turns autoplay off. A copy
  * of the first slide sits after the last, so the loop always moves forward.
- * Slide 5 is the real photo of a partner farm family; the reviews slide links to the
- * real Google reviews and never quotes invented ones.
+ * The reviews slide opens the original listings on Google Maps.
  */
 const slides: readonly Slide[] = [
   {
@@ -37,58 +36,58 @@ const slides: readonly Slide[] = [
     alt: "Mleko se sipa u čašu",
     title: "Mleko koje znaš.",
     lead: "Domaće sirovo mleko direktno sa farme, poznatog porekla, redovno testirano i dostavljeno na tvoja vrata.",
-    actions: [{ icon: "🥛", label: "Izaberi svoje mleko", href: "/prodavnica" }],
+    actions: [{ label: "Izaberi svoje mleko.", href: "/prodavnica" }],
   },
   {
     image: "/images/hero/mlekomat.webp",
     focus: "50% 55%",
     alt: "Ljudi ispred mlekomata Mleko i Mleko u tržnom centru",
     title: "Natoči sebi pravo mleko.",
-    lead: "Pravo domaće mleko, bez odlaska na selo — na našim mlekomatima.",
-    actions: [{ icon: "📍", label: "Pronađi svoj mlekomat", href: "/gde-kupiti" }],
+    lead: "Pravo domaće mleko bez odlaska na selo dostupno na našim mlekomatima.",
+    actions: [{ label: "Pronađi svoj mlekomat.", href: "/gde-kupiti" }],
   },
   {
     image: "/images/hero/paket.webp",
     focus: "70% 60%",
     alt: "Korpa sa staklenim flašama mleka i jedna flaša pored nje, na pragu kuće",
     title: "Ozbiljna veza ili avantura?",
-    lead: "Pretplata sa redovnom dostavom ili jednokratna kupovina — ti biraš.",
+    lead: "Izbor pretplate ili jednokratne kupovine.",
     actions: [
-      { icon: "💙", label: "Pretplata", href: "/prodavnica?tip=pretplata" },
-      { icon: "✨", label: "Jednokratno", href: "/prodavnica?tip=jednokratno" },
+      { label: "Pretplata", href: "/prodavnica?tip=pretplata" },
+      { label: "Jednokratno", href: "/prodavnica?tip=jednokratno" },
     ],
   },
   {
-    image: "/images/hero/flase.webp",
-    focus: "78% 60%",
-    alt: "Staklene flaše kravljeg i kozjeg mleka na drvenom stolu",
+    image: producers[0].image,
+    focus: producers[0].focus,
+    alt: producers[0].alt,
     title: "Pravo mleko zaslužuje staklo.",
-    lead: "Povratne staklene flaše: praznu čistu flašu vratiš pri sledećoj dostavi, a mi donesemo punu.",
-    actions: [{ icon: "🔁", label: "Pogledaj kako funkcioniše", href: "/kako-funkcionise" }],
+    lead: "Povratne staklene flaše.",
+    actions: [{ label: "Pogledaj kako funkcioniše.", href: "/kako-funkcionise" }],
   },
   {
-    image: "/images/domacini/porodica-glisic.webp",
-    focus: "50% 45%",
-    alt: "Porodica Glišić ispred bala sena na farmi u Deliblatskoj peščari",
+    image: producers[0].image,
+    focus: producers[0].focus,
+    alt: producers[0].alt,
     title: "Znaš od koga piješ.",
-    lead: "Pravi proizvođači i prave farme — kao Farma Glišić iz Deliblatske peščare.",
-    actions: [{ icon: "🐄", label: "Upoznaj naše farmere", href: "/o-nama#farmeri" }],
+    lead: "Pravi proizvođači i farme.",
+    actions: [{ label: "Upoznajnaše farmere.", href: "/o-nama#farmeri" }],
   },
   {
     image: "/images/hero/analize.webp",
     focus: "70% 50%",
     alt: "Uzorci mleka u epruvetama na laboratorijskom stolu",
     title: "Ne veruj nam na reč.",
-    lead: "Redovne laboratorijske analize i transparentni izveštaji koje možeš sam da pogledaš.",
-    actions: [{ icon: "🔬", label: "Uveri se i ti", href: "/analize" }],
+    lead: "Redovne analize i transparentni izveštaji.",
+    actions: [{ label: "Uveri se i ti", href: "/analize" }],
   },
   {
     image: "/images/hero/utisci.webp",
     focus: "50% 40%",
     alt: "Porodica za doručkom, mama sipa mleko iz staklene flaše",
     title: "Vi najbolje pričate o nama. 💙",
-    lead: "Pročitaj šta kažu naši kupci — stvarne recenzije na Google-u.",
-    actions: [{ icon: "⭐", label: "Pogledaj utiske", href: GOOGLE_REVIEWS_URL }],
+    lead: "Isključivo stvarne Google recenzije ako integracija radi.",
+    actions: [{ label: "Pogledaj utiske", href: GOOGLE_REVIEWS_URL }],
   },
 ];
 
@@ -104,6 +103,10 @@ export function HeroSlider() {
   const active = position % slides.length;
 
   const go = (index: number) => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setPosition((index + slides.length) % slides.length);
+      return;
+    }
     setAnimate(true);
     if (index < 0) {
       // Going back from the first slide: jump to the copy unseen, then slide back.
@@ -136,7 +139,7 @@ export function HeroSlider() {
         if (Math.abs(delta) > 48) go(active + (delta < 0 ? 1 : -1));
       }}
     >
-      <h1 id="hero-title" className="visually-hidden">{homeCopy.hero.title}</h1>
+      <h1 id="hero-title" className="visually-hidden">{slides[0].title}</h1>
       <div
         className="hero-track"
         data-animate={animate ? "" : undefined}
@@ -154,7 +157,7 @@ export function HeroSlider() {
           const current = index === position;
           return (
             <div
-              key={isCopy ? `${slide.image}-copy` : slide.image}
+              key={index}
               className="hero-slide"
               role={isCopy ? undefined : "group"}
               aria-roledescription={isCopy ? undefined : "slajd"}
@@ -175,23 +178,21 @@ export function HeroSlider() {
                 <h2 className="hero-slide-title">{slide.title}</h2>
                 <p className="hero-slide-lead">{slide.lead}</p>
                 <div className="hero-slide-actions">
-                  {slide.actions.map((action, actionIndex) => {
+                  {slide.actions.map((action) => {
                     const external = /^https:/.test(action.href);
                     return (
                       <a
                         key={action.href}
-                        className={`hero-slide-action${index === 0 && actionIndex === 0 ? " hero-cta" : ""}`}
+                        className="hero-slide-action"
                         href={action.href}
                         target={external ? "_blank" : undefined}
                         rel={external ? "noopener noreferrer" : undefined}
                       >
-                        <span aria-hidden="true">{action.icon}</span>
-                        {action.label}
+                        <span>{action.label}</span>
                       </a>
                     );
                   })}
                 </div>
-                <p className="hero-slide-note">Dostava u Beogradu i Novom Sadu · povratne staklene flaše</p>
               </div>
             </div>
           );
@@ -206,7 +207,7 @@ export function HeroSlider() {
       <div className="hero-progress">
         {slides.map((slide, index) => (
           <button
-            key={slide.image}
+            key={slide.title}
             type="button"
             aria-label={`Slajd ${index + 1}`}
             aria-current={index === active ? "true" : undefined}

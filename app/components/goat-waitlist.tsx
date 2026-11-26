@@ -38,13 +38,13 @@ export function GoatWaitlistCard() {
 
   return localize((
     <article className="configurator configurator-card goat-waitlist" data-kind="goat" data-available="false">
-      <ProductCarousel kind="goat" name="Domaće kozje mleko" />
+      <ProductCarousel kind="goat" name="Kozje mleko" />
       <div className="configurator-body">
         <div className="configurator-head">
-          <h3 className="configurator-title">Domaće kozje mleko</h3>
-          <p className="goat-waitlist-badge">Uskoro ponovo</p>
+          <h3 className="configurator-title">Kozje mleko</h3>
+          <p className="goat-waitlist-badge">Sezonski nedostupno</p>
         </div>
-        <p className="configurator-note">Kozje mleko trenutno ne primamo u porudžbine. Ostavi email i javićemo ti čim bude dostupno.</p>
+        <p className="configurator-note">Kozje mleko je trenutno nedostupno zbog sezone jarenja. Ostavi nam svoj mejl i obavestićemo te čim ponovo bude dostupno.</p>
         {state === "sent" ? (
           <p className="goat-waitlist-done" role="status">✓ Hvala! Javićemo ti se čim kozje mleko bude dostupno.</p>
         ) : (

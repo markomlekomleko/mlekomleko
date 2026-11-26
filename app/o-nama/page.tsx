@@ -11,13 +11,6 @@ export async function generateMetadata(): Promise<Metadata> { return localizedMe
   alternates: { canonical: canonicalUrl("/o-nama") },
 }); }
 
-/**
- * The founder block (spec 19 Nov 2026, §10, part 3): one authentic photo and a short
- * statement. The photo stays empty until the owner sends it; until then the official
- * logo stands in its place. The statement's authorship still needs the owner's confirmation.
- */
-const founder = { photo: "", alt: "Marko Krsmančić, osnivač Mleko i Mleko, ispred mlekomata" };
-
 export default async function AboutPage() {
   const localize = await getLocalize();
   return localize((
@@ -58,9 +51,7 @@ export default async function AboutPage() {
       <section className="content-band" aria-labelledby="osnivac-title">
         <div className="page-shell about-founder">
           <figure className="about-founder-photo">
-            {founder.photo
-              ? <img src={founder.photo} alt={founder.alt} width="1080" height="1350" loading="lazy" />
-              : <img src="/images/mleko-i-mleko-logo-mark.png" alt="Mleko i Mleko" width="512" height="512" loading="lazy" />}
+            <img src="/images/domacini/osnivac-marko-krsmancic.webp" alt="Marko Krsmančić, osnivač Mleko i Mleko, ispred mlekomata" width="868" height="952" loading="lazy" />
           </figure>
           <div>
             <h2 id="osnivac-title">Ko stoji iza Mleko i Mleko?</h2>
