@@ -179,8 +179,7 @@ test("server-renders the Serbian storefront shell and useful home content", asyn
     html,
     /<title>Домаће кравље млеко на твојој адреси \| Млеко и Млеко<\/title>/,
   );
-  assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Млеко и Млеко — домаће кравље и козје млеко<\/h1>/);
-  assert.match(html, /Млеко које знаш/);
+  assert.match(html, /<h1[^>]*id="hero-title"[^>]*>Млеко које знаш\.<\/h1>/);
   assert.match(html, /class="hero-slider"/);
   assert.match(html, /Изабери своје млеко/);
   // Final spec (19 Nov 2026): the menu opens the separate shop; subscription info sits in the footer.
