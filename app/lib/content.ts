@@ -166,7 +166,7 @@ export const shellCopy = {
     "Plaćanje gotovinom pri dostavi",
   ],
   footer: {
-    tagline: "Domaće kravlje i kozje mleko u staklu koje se vraća. Punomasno i ponosno. #pravomleko",
+    tagline: "Domaće kravlje i kozje mleko u staklu koje se vraća. #pravomleko",
     exploreTitle: "Istraži",
     infoTitle: "Sitna slova",
     wordmark: "Mleko i Mleko",

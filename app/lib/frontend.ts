@@ -1,3 +1,4 @@
+import { goatMilkPhotos, isBundledMilkImage, milkKind, storefrontMilkImage } from "./milk-media";
 import { intlLocales, type Locale } from "./i18n/routing";
 export type PurchaseType = "one_time" | "subscription";
 export type DeliveryCadence = "weekly" | "biweekly";
@@ -212,6 +213,14 @@ export function normalizeProduct(value: unknown): Product {
   );
   const compareAtMinor = numberValue(item.compareAtPriceMinor, item.compare_at_price_minor);
 
+  const catalogImage = textValue(item.imageUrl, item.image_url);
+  const kind = milkKind({ slug, name });
+  const imageUrl = storefrontMilkImage(catalogImage) || (kind === "goat" ? goatMilkPhotos[0].src : "");
+  const uploadedGallery = Array.isArray(item.gallery)
+    ? item.gallery.filter((url): url is string => typeof url === "string" && !isBundledMilkImage(url))
+    : [];
+  const bundledGallery = imageUrl === goatMilkPhotos[0].src ? goatMilkPhotos.slice(1).map(({ src }) => src) : [];
+
   return {
     id,
     slug,
@@ -240,13 +249,11 @@ export function normalizeProduct(value: unknown): Product {
     subscriptionPriceRsd:
       directSubscriptionPrice || minorSubscriptionPrice / 100 || priceRsd,
     compareAtPriceRsd: compareAtMinor > 0 ? compareAtMinor / 100 : null,
-    // Refresh the bundled catalog photos without overriding custom admin uploads.
-    imageUrl: textValue(item.imageUrl, item.image_url).replace(
-      /^\/images\/catalog\/(kravlje|kozje)-mleko(?:-v2)?\.(?:webp|avif|jpg)$/,
-      "/images/catalog/$1-mleko-studio.webp",
-    ),
-    gallery: Array.isArray(item.gallery) ? item.gallery.filter((x): x is string => typeof x === "string") : [], ingredients: textValue(item.ingredients), allergens: textValue(item.allergens), nutrition: item.nutrition && typeof item.nutrition === "object" ? item.nutrition as Record<string,string> : {}, inventoryEnabled: Boolean(item.inventoryEnabled), salePriceMinor: item.salePriceMinor == null ? null : Number(item.salePriceMinor), saleSubscriptionPriceMinor: item.saleSubscriptionPriceMinor == null ? null : Number(item.saleSubscriptionPriceMinor), saleStartsAt: typeof item.saleStartsAt === "string" ? item.saleStartsAt : null, saleEndsAt: typeof item.saleEndsAt === "string" ? item.saleEndsAt : null,
-    imageAlt: /^\/images\/catalog\/(kravlje|kozje)-mleko(?:-v2|-studio)?\.(?:webp|avif|jpg)$/.test(textValue(item.imageUrl, item.image_url))
+    // Replace legacy milk artwork and retain photos uploaded through admin.
+    imageUrl,
+    gallery: [...new Set([...uploadedGallery, ...bundledGallery])].filter((url) => url !== imageUrl),
+    ingredients: textValue(item.ingredients), allergens: textValue(item.allergens), nutrition: item.nutrition && typeof item.nutrition === "object" ? item.nutrition as Record<string,string> : {}, inventoryEnabled: Boolean(item.inventoryEnabled), salePriceMinor: item.salePriceMinor == null ? null : Number(item.salePriceMinor), saleSubscriptionPriceMinor: item.saleSubscriptionPriceMinor == null ? null : Number(item.saleSubscriptionPriceMinor), saleStartsAt: typeof item.saleStartsAt === "string" ? item.saleStartsAt : null, saleEndsAt: typeof item.saleEndsAt === "string" ? item.saleEndsAt : null,
+    imageAlt: imageUrl !== catalogImage
       ? `Fotografija proizvoda ${name}`
       : textValue(item.imageAlt, item.image_alt, `Fotografija proizvoda ${name}`),
     badge: textValue(item.badge),

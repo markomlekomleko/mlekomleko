@@ -13,11 +13,9 @@ export async function generateMetadata(): Promise<Metadata> { return localizedMe
   alternates: { canonical: canonicalUrl("/analize") },
 }); }
 
-// Only what the brand already states (final spec, FAQ): tested regularly at Zavod za
-// mlekarstvo Srbije, results shared openly. No frequency or values are claimed here.
 const facts = [
   { icon: "testirano", title: "Gde testiramo", text: "Mleko se laboratorijski testira u Zavodu za mlekarstvo Srbije." },
-  { icon: "sveze", title: "Koliko često", text: "Redovno — svaki novi izveštaj dodajemo na ovu stranicu čim stigne." },
+  { icon: "sveze", title: "Koliko često", text: "Internu kontrolu radimo pri svakom preuzimanju mleka, a laboratorijsku analizu u Zavodu dva puta mesečno." },
   { icon: "poreklo", title: "Šta objavljujemo", text: "Originalne izveštaje, onakve kakve dobijemo iz laboratorije, bez prepravki." },
 ] as const;
 
@@ -31,6 +29,7 @@ const glossary = [
   { term: "Ukupan broj mikroorganizama", text: "Pokazatelj higijene muže i hlađenja mleka." },
   { term: "Inhibitorne materije", text: "Provera da u mleku nema ostataka antibiotika." },
   { term: "Tačka mržnjenja", text: "Provera da mleku nije dodata voda." },
+  { term: "Aflatoksin M1", text: "Može dospeti u mleko kada životinja pojede hranu kontaminiranu aflatoksinom B1. Ako je rađena ova analiza, rezultat potraži u redu označenom kao „Aflatoksin M1“." },
 ] as const;
 
 /** "Naše mleko. Naše analize." (spec 19 Nov 2026, §11; more context added 20 Nov). */
@@ -87,7 +86,7 @@ export default async function AnalysesPage() {
       <section className="content-band content-band--soft" aria-labelledby="sirovo-title">
         <div className="page-shell analyses-note">
           <h2 id="sirovo-title">Sirovo mleko i kuvanje</h2>
-          <p>Naše mleko je sirovo i punomasno, bez obiranja i homogenizacije. Neki kupci ga piju sirovo, ali naša preporuka je da ga obavezno prokuvaš pre konzumiranja.</p>
+          <p>Naše mleko je sirovo i punomasno. Neki ga piju sirovo zbog prirodnog sastava nepasterizovanog mleka, u kome su prirodno aktivni mlečni enzimi. Naša preporuka je da ga svakako prokuvaš pre konzumiranja.</p>
           <div className="button-row"><Link className="button" href="/prodavnica">Izaberi svoje mleko</Link><Link className="button secondary" href="/kontakt">Imaš pitanje? Piši nam</Link></div>
         </div>
       </section>

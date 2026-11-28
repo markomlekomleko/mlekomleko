@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element -- Pre-optimised local hero photographs. */
 import { useLocalize } from "@/app/lib/i18n/client";
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { producers } from "../../lib/producers";
 
 type Action = { label: string; href: string };
@@ -11,14 +11,23 @@ type Slide = {
   image: string;
   /** Where the photo's subject sits, so a phone crop keeps it in frame. */
   focus: string;
+  mobileFocus?: string;
+  frame?: "farm" | "reviews";
   alt: string;
   title: string;
   lead: string;
   actions: readonly Action[];
 };
 
-/** Google Maps list of the brand's own mlekomats, each with its real Google reviews. */
-export const GOOGLE_REVIEWS_URL = "https://www.google.com/maps/search/?api=1&query=Mlekomat%20Mleko%20i%20Mleko";
+/** Google Maps reviews tab for the Bežanijska kosa mlekomat. */
+export const GOOGLE_REVIEWS_URL = "https://www.google.com/maps/place/Mlekomat+Mleko+i+Mleko+Bezanijska+kosa/@44.8177016,20.3115089,13z/data=!4m12!1m2!2m1!1sMlekomat+Mleko+i+Mleko+Beograd!3m8!1s0x475b11b683afb7dd:0x4d04fcf2e8e01ee2!8m2!3d44.8177016!4d20.3836067!9m1!1b1!15sCh5NbGVrb21hdCBNbGVrbyBpIE1sZWtvIEJlb2dyYWRaICIebWxla29tYXQgbWxla28gaSBtbGVrbyBiZW9ncmFkkgELZGFpcnlfc3RvcmXgAQA!16s%2Fg%2F11sbxvbdyh?entry=ttu";
+
+// Short excerpts from three public five-star reviews on the linked profile.
+const reviews = [
+  { author: "Miloš Stojković", excerpt: "Одлично млеко, врхунска услуга." },
+  { author: "Sveto Rakovic", excerpt: "Сјајна идеја и нешто што до сада нисмо имали у нашем граду!" },
+  { author: "Кристина Ј", excerpt: "… јако је укусно и цена је приступачна …" },
+] as const;
 
 /**
  * The home hero (spec 19 Nov 2026, §2): seven full-screen slides that slide in from the
@@ -27,7 +36,7 @@ export const GOOGLE_REVIEWS_URL = "https://www.google.com/maps/search/?api=1&que
  * segmented progress bar that fills like a loading bar. The bar's own animation is the
  * timer: keyboard focus or a touch pauses it, reduced motion turns autoplay off. A copy
  * of the first slide sits after the last, so the loop always moves forward.
- * The reviews slide opens the original listings on Google Maps.
+ * Selected reviews include a link to their original Google Maps profile.
  */
 const slides: readonly Slide[] = [
   {
@@ -58,20 +67,23 @@ const slides: readonly Slide[] = [
     ],
   },
   {
-    image: producers[0].image,
-    focus: producers[0].focus,
-    alt: producers[0].alt,
+    image: "/images/hero/flase.webp",
+    focus: "72% 55%",
+    mobileFocus: "78% 55%",
+    alt: "Mleko u povratnim staklenim flašama",
     title: "Pravo mleko zaslužuje staklo.",
     lead: "Povratne staklene flaše.",
     actions: [{ label: "Pogledaj kako funkcioniše.", href: "/kako-funkcionise" }],
   },
   {
     image: producers[0].image,
-    focus: producers[0].focus,
-    alt: producers[0].alt,
+    focus: "62% 57%",
+    mobileFocus: "82% 50%",
+    frame: "farm",
+    alt: "Porodica Glišić i Marko Krsmančić ispred bala sena",
     title: "Znaš od koga piješ.",
     lead: "Pravi proizvođači i farme.",
-    actions: [{ label: "Upoznajnaše farmere.", href: "/o-nama#farmeri" }],
+    actions: [{ label: "Upoznaj naše farmere.", href: "/o-nama#farmeri" }],
   },
   {
     image: "/images/hero/analize.webp",
@@ -85,13 +97,15 @@ const slides: readonly Slide[] = [
     image: "/images/hero/utisci.webp",
     focus: "50% 40%",
     alt: "Porodica za doručkom, mama sipa mleko iz staklene flaše",
-    title: "Vi najbolje pričate o nama. 💙",
-    lead: "Isključivo stvarne Google recenzije ako integracija radi.",
+    title: "Vi najbolje pričate o nama.",
+    lead: "Izdvojene recenzije sa Google mapa",
+    frame: "reviews",
     actions: [{ label: "Pogledaj utiske", href: GOOGLE_REVIEWS_URL }],
   },
 ];
 
 const AUTOPLAY_MS = 3000;
+const REVIEW_AUTOPLAY_MS = 14000;
 
 export function HeroSlider() {
   const localize = useLocalize();
@@ -99,6 +113,7 @@ export function HeroSlider() {
   const [position, setPosition] = useState(0);
   const [animate, setAnimate] = useState(true);
   const [hold, setHold] = useState(false);
+  const [review, setReview] = useState(0);
   const touchX = useRef<number | null>(null);
   const active = position % slides.length;
 
@@ -126,10 +141,15 @@ export function HeroSlider() {
       aria-roledescription="karusel"
       aria-label="Istaknuto"
       data-hold={hold ? "" : undefined}
-      style={{ "--hero-autoplay": `${AUTOPLAY_MS}ms` } as React.CSSProperties}
+      style={{ "--hero-autoplay": `${slides[active].frame === "reviews" ? REVIEW_AUTOPLAY_MS : AUTOPLAY_MS}ms` } as CSSProperties}
       onFocus={() => setHold(true)}
       onBlur={() => setHold(false)}
-      onTouchStart={(event) => { touchX.current = event.touches[0].clientX; setHold(true); }}
+      onTouchStart={(event) => {
+        const inReviews = event.target instanceof Element && event.target.closest(".hero-reviews");
+        touchX.current = inReviews ? null : event.touches[0].clientX;
+        setHold(true);
+      }}
+      onTouchCancel={() => { touchX.current = null; setHold(false); }}
       onTouchEnd={(event) => {
         const start = touchX.current;
         touchX.current = null;
@@ -159,6 +179,7 @@ export function HeroSlider() {
             <div
               key={index}
               className="hero-slide"
+              data-frame={slide.frame}
               role={isCopy ? undefined : "group"}
               aria-roledescription={isCopy ? undefined : "slajd"}
               aria-label={isCopy ? undefined : `${index + 1} / ${slides.length}`}
@@ -170,13 +191,24 @@ export function HeroSlider() {
                 className="hero-slide-image"
                 src={slide.image}
                 alt={isCopy ? "" : slide.alt}
-                style={{ objectPosition: slide.focus }}
+                style={{ "--hero-photo-focus": slide.focus, "--hero-photo-mobile-focus": slide.mobileFocus } as CSSProperties}
                 loading={index === 0 ? "eager" : "lazy"}
                 fetchPriority={index === 0 ? "high" : "auto"}
               />
               <div className="page-shell hero-slide-copy">
                 <h2 className="hero-slide-title">{slide.title}</h2>
                 <p className="hero-slide-lead">{slide.lead}</p>
+                {slide.frame === "reviews" ? (
+                  <div className="hero-reviews" role="group" aria-label="Izdvojene recenzije">
+                    <button type="button" className="hero-review-arrow" aria-label="Prethodna recenzija" onClick={() => setReview((index) => (index + reviews.length - 1) % reviews.length)}>‹</button>
+                    <blockquote className="hero-review" aria-live="polite">
+                      <span className="hero-review-stars" role="img" aria-label="5 od 5 zvezdica">★★★★★</span>
+                      <p data-no-translate>„{reviews[review].excerpt}“</p>
+                      <footer><cite data-no-translate>{reviews[review].author}</cite><span data-no-translate>Google Maps</span></footer>
+                    </blockquote>
+                    <button type="button" className="hero-review-arrow" aria-label="Sledeća recenzija" onClick={() => setReview((index) => (index + 1) % reviews.length)}>›</button>
+                  </div>
+                ) : null}
                 <div className="hero-slide-actions">
                   {slide.actions.map((action) => {
                     const external = /^https:/.test(action.href);

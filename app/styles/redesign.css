@@ -108,116 +108,11 @@ img.offer-stamp {
 }
 @media (min-width: 768px) { img.offer-stamp { display: block; } }
 
-/* ------------------------------------------------------------ product carousel */
+/* ------------------------------------------------------------- product cards */
 
 .configurator-card[data-kind] { overflow: hidden; border-radius: 20px; }
 .configurator-card[data-kind="cow"] { --kind-ground: var(--blush); --kind-ink: var(--brand-dark); }
 .configurator-card[data-kind="goat"] { --kind-ground: #efe4cf; --kind-ink: var(--navy); }
-
-.carousel {
-  position: relative;
-  background: var(--kind-ground, var(--blush));
-}
-
-.carousel-track {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  overscroll-behavior-x: contain;
-}
-.carousel-track::-webkit-scrollbar { display: none; }
-.carousel-track:focus-visible { outline: 3px solid var(--navy); outline-offset: -3px; }
-
-.carousel-slide {
-  position: relative;
-  flex: 0 0 100%;
-  aspect-ratio: 4 / 5;
-  scroll-snap-align: start;
-}
-.carousel-slide img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.carousel-caption {
-  position: absolute;
-  left: 16px;
-  bottom: 40px;
-  margin: 0;
-  padding: 8px 14px;
-  border: 2px solid var(--navy);
-  border-radius: 999px;
-  background: #fff;
-  color: var(--navy);
-  font-family: var(--ff-display);
-  font-size: 0.85rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-
-.carousel-story {
-  display: grid;
-  align-content: center;
-  gap: 16px;
-  height: 100%;
-  padding: 32px;
-  background: var(--kind-ink, var(--brand));
-  color: #fff;
-}
-.carousel-story-mark { width: 96px; height: auto; }
-.carousel-story h4 {
-  margin: 0;
-  font-family: var(--ff-display);
-  font-size: clamp(1.6rem, 6vw, 2.2rem);
-  font-weight: 900;
-  line-height: 1;
-  text-transform: uppercase;
-}
-.carousel-story ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-.carousel-story li {
-  padding-top: 10px;
-  border-top: 1px solid rgb(255 255 255 / 0.35);
-  font-size: 1.05rem;
-  font-weight: 600;
-}
-
-.carousel-nav {
-  position: absolute;
-  top: 50%;
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  margin-top: -20px;
-  border: 2px solid var(--navy);
-  border-radius: 50%;
-  background: #fff;
-  color: var(--navy);
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
-}
-.carousel-prev { left: 10px; }
-.carousel-next { right: 10px; }
-
-.carousel-dots {
-  position: absolute;
-  inset: auto 0 14px;
-  display: flex;
-  justify-content: center;
-  gap: 6px;
-  pointer-events: none;
-}
-.carousel-dots span {
-  width: 8px;
-  height: 8px;
-  border: 1px solid var(--navy);
-  border-radius: 50%;
-  background: #fff;
-}
-.carousel-dots span[data-active="true"] { background: var(--navy); }
 
 /* The trimmed card: name, price, three choices, one button. */
 .configurator-card[data-kind] .configurator-title {
@@ -571,16 +466,8 @@ img.offer-stamp {
 }
 .site-footer--k .footer-wordmark::before { content: attr(data-wordmark); }
 
-/* Product cards, e-commerce standard: picture on top at the full card width in one
-   square format for both milks (the bottle sits in the middle 80% of every photo, so the
-   square keeps it whole), then name, price and choices. Two cards side by side from
-   tablet up, each capped in width so the picture is a confident thumbnail, never a
-   poster. The photo always fills its frame; nothing scrolls vertically. */
-.carousel-track { overflow-y: hidden; }
+/* Place the product photo above the purchase controls. */
 .configurator.configurator-card[data-kind] { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
-.configurator-card[data-kind] .carousel-slide { aspect-ratio: 1 / 1; }
-.configurator-card[data-kind] .carousel-slide img { object-fit: cover; object-position: center; }
-.configurator-card[data-kind] .carousel { border-bottom: 2px solid var(--navy); }
 
 @media (min-width: 700px) {
   .offer-grid[data-count="2"] {
@@ -589,12 +476,6 @@ img.offer-stamp {
     gap: clamp(20px, 3vw, 40px);
     max-width: none;
   }
-  .configurator-card[data-kind] .carousel-caption { left: 12px; bottom: 34px; font-size: 0.72rem; padding: 6px 12px; }
-  .configurator-card[data-kind] .carousel-nav { width: 34px; height: 34px; margin-top: -17px; font-size: 1.25rem; }
-  .configurator-card[data-kind] .carousel-story { padding: 24px; gap: 12px; }
-  .configurator-card[data-kind] .carousel-story h4 { font-size: 1.5rem; }
-  .configurator-card[data-kind] .carousel-story li { font-size: 0.95rem; padding-top: 8px; }
-  .configurator-card[data-kind] .carousel-story-mark { width: 72px; }
   .configurator-card[data-kind] .configurator-title { --title-max: 1.5rem; }
 }
 

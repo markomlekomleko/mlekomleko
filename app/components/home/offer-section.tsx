@@ -4,7 +4,7 @@ import { useLocalize } from "@/app/lib/i18n/client";
 import Image from "next/image";
 import { ProductConfigurator } from "../product-configurator";
 import { GoatWaitlistCard } from "../goat-waitlist";
-import { milkKind } from "../product-carousel";
+import { milkKind } from "../../lib/milk-media";
 import { homeCopy } from "../../lib/content";
 import type { BundleOffer, DeliveryWindow, Product } from "../../lib/frontend";
 

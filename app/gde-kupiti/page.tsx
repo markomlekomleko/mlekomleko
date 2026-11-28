@@ -15,10 +15,10 @@ export async function generateMetadata(): Promise<Metadata> { return localizedMe
 // The locations the site has listed so far. When the client confirms the full list
 // (their posts mention more), only this array changes.
 const locations: readonly Mlekomat[] = [
-  // Coordinates from OpenStreetMap, cross-checked on Google Maps (18 Nov 2026).
-  { name: "Beo šoping centar", address: "Vojislava Ilića 141, Zvezdara", query: "Beo Shopping Center, Beograd", milk: "kravlje mleko", lat: 44.78673, lng: 20.50256 },
-  { name: "Lidl Bežanijska kosa", address: "Partizanske avijacije bb, Novi Beograd", query: "Lidl Bežanijska kosa, Beograd", milk: "kravlje i kozje mleko", lat: 44.81794, lng: 20.38335 },
-  { name: "Mega Roda Novi Beograd", address: "Đorđa Stanojevića 35, Novi Beograd", query: "Mega Roda, Đorđa Stanojevića 35, Beograd", milk: "kravlje mleko", lat: 44.80971, lng: 20.39687 },
+  // The three listed machines and their own Google Maps profiles.
+  { name: "Beo šoping centar", address: "Vojislava Ilića 141, Zvezdara", query: "Mlekomat Mleko i Mleko Beo, Beograd", placeId: "ChIJa9oZijQRW0cR6VBNivaHTXw", milk: "kravlje mleko", lat: 44.7873601, lng: 20.5033688 },
+  { name: "Lidl Bežanijska kosa", address: "Partizanske avijacije bb, Novi Beograd", query: "Mlekomat Mleko i Mleko Bežanijska kosa, Beograd", placeId: "ChIJ3bevg7YRW0cR4h7g6PL8BE0", milk: "kravlje i kozje mleko", lat: 44.8177016, lng: 20.3836067 },
+  { name: "Mega Roda Novi Beograd", address: "Đorđa Stanojevića 35, Novi Beograd", query: "Mlekomat Mleko i Mleko Mega Roda, Beograd", placeId: "ChIJ5zicn0xvWkcRTzt7cPQxkkE", milk: "kravlje mleko", lat: 44.8097594, lng: 20.3972933 },
 ];
 
 // The client's own mlekomat photos (sent 17 Nov 2026), web-sized into
@@ -38,7 +38,7 @@ export default async function MlekomatiPage() {
           <div className="page-heading">
             <p className="eyebrow">Mlekomati</p>
             <h1>Natoči sebi pravo mleko.</h1>
-            <p className="lead">Domaće mleko iz mlekomata u Beogradu — natočiš koliko ti treba i platiš na licu mesta, gotovinom ili karticom.</p>
+            <p className="lead">Natoči domaće mleko u Beogradu. Uz svaku lokaciju vidiš koje vrste mleka možeš da potražiš.</p>
             <div className="button-row"><a className="button" href="#lokacije">Pronađi mlekomat</a><a className="button secondary" href="#partnerstvo">Postani partner</a></div>
           </div>
           <img className="sub-hero-art" src="/images/crtezi/mlekomat.webp" alt="Devojka toči mleko u staklenu flašu na mlekomatu" width="1200" height="900" />
@@ -68,15 +68,14 @@ export default async function MlekomatiPage() {
         <div className="page-shell">
           <div className="kinds-card mlekomat-how">
             <div>
-              <p className="eyebrow">Kako radi</p>
-              <h2 id="kako-toci-title">Prosto kao pasulj.</h2>
+              <h2 id="kako-toci-title">Kako da natočiš mleko</h2>
               <ol className="mlekomat-steps">
-                <li>Ubaci novac u mlekomat.</li>
-                <li>Otvori mala vratanca sa leve strane i postavi flašu, malo nagnutu — tako mleko ne zapeni.</li>
-                <li>Izaberi mleko i pritisni start.</li>
-                <li>Kod kuće ga prokuvaj i uživaj.</li>
+                <li>Pripremi čistu flašu i proveri koje vrste mleka i načine plaćanja aparat nudi.</li>
+                <li>Postavi flašu ispod slavine. Izaberi vrstu mleka i količinu prema uputstvu na aparatu.</li>
+                <li>Plati i pokreni točenje prema redosledu prikazanom na aparatu. Sačekaj da točenje završi pre nego što uzmeš flašu.</li>
+                <li>Prokuvaj mleko pre konzumiranja.</li>
               </ol>
-              <p className="mlekomat-bottle-note"><strong>Nisi poneo flašu?</strong> Pored mlekomata je flašomat sa staklenim flašama: ubaci novčanicu od 100 dinara, izaberi broj police i preuzmi flašu.</p>
+              <p className="mlekomat-bottle-note"><strong>Nisi poneo flašu?</strong> Ako je na lokaciji dostupan flašomat, prati uputstvo na njemu za kupovinu staklene flaše.</p>
             </div>
             <div className="mlekomat-video">
               {/* Self-hosted copy of the TikTok clip (18 Nov 2026), so no tracking blocker

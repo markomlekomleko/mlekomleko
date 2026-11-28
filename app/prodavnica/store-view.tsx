@@ -7,7 +7,7 @@ import { BundleOffers } from "../components/bundle-offers";
 import { BUNDLES_ENABLED } from "../lib/features";
 import { ProductConfigurator } from "../components/product-configurator";
 import { GoatWaitlistCard } from "../components/goat-waitlist";
-import { milkKind } from "../components/product-carousel";
+import { milkKind } from "../lib/milk-media";
 import { type BundleOffer, type DeliveryWindow, type Product } from "../lib/frontend";
 
 export function StoreView({

@@ -3,7 +3,8 @@
 import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useRef, useState, type FormEvent } from "react";
 import { fetchJson } from "../lib/frontend";
-import { ProductCarousel } from "./product-carousel";
+import { goatMilkPhotos } from "../lib/milk-media";
+import Image from "next/image";
 
 /**
  * Goat milk is not on sale right now (spec 19 Nov 2026, §5). Its card stays in the shop,
@@ -16,6 +17,7 @@ export function GoatWaitlistCard() {
   const locale = useLocale();
   const [state, setState] = useState<"idle" | "busy" | "sent">("idle");
   const [error, setError] = useState("");
+  const [photo, setPhoto] = useState<(typeof goatMilkPhotos)[number]>(goatMilkPhotos[0]);
   const submitting = useRef(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -38,7 +40,24 @@ export function GoatWaitlistCard() {
 
   return localize((
     <article className="configurator configurator-card goat-waitlist" data-kind="goat" data-available="false">
-      <ProductCarousel kind="goat" name="Kozje mleko" />
+      <div className="goat-waitlist-gallery">
+        <div className="configurator-media">
+          <Image src={photo.src} alt={photo.alt} width={960} height={960} sizes="(min-width: 1024px) 540px, (min-width: 720px) 48vw, 92vw" />
+        </div>
+        <div className="goat-waitlist-thumbnails">
+          {goatMilkPhotos.map((option) => (
+            <button
+              key={option.src}
+              type="button"
+              aria-label={option.alt}
+              aria-pressed={photo.src === option.src}
+              onClick={() => setPhoto(option)}
+            >
+              <Image src={option.src} alt="" width={48} height={48} />
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="configurator-body">
         <div className="configurator-head">
           <h3 className="configurator-title">Kozje mleko</h3>

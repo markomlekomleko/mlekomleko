@@ -6,7 +6,7 @@ import { useLocalize, useLocale } from "@/app/lib/i18n/client";
 import { useEffect, useId, useState } from "react";
 import { useAnalytics } from "./analytics-provider";
 import { useCart } from "./cart-provider";
-import { ProductCarousel, milkKind } from "./product-carousel";
+import { milkKind } from "../lib/milk-media";
 import {
   MAX_QUANTITY,
   cadenceLabel,
@@ -80,14 +80,24 @@ export function ProductConfigurator({
   // Milk is sold from two litres per delivery up.
   const minimum = litres ? 2 : 1;
   const subscriptionAvailable = product.allowSubscription && product.available;
-  const unitPrice = purchaseType === "subscription" ? product.subscriptionPriceRsd : product.priceRsd;
+  const subscriptionSelected = purchaseType === "subscription";
+  const unitPrice = subscriptionSelected ? product.subscriptionPriceRsd : product.priceRsd;
   const perDelivery = unitPrice * quantity;
   const occurrences = delivery.remainingOccurrences[cadence];
-  const visits = purchaseType === "subscription" ? occurrences : 1;
+  const visits = subscriptionSelected ? occurrences : 1;
   const goodsTotal = perDelivery * visits;
   const shippingKnown = typeof delivery.deliveryFeeMinor === "number";
-  const shippingPerVisit = shippingKnown && !(Number(delivery.freeDeliveryThresholdMinor)>0 && goodsTotal*100 >= Number(delivery.freeDeliveryThresholdMinor)) ? Number(delivery.deliveryFeeMinor)/100 : 0;
+  const feePerVisit = (subtotalRsd: number) => {
+    const thresholdMinor = delivery.freeDeliveryThresholdMinor ?? 0;
+    return thresholdMinor > 0 && Math.round(subtotalRsd * 100) >= thresholdMinor
+      ? 0
+      : (delivery.deliveryFeeMinor ?? 0) / 100;
+  };
+  const shippingPerVisit = feePerVisit(goodsTotal);
   const shippingTotal = shippingPerVisit * visits;
+  const subscriptionGoods = product.subscriptionPriceRsd * quantity * occurrences;
+  const subscriptionTotal = subscriptionGoods + feePerVisit(subscriptionGoods) * occurrences;
+  const purchaseTotal = goodsTotal + shippingTotal;
   /** What a subscriber saves per unit against the one-time price. */
   const saving = Math.max(0, product.priceRsd - product.subscriptionPriceRsd);
   const href = `/proizvodi/${encodeURIComponent(product.slug)}`;
@@ -134,14 +144,14 @@ export function ProductConfigurator({
 
   useEffect(() => {
     onSelectionChange?.({
-      label: `${selectionLabel} · ${shippingKnown ? purchaseType === "subscription" ? "ceo paket sa dostavom" : "sa dostavom" : "proizvodi po dostavi"}`,
-      totalRsd: shippingKnown ? goodsTotal + shippingTotal : perDelivery,
+      label: `${selectionLabel} · ${shippingKnown ? subscriptionSelected ? "ceo paket sa dostavom" : "sa dostavom" : subscriptionSelected ? "mleko za ceo paket" : "proizvodi po dostavi"}`,
+      totalRsd: purchaseTotal,
       addToCart,
       disabled: !product.available || !ready,
     });
     // The callback only mirrors the current selection into a sticky bar.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectionLabel, perDelivery, goodsTotal, shippingTotal, shippingKnown, product.available, ready, purchaseType, cadence, quantity]);
+  }, [selectionLabel, purchaseTotal, shippingKnown, product.available, ready, subscriptionSelected, cadence, quantity]);
 
   function choosePurchaseType(value: PurchaseType) {
     setPurchaseType(value);
@@ -177,20 +187,18 @@ export function ProductConfigurator({
     setQuantity(value);
   }
 
-  // The home card is the trimmed Kafeterija-style card (meeting 17 Nov 2026): carousel,
-  // name, price and the three choices, then one button. The product page keeps the full panel.
   const kind = milkKind(product);
   const compact = layout === "card";
 
   return localize((
     <article className={`configurator configurator-${layout}`} data-available={product.available} data-kind={kind ?? undefined}>
-      {compact && kind ? <ProductCarousel kind={kind} name={product.name} /> : <a className="configurator-media" href={href} aria-label={`Detalji: ${product.name}`}>
-        {product.imageUrl ? (
-          <img src={product.imageUrl} alt={product.imageAlt} width="1080" height="1080" loading="lazy" />
-        ) : (
-          <span>Fotografija uskoro</span>
-        )}
-      </a>}
+      {product.imageUrl ? (
+        <a className="configurator-media" href={href} aria-label={`Detalji: ${product.name}`}>
+          <img src={product.imageUrl} alt={product.imageAlt} width="1199" height="1312" loading="lazy" />
+        </a>
+      ) : kind ? null : (
+        <a className="configurator-media" href={href}><span>Fotografija uskoro</span></a>
+      )}
 
       <div className="configurator-body">
         <div className="configurator-head">
@@ -202,11 +210,6 @@ export function ProductConfigurator({
             </h3>
           )}
           {compact ? null : <p className="configurator-note">{product.shortDescription}</p>}
-          {compact ? null : <p className="configurator-price">
-            <strong>{formatMoney(unitPrice, locale)}</strong>
-            <span>/ {product.unit}</span>
-            {litres && litres !== 1 ? <small>{formatMoney(unitPrice / litres, locale)} / L</small> : null}
-          </p>}
         </div>
 
         {!product.available ? (
@@ -226,7 +229,12 @@ export function ProductConfigurator({
                   onClick={() => choosePurchaseType("subscription")}
                 >
                   <span className="purchase-type-name">Pretplata</span>
-                  <strong>{`${formatMoney(product.subscriptionPriceRsd, locale)}/${litres ? "l" : product.unit}`}</strong>
+                  {subscriptionAvailable ? (
+                    <>
+                      <strong>{formatMoney(subscriptionTotal, locale)}</strong>
+                      <small>{shippingKnown ? `Ceo paket sa dostavom · ${occurrences} isporuke` : `Mleko za ceo paket · ${occurrences} isporuke`}</small>
+                    </>
+                  ) : null}
                   {saving > 0 ? <small className="purchase-type-badge">{`Uštediš ${formatMoney(saving, locale)} po litru`}</small> : null}
                 </button>
                 <button
@@ -292,16 +300,28 @@ export function ProductConfigurator({
               ) : null}
             </fieldset>
 
-            <div className="configurator-total configurator-receipt">
-              <p><span>{litres ? "Mleko" : "Proizvod"} <small>{`${quantityLabel(quantity, product.unit)} × ${formatMoney(unitPrice, locale)}`}</small></span><strong>{formatMoney(perDelivery, locale)}</strong></p>
-              {shippingKnown ? <p><span>Dostava</span><strong>{formatMoney(shippingPerVisit, locale)}</strong></p> : null}
-              <p className="configurator-package-total"><span>Ukupno po isporuci</span> <strong>{formatMoney(perDelivery + (shippingKnown ? shippingPerVisit : 0), locale)}</strong></p>
-              {purchaseType === "subscription" && saving > 0 ? <p className="configurator-saving">{`Sa pretplatom štediš ${formatMoney(saving * quantity, locale)} po isporuci.`}</p> : null}
-              {purchaseType === "subscription" ? <p className="configurator-occurrences">{`Paket od ${visits} dostave, plaćen unapred: ${formatMoney(goodsTotal + shippingTotal, locale)}. Prva dostava: ${formatDate(delivery.deliveryDate, locale)}`}</p> : <p className="configurator-occurrences">{`Dostava: ${formatDate(delivery.deliveryDate, locale)}`}</p>}
+            <div className="configurator-total configurator-receipt" data-subscription={subscriptionSelected || undefined}>
+              <p>
+                <span>{litres ? "Mleko" : "Proizvod"} <small>{`${quantityLabel(quantity, product.unit)} × ${formatMoney(unitPrice, locale)}`}{subscriptionSelected ? ` × ${visits}` : null}</small></span>
+                <strong>{formatMoney(goodsTotal, locale)}</strong>
+              </p>
+              {shippingKnown ? (
+                <p>
+                  <span>Dostava do vrata {subscriptionSelected ? <small>{`${visits} isporuke × ${formatMoney(shippingPerVisit, locale)}`}</small> : null}</span>
+                  <strong>{shippingTotal > 0 ? formatMoney(shippingTotal, locale) : "Besplatno"}</strong>
+                </p>
+              ) : <p className="configurator-occurrences">Dostava se obračunava u korpi.</p>}
+              <p className="configurator-package-total">
+                <span>{subscriptionSelected ? shippingKnown ? "Ukupno za ceo paket" : "Mleko za ceo paket" : shippingKnown ? "Ukupno po isporuci" : "Ukupno za proizvode"}</span>
+                <strong>{formatMoney(purchaseTotal, locale)}</strong>
+              </p>
+              {subscriptionSelected && saving > 0 ? <p className="configurator-saving">{`Na mleku štediš ${formatMoney(saving * quantity * visits, locale)} za ceo paket.`}</p> : null}
+              <p className="configurator-occurrences">{subscriptionSelected ? `Prva dostava: ${formatDate(delivery.deliveryDate, locale)}` : `Dostava: ${formatDate(delivery.deliveryDate, locale)}`}</p>
             </div>
 
-            {purchaseType === "subscription" ? (
+            {subscriptionSelected ? (
               <div className="configurator-subscription-note">
+                <strong>Svake nedelje na tvoja vrata</strong>
                 <p>Redovna dostava, koju možeš da izmeniš, pauziraš ili otkažeš kad god poželiš.</p>
                 <p className="configurator-hint">{`Izmene predstojeće dostave važe samo do roka od ${delivery.cutoffHours} sati pre početka ture.`}</p>
                 {loyaltyNote ? <p className="configurator-loyalty">💙 Posle 12 realizovanih dostava poklanjamo ti 2 l mleka i dostavu.</p> : null}
